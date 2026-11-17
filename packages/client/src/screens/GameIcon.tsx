@@ -28,8 +28,13 @@ export function GameIcon({ name, label, text = false, className }: {
 
 /** 대전 모드 — 기물 셋 · 다섯 그림. 좁은 칸은 아이콘만(이름은 올리면), 단추는 `text`.
  *  글자는 「vs 3」 · 「vs 5」 — 그림이 「3」을 말하니 앞의 숫자를 덜어 아이콘 자리를 낸다(기획자 2026-10-26) */
-export function ModeIcon({ mode, text = false }: { mode: '3v3' | '5v5'; text?: boolean }): React.JSX.Element {
-  return <GameIcon name={mode === '3v3' ? 'mode-3v3' : 'mode-5v5'} label={mode === '3v3' ? 'vs 3' : 'vs 5'} text={text} />;
+export function ModeIcon({ mode, text = false, foe = false }: {
+  mode: '3v3' | '5v5'; text?: boolean;
+  /** 북군 색(붉은 기물) — 병영 현황판 · 부대 관리의 수성군 줄 (2026-11-17 기획자) */
+  foe?: boolean;
+}): React.JSX.Element {
+  const name = foe ? (mode === '3v3' ? 'mode-3v3-foe' : 'mode-5v5-foe') : (mode === '3v3' ? 'mode-3v3' : 'mode-5v5');
+  return <GameIcon name={name} label={mode === '3v3' ? 'vs 3' : 'vs 5'} text={text} />;
 }
 
 /** 장수 상태 — 건강 · 부상. 표 칸은 아이콘만 */

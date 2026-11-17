@@ -142,8 +142,8 @@ try {
   await page.click('.scr-main [data-place="barracks"]', { force: true });
   await page.click('[data-action="squads"]');
   await page.click(`.sql-row[data-slot="${dSquad.id}"]`);
-  await page.waitForSelector('[data-screen="squadView"][data-garrison="1"]', { timeout: 10_000 }).then(() => page.waitForSelector('[data-action="garrisonPolicy"]', { timeout: 3_000 }))
-    .catch(() => fail('수비군 부대 현황에 [수비군 설정]이 없다'));
+  await page.waitForSelector(`[data-screen="squadEdit"][data-squad="${dSquad.id}"]`, { timeout: 10_000 }).then(() => page.waitForSelector('[data-action="garrisonPolicy"]:not([disabled])', { timeout: 3_000 }))
+    .catch(() => fail('수성군 부대 편집에 [행동 방침]이 없다'));
   await shot(page, 'p0-squad-view');
   await page.click('[data-action="garrisonPolicy"]');
   await page.waitForSelector('[data-screen="garrisonPolicy"][data-tab="stance"]', { timeout: 10_000 }).catch(() => fail('수비군 설정이 안 뜬다'));
@@ -193,6 +193,14 @@ try {
   await page.waitForSelector('[data-field="saved"]', { timeout: 3_000 }).catch(() => fail('[저장]을 눌렀는데 「저장했다」가 없다'));
   ok(`방침 화면 — 행동(${second.piece} → 호위) · 책략 3줄(공포 30% 추가 · 첫 줄 아래로) · 고유기술(${firstSkill ?? '없음'}) · [저장]`);
 
+  // 방침 화면의 [저장]은 초안이다 — 부대 편집으로 돌아가 [저장]해야 계정에 얹힌다 (2026-11-17)
+  await page.waitForTimeout(800);
+  if ((await getProfile(D.uid))!.squads.find((s) => s.id === dSquad.id)?.policy?.tactics?.length === 3) fail('[저장] 전에 방침이 계정에 들어갔다');
+  await page.click('[data-screen="garrisonPolicy"] [data-action="back"]');
+  await page.waitForSelector(`[data-screen="squadEdit"][data-squad="${dSquad.id}"][data-dirty="1"]`, { timeout: 5_000 }).catch(() => fail('방침을 저장하고 돌아왔는데 부대 편집이 바뀐 것을 모른다'));
+  await page.click('[data-action="saveSquad"]');
+  await page.waitForSelector('[data-screen="squads"]', { timeout: 5_000 });
+
   // ── 2. 서버 ──
   const saved = await until(async () => (await getProfile(D.uid))!.squads.find((s) => s.id === dSquad.id)?.policy,
     (p) => !!p?.tactics && p.tactics.length === 3, '계정의 부대 방침');
@@ -206,13 +214,16 @@ try {
   ok(`서버 — 부대 방침(호위 · 공포 30% · 본 책략 ${saved!.seenTactics?.length ?? 0}개) · defenses 스냅샷이 같은 값`);
 
   // ── 3. 나가기 확인 · 새 책략 알림 ──
+  await page.click(`.sql-row[data-slot="${dSquad.id}"]`);
+  await page.click('[data-action="garrisonPolicy"]');
+  await page.waitForSelector('[data-screen="garrisonPolicy"]', { timeout: 5_000 });
   await page.click('.gpl-tabs [data-tab="stance"]');
   await page.click(`.gpl-srow[data-piece="${second.piece}"] [data-action="stance"]`);
   await page.click('[data-modal="policyPicker"] [data-choice="advance"]');
   await page.click('[data-screen="garrisonPolicy"] [data-action="back"]');
   await page.waitForSelector('[data-modal="policyPicker"][data-kind="leave"]', { timeout: 3_000 }).catch(() => fail('저장하지 않고 나가는데 묻지 않는다'));
   await page.click('[data-action="leaveConfirm"]');
-  await page.waitForSelector('[data-screen="squadView"]', { timeout: 5_000 });
+  await page.waitForSelector('[data-screen="squadEdit"]', { timeout: 5_000 });
   const stillEscort = (await getProfile(D.uid))!.squads.find((s) => s.id === dSquad.id)!.policy!.stances![second.piece];
   if (stillEscort !== 'escort') fail('저장하지 않고 나갔는데 바뀐 것이 저장됐다');
 

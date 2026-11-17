@@ -42,8 +42,8 @@ import type {
 } from '@samchess/meta';
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
-  addSquad, raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
-  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, clearSquad, squadAt, squadById, syncCity, updateSquad, pendingGuide, isGarrison,
+  raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
+  raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, squadById, squadSlot, syncCity, pendingGuide,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
@@ -84,7 +84,6 @@ import { MatchScreen } from './MatchScreen.tsx';
 import { SiegeScreen } from './SiegeScreen.tsx';
 import { SquadListScreen } from './SquadListScreen.tsx';
 import { SquadMembersScreen, emptySquad } from './SquadMembersScreen.tsx';
-import { SquadViewScreen } from './SquadViewScreen.tsx';
 import { GarrisonPolicyScreen, PolicyNotice } from './GarrisonPolicyScreen.tsx';
 import { BattleScreen } from './BattleScreen.tsx';
 import type { BattleTransport } from '../battle/transport.ts';
@@ -115,7 +114,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
     case 'main': return 'main';
     case 'place': return screen.place === 'palace' ? 'palace' : screen.place === 'barracks' ? 'barracks' : null;
     case 'officers': case 'city': case 'buildings': return 'palace';
-    case 'tutorials': case 'squads': case 'squadView': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
+    case 'tutorials': case 'squads': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
     case 'board': case 'collection': case 'defense': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
     case 'building': return screen.building;
@@ -136,8 +135,6 @@ function guideScreenOf(screen: Screen): { screen: GuideScreen; ctx?: GuideContex
     case 'building': return { screen: 'building', ctx: { building: screen.building }, key: `building-${screen.building}` };
     case 'tutorials': return { screen: 'tutorial', key: 'tutorial' };
     case 'squads': return { screen: 'squads', key: 'squads' };
-    // 첫 편성 뒤 — 3인팀이 생겼고 5인팀은 아직(「5인팀은 직접」, 2026-11-13)
-    case 'squadView': return { screen: 'squadView', key: `squadView-${screen.id}` };
     case 'sortie': return { screen: 'sortie', key: 'sortie' };
     // 공성전 도시 목록 — ⚠ · 접속 점 · 자동 매칭을 처음 볼 때 (2026-11-14)
     case 'siege': return { screen: 'siege', key: 'siege' };
@@ -182,7 +179,6 @@ export type Screen =
   | { name: 'squads' }
   /** 새 부대의 첫 걸음. `initial` — 부대원 걸음에서 [뒤로 가기]로 돌아왔을 때 이름·모드 */
   /** 부대 현황 — 읽기 전용 (67쪽). 목록의 줄이 여기로 온다 */
-  | { name: 'squadView'; id: string }
   /** 수비군 설정 — 행동 · 책략 · 고유기술 방침 (GDD §8.8 단계 6) */
   | { name: 'garrisonPolicy'; id: string }
   /**
@@ -788,13 +784,12 @@ export function App(): React.JSX.Element {
     <SquadListScreen
       profile={profile}
       onBack={() => setScreen({ name: 'place', place: 'barracks' })}
-      onOpen={(id) => setScreen({ name: 'squadView', id })}
-      onFill={(mode, role) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, role), base: null })}
-      // [공격대 편성] · [수비대 편성] — 찬 칸이면 그 부대를 고치고, 빈 칸이면 새로 채운다 (2026-11-14)
-      onForm={(mode, role) => {
-        const squad = squadAt(profile, mode, role);
-        setScreen(squad ? { name: 'squadEdit', draft: squad, base: squad } : { name: 'squadEdit', draft: emptySquad(mode, role), base: null });
+      // 채운 줄 — 곧장 부대 편집으로 (2026-11-17 기획자, 그전에는 부대 현황을 거쳤다)
+      onOpen={(id) => {
+        const squad = squadById(profile, id);
+        setScreen(squad ? { name: 'squadEdit', draft: squad, base: squad } : { name: 'squads' });
       }}
+      onFill={(mode, role) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, role), base: null })}
     />
   );
 
@@ -953,28 +948,6 @@ export function App(): React.JSX.Element {
         />
       ) : screen.name === 'squads' ? (
         squadList
-      ) : screen.name === 'squadView' ? (
-        (() => {
-          // 부대를 id로 들고 와 **매번 프로필에서 다시 찾는다** — 값으로 들고 있으면
-          // 레벨업·치료가 끝난 뒤에도 옛 줄을 보여 준다. 없어졌으면 목록으로.
-          const squad = squadById(profile, screen.id);
-          if (!squad) return squadList;
-          return (
-            <SquadViewScreen
-              profile={profile}
-              squad={squad}
-              onBack={() => setScreen({ name: 'squads' })}
-              onManage={() => setScreen({ name: 'squadEdit', draft: squad, base: squad })}
-              /* 비우는 자리도 **저장과 같은 결**이다 — 규칙이 비우고(`clearSquad`)
-                 화면은 목록으로 돌아간다. */
-              onDelete={(id) => {
-                setProfile(clearSquad(profile, id));
-                setScreen({ name: 'squads' });
-              }}
-              onPolicy={(id) => setScreen({ name: 'garrisonPolicy', id })}
-            />
-          );
-        })()
       ) : screen.name === 'garrisonPolicy' ? (
         (() => {
           // 부대 현황과 같은 결 — id로 들고 와 매번 다시 찾는다. 없어졌거나 수비군이 아니게 됐으면 목록으로
@@ -985,7 +958,7 @@ export function App(): React.JSX.Element {
               key={squad.id}
               profile={profile}
               squad={squad}
-              onBack={() => setScreen({ name: 'squadView', id: squad.id })}
+              onBack={() => setScreen({ name: 'squads' })}
               onChange={setProfile}
             />
           );
@@ -999,19 +972,12 @@ export function App(): React.JSX.Element {
           draft={screen.draft}
           base={screen.base}
           onChange={setProfile}
-          onBack={() => setScreen(screen.base ? { name: 'squadView', id: screen.base.id } : { name: 'squads' })}
-          onSave={(squad) => confirmGuards(squad.picks, () => {
-            // **만들기와 고치기의 갈림은 `base` 하나다.** 만든 시각은 화면이 넣는다
-            // (meta는 시계를 안 읽는다) — 병영 현황판의 「최근 부대」가 이것을 본다.
-            // 파수꾼이 끼어 있었다면 규칙(`addSquad`·`updateSquad`)이 농지에서 뺀다
-            if (screen.base) {
-              setProfile(updateSquad(profile, squad.id, squad));
-              setScreen({ name: 'squadView', id: squad.id });
-            } else {
-              const made = addSquad(profile, squad, Date.now());
-              setProfile(made.profile);
-              setScreen({ name: 'squadView', id: made.squad.id });
-            }
+          onBack={() => setScreen({ name: 'squads' })}
+          // [부대 저장] — 초안을 **지금** 계정에 얹어 한 번에 저장하고 목록으로 (2026-11-17 기획자). 파수꾼이 끼어 있었다면
+          // 규칙(`saveSquadSlot`)이 농지에서 뺀다 — 확인은 여기서 받는다. 만든 시각은 화면이 넣는다(meta는 시계를 안 읽는다)
+          onSave={(apply, picks) => confirmGuards(picks, () => {
+            setProfile(apply(profile, Date.now()));
+            setScreen({ name: 'squads' });
           })}
         />
       ) : screen.name === 'sortie' ? (
@@ -1019,7 +985,11 @@ export function App(): React.JSX.Element {
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'barracks' })}
           // 「직접 편성 루트」 — 공격대가 비었으면 여기서 그 칸을 채우고 온다 (2026-08-18 확정 · 2026-11-14 칸)
-          onNewSquad={(mode) => setScreen({ name: 'squadEdit', draft: emptySquad(mode, 'attack'), base: null })}
+          onNewSquad={(mode) => {
+            // 덜 찬 공격대를 저장해 두었으면 그것을 이어서 고친다 (2026-11-17)
+            const ex = squadById(profile, squadSlot(mode, 'attack'));
+            setScreen(ex ? { name: 'squadEdit', draft: ex, base: ex } : { name: 'squadEdit', draft: emptySquad(mode, 'attack'), base: null });
+          }}
           onSeek={(mode, squad) => setScreen({ name: 'siege', mode, squad })}
         />
       ) : screen.name === 'siege' ? (
@@ -1117,10 +1087,8 @@ export function App(): React.JSX.Element {
         <ScreenGuide
           profile={profile}
           onChange={setProfile}
-          pending={pendingGuide(profile, guideAt.screen, guideAt.screen === 'squadView' && screen.name === 'squadView'
-            // 부대 현황 — 지금 보는 부대가 3인팀 수비군인가(수비군 설정 미션, 2026-11-13)
-            ? { squad: (() => { const sq = profile.squads.find((s) => s.id === screen.id); return !!sq && sq.mode === '3v3' && isGarrison(profile, sq); })() }
-            : guideAt.ctx)}
+          // 수비군 설정 미션의 첫 마디(`squadView.garrison`)는 부대 편집이 [행동 방침]을 가리키며 직접 띄운다 (2026-11-17 — 부대 현황이 없어졌다)
+          pending={pendingGuide(profile, guideAt.screen, guideAt.ctx)}
           screenKey={guideAt.key}
         />
       )}

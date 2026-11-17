@@ -23,7 +23,7 @@ import {
   cardsToLevelUp, clearSquad, createProfile, defaultSquadCells, garrisonOf, isDeployable,
   migrateProfile, newInstance, slotOf, squadAt, squadById, squadDeployment, squadLabelKo, squadSlot,
   squadPower, squadRow, squadsOf, statPicksOf, statsOf, tacticsOf, toRosterEntries, recentSquads, remapDeployment,
-  updateSquad, validateSquad,
+  saveSquadSlot, squadStateAt, updateSquad, validateSquad,
 } from '../src/index.ts';
 import type { PlayerProfile, RosterPick, Squad, SquadDraft, SquadRole } from '../src/index.ts';
 
@@ -140,11 +140,18 @@ describe('부대 CRUD', () => {
     );
   });
 
-  it('성립하지 않는 구성은 만들 수 없다 — `validateRoster`가 그대로 말한다', () => {
+  it('덜 찬 부대는 저장되지만 판에 안 선다 — 겹치는 장수는 저장도 안 된다 (2026-11-17)', () => {
     const p = base();
     const noKing: SquadDraft = { mode: '3v3', role: 'attack', picks: picksOf('3v3').slice(1) };
     assert.equal(validateSquad(p, noKing).ok, false);
-    assert.throws(() => addSquad(p, noKing), /채워야 한다|King/);
+    const saved = addSquad(p, noKing).profile;
+    assert.equal(squadStateAt(saved, '3v3', 'attack'), 'partial');
+    assert.equal(attackSquadOf(saved, '3v3'), null, '덜 찬 공격대는 출정 · 매칭에 안 선다');
+    assert.equal(squadPower(saved, saved.squads[0]!), null);
+    assert.equal(squadStateAt(addSquad(p, draft()).profile, '3v3', 'attack'), 'done');
+    assert.equal(squadStateAt(p, '3v3', 'attack'), 'empty');
+    assert.throws(() => addSquad(p, { mode: '3v3', role: 'attack', picks: [] }), /한 명도/);
+    assert.throws(() => addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf('5v5') }), /3명까지/);
 
     const dupe: SquadDraft = {
       mode: '3v3', role: 'attack',
@@ -157,6 +164,23 @@ describe('부대 CRUD', () => {
     const said = validateSquad(p, dupe);
     assert.equal(said.ok, false);
     assert.match(said.ok ? '' : said.reason, /같은 장수/);
+    assert.throws(() => addSquad(p, dupe), /두 자리/);
+  });
+
+  it('`saveSquadSlot` — 빈 칸은 채우고 찬 칸은 갈고 부대원이 없으면 비운다 · 방침은 수비대만 (2026-11-17)', () => {
+    let p = base();
+    p = saveSquadSlot(p, { mode: '3v3', role: 'defense', picks: picksOf('3v3').slice(0, 2) }, 5);
+    assert.equal(squadStateAt(p, '3v3', 'defense'), 'partial');
+    assert.equal(p.squads[0]!.createdAt, 5);
+    const policy = { stances: { King: 'hold' } } as unknown as NonNullable<Squad['policy']>;
+    p = saveSquadSlot(p, { mode: '3v3', role: 'defense', picks: picksOf('3v3'), policy });
+    assert.equal(squadStateAt(p, '3v3', 'defense'), 'done');
+    assert.deepEqual(p.squads[0]!.policy, policy);
+    assert.equal(p.squads[0]!.createdAt, 5, '갈아 끼워도 만든 시각은 남는다');
+    p = saveSquadSlot(p, { mode: '3v3', role: 'attack', picks: picksOf('3v3'), policy });
+    assert.equal(squadAt(p, '3v3', 'attack')!.policy, undefined, '공격대는 방침을 안 든다');
+    p = saveSquadSlot(p, { mode: '3v3', role: 'defense', picks: [] });
+    assert.equal(squadStateAt(p, '3v3', 'defense'), 'empty');
   });
 
   it('목록은 모드로 갈라 볼 수 있다 — 값 범위가 겹쳐 나란히 놓으면 안 된다', () => {
@@ -389,10 +413,14 @@ describe('저장 형식 v8 — 칸 넷', () => {
         { piece: 'Rock', officer: ID('장비') },
         { piece: 'Bishop', officer: ID('조운') },
       ] },
-      { id: 'atk-5v5', role: 'attack', mode: '5v5', picks: picksOf('3v3') },      // 정원 미달
+      { id: 'atk-5v5', role: 'attack', mode: '5v5', picks: picksOf('3v3') },      // 정원 미달 — 덜 찬 부대로 남는다 (2026-11-17)
+      { id: 'def-5v5', role: 'defense', mode: '5v5', picks: [] },                  // 부대원이 없다
     );
     const back = migrateProfile(raw)!;
-    assert.deepEqual(back.squads.map((s) => s.id), ['atk-3v3']);
+    // 없는 장수는 그 자리만 빠지고 덜 찬 부대로 남는다 — 덜 찬 부대도 저장되므로 (2026-11-17)
+    assert.deepEqual(back.squads.map((s) => s.id), ['atk-3v3', 'def-3v3', 'atk-5v5']);
+    assert.equal(squadAt(back, '3v3', 'defense')!.picks.length, 2);
+    assert.equal(squadStateAt(back, '5v5', 'attack'), 'partial');
     assert.equal(Object.keys(back.roster).length, NAMES.length, '부대가 망가져도 계정은 그대로다');
   });
 

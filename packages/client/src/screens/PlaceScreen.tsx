@@ -43,7 +43,7 @@
 
 import {
   CITY_NAME_MAX, CITY_RENAME_GOLD, buildingLevel, canRenameCity, grainCap, grainCost, hasEmperor,
-  growthCue, guideSeen, poolCap, poolUsed, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, squadAt, squadSlot, sumTally,
+  growthCue, guideSeen, poolCap, poolUsed, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, squadAt, squadSlot, squadStateAt, sumTally,
   tutorialDone, tutorialStatus,
 } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
@@ -405,12 +405,14 @@ function SquadStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element
             <span className="bar-ttl" data-field="squadHead">{t(role === 'attack' ? 'barracks.squad.attack' : 'barracks.squad.defense')}</span>
           </span>
           {MODES.map((mode) => {
-            const filled = squadAt(profile, mode, role) !== undefined;
+            // 덜 찬 부대도 저장된다(2026-11-17) — 완성만 옥색 「편성 완료」, 덜 찼으면 주홍 「편성 미완료」, 비면 주홍 「미편성」
+            const state = squadStateAt(profile, mode, role);
+            const filled = state === 'done';
             return (
-              <span key={mode} className="bar-sq" data-slot={squadSlot(mode, role)} data-filled={filled ? '1' : '0'}>
-                <ModeIcon mode={mode} />
+              <span key={mode} className="bar-sq" data-slot={squadSlot(mode, role)} data-filled={filled ? '1' : '0'} data-state={state}>
+                <ModeIcon mode={mode} foe={role === 'defense'} />
                 <span className={`frm-stroke ${filled ? 'frm-stroke-open' : 'frm-stroke-locked'} bar-sq-mark`}>
-                  {t(filled ? 'barracks.squad.formed' : 'barracks.squad.unformed')}
+                  {t(filled ? 'barracks.squad.formed' : state === 'partial' ? 'barracks.squad.partial' : 'barracks.squad.unformed')}
                 </span>
               </span>
             );

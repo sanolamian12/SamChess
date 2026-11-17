@@ -352,9 +352,9 @@ function readSquads(
       seen.add(p.piece);
       picks.push({ piece: p.piece, officer: p.officer as OfficerId });
     }
-    // 인원이 안 맞으면 버린다 — 「빈 자리」라는 개념이 편성에 없다(King 필수·정원 고정)
-    if (picks.length !== UNITS_PER_SIDE[value.mode]) continue;
-    if (!picks.some((p) => p.piece === 'King')) continue;
+    // 부대원이 없거나 정원을 넘으면 버린다. **덜 찬 부대는 남긴다** (2026-11-17 기획자 — 부대 편집의 [부대 저장]이 덜 찬 채로도
+    // 저장한다. 판에 설 수 있는지는 읽는 자리가 `validateSquad`로 본다). v7 이하를 접는 갈래는 `standing()`이 성립한 것만 고른다
+    if (picks.length === 0 || picks.length > UNITS_PER_SIDE[value.mode]) continue;
 
     loose.push({
       id: typeof value.id === 'string' ? value.id : '',

@@ -1,6 +1,12 @@
 /**
  * 부대 편성 · 배치 프리셋 (pptx 42·43쪽 · GDD §5 · §8.6, 2026-08-18)
  *
+ * ★ **덜 찬 부대도 저장된다** (2026-11-17 기획자 — 부대 편집의 [부대 저장]). 칸은 세 상태다(`squadStateAt`):
+ * 빈 칸(`empty`) · 덜 찬 칸(`partial` — 한 명 이상, 정원 미만이거나 성립하지 않는다) · 완성(`done` — `validateSquad` 통과).
+ * **판에 서는 자리는 전부 성립을 본다** — `attackSquadOf` · `garrisonOf` · `warSquadView` · `warEnlist` · `squadDeployment` ·
+ * `squadPower`. 그래서 「저장된 부대는 언제나 `createBattle`을 통과한다」는 이제 **「완성된 부대는」**이다.
+ * 저장할 때 보는 것은 모양뿐이다(`validateSquadShape` — 정원 이하 · 기물 · 장수 겹침 없음 · 보유한 장수).
+ *
  * ```
  * 참여인원   편성 명      전투력   구성
  *  3 vs 3    초전박살      843     조조, 관흥, 능통
@@ -90,6 +96,9 @@ export interface SquadDraft {
   deploy?: Squad['deploy'];
 }
 
+/** 칸의 상태 — 빈 칸 · 덜 찬 칸 · 완성 (2026-11-17) */
+export type SquadState = 'empty' | 'partial' | 'done';
+
 const no = (reason: string): MetaResult => ({ ok: false, reason });
 
 // ── 조회 ───────────────────────────────────────────────────────
@@ -100,6 +109,13 @@ export const squadById = (profile: PlayerProfile, id: string): Squad | undefined
 /** 그 칸의 부대. 빈 칸이면 `undefined` */
 export const squadAt = (profile: PlayerProfile, mode: BattleMode, role: SquadRole): Squad | undefined =>
   squadById(profile, squadSlot(mode, role));
+
+/** 칸의 상태 — 부대 관리의 오른쪽 표지(완성 · 경고)와 「미편성」 획, 병영 현황판이 읽는다 (2026-11-17) */
+export function squadStateAt(profile: PlayerProfile, mode: BattleMode, role: SquadRole): SquadState {
+  const squad = squadAt(profile, mode, role);
+  if (!squad || squad.picks.length === 0) return 'empty';
+  return validateSquad(profile, squad).ok ? 'done' : 'partial';
+}
 
 /**
  * 그 모드의 **공격대** — 출정 · 매칭 · 선전포고를 걸 때 서는 부대. 비었거나 성립하지 않으면 `null`
@@ -135,6 +151,27 @@ export function validateSquad(
   return validateRoster(profile, draft.mode, draft.picks, false);
 }
 
+/**
+ * **저장할 수 있는 모양인가** (2026-11-17 — 덜 찬 부대도 저장된다). 정원 이하 · 한 명 이상 · 기물과 장수가 겹치지 않고 ·
+ * 보유한 장수다. King · 정원은 **안 본다** — 그것은 판에 설 수 있는가(`validateSquad`)의 몫이다.
+ */
+export function validateSquadShape(
+  profile: PlayerProfile, draft: Pick<SquadDraft, 'mode' | 'picks'>,
+): MetaResult {
+  if (draft.picks.length === 0) return no('부대원이 한 명도 없다');
+  if (draft.picks.length > teamSize(draft.mode)) return no(`부대원은 ${teamSize(draft.mode)}명까지다`);
+  const pieces = new Set<PieceType>();
+  const officers = new Set<OfficerId>();
+  for (const pick of draft.picks) {
+    if (pieces.has(pick.piece)) return no(`기물이 겹친다: ${pick.piece}`);
+    if (officers.has(pick.officer)) return no('한 장수가 두 자리에 섰다');
+    if (!profile.roster[pick.officer]) return no('보유하지 않은 장수다');
+    pieces.add(pick.piece);
+    officers.add(pick.officer);
+  }
+  return { ok: true };
+}
+
 // ── 채우기 · 고치기 · 비우기 ────────────────────────────────────
 
 /**
@@ -149,7 +186,7 @@ export function addSquad(
 ): { profile: PlayerProfile; squad: Squad } {
   const id = squadSlot(draft.mode, draft.role);
   if (squadById(profile, id)) throw new Error(`이미 찬 칸이다: ${id}`);
-  const check = validateSquad(profile, draft);
+  const check = validateSquadShape(profile, draft);
   if (!check.ok) throw new Error(`부대를 만들 수 없다: ${check.reason}`);
 
   const squad: Squad = {
@@ -176,7 +213,7 @@ export function updateSquad(
   const before = squadById(profile, id);
   if (!before) throw new Error(`없는 부대다: ${id}`);
   if (before.mode !== draft.mode) throw new Error('부대의 참여 인원은 바꿀 수 없다');
-  const check = validateSquad(profile, draft);
+  const check = validateSquadShape(profile, draft);
   if (!check.ok) throw new Error(`부대를 고칠 수 없다: ${check.reason}`);
 
   const next: Squad = {
@@ -186,6 +223,31 @@ export function updateSquad(
   };
   const released = releaseGuards(profile, next.picks.map((p) => p.officer));
   return { ...released, squads: released.squads.map((s) => (s.id === id ? next : s)) };
+}
+
+/**
+ * **칸 하나를 통째로 저장한다** — 부대 편집의 [부대 저장] (2026-11-17 기획자). 부대원이 없으면 칸을 비우고, 빈 칸이면 채우고,
+ * 찬 칸이면 갈아 끼운다. 방침(`policy`)은 수비대만 — 들고 온 값으로 덮는다(없으면 지운다). 모양이 안 되면 던진다.
+ */
+export function saveSquadSlot(
+  profile: PlayerProfile,
+  draft: SquadDraft & { policy?: Squad['policy'] },
+  /** 처음 채울 때의 시각 — **화면이 넣는다** */
+  nowMs?: number,
+): PlayerProfile {
+  const id = squadSlot(draft.mode, draft.role);
+  if (draft.picks.length === 0) return clearSquad(profile, id);
+  const next = squadById(profile, id)
+    ? updateSquad(profile, id, draft)
+    : addSquad(profile, draft, nowMs).profile;
+  return {
+    ...next,
+    squads: next.squads.map((s) => {
+      if (s.id !== id) return s;
+      const { policy: _old, ...rest } = s;
+      return draft.role === 'defense' && draft.policy ? { ...rest, policy: draft.policy } : rest;
+    }),
+  };
 }
 
 /**

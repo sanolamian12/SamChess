@@ -100,7 +100,7 @@ function enemyCells(mode: Squad['mode'], enemySide: Side): SquadCell[] {
   return ENEMY_ORDER[mode].map((piece, i) => ({ piece, ...defaultDeployPos(mode, enemySide, i) }));
 }
 
-export function SquadDeployScreen({ profile, onProfile, mission = false, squad, initial, isNew, onBack, onSave }: {
+export function SquadDeployScreen({ profile, onProfile, mission = false, squad, initial, isNew, doneLabel, onBack, onSave }: {
   profile: PlayerProfile;
   /** 안내 무관의 「들었다」를 적는다 */
   onProfile: (next: PlayerProfile) => void;
@@ -112,6 +112,8 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
   initial: Squad['deploy'];
   /** 새 부대인가 — 마지막 단추 글자와 「기본 배치로 설정됩니다」 팝업이 갈린다 */
   isNew: boolean;
+  /** 마지막 단추 글자 — 부대 편집은 「배치 완료」(저장은 [부대 저장]이 한다, 2026-11-17). 없으면 옛 「편성 완료」 · 「수정 완료」 */
+  doneLabel?: string;
   onBack: () => void;
   onSave: (deploy: Squad['deploy']) => void;
 }): React.JSX.Element {
@@ -362,7 +364,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
 
         <section className="place-panel sqd-acts">
           <button className="btn primary wide" data-action="deploySave" data-guide-cue={missionOn && swapped && ranged && ok ? '' : undefined} disabled={!ok} onClick={finish}>
-            {isNew ? t('deploy.done.new') : t('squad.save.edit')}
+            {doneLabel ?? (isNew ? t('deploy.done.new') : t('squad.save.edit'))}
           </button>
           <button className="btn wide" data-action="deployBackBottom" onClick={onBack}>
             {stripBackArrow(t('match.back'))}

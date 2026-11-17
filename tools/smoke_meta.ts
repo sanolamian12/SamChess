@@ -661,9 +661,10 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
   if (cells.join(',') !== 'atk-3v3:0,atk-5v5:0,def-3v3:0,def-5v5:0') fail(`부대 칸이 [${cells.join(' ')}]다 — 빈 칸 넷이 돌격대 3v3 · 5v5, 수성군 3v3 · 5v5 차례라야 한다`);
   const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
     .map((el) => (el as HTMLElement).dataset.action));
-  if (acts.join(',') !== 'backBottom') fail(`부대 관리 단추 판이 [${acts.join(' ')}]다 — [공격대 편성][수비대 편성] 아래 [뒤로 가기]라야 한다`);
-  const forms = await page.$$eval('.sql-forms > .btn', (els) => els.map((e) => (e as HTMLElement).dataset.action).join(','));
-  if (forms !== 'formAttack,formDefense') fail(`편성 단추가 [${forms}]다`);
+  if (acts.join(',') !== 'backBottom') fail(`부대 관리 단추 판이 [${acts.join(' ')}]다 — [뒤로 가기] 하나라야 한다`);
+  // 2026-11-17 기획자 — [공격대 편성] · [수비대 편성] · 기물 머리 줄을 걷었다. 빈 줄은 주홍 획 「미편성」
+  if (await page.$('[data-action="formAttack"], [data-action="formDefense"], .sql-pieces')) fail('부대 관리에 [공격대 편성] · [수비대 편성] · 기물 머리 줄이 남아 있다');
+  if (await page.$$eval('.sql-row[data-filled="0"] .sql-unformed', (els) => els.length) !== 4) fail('빈 줄 넷에 「미편성」 획이 다 서지 않았다');
   if ((await page.textContent('.place-bar .place-nm'))?.trim() !== '부대 관리') fail('제목이 「부대 관리」가 아니다');
   if (await page.$('.scr-squads [data-field="cap"], .scr-squads [data-field="sort"], .scr-squads .pg-btn')) fail('부대 목록에 부대 수 · 정렬 · 쪽 넘김이 아직 있다');
   // 전적은 병영 현황판으로 옮겼다(2026-11-16 기획자) — 이 화면은 편성판(기물 칸 + 꼬마)만
@@ -671,11 +672,11 @@ if (!await page.$('[data-screen="squads"]')) fail('[부대 관리]를 눌렀는�
 }
 
 /**
- * 칸 하나를 채운다 — 빈 칸 → 부대원(포지션·장수) → 배치 편집 → 편성 완료 (2026-09-17, 70~72쪽 · 2026-11-14 칸).
+ * 칸 하나를 채운다 — 빈 칸 → 부대 편집(포지션·장수) → 배치 편집 → [배치 완료] → [저장] (2026-09-17, 70~72쪽 · 2026-11-14 칸 ·
+ * 2026-11-17 농지 틀).
  *
- * **저장은 배치 편집의 마지막 단추에서만 일어난다** — 새 부대와 고치는 부대가 같은
- * 걸음이다. `pieces`는 줄 차례대로의 기물이고, 처음 포지션(King·Rock·Queen)과
- * 다른 줄은 드롭다운으로 바꾼다. 이름 걸음은 없다(부대 이름이 없어졌다).
+ * **저장은 [저장] 한 번이다** — [배치 완료]는 편집으로 돌아올 뿐 계정을 안 바꾼다. `pieces`는 줄 차례대로의 기물이고,
+ * 처음 포지션(King·Rock·Queen)과 다른 줄은 기물 아이콘을 눌러 바꾼다(농지와 같은 팝업).
  */
 const makeSquad = async (slot: string, pieces: string[], deploy: boolean): Promise<void> => {
   await page.click(`.sql-row[data-slot="${slot}"]`);
@@ -685,33 +686,29 @@ const makeSquad = async (slot: string, pieces: string[], deploy: boolean): Promi
   if (await page.isEnabled('[data-action="toDeploy"]')) fail('부대원이 비었는데 [부대 배치]가 열려 있다');
 
   for (const [row, piece] of pieces.entries()) {
-    const now = await page.getAttribute(`.sqm-row[data-row="${row}"]`, 'data-piece');
+    const now = await page.getAttribute(`.sqe-row[data-row="${row}"]`, 'data-piece');
     if (now !== piece) {
       await page.click(`[data-field="piece-${row}"]`);
-      await page.waitForTimeout(120);
-      // 목록에는 **King도, 다른 줄이 쓰는 기물도** 없다 — 기물이 겹칠 길이 애초에 없다
-      const opts = await page.$$eval('.rk-pop [data-value]', (els) => els.map((e) => (e as HTMLElement).dataset.value ?? ''));
-      if (opts.includes('King')) fail('포지션 목록에 King이 있다');
-      await page.click(`.rk-pop [data-value="${piece}"]`);
+      await page.waitForSelector('[data-modal="swapPiece"]');
+      // 목록에는 King이 없다 — King은 맨 윗줄에 박혀 있다
+      if (await page.$('[data-modal="swapPiece"] [data-piece="King"]')) fail('기물 바꾸기 목록에 King이 있다');
+      await page.click(`[data-modal="swapPiece"] [data-piece="${piece}"]`);
       await page.waitForTimeout(120);
     }
     await page.click(`[data-action="pickOfficer"][data-row="${row}"]`);
     await page.waitForSelector('[data-modal="officerPick"]');
-    // 줄을 누르면 바로 고른다(체크 칸 · [선택하기]가 없다, 2026-10-22)
-    const checks = await page.$$('[data-modal="officerPick"] [data-action="directPick"]');
-    if (!checks[row]) fail(`보유 장수가 모자라 부대를 채울 수 없다 (${piece})`);
-    await checks[row]!.click();
-    if (await page.$('[data-modal="officerPick"]')) fail('줄을 눌렀는데 장수 고르기 팝업이 안 닫힌다');
-    // 고정 대기 대신 그 줄이 실제로 찰 때까지 — 150ms에 기대다 한 번 「요약이 없다」로 떨어졌다(2026-11-14)
-    await page.waitForFunction((r) => !!document.querySelector(`.sqm-row[data-row="${r}"]`)?.getAttribute('data-officer'), row, { timeout: 5_000 })
+    // 줄을 누르면 카드 — 카드의 [선택하기]가 곧 고르기다(농지와 같다, 2026-11-17)
+    const rows = await page.$$('[data-modal="officerPick"] .ofc-row[data-officer]');
+    if (!rows[row]) fail(`보유 장수가 모자라 부대를 채울 수 없다 (${piece})`);
+    await rows[row]!.click();
+    await page.click('.ofcard [data-action="cardSelect"]');
+    await page.waitForSelector('[data-modal="officerPick"]', { state: 'detached' });
+    await page.waitForFunction((r) => !!document.querySelector(`.sqe-row[data-row="${r}"]`)?.getAttribute('data-officer'), row, { timeout: 5_000 })
       .catch(() => fail(`${row}번째 줄에 장수가 안 들어간다`));
   }
-  if (!await page.$('[data-field="summary"]')) {
-    const rows = await page.$$eval('.sqm-row', (els) => els.map((e) => `${(e as HTMLElement).dataset.piece}:${(e as HTMLElement).dataset.officer ?? '-'}`));
-    const guide = await page.getAttribute('.stw', 'data-guide').catch(() => null);
-    await page.screenshot({ path: `${process.env['SMOKE_SHOTS'] ?? '.'}/smoke-summary-fail.png` });
-    fail(`부대원을 다 채웠는데 부대 요약이 없다 (71쪽) — 줄 [${rows.join(' ')}] · 안내 ${guide}`);
-  }
+  const size = pieces.length;
+  const title = (await page.textContent('[data-field="count"]'))?.trim();
+  if (title !== `구성원 변경 (${size}/${size} 명)`) fail(`부대원을 다 채웠는데 제목이 「${title}」다`);
   await page.click('[data-action="toDeploy"]');
   await page.waitForTimeout(300);
   if (!await page.$('[data-screen="squadDeploy"]')) fail('[부대 배치]가 배치 편집으로 가지 않는다');
@@ -736,12 +733,15 @@ const makeSquad = async (slot: string, pieces: string[], deploy: boolean): Promi
     if (!await page.$('[data-modal="deployDefault"]')) fail('배치를 안 건드리고 끝냈는데 기본 배치 안내가 없다');
     await page.click('[data-action="deployDefaultOk"]');
   }
+  await page.waitForSelector('[data-screen="squadEdit"]', { timeout: 5_000 }).catch(() => fail('[배치 완료]가 부대 편집으로 돌아오지 않는다'));
+  if (await page.evaluate((id) => (window as any).__profile.current.squads.some((s: { id: string }) => s.id === id), slot)) {
+    fail(`[배치 완료]만으로 칸(${slot})이 저장됐다 — 저장은 [저장]에서`);
+  }
+  await page.click('[data-action="saveSquad"]');
   await page.waitForTimeout(300);
-  // 저장하면 **그 부대의 현황**으로 간다
-  if (!await page.$(`[data-screen="squadView"][data-squad="${slot}"]`)) fail(`편성을 마쳤는데 그 칸(${slot})의 부대 현황으로 가지 않는다`);
-  await page.click('[data-action="back"]');
-  await page.waitForTimeout(250);
-  if (!await page.$('[data-screen="squads"]')) fail('부대 현황의 [목록으로]가 목록으로 가지 않는다');
+  // 저장하면 **목록**으로 간다 (2026-11-17 — 부대 현황이 없어졌다)
+  if (!await page.$('[data-screen="squads"]')) fail(`[저장]이 목록으로 가지 않는다 (${slot})`);
+  if (await page.getAttribute(`.sql-row[data-slot="${slot}"] [data-field="mark"]`, 'data-state') !== 'done') fail(`채운 칸(${slot})이 완성 표지가 아니다`);
 };
 
 await makeSquad('atk-3v3', ['King', 'Rock', 'Pawn'], false);
@@ -759,41 +759,26 @@ await makeSquad('atk-3v3', ['King', 'Rock', 'Pawn'], false);
 }
 
 /*
- * 비우기는 **부대 현황에서** 한다 (2026-09-16 지정 · 2026-11-14 「삭제」 → 「비우기」) — 목록은 칸을 보여 주는 화면이다.
+ * 비우기 (2026-11-17) — 부대 현황 · [부대 비우기]가 없어졌다. 부대 편집에서 부대원을 다 빼고 [저장]하면 칸이 빈다.
  */
 await page.click('.sql-row[data-slot="atk-3v3"]');
 await page.waitForTimeout(300);
-if (!await page.$('[data-screen="squadView"]')) fail('채운 칸을 눌렀는데 부대 현황이 아니다');
+if (!await page.$('[data-screen="squadEdit"][data-new="0"]')) fail('채운 칸을 눌렀는데 부대 편집이 아니다');
 {
-  // 공격대 현황의 단추는 **둘뿐**이다 — 배치는 [부대 관리]를 지나야만 고치고(67쪽 개정), 공격대에는 [수비군 설정]이 없다
-  const acts = await page.evaluate(() => [...document.querySelectorAll('.place-body > .sqd-acts > .btn')]
-    .map((el) => (el as HTMLElement).dataset.action));
-  if (acts.join(',') !== 'manage,delete') fail(`공격대 현황 단추가 [${acts.join(' ')}]다 — [부대 관리][부대 비우기]라야 한다`);
-  if (await page.getAttribute('[data-screen="squadView"]', 'data-garrison') !== '0') fail('공격대가 수비군 표지를 달았다');
+  const acts = await page.$$eval('.sqe-grid > .btn', (els) => els.map((b) => `${(b as HTMLElement).dataset.action}:${(b as HTMLButtonElement).disabled ? 0 : 1}`).join(','));
+  if (acts !== 'toDeploy:1,items:1,garrisonPolicy:0,saveSquad:1') fail(`공격대 편집 명령이 [${acts}]다 — 행동 방침만 꺼져야 한다`);
 }
-await page.click('[data-action="delete"]');
-await page.waitForTimeout(200);
-{
-  const modal = await page.$('[data-modal="squadDelete"]');
-  if (!modal) fail('[부대 비우기]를 눌렀는데 확인 팝업이 없다');
-  if (await page.$('[data-modal="squadDelete"] [data-field="garrisonWarn"]')) fail('공격대를 비우는데 수비대 경고가 뜬다');
-  // 「있는가」와 「제자리에 있는가」는 다른 검사다 (2026-08-17에 밟은 자리)
-  const spot = await page.evaluate(() => {
-    const back = document.querySelector('[data-modal="squadDelete"]') as HTMLElement;
-    const frame = document.getElementById('frame')!.getBoundingClientRect();
-    const r = back.getBoundingClientRect();
-    return { cx: Math.round(r.left + r.width / 2 - (frame.left + frame.width / 2)), pos: getComputedStyle(back).position };
-  });
-  if (spot.pos !== 'absolute' || Math.abs(spot.cx) > 2) {
-    fail(`비우기 팝업이 화면 한가운데가 아니다 (${spot.pos}, 중심 어긋남 ${spot.cx}px)`);
-  }
+for (let i = 0; i < 3; i += 1) {
+  await page.click('.sqe-row[data-officer] >> nth=0');
+  await page.click('.ofcard [data-action="cardRelease"]');
+  await page.waitForTimeout(120);
 }
-await page.click('[data-action="deleteConfirm"]');
+if ((await page.textContent('[data-field="count"]'))?.trim() !== '구성원 변경 (0/3 명)') fail('다 뺐는데 (0/3 명)이 아니다');
+await page.click('[data-action="saveSquad"]');
 await page.waitForTimeout(300);
-// 비우고 나면 **목록으로 돌아온다** — 현황 화면에 남으면 없는 부대를 보게 된다
-if (!await page.$('[data-screen="squads"]')) fail('비웠는데 목록으로 돌아오지 않는다');
+if (!await page.$('[data-screen="squads"]')) fail('비우고 저장했는데 목록으로 돌아오지 않는다');
 if (await page.getAttribute('.sql-row[data-slot="atk-3v3"]', 'data-filled') !== '0') fail('비웠는데 칸이 아직 차 있다');
-console.log('✓ 칸 비우기 — 부대 현황에서, 확인 팝업(화면 한가운데) 뒤에 칸이 빈다');
+console.log('✓ 칸 비우기 — 부대원을 다 빼고 [저장]하면 칸이 빈다');
 
 // 실제로 출전할 공격대. **배치 프리셋을 저장해 둔다** — 아래 배치 단계에서 확인한다
 await makeSquad('atk-3v3', ['King', 'Rock', 'Pawn'], true);
@@ -814,44 +799,40 @@ if (!squadPlan.deploy.some((c) => c.piece === 'King' && c.x === 5 && c.y === 15)
 }
 console.log(`✓ 배치 프리셋 저장 — 남군 ${squadPlan.deploy.map((c) => `${c.piece}@${c.x},${c.y}`).join(' ')}`);
 
-// 다시 열면 **부대 현황**이다 — 레벨은 고르는 것이 아니라 보여 주는 것이다 (2026-09-16 —
-// 부대는 장수를 가리킬 뿐이고 레벨은 궁궐에서만 바뀐다). 예전 「레벨 눈금」 단추가
-// 되살아나면 여기서 잡는다.
+// 다시 열면 **부대 편집**이다 — 레벨은 고르는 것이 아니라 보여 주는 것이다 (2026-09-16 —
+// 부대는 장수를 가리킬 뿐이고 레벨은 궁궐에서만 바뀐다). 예전 「레벨 눈금」 단추가 되살아나면 여기서 잡는다.
 await page.click('.sql-row[data-slot="atk-3v3"]');
 await page.waitForTimeout(300);
 {
   const view = await page.evaluate(() => {
     const roster = (window as any).__profile.current.roster as Record<string, { level: number }>;
     return {
-      screen: document.querySelector('[data-screen="squadView"]') !== null,
-      rows: document.querySelectorAll('.sqv-rows > .sqv-row').length,
-      filled: [...document.querySelectorAll('.sqv-row[data-officer]')].map((el) => {
+      screen: document.querySelector('[data-screen="squadEdit"][data-new="0"]') !== null,
+      rows: document.querySelectorAll('.sqe-members .sqe-row').length,
+      filled: [...document.querySelectorAll('.sqe-row[data-officer]')].map((el) => {
         const officer = (el as HTMLElement).dataset.officer ?? '';
         return {
           piece: (el as HTMLElement).dataset.piece ?? '',
-          shown: el.querySelector('[data-field="level"]')?.textContent ?? '',
+          shown: el.querySelector('.lv')?.textContent ?? '',
           owned: roster[officer]?.level ?? -1,
-          // 상태 칸은 2026-10-26부터 아이콘이라 글자가 없다 — **속성**으로 본다
           status: el.querySelector('[data-field="status"]')?.getAttribute('data-injured') ?? '',
         };
       }),
       buttons: document.querySelectorAll('button[data-level]').length,
-      head: document.querySelector('[data-field="head"]')?.getAttribute('data-power') ?? '',
-      headText: document.querySelector('[data-field="head"]')?.textContent ?? '',
+      head: document.querySelector('.sqe-top [data-field="squadHead"]')?.textContent ?? '',
     };
   });
-  if (!view.screen) fail('칸을 눌렀는데 부대 현황이 아니다');
-  // 3v3도 **다섯 줄짜리 판**이다 — 두 줄은 비어 보인다 (67쪽)
-  if (view.rows !== 5) fail(`부대 현황이 다섯 줄이 아니다 — ${view.rows}`);
+  if (!view.screen) fail('칸을 눌렀는데 부대 편집이 아니다');
+  // 3v3도 **다섯 줄짜리 판**이다 — 아래 두 줄은 「자리 없음」
+  if (view.rows !== 5) fail(`부대 편집이 다섯 줄이 아니다 — ${view.rows}`);
   if (view.filled.length !== 3) fail(`채워진 줄이 3이 아니다 — ${view.filled.length}`);
   if (view.buttons > 0) fail('레벨을 고르는 단추가 남아 있다');
   // ⚠ 새 계정의 장수는 전부 Lv1이라 「보유 레벨과 같은가」는 **기본값과 같은 값**을 보는
   // 검사다 — 레벨업이 모든 부대에 반영되는지는 `squads.test.ts` §5가 키운 장수로 고정한다
   if (view.filled.some((x) => x.shown !== `Lv${x.owned}`)) fail(`표시 레벨이 보유 레벨이 아니다: ${JSON.stringify(view.filled)}`);
   if (view.filled.some((x) => x.status !== '0' && x.status !== '1')) fail('상태(건강/부상) 칸이 비었다');
-  if (!/^\d+$/.test(view.head)) fail(`부대 현황 첫 줄에 전투력이 없다 — "${view.head}"`);
-  if (!view.headText.startsWith('공격대 (3vs3)')) fail(`부대 현황 제목이 칸 이름이 아니다 — "${view.headText}"`);
-  console.log(`✓ 부대 현황 — 「${view.headText}」 [${view.filled.map((x) => x.piece).join(' ')}] · 레벨은 읽기 전용(보유 레벨)`);
+  if (view.head.trim() !== '돌격대') fail(`부대 편집 맨 위 판이 「돌격대」가 아니다 — "${view.head}"`);
+  console.log(`✓ 부대 편집 — [${view.filled.map((x) => x.piece).join(' ')}] · 레벨은 읽기 전용(보유 레벨)`);
 }
 await page.click('[data-action="back"]');
 await page.waitForTimeout(250);
@@ -877,21 +858,15 @@ if (!await page.$('.scr-place-barracks')) fail('부대 목록에서 병영으로
   await makeSquad('def-3v3', ['King', 'Rock', 'Pawn'], false);
   if (await page.getAttribute('.sql-row[data-slot="def-3v3"]', 'data-filled') !== '1') fail('3v3 수비대를 채웠는데 줄이 비어 있다');
   await makeSquad('def-5v5', ['King', 'Rock', 'Queen', 'Bishop', 'Knight'], false);
-  // 꼬마는 제 기물 칸에 선다 — 저장된 부대의 기물마다 그 칸에 한 명 (2026-11-16, 병영에서 옮겨 왔다)
-  const placed = await page.$$eval('.sql-row[data-slot="def-5v5"] .sql-cell', (els) => els.filter((e) => e.querySelector('.ofc-stand')).map((e) => (e as HTMLElement).dataset.piece).sort().join(','));
-  // 칸 차례는 `PIECE_TYPES` — 편성한 차례가 아니므로 모아서 견준다
-  if (placed !== ['King', 'Rock', 'Queen', 'Bishop', 'Knight'].sort().join(',')) fail(`5v5 수비대의 꼬마가 제 기물 칸에 안 섰다 — [${placed}]`);
-  // 수비대 현황 — [수비군 설정]이 서고, 비우기 확인창은 「출정이 잠긴다」를 미리 말한다
+  // 꼬마는 기물 차례(King · Rock · Bishop · Knight · Queen · Pawn)대로 왼쪽부터 붙는다 — 편성한 차례가 아니다 (2026-11-17)
+  const placed = await page.$$eval('.sql-row[data-slot="def-5v5"] .sql-cell', (els) => els.filter((e) => e.querySelector('.ofc-stand') && e.querySelector('.sql-piece')).map((e) => (e as HTMLElement).dataset.piece).join(','));
+  if (placed !== 'King,Rock,Bishop,Knight,Queen') fail(`5v5 수비대의 꼬마가 기물 차례로 안 섰다 — [${placed}]`);
+  // 수성군 편집 — [행동 방침]이 켜진다(돌격대는 꺼진다). 옛 부대 현황의 [수비군 설정] 자리 (2026-11-17)
   await page.click('.sql-row[data-slot="def-5v5"]');
   await page.waitForTimeout(250);
-  if (await page.getAttribute('[data-screen="squadView"]', 'data-garrison') !== '1') fail('수비대의 현황에 수비군 표지가 없다');
-  if (!await page.$('[data-action="garrisonPolicy"]')) fail('수비대 현황에 [수비군 설정]이 없다');
-  if (await page.$('[data-action="garrison"]')) fail('수비대 현황에 옛 [수비군으로 지정]이 남아 있다');
-  await page.click('[data-action="delete"]');
-  await page.waitForTimeout(200);
-  if (!await page.$('[data-modal="squadDelete"] [data-field="garrisonWarn"]')) fail('수비대를 비우는 확인창이 출정이 잠긴다고 말하지 않는다');
-  await page.click('[data-action="deleteCancel"]');
-  await page.waitForTimeout(150);
+  if (!await page.$('[data-screen="squadEdit"][data-squad="def-5v5"]')) fail('5v5 수비대를 눌렀는데 부대 편집이 아니다');
+  if (!await page.isEnabled('[data-action="garrisonPolicy"]')) fail('수성군 편집에 [행동 방침]이 꺼져 있다');
+  if (await page.$('[data-action="garrison"], [data-action="delete"]')) fail('옛 [수비군으로 지정] · [부대 비우기]가 남아 있다');
   await page.click('[data-action="back"]');
   await page.waitForTimeout(250);
   await page.click('[data-action="back"]');

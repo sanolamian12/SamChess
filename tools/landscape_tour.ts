@@ -194,7 +194,6 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['30-barracks', { name: 'place', place: 'barracks' }],
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],
-    ['33-squad-view', { name: 'squadView', id: sq3.id }],
     ['35-squad-edit', { name: 'squadEdit', draft: sq3, base: sq3 }],
     ['36-garrison-policy', { name: 'garrisonPolicy', id: sq3.id }],
     ['37-sortie', { name: 'sortie' }],

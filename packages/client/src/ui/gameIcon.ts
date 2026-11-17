@@ -44,6 +44,9 @@ export const GAME_ICONS = {
   'grade-score': 'icons/officer/grade-score.png',
   'mode-3v3': 'icons/officer/mode-3v3.png',
   'mode-5v5': 'icons/officer/mode-5v5.png',
+  // 북군 색 한 벌 — 수성군 줄 (2026-11-17, `build_icons_composed.py`의 `ic_mode_*_foe`)
+  'mode-3v3-foe': 'icons/officer/mode-3v3-foe.png',
+  'mode-5v5-foe': 'icons/officer/mode-5v5-foe.png',
   'opp-ai': 'icons/officer/opp-ai.png',
   'opp-online': 'icons/officer/opp-online.png',
   'st-healthy': 'icons/officer/st-healthy.png',

@@ -324,9 +324,10 @@ def plus_mark(side: int) -> Image.Image:
 
 # ── 기물 줄 (3 vs 3 · 5 vs 5) ─────────────────────────────────────
 
-def pieces_row(order: list[str], lift: list[float], h: float, step: float) -> Image.Image:
-    """`order` 왼→오, `lift`는 칸마다 위로 올리는 몫(키에 대한 비율) — 5 vs 5의 W자."""
-    ims = [trim(pub(f"ui/pieces/{p}-mine.png")) for p in order]
+def pieces_row(order: list[str], lift: list[float], h: float, step: float, side: str = "mine") -> Image.Image:
+    """`order` 왼→오, `lift`는 칸마다 위로 올리는 몫(키에 대한 비율) — 5 vs 5의 W자.
+    `side`는 기물 색 — `mine` 남군(청록) · `foe` 북군(붉은색, 수성군 줄의 모드 아이콘 2026-11-17)."""
+    ims = [trim(pub(f"ui/pieces/{p}-{side}.png")) for p in order]
     # 키(`h`)로 잡되 줄 폭이 칸의 94%를 넘으면 줄인다
     ratio = max(im.width / im.height for im in ims)
     h = min(h, .94 / (ratio * (step * (len(ims) - 1) + 1)), .9 / (1 + max(lift)))
@@ -348,10 +349,10 @@ def pieces_row(order: list[str], lift: list[float], h: float, step: float) -> Im
     return c
 
 
-def pieces_w(back: list[str], front: list[str], h: float = .5, gap: float = .80, drop: float = .42) -> Image.Image:
+def pieces_w(back: list[str], front: list[str], h: float = .5, gap: float = .80, drop: float = .42, side: str = "mine") -> Image.Image:
     """5 vs 5 — **정사각에 가깝게** 두 줄로 세운 W자 (기획자 지정 2026-10-26: 한 줄이면 가로로 비좁다).
     뒷줄(`back`, 왼 · 가운데 · 오른쪽 — 높다)과 앞줄(`front`, 그 사이 — 낮다)이 위아래로 W를 그린다. 앞줄을 나중에 그려 앞에 선다."""
-    load = lambda p: trim(pub(f"ui/pieces/{p}-mine.png"))
+    load = lambda p: trim(pub(f"ui/pieces/{p}-{side}.png"))
     hh = round(N * h)
     fit_h = lambda im: im.resize((round(im.width * hh / im.height), hh), Image.LANCZOS)
     bk, fr = [fit_h(load(p)) for p in back], [fit_h(load(p)) for p in front]
@@ -463,6 +464,9 @@ def build() -> dict[str, Image.Image]:
         # 대전 모드 — 기획자 지정: 3 vs 3은 Rock · King · Bishop 한 줄, 5 vs 5는 Pawn · Rock · King · Bishop · Knight W자
         "ic_mode_3v3": pieces_row(["rock", "king", "bishop"], [0, .06, 0], .62, .78),
         "ic_mode_5v5": pieces_w(["pawn", "king", "knight"], ["rock", "bishop"]),
+        # 북군 색 한 벌 — 병영 현황판 · 부대 관리의 수성군 줄 (2026-11-17 기획자). 모양은 위와 같고 기물 색만 다르다
+        "ic_mode_3v3_foe": pieces_row(["rock", "king", "bishop"], [0, .06, 0], .62, .78, side="foe"),
+        "ic_mode_5v5_foe": pieces_w(["pawn", "king", "knight"], ["rock", "bishop"], side="foe"),
         # 그 밖
         "ic_grade_score": on_canvas(*[(fit(trim(pub(f"icons/grade-{g}.png")), 120), (8 + i * 32, 68 - (2 - abs(i - 2)) * 14))
                                       for i, g in enumerate(["d", "c", "b", "a", "s"])]),

@@ -75,7 +75,7 @@ import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { boxedOfficers, canLevelUp } from './profile.ts';
 import { garrisonOf } from './garrison.ts';
 import { MARKET_ITEM_MIN_LEVEL, marketOwnedCount } from './market.ts';
-import { squadAt } from './squads.ts';
+import { attackSquadOf } from './squads.ts';
 import { S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, sortieTutorialsDone, tutorialStatus } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
 
@@ -427,7 +427,8 @@ export type GrowthCue = 'upgrade' | 'build';
  * 부대 관리의 3v3 공격대 칸 · 부대원의 [선택] · [부대 배치] · 배치의 미션 칸 · [편성 완료]가 이것이 참인 동안 빛난다(화면이 지금 걸음을 고른다).
  * 3v3 공격대를 저장하면 닫힌다.
  */
-export const firstSquadPending = (profile: PlayerProfile): boolean => !squadAt(profile, '3v3', 'attack');
+// 덜 찬 3v3 공격대를 저장해 두어도 열려 있다 — 완성될 때까지 (2026-11-17, 덜 찬 부대도 저장된다)
+export const firstSquadPending = (profile: PlayerProfile): boolean => attackSquadOf(profile, '3v3') === null;
 
 /**
  * **수비군 설정 미션이 열려 있나** (2026-11-13 기획자) — 3인팀 수비군이 있고, 그 방침을 아직 한 번도 저장하지 않았고(`Squad.policy`가 없다),

@@ -130,7 +130,7 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   「부대마다 레벨이 다르다」가 다시 조용히 스며들 자리가 된다. 옛 계정의 `level`은
   `migrateProfile()`이 버리고(버전은 그대로) `normalizePick()`이 저장 때 떨어뜨리며,
   `toRosterEntries()`는 섞여 와도 읽지 않는다(서버의 AI 재생 검증이 이 길을 지난다).
-  **「저장된 부대는 언제나 `createBattle`을 통과한다」**는 이제 구조로 선다.
+  **「완성된 부대는 언제나 `createBattle`을 통과한다」**는 이제 구조로 선다(2026-11-17부터 덜 찬 부대도 저장된다 — 아래 「덜 찬 부대」).
   다만 **장수가 계정에서 빠진 것은 말한다** — 되돌릴 수 있는 것은 조용히, 없는 것은 말한다.
   **「일부러 약하게 나가 약한 상대와 붙는」 길은 궁궐로 옮겨 갔다** (기획자 확정) —
   둔갑천서로 되감아 카드를 돌려받고 **일부만 다시 써서** 낮은 레벨로 출전한다. 부대별이
@@ -817,6 +817,12 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   출정 · 매칭 · 선전포고를 거는 쪽은 **공격대**, 선전포고를 받는 쪽은 **수비대**로 선다(서버의 `declareWarAction` · `replyWarAction`이 칸을 본다).
   옛 계정은 `migrateProfile()`이 접는다 — 수비대 = 옛 수비군, 공격대 = 나머지 중 가장 최근에 싸운 부대 → 전투력 최고 → 수비대 복사, 나머지는 버린다.
   **도구가 부대를 손으로 심을 때는 칸 id로 심는다** — `sq1` 같은 옛 id는 v8 되접기가 조용히 버린다.
+- **덜 찬 부대도 저장된다 — 판에 서는 자리가 성립을 본다** (2026-11-17 기획자, `history/2026-11-17_부대편집_농지틀.md`). 칸은 빈 칸 · 덜 참 · 완성 셋이고
+  (`squadStateAt`), 저장은 모양만 본다(`validateSquadShape` — 정원 이하 · 겹침 없음 · 보유 장수). 되접기도 덜 찬 부대를 남긴다. 판에 세우는 자리 —
+  `attackSquadOf` · `garrisonOf` · `warSquadView` · `warEnlist` · `squadDeployment` · `squadPower` — 는 전부 `validateSquad`로 거른다.
+  **판에 세우는 자리를 새로 만들면 `squadAt`을 그대로 쓰지 말고 성립을 본다** — 안 보면 덜 찬 부대가 판까지 가서 `createBattle`에서 던진다.
+  첫 편성 안내(`firstSquadPending`)도 「칸이 있다」가 아니라 「완성된 공격대가 있다」다. 부대 편집은 [부대 저장] 한 번에 부대 · 배치 · 방침 · 아이템을
+  얹는다(`saveSquadSlot` — 부대원이 없으면 칸을 비운다) — 부대 현황 화면과 [부대 비우기]는 없어졌다.
 - **수비군은 저장하지 않고 읽을 때 낸다 — `garrisonOf()` 하나** (2026-10-27, GDD §8.8). 그 모드의 **수비대 칸**이 성립하면 그것(2026-11-14 — 그전에는 고른 부대 아니면 첫 부대). 출정 조건(`sortieGate`)이 두 모드의 수비군을 본다(튜토리얼 → 수비군 → 도적떼). 서버는 계정을 쓰는 트랜잭션 안에서 수비군 스냅샷을 **`defenses` 표**에 맞춘다(`server-api/src/defenses.ts`) — **그래서 새 서버 코드는 표가 없으면 계정 쓰기가 전부 실패한다.** 운영에 올리기 전에 `npm run db:migrate:prod`가 먼저다(표가 생기기 전 계정의 줄도 그때 채운다). 시험 계정을 심는 도구는 3v3 · 5v5 부대를 함께 심는다 (`meta/test/fixtures.ts`의 `withGarrisons`) — 안 그러면 출정 문에서 막힌다.
 - **공성전은 AI 대전이다 — 상대만 다르다** (2026-10-27, GDD §8.8 단계 2). 서버에 굳힌 판(`AiBattleState`)에 `defender`가 있으면 공성전이고, 시작 · 덧붙이기 · 정산 · 60분 방치는 AI 대전 함수 그대로다 — **공성전 전용 경로를 새로 만들지 않는다.** 수비군의 북군 배치는 재생기의 `aiDeploy`이고, 화면의 첫 판과 서버 재생이 **같은 `openReplay()`**로 판을 연다(따로 깔면 둘이 갈린다). 상대 모양(`MatchOpponent.kind`)은 공성전도 `online`이지만 **전적 갈래는 `siege`**다(2026-10-28) — 그래서 전투 화면의 「온라인이면 `'settled'`를 기다린다」는 **방에 붙은 판(`online` 판정 주체)일 때만**이고 정산 갈래는 `ai`가 있는가로 가른다. 방어 기록(`defense_log`)은 **공격자의 계정을 쓰는 트랜잭션** 안에서만 덧붙인다(정산의 `onWrite` · `transact`의 방치 감지) — 방어자의 행은 안 잡는다. **접속 중인 도시는 공성전으로 못 친다**(단계 3, 2026-10-28) — 판정은 meta의 `isPresent()`(시각은 서버 시계), 표는 `presence`(`profiles`에 안 적는다), 거절은 `/siege/match`가 **그 순간**을 다시 읽어서 한다(목록은 낡는다). 핑을 보내는 자리는 `App.tsx` 하나. **접속 중인 도시에는 선전포고**(단계 4, `meta/war.ts`) — 걸음의 만료는 저장하지 않고 읽을 때 내고(`warStatusAt`), 받은 선전포고는 핑 응답에 실려 오며, 수락된 방은 `BattleRoom`의 `war` 옵션이 **계정에서 낸 명단으로** 연다(클라 편성을 안 쓴다). 그 방은 만들며 게임 API를 불러 몇 초가 걸리고 Colyseus는 동시 `joinOrCreate`를 0.5초만 묶으므로 **늦게 온 쪽은 다시 붙는다**(`connectWarBattle`) — 먼저 붙은 쪽이 `started`로 옮기니 화면은 `started`에서도 붙는다. **방어 기록의 리플레이는 수만 다시 두므로 규칙 버전에 묶인다**(단계 5) — `REPLAY_VERSION = ENGINE_REVISION.DATA_HASH`(`rules/replayVersion.ts`), 데이터 몫은 저절로 바뀌지만 **엔진이 같은 수에서 다른 판을 내게 고쳤으면 `ENGINE_REVISION`을 올린다** — `rules/test/replayVersion.test.ts`의 황금 재생이 깨지며 묻는다(안 올리면 옛 기록이 실제와 다른 판을 보여 준다). 리플레이 판정 주체는 `ReplayTransport`이고 관전에서 아군 자리는 `Playback.viewSide` 하나가 정한다.
 - **수비군 방침이 실린 공성전은 수성전 판이다 — 방침 AI는 `policyTurn()` 하나** (2026-10-30, GDD §8.8 단계 6). 판은 `scenario: 'siege'`(성채 3×3 · 북군 군량고 없음 · 60일이면 수비 승, 좌표는 `rules/siege.ts` 하나)이고, 방침(`BattleState.policy`)이 실린 진영의 차례만 `takeTurn`이 `rules/policy.ts`로 넘긴다 — **기본 AI 경로는 손대지 않는다**(손대면 황금 재생이 깨지고 `ENGINE_REVISION`을 올려야 한다). 계정에는 `Squad.policy`(칸마다 없으면 기본 — 그때그때 낸다), 판에는 `resolvePolicy()`가 낸 값(성립 안 하는 줄을 뺀다)이 스냅샷 → `AiBattleState.defender.policy` → 방어 기록 `replay.policy`로 **같은 값**이 흐른다. **판을 가르는 것은 `defender.policy`가 있는가**다 — 없는 옛 판 · 옛 방어 기록은 야전 판으로 다시 둔다. 되접기는 그 방침을 **다듬지 않고 그대로** 담는다(한 글자라도 바뀌면 서버 재생이 갈린다). 시험이 떨어지면 함수를 의심하기 전에 **자리가 정말 그 상태인지 먼저 잰다** — 조우 검사가 떨어지자 `threatRangeFor`가 적의 칸을 뺀다고 짐작해 함수를 하나 더 만들었는데, 이 게임의 Rock은 대각선으로 쳐서 그 자리가 애초에 조우가 아니었다.

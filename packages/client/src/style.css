@@ -5836,40 +5836,50 @@ button.lv-tactic-row {
 /*
  * ── 부대 관리 — 편성판 (2026-11-14 기획자 · 2026-11-16 병영 현황판과 맞바꿈) ───────────────────
  *
- * 단마다 머리(쌍칼 돌격대 · 투구 수성군) → 기물 여섯 칸(King … Pawn) → 3v3 줄 → 5v5 줄.
- * 줄은 [모드 아이콘][여섯 칸] 격자라 꼬마가 제 기물 아래에 선다(3v3은 세 칸만 찬다). 옛 병영의 `.bar-sq`를 옮겨 왔다.
+ * 단마다 머리(쌍칼 돌격대 · 투구 수성군) → 3v3 줄 → 5v5 줄 (2026-11-17 기물 머리 줄을 걷었다).
+ * 줄은 [모드 아이콘][꼬마들] — 꼬마는 기물 차례대로 왼쪽부터 붙고, 왼쪽 앞에 제 기물 아이콘(꼬마의 반 크기)이 선다.
+ * 빈 줄은 주홍 붓 획 「미편성」(`.frm-stroke-locked` — 병영 현황판 · 농지와 같은 획).
  */
 .sql-rows { display: flex; flex-direction: column; gap: .3rem; }
 .sql-group { display: flex; flex-direction: column; min-width: 0; }
 .sql-group + .sql-group { border-top: 2px solid #3a2c1e44; padding-top: .25rem; }
-.sql-head { display: flex; align-items: center; gap: .3rem; }
+/* 단 머리 — 줄(`.sql-row`)과 같은 격자: 제목이 앞 두 칸, 「준비」가 표지 칸 (2026-11-17) */
+.sql-head { display: grid; grid-template-columns: 2.6rem minmax(0, 5fr) minmax(0, 1fr); align-items: center; }
+.sql-head-ttl { grid-column: 1 / 3; display: flex; align-items: center; gap: .3rem; min-width: 0; }
+.sql-head .sql-ready { justify-self: center; white-space: nowrap; font-size: .74rem; }
 .sql-role { flex: none; width: 1.4rem; height: 1.4rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }
 .sql-head .bar-ttl { font-size: .86rem; }
-.sql-grid { display: grid; grid-template-columns: 2.6rem repeat(6, minmax(0, 1fr)); align-items: end; min-width: 0; }
+/* 판 맨 윗줄 안내 — 단 머리(`.sql-head .bar-ttl`)와 같은 글꼴 · 크기, 왼쪽 정렬 */
+.sql-hint { margin: 0 0 .3rem; font-size: .86rem; text-align: left; }
+/* [모드][꼬마 다섯 자리 = 5fr][표지 = 1fr] — 표지 칸이 꼬마 한 자리만큼이라 꼬마는 조금 촘촘해진다 (2026-11-17 기획자) */
 .sql-row {
-  position: relative; width: 100%; min-height: 3.3rem; padding: .15rem 0; cursor: pointer; font: inherit; text-align: left;
+  position: relative; display: grid; grid-template-columns: 2.6rem minmax(0, 5fr) minmax(0, 1fr); align-items: center;
+  width: 100%; min-height: 3.3rem; padding: .15rem 0; cursor: pointer; font: inherit; text-align: left;
   background: transparent; border: 0; border-top: 1px solid #3a2c1e22; color: #221407;
 }
-.sql-row:hover { background: #3a2c1e14; }
+button.sql-row:hover { background: #3a2c1e14; }
+.sql-row[data-static] { cursor: default; border-top: 0; }
 .sql-mode { align-self: center; display: flex; justify-content: center; }
 .sql-mode .gic img { height: 2rem; }
+/* 꼬마 다섯 자리 — 3v3은 앞 세 자리만 찬다(5v5와 줄이 맞는다) */
+.sql-team { --sql-stand: 2.9rem; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; min-width: 0; }
 .sql-cell { position: relative; display: flex; justify-content: center; align-items: flex-end; min-width: 0; height: 3rem; }
-.sql-pieces .sql-cell { height: 1.8rem; align-items: center; }
-.sql-piece { width: 1.6rem; height: 1.6rem; object-fit: contain; }
-.sql-cell .ofc-stand { position: relative; z-index: 1; flex: none; width: 2.9rem; height: 2.9rem; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+.sql-cell .ofc-stand { position: relative; z-index: 1; flex: none; width: var(--sql-stand); height: var(--sql-stand); background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0005); }
+/* 기물 — 꼬마 왼쪽 아래, 꼬마의 반 크기, 꼬마보다 앞 */
+.sql-piece {
+  position: absolute; z-index: 2; bottom: 0; left: calc(50% - var(--sql-stand) / 2 - var(--sql-stand) / 8);
+  width: calc(var(--sql-stand) / 2); height: calc(var(--sql-stand) / 2); object-fit: contain;
+  filter: drop-shadow(0 1px 1px #0008);
+}
 /* 후광 — 꼬마 바로 뒤, 칸 바닥 가운데 */
-.sql-cell .sqd-stand-glow { left: 50%; bottom: 0; width: 2.9rem; height: 2.9rem; margin-left: -1.45rem; --blink-w: 2.7; }
-/* 빈 줄 — 여섯 칸을 함께 쓰는 「+ 편성하기」 */
-.sql-fill { grid-column: 2 / 8; align-self: center; display: flex; align-items: center; justify-content: center; height: 2.6rem; color: #5a4128; font-size: .85rem; }
-.sql-broken { position: absolute; right: .1rem; top: .1rem; z-index: 2; }
-.sql-broken .gic img { height: 1.2rem; }
-/* 명령 패널 — [공격대 편성] [수비대 편성] 나란히, 그 아래 [뒤로 가기] */
-.sql-forms { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; }
-/* 칸이 글자 폭만큼 늘지 않게(`min-width: 0`) — 몽골어 「Хамгаалалтын отряд」가 판 밖으로 밀었다. 글자는 한 단 작게 */
-.sql-forms > .btn { min-width: 0; }
-.sql-forms .lbl { font-size: .86em; }
-.sql-modes { display: flex; flex-direction: column; gap: .35rem; margin: .4rem 0; }
-.sql-modes .gic img { height: 1.6em; vertical-align: middle; }
+.sql-cell .sqd-stand-glow { left: 50%; bottom: 0; width: var(--sql-stand); height: var(--sql-stand); margin-left: calc(var(--sql-stand) / -2); --blink-w: 2.7; }
+/* 빈 줄 — 주홍 붓 획 「미편성」을 길게 */
+.sql-fill { grid-column: 2 / 4; display: flex; align-items: center; justify-content: center; height: 2.6rem; padding-right: .4rem; }
+/* 오른쪽 벽의 표지 — 완성(파란 도장) · 덜 참(경고) */
+.sql-mark { justify-self: center; display: flex; align-items: center; }
+.sql-mark .gic img { height: 1.52rem; filter: drop-shadow(0 1px 1px #0006); }   /* 0.8배 (2026-11-17 기획자, 1.9 → 1.52rem) */
+.sql-fill .sql-unformed { min-width: 80%; font-size: .86rem; }
+
 
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
    (`.scr-officers .ofc-row`와 같은 그라디언트·같은 이유). 붓선은 `.sqd-row`에
@@ -6171,6 +6181,61 @@ button.lv-tactic-row {
 .scr-squad-edit .place-panel .hint { color: #5a4128; }
 .scr-squad-edit .place-panel .note { color: #8a2f17; font-weight: 700; }
 .scr-squad-edit .sqd-thead { color: #5a4128; }
+
+/*
+ * ── 부대 편집 — 농지 보초병 배치의 틀 (2026-11-17 기획자) ─────────────────────────
+ * 맨 위 판(부대 관리의 그 줄 · 단 머리째) → 구성원 변경(농지 줄 `.frm-grow` 그대로) → 명령 2×2.
+ * 줄 · 획 · 꼬마 · 기물 단추 · 기물 고르기 팝업은 농지 것(`.frm-*`)을 그대로 빌린다 — 같은 화면처럼 보여야 해서다.
+ */
+.scr-squad-edit .sqe-top { padding-top: .35rem; padding-bottom: .5rem; }
+.scr-squad-edit .sqe-top .sql-row { min-height: 3.1rem; }
+/* 제목 「구성원 변경 (n/m 명)」 — 왼쪽 벽, 농지 「보초병 배치 (n/m 명)」와 같은 글꼴 */
+.scr-squad-edit .sqe-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+.scr-squad-edit .sqe-hint { margin: 0 0 .3rem .2rem; font-size: .7rem; text-align: left; }
+/* 3v3의 아래 두 줄 — 자리가 없다: 획을 잿빛으로 눌러 둔다(농지의 잠긴 줄과 같은 결) */
+/* 명령 판은 바닥에 — 판이 짧은 아이템 화면에서도 부대 편집과 같은 자리 */
+.scr-squad-edit .sqe-body > .sqd-acts { margin-top: auto; }
+/* 「저장하지 않고 나갈까요?」 — 목판 팝업. 폭과 본문 높이를 **가장 긴 언어**로 못 박는다(2026-11-17 기획자 — 열 언어를 넣어 재서 정했다,
+   `squad_ux`가 언어마다 제목 · 단추가 한 줄에 들고 본문이 두 줄 안인지 본다). 제목 · 단추는 줄바꿈하지 않는다 */
+.modal.mod-plank.sqe-leave { width: 21rem; max-width: calc(100% - 1rem); display: flex; flex-direction: column; gap: .45rem; }
+/* 명패 글자 — 목판 팝업 기본 자간(.35em)이면 몽골어 「Хадгалахгүй гарах уу?」가 107px 넘쳤다. 자간을 줄여 한 줄에 */
+.modal.mod-plank.sqe-leave .modal-ttl { white-space: nowrap; letter-spacing: .04em; font-size: .9rem; }
+.modal.mod-plank.sqe-leave .row { min-height: 3.2em; display: flex; align-items: center; justify-content: center; margin: 0 0 .2rem; }
+.modal.mod-plank.sqe-leave .btn .lbl { white-space: nowrap; }
+/* 본문 속 단추 이름 「[저장]」 — 한 덩어리로 줄을 옮긴다 */
+.sqe-leave .nobr { white-space: nowrap; }
+/* [나가기] — 붉은 판(버리고 나간다). 부대 편집의 미색 판 규칙(`.scr-squad-edit .btn:not(.ghost):not(.primary)`)보다 세게 */
+.scr-squad-edit .modal.mod-plank .btn.sqe-leave-go {
+  border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
+  border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000a;
+}
+.frm-grow.sqe-row[data-locked="1"] .frm-stroke-locked { filter: saturate(.5); opacity: .45; }   /* 농지 잠긴 줄(.7)보다 한 칸 세게 */
+/* 명령 2×2 — 같은 크기 넷. 글자가 길어도 칸을 밀지 않는다 */
+.sqe-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .4rem; }
+.sqe-grid > .btn { min-width: 0; height: 2.6rem; min-height: 0; padding-block: 0; }
+.sqe-grid .lbl { font-size: .86em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 들고 가는 아이템 — 검정 칸 + 금빛 밧줄 액자(장터 보관함 줄과 같은 처리) */
+.sqe-item { position: relative; display: inline-block; width: 1.9rem; height: 1.9rem; background: #000; border-radius: .15rem; overflow: hidden; }
+.sqe-item img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.sqe-item::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat; }
+/* 아이템 들리기 — 기물 · 명단 · 그림 · 이름 */
+.frm-grow.sqi-row { grid-template-columns: 2.2rem minmax(0, 1fr) 3.3rem minmax(0, 1fr); cursor: pointer; }
+.frm-grow.sqi-row:hover { background: #5a41281a; }
+.sqi-row .sqi-what { justify-self: stretch; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal.sqi-pick { max-width: 21rem; }
+.sqi-list { display: flex; flex-direction: column; gap: .3rem; margin: .3rem 0 .5rem; max-height: 50vh; overflow-y: auto; }
+.sqi-opt {
+  display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; align-items: center; gap: .45rem; padding: .25rem .4rem; cursor: pointer;
+  font: inherit; font-size: .78rem; font-weight: 700; color: #f3e8c8; text-align: left;
+  background: #00000040; border: 1px solid #a97c2f88; border-radius: .3rem;
+}
+.sqi-opt .sqe-item { width: 2.2rem; height: 2.2rem; }
+.sqi-opt[data-on="1"] { border-color: #f0d48a; box-shadow: 0 0 .35rem #f0d48a99; background: #f0d48a33; }
+.sqi-opt:not(:disabled):hover { background: #f0d48a26; }
+.sqi-opt:disabled { opacity: .45; cursor: not-allowed; }
+.sqi-opt .sqi-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqi-opt .sqi-n { font-size: .7rem; color: #e6d5a8; }
 /* 남은 글자 머리(등급·이름·레벨)도 **겹치기 전에 잘린다** — 아이콘으로 바꾼 셋
    말고는 칸이 넉넉하지만, 열 언어 중 무엇이 길지는 다 세어 보기 전에는 모른다 */
 .sqd-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
