@@ -6244,18 +6244,24 @@ button.sql-row:hover { background: #3a2c1e14; }
   background: transparent; box-shadow: none; border-radius: 0; padding: .13rem;
   border-style: solid; border-color: transparent; border-width: .2rem;   /* .16 → .2rem (2026-11-17 기획자) */
   border-image: url(ui/frame-gold-1.png) 4% stretch;
+  /* 바탕 — 패배 두루마리(`battle_end_lose` → `result-scroll-lose.png`, 960×535)의 종이 가운데 정사각 한 조각(x 300–560 · y 140–400)만
+     (2026-11-17 기획자). 그림을 키워 그 조각만 상자에 들게 민다 — 밧줄 테 안쪽(padding-box)에만 깐다. 바꿀 수 없는 King 칸에는 단추가 없어 안 깔린다 */
+  background: url(ui/result-scroll-lose.png) no-repeat 42.9% 50.9% / 369.2% 205.8%; background-clip: padding-box;
 }
-.frm-grow.sqe-row .frm-pc-btn:hover { background-color: transparent; filter: brightness(1.15) drop-shadow(0 0 .2rem #f0d48a88); }
+.frm-grow.sqe-row .frm-pc-btn:hover { filter: brightness(1.15) drop-shadow(0 0 .2rem #f0d48a88); }
 /* 기물 바꾸기 팝업 — 목판 팝업 화풍(`mod-plank`) + 기물 칸마다 가는 금테(`frame-gold-1`, 줄의 기물 단추와 같은 굵기).
    칸의 어두운 바탕 · 고른 칸의 금빛 네온(`box-shadow`)은 농지 팝업 그대로 — 테만 그림으로 바꾼다 */
 .modal.mod-plank.sqe-swap { max-width: 21rem; }
 .modal.mod-plank.sqe-swap .frm-swap-pc {
   border-style: solid; border-color: transparent; border-width: .2rem; border-radius: 0;
   border-image: url(ui/frame-gold-1.png) 4% stretch;
-  background: #0000004d;
+  /* 바탕 — 줄의 기물 단추와 같은 패배 두루마리 종이(`result-scroll-lose.png`). 칸이 세로로 길어(약 0.78:1) 같은 비례로 자른 조각
+     (x 330–550 · y 125–405)을 키워 민다 (2026-11-17 기획자). 밝은 종이라 이름은 먹색으로 */
+  background: url(ui/result-scroll-lose.png) no-repeat 44.6% 49% / 436.4% 191.1%; background-clip: padding-box;
+  color: #3a2412; text-shadow: 0 1px 0 #fff6;
 }
-.modal.mod-plank.sqe-swap .frm-swap-pc[data-on="1"] { background: #f0d48a33; box-shadow: 0 0 .45rem #f0d48acc, inset 0 0 .35rem #f0d48a66; }
-.modal.mod-plank.sqe-swap .frm-swap-pc:hover { background: #f0d48a26; }
+.modal.mod-plank.sqe-swap .frm-swap-pc[data-on="1"] { box-shadow: 0 0 .45rem #f0d48acc, inset 0 0 .5rem #c8962e99; }
+.modal.mod-plank.sqe-swap .frm-swap-pc:hover { filter: brightness(1.08); }
 /* 3v3의 아래 두 줄 — 자리가 없다: 획을 잿빛으로 눌러 둔다(농지의 잠긴 줄과 같은 결) */
 /* 명령 판은 바닥에 — 판이 짧은 아이템 화면에서도 부대 편집과 같은 자리 */
 .scr-squad-edit .sqe-body > .sqd-acts { margin-top: auto; }
@@ -6293,7 +6299,10 @@ button.sql-row:hover { background: #3a2c1e14; }
   position: relative; display: inline-grid; place-items: center; width: 2.3rem; height: 2.3rem; flex: none;
   border: .16rem solid transparent; border-image: url(ui/frame-gold-1.png) 4% stretch; background: #000000b3;
 }
-.sqh-tile img { width: 100%; height: 100%; object-fit: contain; }
+.sqh-tile { overflow: hidden; }
+.sqh-tile img { position: relative; width: 100%; height: 100%; object-fit: contain; }
+/* 병기 · 아이템 뒤 후광 — 장터 칸과 같은 크기 비례(`.mkt-item-glow`), 칸 안에서 자른다 */
+.held-glow { inset: 0; --blink-w: 1.7; }
 .sqh-empty { background: #0000004d; }
 .sqh-empty .gic img { height: 1.1rem; opacity: .45; filter: grayscale(.3); }
 /* 카드의 [아이템] — 이름은 가운데, 지닌 것 칸은 오른쪽 끝 */
@@ -6310,6 +6319,21 @@ button.sql-row:hover { background: #3a2c1e14; }
 /* 병기 · 아이템 고르기 — 목판 팝업 · 고정 칸 · 탭(칩 그림) · 그림 목록 */
 .modal.mod-plank.sqh-pick { width: 22rem; max-width: calc(100% - 1rem); display: flex; flex-direction: column; gap: .45rem; }
 .modal.mod-plank.sqh-pick .modal-ttl { white-space: nowrap; letter-spacing: .04em; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; }
+/* 「보유」 · 「회수」 — 각자 제 칸(3rem) 위 가운데. 칸보다 긴 말은 칸 밖으로 고르게 넘친다(줄바꿈 없음) */
+/* 「아이템 설정이 저장되었습니다.」 미니 팝업 — 고르기 팝업 위에 한 겹 더 */
+.modal-back.sqh-saved-back { z-index: 2; }
+.modal.mod-plank.sqh-saved { width: 17rem; max-width: calc(100% - 2rem); display: flex; flex-direction: column; align-items: stretch; gap: .7rem; }
+.sqh-saved-name {
+  margin: -.3rem 0 0; padding: .3rem .4rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 1.05rem; font-weight: 700; color: #f6d77a; text-shadow: 0 0 .35rem #f0c674aa, 0 1px 2px #000c;
+  background: #00000040; border-radius: .25rem;
+}
+.sqh-saved-msg { margin: .2rem 0 0; text-align: center; font-size: .9rem; font-weight: 700; color: #f3e8c8; text-shadow: 0 1px 2px #000c; }
+.sqh-now-head { display: flex; justify-content: space-between; padding: 0 .4rem; margin-bottom: -.25rem; }
+.sqh-now-head > span {
+  width: 3rem; display: flex; justify-content: center; white-space: nowrap;
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; color: #e6d5a8; text-shadow: 0 1px 2px #000c;
+}
 .sqh-now { display: flex; align-items: center; gap: .6rem; padding: .3rem .4rem; background: #00000033; border-radius: .25rem; }
 .sqh-now-btn { padding: 0; border: 0; background: none; cursor: pointer; line-height: 0; }
 .sqh-now-btn:disabled { cursor: default; }
@@ -6335,7 +6359,16 @@ button.sql-row:hover { background: #3a2c1e14; }
 }
 .sqh-tab .gic { flex: none; }
 .sqh-tab .gic img { height: 2.3rem; width: auto; filter: grayscale(.8) brightness(.6); transition: filter .15s; }
-.sqh-tab.on { background: #f0c67424; }
+/*
+ * 속판 — 병기는 [책략 확인](`btn-battle-intel`, 쪽빛), 아이템은 [준비완료](`btn-battle-ready`, 비취)의 **안쪽 색 판만**(2026-11-17 기획자).
+ * 그림을 키워 안쪽 판(820×200 중 x 80–736 · y 36–160, 잰 값)만 상자에 들게 민다 — 놋쇠 축 · 쇠테는 상자 밖으로 나가 안 보인다.
+ * 테는 그대로 금테(`frame-gold-2`). 안 고른 쪽은 속판 위에 어둠을 한 겹(안쪽 그림자) 덮어 가라앉힌다
+ */
+.sqh-tab[data-tab] { background-clip: padding-box; background-repeat: no-repeat; background-size: 125% 161%; background-position: 48.8% 47.6%; }
+.sqh-tab[data-tab="weapon"] { background-image: url(ui/btn-battle-intel.png); }
+.sqh-tab[data-tab="item"] { background-image: url(ui/btn-battle-ready.png); }
+.sqh-tab:not(.on) { box-shadow: inset 0 0 0 10rem #0000008c; }
+.sqh-tab:hover:not(.on) { box-shadow: inset 0 0 0 10rem #00000059; }
 .sqh-tab.on .gic img { filter: drop-shadow(0 0 .25rem #f0c674) drop-shadow(0 0 .5rem #f0c674aa); }
 .sqh-tab:hover:not(.on) .gic img { filter: grayscale(.4) brightness(.8); }
 .sqh-tab-lbl {

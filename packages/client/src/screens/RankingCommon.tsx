@@ -401,7 +401,7 @@ export interface CardAction {
    * 맨 위에 서는 단추 하나 — 있으면 차례가 **[이것] · [뒤로 가기] · [그 일]**이 된다(그 일이 맨 아래).
    * 부대 편집의 [아이템](오른쪽에 지닌 것 그림 · 비었으면 빈 칸 그림) → 해제하기가 맨 아래 (2026-11-17 기획자)
    */
-  lead?: { label: string; icon: React.ReactNode; onPress: () => void; action: string };
+  lead?: { label: string; icon?: React.ReactNode; onPress: () => void; action: string };
 }
 
 /**
@@ -702,7 +702,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
       {action && action.lead && (
         <button className="btn wide ofcard-lead" data-action={action.lead.action} onClick={action.lead.onPress}>
           <span className="lbl">{action.lead.label}</span>
-          <span className="ofcard-lead-icon">{action.lead.icon}</span>
+          {action.lead.icon && <span className="ofcard-lead-icon">{action.lead.icon}</span>}
         </button>
       )}
       {action && action.lead && (

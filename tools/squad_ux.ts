@@ -264,8 +264,8 @@ try {
   // 카드 단추 차례 — [아이템] · [뒤로 가기] · [해제하기](맨 아래) (2026-11-17 기획자)
   const cardActs = await page.$$eval('.ofcard .btn[data-action]', (els) => els.map((e) => (e as HTMLElement).dataset.action).join(','));
   if (!cardActs.endsWith('heldOpen,cardBack,cardRelease')) fail(`카드 단추 차례가 [${cardActs}]다`);
-  // 지금 지닌 것(대감도)이 [아이템] 단추 오른쪽에
-  if (await page.getAttribute('.ofcard [data-action="heldOpen"] [data-field="heldTile"]', 'data-held') !== 'dae-gam-do') fail('[아이템] 단추에 지닌 병기가 안 보인다');
+  // [아이템] 단추에는 그림이 없다 — 이름만 (2026-11-17 기획자)
+  if (await page.$('.ofcard [data-action="heldOpen"] img, .ofcard [data-action="heldOpen"] .ofcard-lead-icon')) fail('[아이템] 단추에 그림이 남아 있다');
   await page.waitForTimeout(500);
   await shot('09-card');
   await page.click('.ofcard [data-action="heldOpen"]');
@@ -315,6 +315,23 @@ try {
     if (!tabs.left || !tabs.frame) fail(`탭 — 동전 왼쪽 ${tabs.left} · 금테 ${tabs.frame}`);
     if (tabs.pg.some((x) => x !== 'none|none|arrow')) fail(`쪽 넘김 단추에 그림이 겹친다 — ${tabs.pg.join(' / ')}`);
   }
+  {
+    // 칸마다 후광(대장간 · 장터와 같은 섬광) · 머리 「보유」는 지닌 것 칸 위, 「회수」는 회수 칸 위 (2026-11-17 기획자)
+    const look = await page.evaluate(() => {
+      const m = document.querySelector('[data-modal="heldPick"]')!;
+      const cells = [...m.querySelectorAll('.sqh-cell')];
+      const cx = (e: Element) => { const r = e.getBoundingClientRect(); return r.left + r.width / 2; };
+      const [own, rev] = [...m.querySelectorAll('.sqh-now-head > span')];
+      return {
+        glow: cells.filter((c) => c.querySelector('.blink-box')).length, cells: cells.length,
+        head: `${own?.textContent}/${rev?.textContent}`,
+        dOwn: Math.abs(cx(own!) - cx(m.querySelector('.sqh-now > .sqh-tile')!)),
+        dRev: Math.abs(cx(rev!) - cx(m.querySelector('[data-action="heldRevoke"]')!)),
+      };
+    });
+    if (look.glow !== look.cells) fail(`후광이 ${look.glow}/${look.cells}칸에만 있다`);
+    if (look.head !== '보유/회수' || look.dOwn > 2 || look.dRev > 2) fail(`머리 줄 ${JSON.stringify(look)}`);
+  }
   // 지닌 것 밑 줄은 효과 설명(「병기」 · 「아이템」이 아니다)
   const heldTxt = await page.textContent('[data-modal="heldPick"] [data-field="heldText"]');
   // 이름 줄은 설명 길이와 상관없이 같은 높이 — 설명 칸은 언제나 두 줄 자리
@@ -343,10 +360,29 @@ try {
   await page.click('[data-modal="heldPick"] .sqh-cell[data-item="tang-yak"]');
   await page.waitForTimeout(150);
   await shot('11-held-item');
+  // [설정 완료] — 바뀌었으면 「저장되었습니다」 미니 팝업 → [확인]으로 카드에 (2026-11-17 기획자)
+  if (await page.textContent('[data-action="heldClose"] .lbl') !== '설정 완료') fail('고르기 팝업의 아래 단추가 [설정 완료]가 아니다');
   await page.click('[data-action="heldClose"]');
+  await page.waitForSelector('[data-modal="heldSaved"]');
+  if (await page.textContent('[data-modal="heldSaved"] .sqh-saved-msg') !== '아이템 설정이 적용되었습니다.') fail('적용 알림 글이 다르다');
+  if (await page.textContent('[data-modal="heldSaved"] [data-field="heldSavedName"]') !== '탕약') fail('적용 알림 밑 줄에 탕약이 안 보인다');
+  await page.waitForTimeout(400);
+  await shot('12-held-saved');
+  await page.click('[data-action="heldSavedOk"]');
+  await page.waitForSelector('[data-modal="heldPick"]', { state: 'detached' });
+  await page.waitForSelector('.ofcard [data-action="heldOpen"]');
+  // 아무것도 안 바꾸고 [설정 완료] — 알림 없이 곧장 카드로
+  await page.click('.ofcard [data-action="heldOpen"]');
+  await page.waitForSelector('[data-modal="heldPick"]');
+  await page.click('[data-action="heldClose"]');
+  await page.waitForSelector('[data-modal="heldPick"]', { state: 'detached' });
+  if (await page.$('[data-modal="heldSaved"]')) fail('안 바꿨는데 저장 알림이 떴다');
   await page.click('.ofcard [data-action="cardBack"]');
   await page.waitForTimeout(150);
   if (await page.getAttribute('.sqe-row[data-piece="King"] [data-field="held"] .sqe-item', 'data-item') !== 'tang-yak') fail('King 줄 병기구 칸에 탕약이 안 보인다');
+  // 줄의 병기구 칸 — 병기도 아이템도 정사각 칸 + 후광, 대장간의 3:1 목록 그림(.frg-thumb)은 없다
+  const rowArt = await page.$$eval('.sqe-row [data-field="held"]', (els) => els.map((e) => e.querySelector('.frg-thumb') ? 'frg' : e.querySelector('.sqe-item') ? (e.querySelector('.sqe-item .blink-box') ? 'glow' : 'bare') : '-'));
+  if (rowArt.some((x) => x === 'frg' || x === 'bare') || !rowArt.includes('glow')) fail(`줄의 병기구 칸이 [${rowArt.join(',')}]다`);
   ok(`카드 단추 [${cardActs}] · 병기 탭에 낀 자루 · 아이템 탭에서 탕약 → 고정 칸 · 줄에 탕약`);
 
   step('부대원 빼기 — 카드의 [해제하기] → (2/3 명) · 맨 위 줄이 경고 표지');

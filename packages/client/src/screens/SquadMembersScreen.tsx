@@ -61,8 +61,7 @@ import { GarrisonPolicyScreen } from './GarrisonPolicyScreen.tsx';
 import { SQUAD_ROWS } from './SquadViewScreen.tsx';
 import { SquadHead, SquadLine } from './SquadListScreen.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
-import { ItemThumb } from './EquipThumb.tsx';
-import { BlinkGlow, itemBlink } from './BlinkGlow.tsx';
+import { BlinkGlow, equipBlink, itemBlink } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { t } from '../i18n/index.ts';
@@ -436,9 +435,9 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
             kind: 'release', label: t('farm.guard.remove'),
             onPress: () => { release(card.officer as OfficerId); setCardOf(null); },
             // 맨 위 [아이템] — 오른쪽에 지금 지닌 것(없으면 빈 칸), 누르면 병기 · 아이템 고르기. 해제하기는 맨 아래로 (2026-11-17 기획자)
+            // 이름만 — 지닌 것 그림은 안 얹는다(누르면 고르기 팝업이 보여 준다, 2026-11-17 기획자)
             lead: {
               label: t('squad.cmd.items'), action: 'heldOpen',
-              icon: <HeldTile profile={work} officer={card.officer as OfficerId} />,
               onPress: () => setHeldOf(card.officer as OfficerId),
             },
           }}
@@ -495,16 +494,15 @@ function PieceArt({ piece, side }: { piece: PieceType; side: SquadRole }): React
 function HeldThumb({ profile, officer }: { profile: PlayerProfile; officer: OfficerId }): React.JSX.Element {
   const id = heldFor(profile, officer);
   const item = id ? marketItemById.get(id) : undefined;
-  if (item) {
+  const equip = !item && id ? equipmentById.get(id) : undefined;
+  // 병기도 아이템과 같은 정사각 칸 + 후광 — 대장간의 3:1 목록 그림은 안 쓴다(2026-11-17 기획자)
+  if (item || equip) {
     return (
-      <span className="sqe-item" data-item={item.id} title={pickMarketItemName(item)}>
-        <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-item-glow" />
-        <img src={`market-items/${item.id}.png`} alt="" />
+      <span className="sqe-item" data-item={id} title={item ? pickMarketItemName(item) : pickEquipName(equip!)}>
+        <HeldArt id={id!} />
       </span>
     );
   }
-  const equip = id ? equipmentById.get(id) : undefined;
-  if (equip) return <span title={pickEquipName(equip)}><ItemThumb item={equip} variant="row" /></span>;
   return <span className="none" title={t('officers.equip.none')}>—</span>;
 }
 
@@ -512,6 +510,22 @@ function HeldThumb({ profile, officer }: { profile: PlayerProfile; officer: Offi
  * 지닌 것 한 칸 — 금테 · 어두운 바탕에 병기 · 아이템 그림. **비었으면 「지급」 그림**(`ic_equip_give`, 2026-11-17 기획자 —
  * 처음엔 흐린 「+」였다). 고르기 팝업의 고정 칸 · 카드의 [아이템] 단추가 같은 칸을 쓴다.
  */
+/**
+ * 병기 · 아이템 그림 + 뒤의 후광 — 대장간 · 장터와 같은 섬광(`equipBlink` · `itemBlink`, 레벨이 높을수록 자주 · 금).
+ * 부대원 줄 · 고르기 팝업의 칸 · 고정 칸이 같은 것을 쓴다. 상자(`.sqe-item` · `.sqh-tile`)가 크기 · 자르기를 정한다.
+ */
+function HeldArt({ id }: { id: string }): React.JSX.Element | null {
+  const item = marketItemById.get(id);
+  const equip = item ? undefined : equipmentById.get(id);
+  if (!item && !equip) return null;
+  return (
+    <>
+      <BlinkGlow tone={item ? itemBlink(item.unlockLevel) : equipBlink(equip!.unlockLevel)} className="held-glow" />
+      <img src={item ? `market-items/${id}.png` : `blacksmith/${id}.png`} alt="" />
+    </>
+  );
+}
+
 function HeldTile({ profile, officer }: { profile: PlayerProfile; officer: OfficerId }): React.JSX.Element {
   const id = heldFor(profile, officer);
   const item = id ? marketItemById.get(id) : undefined;
@@ -525,7 +539,7 @@ function HeldTile({ profile, officer }: { profile: PlayerProfile; officer: Offic
   }
   return (
     <span className="sqh-tile" data-field="heldTile" data-held={id} title={item ? pickMarketItemName(item) : pickEquipName(equip!)}>
-      <img src={item ? `market-items/${item.id}.png` : `blacksmith/${equip!.id}.png`} alt="" />
+      <HeldArt id={id!} />
     </span>
   );
 }
@@ -582,6 +596,12 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
   const pageCount = Math.max(1, Math.ceil(list(tab).length / HELD_PAGE));
   const onPage = (xs: string[]): string[] => xs.slice(page * HELD_PAGE, (page + 1) * HELD_PAGE);
   const heldId = heldFor(profile, officer);
+  // [설정 완료] — 연 때와 지닌 것이 달라졌으면 「저장되었습니다」 미니 팝업 → [확인]으로 카드에, 그대로면 곧장 카드에 (2026-11-17 기획자).
+  // 비교는 「무엇을 쥐었나」(병기는 자루까지) — 바꿨다 되돌린 것은 바뀐 것이 아니다
+  const nowKey = carrying ?? myKey ?? '';
+  const [openedKey] = useState(nowKey);
+  const [savedNote, setSavedNote] = useState(false);
+  const finish = (): void => (nowKey !== openedKey ? setSavedNote(true) : onClose());
   const heldItem = heldId ? marketItemById.get(heldId) : undefined;
   const heldEquip = heldId && !heldItem ? equipmentById.get(heldId) : undefined;
   // 이름 밑 줄 — 효과 설명(2026-11-17 기획자: 「병기」 · 「아이템」 대신)
@@ -589,11 +609,16 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
   const heldName = heldId ? (marketItemById.get(heldId) ? pickMarketItemName(marketItemById.get(heldId)!) : pickEquipName(equipmentById.get(heldId)!)) : null;
 
   return (
-    <div className="modal-back" data-modal="heldPick" onClick={onClose}>
+    <div className="modal-back" data-modal="heldPick" onClick={finish}>
       <div className="modal mod-plank sqh-pick" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl">{t('squad.held.title', { officer: pickOfficerNameById(officer, officer) })}</p>
         {/* 고정 칸 — 왼쪽은 지금 지닌 것, 오른쪽 끝은 회수(같은 크기 · 글자 없이 그림만 — 2026-11-17 기획자).
             회수는 **언제나 눌린다** — 빈손이면 아무 일도 없다(초안에 빈 수를 쌓으면 「저장하지 않고 나갈까요?」가 괜히 뜬다) */}
+        {/* 머리 한 줄 — 왼쪽 「보유」(지닌 것 칸 위) · 오른쪽 「회수」(회수 칸 위) (2026-11-17 기획자) */}
+        <div className="sqh-now-head" aria-hidden>
+          <span>{t('squad.held.head.own')}</span>
+          <span>{t('squad.held.head.revoke')}</span>
+        </div>
         <div className="sqh-now">
           <HeldTile profile={profile} officer={officer} />
           <span className="sqh-now-txt">
@@ -623,7 +648,7 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
             return (
               <button key={id} className="sqh-cell" data-equip={id} data-on={mine ? '1' : '0'} disabled={!mine && free.length === 0} title={pickEquipName(equip)}
                 onClick={() => (mine || !free[0] ? undefined : onPick({ officer, kind: 'weapon', key: free[0] }))}>
-                <span className="sqh-tile"><img src={`blacksmith/${equip.id}.png`} alt="" /></span>
+                <span className="sqh-tile"><HeldArt id={id} /></span>
                 <span className="sqh-cap">{t('squad.items.left', { n: free.length })}</span>
               </button>
             );
@@ -635,7 +660,7 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
             return (
               <button key={id} className="sqh-cell" data-item={id} data-on={mine ? '1' : '0'} disabled={!mine && n <= 0} title={pickMarketItemName(item)}
                 onClick={() => (mine ? undefined : onPick({ officer, kind: 'item', item: id }))}>
-                <span className="sqh-tile"><img src={`market-items/${id}.png`} alt="" /></span>
+                <span className="sqh-tile"><HeldArt id={id} /></span>
                 <span className="sqh-cap">{t('squad.items.left', { n: Math.max(0, n) })}</span>
               </button>
             );
@@ -643,10 +668,23 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
         </div>
         {/* 쪽은 늘 그린다 — 한 쪽뿐이어도 자리를 지켜 탭을 바꿀 때 판 높이가 안 흔들린다 */}
         <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="held" field="heldPager" />
-        <button className="btn wide" data-action="heldClose" onClick={onClose}>
-          <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+        {/* 옥색 두루마리 [설정 완료] — 옛 [뒤로 가기] (2026-11-17 기획자) */}
+        <button className="btn primary wide" data-action="heldClose" onClick={finish}>
+          <span className="lbl">{t('squad.held.done')}</span>
         </button>
       </div>
+      {savedNote && (
+        <div className="modal-back sqh-saved-back" data-modal="heldSaved" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+          <div className="modal mod-plank sqh-saved" onClick={(e) => e.stopPropagation()}>
+            <p className="sqh-saved-msg">{t('squad.held.saved')}</p>
+            {/* 한 줄 전체 — 지금 쥔 것의 이름을 금빛으로, 회수했으면 「미보유」 (2026-11-17 기획자) */}
+            <p className="sqh-saved-name" data-field="heldSavedName" data-held={heldId ?? ''}>{heldName ?? t('squad.held.none')}</p>
+            <button className="btn primary wide" data-action="heldSavedOk" onClick={onClose}>
+              <span className="lbl">{t('squad.held.ok')}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
