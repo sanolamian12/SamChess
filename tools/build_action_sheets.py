@@ -61,7 +61,7 @@ import unicodedata
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -613,6 +613,53 @@ GRASS_TOP = {"관우": 32, "동량": 36}  # 동량: 걸음 칸 앞다리 · 평�
 HOLE_FILL = {"뇌동": {2: 600}}
 HOLE_RIM = 2   # 〃 구멍 둘레의 번진 테두리(px)
 
+# 발 곁에 돌맹이 · 연황색 덩이가 몸에 붙어 그려진 원본(2026-11-17, 마량 — 기획자): 잔디를 걷어도 발에 이어져 남고,
+# Gemini가 그것을 두루마리로 읽어 사이 칸에 들고 나왔다. 원본은 두고 그 칸의 이 네모(원본 px, x0 · y0 · x1 · y1 — 끝 포함)를
+# 전경에서 뺀다. 남은 부스러기는 뒤의 잔디 지우기가 섬으로 치운다. {이름: {칸: [네모, …]}}
+GROUND_CUT = {"마량": {0: [(20, 262, 72, 300)], 1: [(335, 258, 384, 300)], 2: [(630, 258, 677, 300)],
+                       4: [(1285, 258, 1346, 300)]}}
+# 〃 바닥 연출(책략 칸의 물웅덩이) 위에 앉은 것은 빼면 구멍이 난다 — 그 네모는 웅덩이로 다시 칠한다(`patch_boxes`)
+GROUND_PATCH = {"마량": {3: [(970, 260, 1016, 294)]}}
+PATCH_TEAL = 28   # 〃 바닥 색 = G − R 이 이만큼 넘는 것(물웅덩이는 청록, 돌은 푸른 회색이라 G − R이 작다)
+PATCH_REACH = 60  # 〃 바닥 껍질을 잴 이웃 — 네모 둘레 이만큼(px)의 바닥만
+PATCH_R_MAX = 130 # 〃 그리고 R이 이만큼 아래 — 돌의 밝은 청록 반사(191, 255, 255)는 웅덩이보다 훨씬 밝다
+
+
+def cut_boxes(fg: np.ndarray, boxes: list[tuple[int, int, int, int]]) -> np.ndarray:
+    out = fg.copy()
+    for x0, y0, x1, y1 in boxes:
+        out[y0:y1 + 1, x0:x1 + 1] = False
+    return out
+
+
+def patch_boxes(rgb: np.ndarray, fg: np.ndarray, boxes: list[tuple[int, int, int, int]]
+                ) -> tuple[np.ndarray, np.ndarray]:
+    """네모 안을 바닥으로 다시 칠한다 — 웅덩이의 볼록 껍질 안은 가장 가까운 바닥 색, 그 밖(돌이 웅덩이 위로 솟은 자리)은 뺀다.
+    돌의 푸른 윤곽은 바닥 색과 겹쳐 색으로는 못 가른다(마량) — 그래서 네모 안은 색을 안 보고 통째로 다시 칠한다."""
+    from scipy.spatial import ConvexHull
+    a = rgb.astype(int)
+    h, w = fg.shape
+    floor = fg & (a[..., 1] - a[..., 0] >= PATCH_TEAL) & (a[..., 0] <= PATCH_R_MAX)
+    rgb, fg = rgb.copy(), fg.copy()
+    for x0, y0, x1, y1 in boxes:
+        box = np.zeros(fg.shape, bool)
+        box[y0:y1 + 1, x0:x1 + 1] = True
+        near = np.zeros(fg.shape, bool)
+        near[y0:min(h, y1 + PATCH_REACH), max(0, x0 - PATCH_REACH):x1 + PATCH_REACH] = True
+        src = floor & near & ~box
+        ys, xs = np.nonzero(src)
+        if len(ys) < 3:
+            continue
+        hull = ConvexHull(np.c_[xs, ys])
+        poly = Image.new("L", (w, h))
+        ImageDraw.Draw(poly).polygon([(float(xs[v]), float(ys[v])) for v in hull.vertices], fill=1)
+        inside = np.asarray(poly).astype(bool)
+        _, (iy, ix) = ndimage.distance_transform_edt(~src, return_indices=True)
+        paint = box & inside
+        rgb[paint] = rgb[iy[paint], ix[paint]]
+        fg = (fg & ~box) | paint
+    return rgb, fg
+
 
 def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -655,11 +702,15 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     for k, body in enumerate(bodies):
         mine = owner == k
         fg = (alpha > 8) & mine
-        if path.stem not in GRASS_FREE:
-            fg = strip_ground(rgb, fg, body["foot"], GRASS_TOP.get(path.stem))
         cell_rgb, cell_alpha = rgb, alpha
+        if k in GROUND_CUT.get(path.stem, {}):
+            fg = cut_boxes(fg, GROUND_CUT[path.stem][k])
+        if k in GROUND_PATCH.get(path.stem, {}):
+            cell_rgb, fg = patch_boxes(rgb, fg, GROUND_PATCH[path.stem][k])
+        if path.stem not in GRASS_FREE:
+            fg = strip_ground(cell_rgb, fg, body["foot"], GRASS_TOP.get(path.stem))
         if k in HOLE_FILL.get(path.stem, {}):
-            cell_rgb, fg, cell_alpha = fill_holes(rgb, fg, alpha, HOLE_FILL[path.stem][k])
+            cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, alpha, HOLE_FILL[path.stem][k])
         # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
         frame_rgb, _ = defringe(cell_rgb, np.where(fg, cell_alpha, 0.0))
 

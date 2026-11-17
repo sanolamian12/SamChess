@@ -27,11 +27,10 @@ import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from
 
 // 시트의 칸 번호 · 칸 크기는 `animSheet.ts`에 있다 — 메뉴 화면(`OfficerActionArt`)도 같은 표를 읽게 Phaser 없는 파일로 뗐다(2026-11-16)
 export { ANIM, FRAME_COUNT, FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, FRAME_W, POSE } from './animSheet.ts';
-import { ANIM, POSE } from './animSheet.ts';
+import { ANIM, CAST_FRAME_MS, FLOURISH_FRAME_MS, POSE } from './animSheet.ts';
 
-const CAST_FRAME_MS = 160;
-const FLOURISH_FRAME_MS = 220;
-const FALL_FRAME_MS = 220;
+/** 쓰러짐 한 칸 — 220 → 440(2026-11-17 기획자 — 「순식간에 지나간다」, 동작 칸마다 두 배) */
+const FALL_FRAME_MS = 440;
 
 // ── 기획자 확정 타이밍 (2026-08-11 · **2026-08-13 전체 +0.3초**) ────
 //
@@ -39,11 +38,12 @@ const FALL_FRAME_MS = 220;
 // (실측: 밀린 줄 평균 2.7 · 최대 8), 기획자가 「애니메이션을 0.3초 정도 더 천천히」로
 // 정했다. 대화창도 함께 고쳐 **연출 창 안에서 말이 끝나도록** 간격을 맞춘다
 // (`ui/systemLog.ts`의 `pace()`).
-/** 이동 — 경로의 **칸마다** 이 시간씩 머문다. 부드럽게 미끄러지지 않고 한 칸씩 뛴다 */
-const STEP_MS = 300;
-/** 공격 — 0.3초 점멸 → 0.3초 평상 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다 */
-const ATTACK_FLASH_MS = 300;
-const ATTACK_GAP_MS = 300;
+/** 이동 — 경로의 **칸마다** 이 시간씩 머문다. 부드럽게 미끄러지지 않고 한 칸씩 뛴다. 300 → 600(2026-11-17 기획자, 동작 칸마다 두 배) */
+const STEP_MS = 600;
+/** 공격 — 사이 두 칸(`ANIM.windup`)을 0.6초씩 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다.
+ *  사이 칸은 옛 「점멸 0.3 → 평상 0.3」 자리에 들어왔다가 2026-11-17에 칸마다 두 배(기획자). 공격 자세의 2.3초는 그대로 */
+const ATTACK_FLASH_MS = 600;
+const ATTACK_GAP_MS = 600;
 const ATTACK_HOLD_MS = 2300;
 /** 책략·명상 — 점멸 없이 1.3초. 적에게 건 책략이 성공하면 1.3초 더 */
 const CAST_MS = 1300;

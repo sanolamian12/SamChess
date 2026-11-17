@@ -119,6 +119,16 @@ def load_fix() -> dict[tuple[str, str], float]:
 
 FIXES = load_fix()
 
+# 받은 원본의 칸 순서를 바꿔 싣는 장(이름, 동작) → 원본 칸 번호를 실을 순서로. 원본 그림은 그대로 두고 굽기에서만 바꾼다
+# (가후 평상: 평상 → 원본 1 → 원본 3 → 원본 2 → 평상이 자연스럽다 — 2026-11-17 기획자)
+ORDER: dict[tuple[str, str], tuple[int, ...]] = {
+    ("가후", "평상"): (0, 2, 1),
+}
+
+# 방향 자동 판정이 틀리는 장 — 뒤집지 않는다(동탁 평상: 받은 칸이 기준 자세와 같은 쪽인데 반전 쪽이 더 닮게 재여
+# 세 칸이 반대쪽을 봤다 — 2026-11-17 기획자)
+NO_FLIP: set[tuple[str, str]] = {("동탁", "평상")}
+
 # ───────────────────────────── 지금 자세 ─────────────────────────────
 
 def body_of(alpha: np.ndarray) -> np.ndarray:
@@ -283,7 +293,7 @@ def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str]
     # 방향 — 기준 자세와 견줘 반전이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다
     sig = signature(base_rgba)
     flips = sum(float((signature(c) * sig).mean()) < float((signature(c[:, ::-1]) * sig).mean()) for c in cells)
-    flip = flips * 2 > len(cells)
+    flip = flips * 2 > len(cells) and (name, motion) not in NO_FLIP
     if flip:
         cells = [np.ascontiguousarray(c[:, ::-1]) for c in cells]
     # 칸을 넘는 칸이 있으면 그 장 전체를 같은 비율로 — 칸마다 따로 줄이면 한 동작 안에서 몸이 커졌다 작아졌다 한다
@@ -309,6 +319,10 @@ def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
     for m in GRID:
         try:
             got[m] = motion_frames(o["name"], m, poses[BASE[m]], note, shadow_w)
+            order = ORDER.get((o["name"], m))
+            if got[m] and order:
+                got[m] = [got[m][j] for j in order]
+                note.append(f"{m}: 칸 순서 {'-'.join(str(j + 1) for j in order)}")
         except Exception as e:   # 한 장이 망가져도 나머지는 굽는다 — 그 동작은 stub
             note.append(f"{m}: 실패 — {e}")
             got[m] = None

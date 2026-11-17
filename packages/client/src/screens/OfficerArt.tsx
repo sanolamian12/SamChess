@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { actionSheetHdUrl, actionSheetUrl, ACTION_FRAME_COUNT, animSheetHdUrl, hasArt, setOfficerArt } from '../ui/art.ts';
-import { ANIM, FRAME_COUNT, FRAME_H, FRAME_SIZE, FRAME_W, POSE } from '../battle/animSheet.ts';
+import { ANIM, CAST_FRAME_MS, FLOURISH_FRAME_MS, FRAME_COUNT, FRAME_H, FRAME_SIZE, FRAME_W, POSE } from '../battle/animSheet.ts';
 
 export function OfficerArt({ officer, className, primary }: {
   officer: string;
@@ -36,10 +36,8 @@ const STAND_MS = 5000;
  * 움직여 기계 같았다(2026-11-16 기획자). 그 뒤는 동작 길이가 저마다 달라 저절로 어긋난다.
  */
 const START_SPREAD_MS = 1500;
-const FLOURISH_FRAME_MS = 220;   // 전투 판의 평상 동작과 같은 박자
-const WINDUP_FRAME_MS = 150;
+const WINDUP_FRAME_MS = 300;   // 150 → 300(2026-11-17 기획자, 동작 칸마다 두 배)
 const ATTACK_HOLD_MS = 900;
-const CAST_FRAME_MS = 160;       // 전투 판의 책략 · 명상과 같은 박자
 const CAST_LOOPS = 2;
 
 /** 한 걸음 — 이 칸을 이만큼 */

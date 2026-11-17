@@ -49,3 +49,10 @@ export const FRAME_W = 176;
 /** 시트 칸의 원점 y — 아래 정사각의 가운데. 여기에 맞추면 칸이 길어져도 서 있는 자리는 옛 그대로다 */
 export const FRAME_ORIGIN_Y = (FRAME_H - FRAME_SIZE / 2) / FRAME_H;
 export const FRAME_COUNT = 18;
+/**
+ * 평상 동작 한 칸에 머무는 시간 — 전투 판(차례를 받을 때)과 메뉴 그림이 함께 읽는다.
+ * 220 → 440(2026-11-17 기획자 — 「순식간에 지나간다」, 칸마다 두 배).
+ */
+export const FLOURISH_FRAME_MS = 440;
+/** 책략 · 명상 한 칸 — 전투 판 · 메뉴 공용. 160 → 320(2026-11-17 기획자, 칸마다 두 배) */
+export const CAST_FRAME_MS = 320;
