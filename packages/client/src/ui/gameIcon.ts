@@ -158,6 +158,8 @@ export const GAME_ICONS = {
   'cmd-intel': 'market-items/cheok-hu-gi.png',
   'cmd-surrender': 'icons/raid-surrender.png',
   'mk-close': 'icons/close.png',
+  // [안내] — 머리 막대의 도움말과 같은 책 그림(부대 배치 편집, 2026-11-17)
+  'guide-info': 'icons/info.png',
   'mk-inprogress': 'ui/cmd/endTurn.png',
   // 자원 — 장터가 굽는 그림 그대로 (금화 · 군량 · 자재 · 장수 카드)
   'res-gold': 'market/gold.png',

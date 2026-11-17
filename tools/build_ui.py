@@ -368,7 +368,7 @@ GRIDS: dict[str, list[list[str]]] = {
     # 차례 표지(2026-10-12, Gemini Pro) — 내 장수 머리 위에서 아래를 가리키며 돈다. 왼쪽부터 단검 · 화살촉 · 겹 갈매기 · 깃발.
     # 지금은 단검을 쓴다(`BattleScene.ts`의 `TURN_MARKER_URL`). 나머지 셋(`turn/arrowhead` · `turn/chevron` · `turn/banner`)은
     # 바꿔 끼울 후보로 굽다가 2026-10-24에 뺐다 — 되살리려면 빈 id(`""`) 자리에 그 이름을 다시 적는다
-    "battle_myturn": [["turn/dagger", "", "", ""]],
+    "battle_myturn": [["turn/dagger", "", "turn/chevron", ""]],
 }
 
 # **칸 구분선이 그려진 시트** (2026-10-10, 전투 게임 정보 판 — `ui/gameInfo.ts`) — 원본 stem → (줄, 칸, 칸마다 id(읽는 순서), 크기 묶음).
