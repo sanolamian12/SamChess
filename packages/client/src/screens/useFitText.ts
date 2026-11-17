@@ -36,7 +36,7 @@ export function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject
     document.fonts?.ready.then(fit).catch(() => { /* 못 재도 첫 값으로 돈다 */ });
     // **`ResizeObserver`를 안 단다** — 글자 크기를 줄이면 줄 높이가 바뀌어 `el`
     // 자신의 세로 크기가 변하고, 그걸 스스로 관찰하면 끝없이 돈다
-    // (`SettingsModal`의 `useTwoChipSize` 주석에 같은 이야기가 있다).
+    // (`SettingsModal`의 `useSteadyBoxes` 주석에 같은 이야기가 있다).
   }, [dep]);
 
   return ref;

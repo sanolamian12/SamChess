@@ -50,7 +50,8 @@ function arcKeyframes(dist: number): Keyframe[] {
 
 const STEPS = Array.from({ length: VOLUME_STEPS }, (_, i) => i + 1);
 
-export function VolumeRange({ channel, label }: { channel: VolumeChannel; label: string }): React.JSX.Element {
+/** `steadyKey` — 이름 칸을 열 언어 중 가장 긴 이름의 크기로 박는다(`SettingsModal`의 `useSteadyBoxes`, 2026-11-17) */
+export function VolumeRange({ channel, label, steadyKey }: { channel: VolumeChannel; label: string; steadyKey?: string }): React.JSX.Element {
   const level = useSyncExternalStore(onVolumeChange, () => volumeLevel(channel), () => volumeLevel(channel));
   const muted = useSyncExternalStore(onVolumeChange, () => volumeMuted(channel), () => volumeMuted(channel));
   /** 날고 있는 화살이 향하는 칸 — 날아가는 동안 지금 칸의 과녁은 아직 그대로다 */
@@ -94,7 +95,7 @@ export function VolumeRange({ channel, label }: { channel: VolumeChannel; label:
 
   return (
     <div className="vr" data-channel={channel} data-level={level} data-muted={muted ? '1' : '0'}>
-      <span className="vr-k">{label}</span>
+      <span className="vr-k" data-steady={steadyKey} data-steady-keys={steadyKey}>{label}</span>
       <div className="vr-range" ref={rangeRef}>
         {/* 활 = 음소거 단추. 꺼지면 오른쪽 아래에 작은 금지 표시 */}
         <button type="button" className="vr-bow-btn" data-action="mute" aria-pressed={muted}

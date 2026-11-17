@@ -71,6 +71,46 @@ try {
   await page.click('[data-modal="settings"] [data-lang="ko"]');
   ok('고르는 단추 없음 · Language 바로 아래 · 한국어 → 한국어, 스페인어 → Português(이름 한 줄)');
 
+  console.log('▶ 언어를 바꿔도 판이 안 움직인다 (2026-11-17)');
+  {
+    // 판 폭 · 높이, 언어 칩 · 가로/세로 칸 · 줄 이름의 크기를 열 언어로 재서 다 같은지 — 그리고 판 폭이 화면의 90%인지, 이름이 한 줄인지
+    const langs = await page.$$eval('[data-modal="settings"] [data-lang]', (els) => els.map((e) => (e as HTMLElement).dataset.lang!));
+    const seen = new Map<string, string>();
+    for (const l of langs) {
+      await page.click(`[data-modal="settings"] [data-lang="${l}"]`);
+      await page.waitForTimeout(80);
+      const m = await page.$eval('[data-modal="settings"]', (m) => {
+        const box = (e: Element): string => { const b = e.getBoundingClientRect(); return `${b.width.toFixed(1)}x${b.height.toFixed(1)}`; };
+        const back = m.parentElement!.getBoundingClientRect().width;
+        const lines = [...m.querySelectorAll('.opt-row .k, .vr-k, .set-side-t')].map((e) => {
+          const r = document.createRange(); r.selectNodeContents(e);
+          return new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size;
+        });
+        return {
+          ratio: m.getBoundingClientRect().width / back,
+          sizes: {
+            panel: box(m),
+            chips: [...new Set([...m.querySelectorAll('.langs .opt')].map(box))].join(' '),
+            sides: [...new Set([...m.querySelectorAll('.set-side')].map(box))].join(' '),
+            keys: [...m.querySelectorAll('.opt-row .k, .vr-k')].map(box).join(' '),
+          },
+          wrapped: lines.filter((n) => n > 1).length,
+        };
+      });
+      if (Math.abs(m.ratio - 0.9) > 0.005) fail(`${l} — 판 폭이 화면의 ${(m.ratio * 100).toFixed(1)}%다(90%여야 한다)`);
+      if (m.wrapped) fail(`${l} — 이름 ${m.wrapped}개가 두 줄로 접혔다`);
+      if (m.sizes.chips.includes(' ')) fail(`${l} — 언어 칩 크기가 제각각이다: ${m.sizes.chips}`);
+      if (m.sizes.sides.includes(' ')) fail(`${l} — 가로 · 세로 칸 크기가 다르다: ${m.sizes.sides}`);
+      for (const [k, v] of Object.entries(m.sizes)) {
+        const first = seen.get(k);
+        if (first === undefined) seen.set(k, v);
+        else if (first !== v) fail(`${l} — ${k} 크기가 ${langs[0]}와 다르다: ${v} ≠ ${first}`);
+      }
+    }
+    await page.click('[data-modal="settings"] [data-lang="ko"]');
+    ok(`열 언어 — 판 ${seen.get('panel')}(화면의 90%) · 칩 ${seen.get('chips')} · 가로/세로 ${seen.get('sides')} · 이름 한 줄 · 크기 다 같음`);
+  }
+
   console.log('▶ 이름 줄 — 칸 숫자가 같은 줄, 이름과 안 겹친다');
   for (const ch of ['bgm', 'fx']) {
     const g = await page.$eval(`[data-modal="settings"] .vr[data-channel="${ch}"]`, (v) => {

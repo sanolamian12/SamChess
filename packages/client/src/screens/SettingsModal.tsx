@@ -5,15 +5,19 @@
  * 환 경 설 정
  *   ID        ⟨ID⟩ / [로그인 안 함]
  *   Language  한국어
- *             KR EN ES IT / JA MN BR PT / CN TW  (한 줄에 넷, 다음 줄로)
  *     음성 더빙   한국어   ← 보여 주기만 한다. 더빙은 Language를 따른다 (2026-10-23)
+ *             KR EN ES IT JA / MN BR PT CN TW  (한 줄에 다섯, 두 줄)
  *   배경 음악      🏹 ▯ ▯ ▯ ▯ ▯   ← 과녁 다섯 = 20~100% (`VolumeRange`)
  *   효과음(음성)   🏹 ▯ ▯ ▯ ▯ ▯
- *   화면 모드  가로 | 세로
+ *   화면 모드  [ 가로 | 세로 ]   ← 판 한 장을 반반으로(부대 배치의 남군 · 북군 토글과 같은 꼴)
  * ```
  *
  * **어느 화면에서 열든 같은 팝업이다.** 간판·메인·궁궐·병영·장터가 전부 `ScreenChrome`을
  * 통해 이걸 연다 — 화면마다 따로 두면 항목이 하나 늘 때 다섯 군데를 고치게 된다.
+ *
+ * **언어를 바꿔도 판이 안 움직인다** (2026-11-17 기획자) — 판 폭은 화면의 90%로 고정, 언어 칩 열은 가장 큰 칩 하나의 크기로,
+ * 줄 이름 · 가로/세로 칸은 **열 언어 중 가장 큰 것**의 크기로 박는다(`useSteadyBoxes`). 예전에는 「Modo de pantalla」처럼 긴 이름이
+ * 두 줄로 접혀 언어마다 판 높이가 15px씩 출렁였다.
  *
  * ────────────────────────────────────────────────────────────────
  * 지금 실제로 동작하는 것과 자리만 잡아 둔 것
@@ -34,78 +38,77 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useFitText } from './useFitText.ts';
 import { VolumeRange } from './VolumeRange.tsx';
-import { DUB_LANGS, LANGS, setLang, t } from '../i18n/index.ts';
+import { DUB_LANGS, LANGS, inLang, setLang, t } from '../i18n/index.ts';
+import type { StringKey } from '../i18n/index.ts';
 import { useDubLang } from '../i18n/useDubLang.ts';
 import { useLang } from '../i18n/useLang.ts';
 
 /**
- * 배경음악·화면 모드 네 칩(끔/켬/가로/세로)의 공통 크기(2026-08-25 네 번째
- * 피드백). 언어마다 어느 쪽 낱말이 더 긴지가 뒤집힌다 — 한국어는 화면 모드
- * 쪽("가로"·"세로")이 더 길고, 스페인어는 거꾸로 배경음악 쪽("Desactivado")이
- * 더 길다. 고정된 `rem` 값으로는 언어마다 다시 잴 수 없어 실제 렌더된 폭을
- * 재서 맞춘다 — **가장 긴 것 하나를 기준으로 넷 다** 맞추는 게 요청이었다.
- * 자리가 모자라면(긴 번역이 두 칩을 나란히 못 넣으면) 폭 대신 글자 크기를 줄인다.
+ * 판 안의 칸 크기를 **열 언어 중 가장 큰 것**으로 박는다 (2026-11-17 기획자 — 언어를 바꿀 때마다 판의 크기 · 줄이 들쭉날쭉하지 않게).
+ *
+ * `data-steady="<묶음>"`이 붙은 요소를 묶음마다 모아, 각 요소를 **한 줄로(nowrap)** 그려 본 가장 큰 폭 · 높이를 묶음 전원에 입힌다.
+ * `data-steady-keys="키 키"`가 있으면 그 문구를 열 언어로(`inLang`) 하나씩 끼워 재고, 없으면 지금 글자 그대로 잰다(언어 칩 — 글자가 언어를 안 탄다).
+ * 잴 때는 요소를 복제해 **같은 부모 안에** 숨겨 둔다 — 같은 선택자 규칙(글자 크기 · 테 두께)을 그대로 받아야 잰 값이 실제 크기다.
+ *
+ * 값은 `em`으로 적는다 — 판(`#frame`)이 창 크기를 따라 `rem`째 커지고 줄어도 다시 잴 필요가 없다. 글꼴은 언어를 안 탄다
+ * (메타 화면은 시스템 글꼴이다 — `--serif`를 바꾸는 몽골어도 이 판의 글자에는 안 닿는다). 그래서 **열 때 한 번** 재고
+ * 늦게 오는 글꼴을 위해 `fonts.ready` 뒤 한 번 더 잰다.
+ *
+ * **DOM을 직접 쓴다** — 크기를 React state로 들고 `style` prop으로 내리면, 잴 때 지운 값이 직전 값과 같을 때 React가
+ * 「바뀐 것 없음」으로 보고 안 되돌린다(2026-08-25 옛 `useTwoChipSize`가 CN↔TW에서 밟았다). **`ResizeObserver`도 안 단다** —
+ * 제가 바꾼 크기를 제가 관찰하면 끝없이 돈다.
  */
-function useTwoChipSize(lang: string): React.RefObject<HTMLDivElement | null> {
+function useSteadyBoxes(): React.RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const root = ref.current;
     if (!root) return;
 
-    // **폭을 React state로 들고 `style` prop으로 내려주지 않는다.** 그렇게
-    // 했을 때(2026-08-25 다섯 번째 피드백 — CN↔TW를 오가면 가끔 어긋남)
-    // 진짜 원인은 이거였다: 잴 때마다 `c.style.width`를 먼저 지워서
-    // 자연스러운 폭을 보는데, 다시 잰 값이 **직전에 React가 이미 적용해 둔
-    // 값과 우연히 같으면** React의 style diff가 "바뀐 게 없다"고 보고
-    // DOM을 다시 안 건드린다 — 그 사이 내가 지운 값이 그대로 남는다.
-    // React는 자기가 마지막으로 그린 값과 내가 그 뒤에 DOM을 직접 건드린
-    // 것을 모른다. 그래서 여기서는 처음부터 끝까지 DOM을 직접 쓴다 —
-    // `useFitText`와 같은 방식이다.
     const measure = (): void => {
-      const chips = Array.from(root.querySelectorAll<HTMLButtonElement>('.two-chip'));
-      if (chips.length === 0) return;
-      // 먼저 강제 크기를 지우고 「제 글자만큼」 자연스러운 폭부터 잰다.
-      for (const c of chips) { c.style.width = ''; c.style.fontSize = ''; }
-      const baseFontSize = parseFloat(getComputedStyle(chips[0]!).fontSize) || 16;
-      const naturalMax = Math.max(...chips.map((c) => c.getBoundingClientRect().width));
-      const pairGap = parseFloat(getComputedStyle(chips[0]!.parentElement!).columnGap) || 0;
-
-      // 두 칩이 나란히 들어갈 자리 — 각 줄의 폭에서 이름표(`.k`)와 그 사이
-      // 간격을 뺀다. 두 줄의 이름표 길이가 다를 수 있어 더 좁은 쪽을 기준으로
-      // 삼는다.
-      const rows = Array.from(root.querySelectorAll<HTMLElement>('.opt-row'));
-      const available = Math.min(...rows.map((row) => {
-        const k = row.querySelector('.k');
-        const rowGap = parseFloat(getComputedStyle(row).columnGap) || 0;
-        return row.getBoundingClientRect().width - (k?.getBoundingClientRect().width ?? 0) - rowGap;
-      }));
-
-      let width = naturalMax;
-      let fontSize = baseFontSize;
-      if (Number.isFinite(available) && width * 2 + pairGap > available) {
-        const scale = available / (width * 2 + pairGap);
-        width *= scale;
-        fontSize *= scale;
+      const els = Array.from(root.querySelectorAll<HTMLElement>('[data-steady]'));
+      for (const el of els) { el.style.width = ''; el.style.height = ''; }
+      const groups = new Map<string, { els: HTMLElement[]; w: number; h: number }>();
+      for (const el of els) {
+        const name = el.dataset['steady']!;
+        const g = groups.get(name) ?? { els: [], w: 0, h: 0 };
+        groups.set(name, g);
+        g.els.push(el);
+        const keys = (el.dataset['steadyKeys'] ?? '').split(' ').filter(Boolean) as StringKey[];
+        const texts = keys.length > 0
+          ? keys.flatMap((k) => LANGS.map((l) => inLang(l.id, () => t(k))))
+          : [null];
+        const fontPx = parseFloat(getComputedStyle(el).fontSize) || 16;
+        for (const text of texts) {
+          const probe = el.cloneNode(true) as HTMLElement;
+          probe.removeAttribute('data-steady');
+          probe.removeAttribute('data-steady-keys');
+          if (text !== null) probe.textContent = text;
+          Object.assign(probe.style, {
+            position: 'absolute', visibility: 'hidden', left: '0', top: '0',
+            width: 'max-content', height: 'auto', whiteSpace: 'nowrap', pointerEvents: 'none',
+          });
+          el.parentElement!.appendChild(probe);
+          // 레이아웃 크기(offset*)로 잰다 — 판이 transform으로 줄어 있어도 맞다. 소수점 아래는 올린다(모자라면 접힌다)
+          g.w = Math.max(g.w, probe.offsetWidth / fontPx);
+          g.h = Math.max(g.h, probe.offsetHeight / fontPx);
+          probe.remove();
+        }
       }
-      // 계산이 어긋나(예: 아직 자리 잡기 전이라 폭이 0) 값이 안 쓸 만하면
-      // 차라리 손대지 않는다 — CSS 기본값이 유효하지 않은 값보다는 낫다.
-      if (!Number.isFinite(width) || !Number.isFinite(fontSize) || width <= 0) return;
-      for (const c of chips) {
-        c.style.width = `${width}px`;
-        c.style.fontSize = `${fontSize}px`;
+      for (const g of groups.values()) {
+        if (!(g.w > 0) || !(g.h > 0)) continue;   // 아직 자리 잡기 전(폭 0)이면 손대지 않는다 — CSS 기본값이 낫다
+        for (const el of g.els) {
+          const fontPx = parseFloat(getComputedStyle(el).fontSize) || 16;
+          // 묶음의 em은 첫 요소 글자 크기 기준이다 — 묶음 안 글자 크기는 같게 둔다(언어 칩끼리 · 가로/세로끼리 · 줄 이름 하나씩)
+          el.style.width = `${(g.w + 1 / fontPx).toFixed(3)}em`;
+          el.style.height = `${g.h.toFixed(3)}em`;
+        }
       }
     };
 
     measure();
-    // 한자 글꼴처럼 늦게 도착하는 글꼴이 있으면 그 직후 한 번 더 잰다.
     document.fonts?.ready.then(measure).catch(() => { /* 못 재도 첫 값으로 돈다 */ });
-    // **여기 `ResizeObserver`를 달지 않는다** — `root` 안의 버튼 크기를 이
-    // 함수 자신이 바꾸는데, 그 변화를 `root` 스스로 관찰하면 「자연 크기로
-    // 지운다 → 리사이즈 감지 → 다시 잰다 → 통일된 크기를 입힌다 → (자연
-    // 크기와 다르니) 또 리사이즈 감지 → …」로 끝없이 돈다. `[lang]`이 이미
-    // 모든 진짜 변경 시점을 잡는다.
-  }, [lang]);
+  }, []);
 
   return ref;
 }
@@ -116,7 +119,7 @@ export function SettingsModal({ signedIn, onClose }: {
 }): React.JSX.Element {
   const lang = useLang();
   const dub = useDubLang();
-  const twoChip = useTwoChipSize(lang);
+  const steady = useSteadyBoxes();
   const idValue = signedIn ?? `[${t('settings.signedOut')}]`;
   const langLabel = LANGS.find((l) => l.id === lang)?.label ?? '';
   const dubLabel = DUB_LANGS.find((d) => d.id === dub)?.label ?? '';
@@ -131,60 +134,75 @@ export function SettingsModal({ signedIn, onClose }: {
       {/* `.mod-plank`가 목판·명패 화풍이다 — 간판의 언어·크레딧·입장 팝업과 같은
           화풍을 쓰므로 2026-09-11에 `[data-modal="settings"]` 선택자에서 클래스로
           꺼냈다(`style.css`의 「목판 팝업 화풍」절). `data-modal`은 그대로 **어느
-          팝업인가**를 가리키고, 스모크가 그걸로 고른다. */}
-      <div className="modal mod-plank" data-modal="settings" onClick={(e) => e.stopPropagation()}>
+          팝업인가**를 가리키고, 스모크가 그걸로 고른다. 폭 · 칸 고정은 `.set-modal`(이 팝업만) */}
+      <div className="modal mod-plank set-modal" data-modal="settings" ref={steady} onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-ttl fit" ref={titleRef}>{t('settings.title')}</h2>
 
         {/* 로그인 안 한 계정도 한 줄이다(2026-08-25 피드백) — 예전엔 「ID ⟨값⟩」줄과
             「로그인 됨/안 함」줄을 따로 뒀는데, 값이 없을 때 대괄호로 그 자리를
             대신하면 한 줄로 충분하다. */}
-        <div className="opt-row">
-          <span className="k">{t('settings.account')}</span>
+        <div className="opt-row" data-field="account">
+          <span className="k" data-steady="account" data-steady-keys="settings.account">{t('settings.account')}</span>
           <span className="v dim fit" ref={idRef}>{idValue}</span>
         </div>
 
-        {/* 지금 언어 이름은 「Language」와 같은 줄, 칩 열 개는 그 아래 한 줄로
+        {/* 지금 언어 이름은 「Language」와 같은 줄, 칩 열 개는 그 아래로
             (2026-08-25 피드백) — 예전엔 이름이 칩 아래(`.hint`)에 따로 떨어져
             있었다. */}
-        <div className="opt-row">
-          <span className="k">{t('settings.language')}</span>
+        <div className="opt-row" data-field="language">
+          <span className="k" data-steady="language" data-steady-keys="settings.language">{t('settings.language')}</span>
           <span className="v dim fit" ref={langRef}>{langLabel}</span>
         </div>
         {/* 음성 더빙 — Language 바로 아래, 조금 들여 **보여 주기만** 한다(2026-10-23 기획자). 화면 문구는 열 언어인데
             더빙은 다섯 뿐이라 문화권이 가장 가까운 쪽(`i18n`의 `DUB_FOR`)이 따라온다. 따로 고르는 단추는 걷었다 —
             Language와 더빙을 각각 고르게 하니 조절할 때 더 헷갈렸다 */}
         <div className="opt-row opt-sub" data-field="dub">
-          <span className="k">{t('settings.voice')}</span>
+          <span className="k" data-steady="voice" data-steady-keys="settings.voice">{t('settings.voice')}</span>
           <span className="v dim fit" ref={dubRef}>{dubLabel}</span>
         </div>
 
+        {/* 언어 칩 열 개 — 가장 큰 칩 하나의 크기로 전부 맞춘다(2026-11-17 기획자) */}
         <div className="langs">
           {LANGS.map((l) => (
             <button
               key={l.id}
               className={`opt${lang === l.id ? ' on' : ''}`}
               data-lang={l.id}
+              data-steady="langChip"
               onClick={() => setLang(l.id)}
             >{l.short}</button>
           ))}
         </div>
 
         {/* 소리 — 배경 음악 · 효과음(음성) 두 갈래, 과녁 다섯 칸(2026-10-23 기획자 — 옛 끔 · 켬을 갈았다) */}
-        <VolumeRange channel="bgm" label={t('settings.bgm')} />
-        <VolumeRange channel="fx" label={t('settings.fx')} />
+        <VolumeRange channel="bgm" label={t('settings.bgm')} steadyKey="settings.bgm" />
+        <VolumeRange channel="fx" label={t('settings.fx')} steadyKey="settings.fx" />
 
-        {/* 화면 모드 — 언어 칩과 같은 「둘 중 하나를 고른다」 모양(2026-08-25 피드백). 두 칩의 크기는
-            `useTwoChipSize`가 실제로 재서 맞춘다(DOM을 직접 건드린다 — 훅 주석 참조) */}
-        <div ref={twoChip}>
-          <div className="opt-row">
-            <span className="k">{t('settings.orientation')}</span>
-            {/* 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가
-                두되, 「눌리는데 아무 일도 없는 스위치」가 되지 않게 세로만 실제로
-                선택된 상태로 보여 준다. */}
-            <div className="v two">
-              <button className="opt two-chip" disabled>{t('settings.landscape')}</button>
-              <button className="opt two-chip on" disabled>{t('settings.portrait')}</button>
-            </div>
+        {/* 화면 모드 — 부대 배치의 남군 · 북군 토글처럼 판 한 장을 반반으로 쓴다(2026-11-17 기획자). 고른 쪽은 밝게 + 투구 메달,
+            안 고른 쪽은 잿빛. 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가 두되, 「눌리는데 아무 일도 없는
+            스위치」가 되지 않게 세로만 실제로 선택된 상태로 보여 준다. 두 칸 폭은 열 언어의 가로 · 세로 중 가장 긴 글자로 */}
+        <div className="opt-row" data-field="orientation">
+          <span className="k" data-steady="orientation" data-steady-keys="settings.orientation">{t('settings.orientation')}</span>
+          <div className="v set-sides" role="tablist">
+            {(['landscape', 'portrait'] as const).map((o) => {
+              const on = o === 'portrait';
+              return (
+                <button
+                  key={o}
+                  role="tab"
+                  className={`set-side${on ? ' on' : ''}`}
+                  data-orientation={o}
+                  data-on={on ? '1' : '0'}
+                  aria-selected={on}
+                  disabled
+                >
+                  <span className="set-side-t" data-steady="orientChip" data-steady-keys="settings.landscape settings.portrait">
+                    {t(o === 'portrait' ? 'settings.portrait' : 'settings.landscape')}
+                  </span>
+                  {on && <img className="set-side-on" src="icons/tutorial/next.png" alt="" draggable={false} />}
+                </button>
+              );
+            })}
           </div>
         </div>
 
