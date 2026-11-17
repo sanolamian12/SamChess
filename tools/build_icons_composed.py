@@ -483,6 +483,10 @@ def build() -> dict[str, Image.Image]:
         # 결말 · 목표와 같은 메달 — 주기는 옥색, 회수는 붉은 바탕
         "ic_equip_givebtn": medal(trim(Image.open(icon_path("ic_equip_give")).convert("RGBA")), bg=JADE, fill=.86),
         "ic_equip_revokebtn": medal(trim(Image.open(icon_path("ic_equip_revoke")).convert("RGBA")), bg=RED, fill=.86),
+        # 병기 · 아이템 고르기의 토글 동전 둘 (2026-11-17 기획자) — 회수 단추와 같은 메달, 고른 쪽은 화면이 금빛 네온을 두른다.
+        # 바탕은 둘 다 어두운 색 — 고름은 바탕색이 아니라 빛으로 가른다
+        "ic_equip_tab_weapon": medal(trim(Image.open(icon_path("ic_forge_craft")).convert("RGBA")), bg=DARK, fill=.86),
+        "ic_equip_tab_item": medal(trim(Image.open(icon_path("ic_mk_storage")).convert("RGBA")), bg=DARK, fill=.86),
         # 튜토리얼 클리어 표 — 안 깼으면 붉은 체크 인장(`mk-done`), 깼으면 같은 인장을 **파랗게**(기획자 2026-10-26)
         "ic_mk_done_blue": recolor_blue(Image.open(icon_path("ic_mk_done")).convert("RGBA")),
         # 컬렉션 도시 효과 인장

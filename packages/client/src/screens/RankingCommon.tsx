@@ -397,6 +397,11 @@ export interface CardAction {
   onPress: () => void;
   /** 지금은 못 하는 이유 — 있으면 단추가 꺼지고 그 밑에 이유가 뜬다 */
   blocked?: string | null;
+  /**
+   * 맨 위에 서는 단추 하나 — 있으면 차례가 **[이것] · [뒤로 가기] · [그 일]**이 된다(그 일이 맨 아래).
+   * 부대 편집의 [아이템](오른쪽에 지닌 것 그림 · 비었으면 빈 칸 그림) → 해제하기가 맨 아래 (2026-11-17 기획자)
+   */
+  lead?: { label: string; icon: React.ReactNode; onPress: () => void; action: string };
 }
 
 /**
@@ -694,6 +699,17 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           예전엔 [장수 정보] 하나가 똑같은 정보를 다시 보여주는 화면(`OfficerDetailScreen`)
           으로 갔다 — 이 카드가 이미 그 정보를 다 보여주므로 그 걸음은 없앴다. */}
       {/* 카드의 한 수 — 옥색 [선택하기](고르기) · 붉은 [해제하기](보초병 풀기), 그 아래 [뒤로 가기] (2026-11-16) */}
+      {action && action.lead && (
+        <button className="btn wide ofcard-lead" data-action={action.lead.action} onClick={action.lead.onPress}>
+          <span className="lbl">{action.lead.label}</span>
+          <span className="ofcard-lead-icon">{action.lead.icon}</span>
+        </button>
+      )}
+      {action && action.lead && (
+        <button className="btn wide" data-action="cardBack" onClick={onClose}>
+          <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+        </button>
+      )}
       {action && (
         <>
           <button
@@ -706,9 +722,11 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
             <span className="lbl">{action.label}</span>
           </button>
           {action.blocked && <p className="ofcard-action-note" data-field="cardActionNote">{action.blocked}</p>}
-          <button className="btn wide" data-action="cardBack" onClick={onClose}>
-            <span className="lbl">{stripBackArrow(t('match.back'))}</span>
-          </button>
+          {!action.lead && (
+            <button className="btn wide" data-action="cardBack" onClick={onClose}>
+              <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+            </button>
+          )}
         </>
       )}
       {!action && onLevels && onRecords && (

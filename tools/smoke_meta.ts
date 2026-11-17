@@ -766,7 +766,7 @@ await page.waitForTimeout(300);
 if (!await page.$('[data-screen="squadEdit"][data-new="0"]')) fail('채운 칸을 눌렀는데 부대 편집이 아니다');
 {
   const acts = await page.$$eval('.sqe-grid > .btn', (els) => els.map((b) => `${(b as HTMLElement).dataset.action}:${(b as HTMLButtonElement).disabled ? 0 : 1}`).join(','));
-  if (acts !== 'toDeploy:1,items:1,garrisonPolicy:0,saveSquad:1') fail(`공격대 편집 명령이 [${acts}]다 — 행동 방침만 꺼져야 한다`);
+  if (acts !== 'toDeploy:1,garrisonPolicy:0,saveSquad:1') fail(`공격대 편집 명령이 [${acts}]다 — AI 수비 방침만 꺼져야 한다`);
 }
 for (let i = 0; i < 3; i += 1) {
   await page.click('.sqe-row[data-officer] >> nth=0');

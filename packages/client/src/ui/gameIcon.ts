@@ -70,6 +70,8 @@ export const GAME_ICONS = {
   'equip-none': 'icons/facility/equip-none.png',
   'equip-revoke': 'icons/facility/equip-revoke.png',
   'equip-revokebtn': 'icons/facility/equip-revokebtn.png',
+  'equip-tab-item': 'icons/facility/equip-tab-item.png',
+  'equip-tab-weapon': 'icons/facility/equip-tab-weapon.png',
   'forge-assign': 'icons/facility/forge-assign.png',
   'forge-craft': 'icons/facility/forge-craft.png',
   'grain-rate': 'icons/facility/grain-rate.png',
