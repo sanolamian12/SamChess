@@ -5437,7 +5437,8 @@ button.lv-tactic-row {
 .set-modal .opt-row .k { display: flex; align-items: center; }
 /* 언어 칩 — 칸은 다 같은 크기라 다섯 칸을 판 양끝까지 고르게 벌린다(옛 `justify-items: end`는 칩마다 폭이 달라 오른쪽에 붙였다) */
 .set-modal .langs { grid-template-columns: repeat(5, auto); justify-content: space-between; justify-items: stretch; }
-.modal.mod-plank.set-modal .langs .opt { min-width: 0; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
+/* 글자는 하한(.8rem) 그대로였던 것을 1.25배(2026-11-18 기획자) */
+.modal.mod-plank.set-modal .langs .opt { font-size: 1rem; min-width: 0; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
 /* 명패 — 긴 제목(이탈리아어 · 포르투갈어)은 `useFitText`가 글자를 줄이는데, 줄 높이가 글자를 따라가면 명패가 낮아져 판이 몇 px 줄었다.
    줄 높이를 `rem`으로 박아 글자만 줄고 명패는 그대로 */
 .modal.mod-plank.set-modal .modal-ttl { line-height: 1.25rem; }
