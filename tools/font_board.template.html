@@ -68,6 +68,8 @@ main { padding: 14px 16px 40px; }
 .dots button { padding: 0 6px; font-size: 11px; border-radius: 999px; line-height: 1.6; }
 .noshot { border: 1px dashed var(--line); border-radius: 8px; padding: 26px 12px; text-align: center; color: var(--mute); font-size: 14px; }
 textarea { width: 100%; min-height: 4.5em; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
+.submit { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 9px 18px; font-weight: 700; }
 .zoom { position: fixed; inset: 0; background: #000d; display: none; align-items: center; justify-content: center; z-index: 10; }
 .zoom.on { display: flex; }
 .zoom img { max-width: 92vw; max-height: 92vh; cursor: zoom-out; }
@@ -94,7 +96,7 @@ textarea { width: 100%; min-height: 4.5em; font: inherit; font-size: 14px; paddi
       <li>기준 — 화면 글자는 <b>0.8rem 이상</b>(휴대폰 폭 390px에서 약 12px). 그림 안의 글자는 제외. 잘림 · 말줄임(…) · 접혀서 커진 칸 · 겹친 글을 본다.</li>
       <li>캡처는 ◀ ▶(또는 아래 언어 칩)로 언어를 넘긴다. 누르면 크게 보고, 크게 본 채로도 ◀ ▶ · 키보드 ← → 로 넘긴다. 위의 언어 단추는 이 단원의 카드를 모두 그 언어로.</li>
       <li>「직접 열어 본다」 화면은 순회가 못 여는 화면이다 — 개발 서버 <code>http://localhost:5173</code>에서 본다(가로 <code>?orient=landscape</code>).</li>
-      <li>메모 · 체크는 이 브라우저에 남는다. 다른 기기로는 [진도 복사] → [진도 붙여넣기].</li>
+      <li>메모 · 체크는 이 브라우저에 남는다. 단원을 다 보면 맨 아래 <b>[피드백 제출]</b> — 「다운로드」 폴더에 <code>점검판_단원_시각.json</code>이 떨어지고, Claude에게 「제출했다」고 말하면 읽는다. 다른 기기로는 [진도 복사] → [진도 붙여넣기].</li>
     </ul>
   </details>
 </header>
@@ -118,6 +120,7 @@ const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem(
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const st = (id) => state[id] ?? (state[id] = {});
 const ALL = DATA.sections.flatMap((s) => s.items);
+st('_submits');
 document.getElementById('made').textContent = `· 캡처 ${DATA.made}`;
 
 // ── 단원 단추 일곱 ──
@@ -134,6 +137,23 @@ for (const sec of DATA.sections) {
 const cards = document.getElementById('cards');
 const langbar = document.getElementById('langbar');
 let viewers = [];
+let submitFoot = null;
+const stamp = () => { const d = new Date(); const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
+function submit(sec, note) {
+  const items = sec.items.map((it) => ({ id: it.id, title: it.title, path: it.path, done: !!state[it.id]?.done,
+    memo: (state[it.id]?.memo ?? '').trim(), lang: state[it.id]?.lang ?? null }));
+  const withMemo = items.filter((x) => x.memo);
+  const out = { board: '글자 크기 점검판', section: sec.id, sectionTitle: sec.title, submittedAt: new Date().toISOString(),
+    done: items.filter((x) => x.done).length, total: items.length, memos: withMemo.length, items };
+  const name = `점검판_${sec.id}_${stamp()}.json`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  st('_submits')[sec.id] = new Date().toISOString().slice(0, 16).replace('T', ' '); save();
+  note.textContent = `저장함 — ${name} (메모 ${withMemo.length}곳). Claude에게 「${sec.title} 제출했다」고 말하면 읽는다`;
+}
 function showSection(id) {
   const sec = DATA.sections.find((s) => s.id === id) ?? DATA.sections[0];
   pref('section', sec.id);
@@ -150,6 +170,13 @@ function showSection(id) {
     langbar.append(b);
   }
   for (const it of sec.items) cards.append(card(it));
+  // 단원 끝 — 제출: 이 단원의 메모 · 체크를 JSON 파일로 「다운로드」 폴더에 떨군다(Claude가 그 파일을 읽는다)
+  const foot = el('div', 'submit');
+  const btn = el('button', 'primary', `${sec.title} — 피드백 제출`); btn.type = 'button';
+  const note = el('span', 'count', '메모를 다 적은 뒤 누른다. 「다운로드」 폴더에 파일로 저장된다');
+  btn.addEventListener('click', () => submit(sec, note));
+  foot.append(btn, note);
+  cards.after(foot); submitFoot?.remove(); submitFoot = foot;
   window.scrollTo(0, 0);
 }
 
