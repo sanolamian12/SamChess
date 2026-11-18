@@ -30,6 +30,7 @@ Neo-Luddite 공모전 영상의 `generate_narration.py`를 고친 것이다. 달
 메아리: `Design/튜토리얼더빙/fx.json`(`{"잘린 이름": "echo"}`)에 적힌 줄은 split이 자르며 산울림을 얹는다.
   TTS는 목소리만 내고 공간은 못 낸다 — 지시문에 「메아리」를 적어도 안 생기니 자른 뒤에 덧입힌다(2026-11-16 장비).
   이미 잘린 파일에 얹으려면 split --force --only 화자.
+손질한 조각: 같은 폴더의 `{이름}_edit.(wav|mp3)`가 있으면 split이 자른 것 대신 그것을 `{이름}.wav`로 쓴다(다시 잘라도 남는다).
 
 설치: pip install google-genai · 키: PowerShell `$env:GEMINI_API_KEY="…"`
 음원 앞뒤 무음은 0.4초까지 디지털 무음만 덧붙인다(목소리는 안 건드린다). 출력은 24kHz · 16-bit · 모노 PCM WAV.
@@ -39,6 +40,7 @@ import json
 import os
 import re
 import struct
+import subprocess
 import sys
 import time
 import wave
@@ -249,6 +251,9 @@ def pad(pcm: bytes) -> bytes:
 
 
 FX = DUB_DIR / "fx.json"
+CUT_FIX = DUB_DIR / "cut_fix.json"
+"""손으로 맞춘 자른 자리 — `{"EN": {"je-gal-ryang.say9": {"end": 87.2}}}`(초, 원본 기준). 받아쓰기가 이웃 줄의 감탄사를 딸려 붙인 곳(2026-11-18 EN 제갈량 「Ah」).
+원본이 바뀌면(sig가 다르면) 맞지 않으므로 `sig` 칸이 같을 때만 쓴다."""
 # 산울림 — (지연 초, 크기). 멀리 갈수록 작고 뭉툭해진다(한 극 저역 통과). 전장 너머 골짜기에 되울리는 정도
 ECHO_TAPS = ((0.17, 0.34), (0.35, 0.20), (0.55, 0.11), (0.78, 0.05))
 
@@ -759,6 +764,18 @@ def sources(dub: str) -> list:
     return out
 
 
+def use_edit(out_dir: Path, name: str) -> str | None:
+    """기획자가 손으로 고친 조각 `{이름}_edit.(wav|mp3)`가 곁에 있으면 자른 것 대신 그것을 `{이름}.wav`로 (2026-11-18 EN 장비 메아리).
+    고친 파일은 원본으로 두고 매번 다시 옮긴다 — 다시 받거나 다시 잘라도 손질이 안 사라진다."""
+    for ext in (".wav", ".mp3"):
+        src = out_dir / f"{name}_edit{ext}"
+        if src.exists():
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-ar", str(SAMPLE_RATE), "-ac", "1",
+                            "-sample_fmt", "s16", str(out_dir / f"{name}.wav")], check=True)
+            return src.name
+    return None
+
+
 def cmd_split(args):
     """New_{더빙}의 원본을 줄마다 잘라 assets/Audio/voice/tutorial/{더빙}/{이름}.wav로 — 들어 보기 판(_듣기.html)과 표(_cut.json)를 함께 쓴다.
     이름: 튜토리얼 대사 = `{판}.say{n}` (예: gwan-u.say3), 게임 차례 음성 = `turn.{장수}` (KR만, `_skip focus`면 안 만든다)."""
@@ -805,10 +822,15 @@ def cmd_split(args):
             except ValueError as e:
                 print(f"[{dub}] {f.name}: {e}")
                 continue
+            fixes = load_json(CUT_FIX, {}).get(dub, {})
             for (st, en, gap, ratio, sim, said), ln in zip(cuts, lines):
                 name = ln["key"].removeprefix("tut.s.")
+                fix = fixes.get(name)
+                if fix and fix.get("sig") == sig:
+                    st, en = fix.get("start", st), fix.get("end", en)
                 clip = pad(pcm[int(st * SAMPLE_RATE) * SAMPLE_WIDTH:int(en * SAMPLE_RATE) * SAMPLE_WIDTH])
                 save_wav(out_dir / f"{name}.wav", echo(clip) if fx.get(name) == "echo" else clip)
+                edited = use_edit(out_dir, name)
                 why = []
                 if sim is not None and sim < SIM_OK:
                     why.append(f"들린 말이 대사와 다르다(닮음 {sim}) — «{said}»")
@@ -817,7 +839,7 @@ def cmd_split(args):
                 # 「줄 사이 쉼 < 줄 안의 쉼」은 표지로 안 쓴다 — 말줄임표(「주공…」)마다 떠서 22줄이 다 정상이었다(11-17)
                 rows.append({"name": name, "text": ln["text"][dub], "hash": ln["hash"][dub],
                              "start": round(st, 2), "end": round(en, 2), "gap": gap, "ratio": ratio, "sim": sim, "heard": said,
-                             "check": why, "game": ln.get("game")})
+                             "check": why, "game": ln.get("game"), **({"edit": edited} if edited else {})})
             # 같은 화자의 옛 표는 지운다(_skip focus 이름이 바뀌어도 하나만)
             report = {k: v for k, v in report.items() if v.get("speaker") != sp}
             report[f.name] = {"speaker": sp, "name": load_json(CAST, {})[sp]["name"], "skipFocus": skip, "lines": rows,
@@ -938,7 +960,7 @@ def cmd_stale(args):
 #   - 받으면 바로 그 화자를 잘라(`split`) 들어 보기 판을 갱신한다.
 AUTO_INTERVAL = 180
 AUTO_REDO = 2                     # 대사가 안 맞는 줄(닮음 < SIM_REDO)이 있으면 이만큼까지 다시 받는다
-AUTO_QUOTA_RETRY = 1800    # 막혔는데 구글이 다시 볼 시각을 안 알려 주면 30분 뒤 — 모두 막혀도 끝내지 않고 기다린다
+AUTO_QUOTA_RETRY = 1800    # 막힌 키는 30분 뒤 다시 찔러 본다 — 구글이 알려 주는 「몇 만 초 뒤」는 실제와 안 맞았다(11-18: 곧 다시 받히기도) · 모두 막혀도 끝내지 않고 기다린다
 KEYS_FILE = Path.home() / ".samchess" / "gemini_keys.txt"   # 한 줄에 키 하나 — 저장소 밖(git에 안 들어간다)
 STOP_FILE = NEW_DIR / "STOP"                                 # 만들면 지금 시도를 마치고 멈춘다
 AUTO_LOG = NEW_DIR / "auto_log.md"
@@ -1040,7 +1062,7 @@ def cmd_auto(args):
             if not pcm:
                 raise RuntimeError("소리 없이 돌아왔다")
         except DailyQuotaExceeded as e:
-            dead[k] = time.time() + (e.delay + 60 if e.delay else AUTO_QUOTA_RETRY)   # 알려 준 시각을 따르고, 없으면 30분
+            dead[k] = time.time() + min(e.delay + 60 if e.delay else AUTO_QUOTA_RETRY, AUTO_QUOTA_RETRY)   # 알려 준 시각이 더 짧을 때만 따른다
             log(f"키 {k + 1} 한도 — 다음 키로 ({e})")
             continue   # 다른 키로 바로 — 같은 키를 몰아 치는 것이 아니다
         except Exception as e:
