@@ -160,6 +160,15 @@ TURNVOICE_DUB = SRC / "voice" / "tutorial"
 있으면 그 장수의 옛 차례 음성 대신 이것을 mp3로 구워 넣는다. 원본(`voice/battle/`)은 그대로 둔다.
 `_skip focus`로 받은 장수(황개 · 황충)는 이 파일이 없어 옛 음성이 그대로 남는다."""
 
+TURNVOICE_DUB_KEEP_OLD = {
+    # 새 녹음을 들어 보고 옛 음성을 고른 장수 (2026-11-18 기획자, 43명 중 18명) — `turn.{id}.wav`가 있어도 옛 원본을 쓴다
+    "KR": {
+        "gam-nyeong", "gwan-u", "neung-tong", "ma-cho", "sa-ma-ui", "seo-hwang", "son-gyeon", "sun-uk", "yeo-mong",
+        "yeo-po", "jeong-bo", "jo-un", "ju-yu", "ju-tae", "tae-sa-ja", "ha-hu-yeon", "heo-jeo", "hwa-ung",
+    },
+}
+"""언어별 「새 차례 음성을 안 쓰는」 장수 — 원본을 지우지 않고 여기서 고른다(`split --only`가 조각을 다시 만들어도 안 바뀐다)."""
+
 
 TURNVOICE_NAME_FIXES = {
     # 원본 파일명이 장수 이름이 아니라 칭호로 온 것 — 파일은 그대로 두고 대조에서만 바로잡는다
@@ -382,14 +391,15 @@ def copy_if_changed(src: Path, dst: Path, force: bool) -> str | None:
 
 def encode_if_newer(src: Path, dst: Path, force: bool) -> str | None:
     """wav → mp3(ffmpeg). 굽기는 바이트가 매번 같다는 보장이 없어 내용 대신 **원본 해시**로 판단한다 —
-    원본 곁의 `{원본}.built`에 구운 원본의 해시를 적어 두고 같으면 건너뛴다(public/에 표지를 두면 빌드에 딸려 나간다)."""
+    원본 곁의 `{원본}.built`에 구운 원본의 해시와 **구워 낸 파일의 해시**를 적어 두고 둘 다 같으면 건너뛴다(public/에 표지를 두면 빌드에 딸려 나간다).
+    구워 낸 쪽도 보는 까닭: 그 사이 다른 길(옛 음성 고르기 `TURNVOICE_DUB_KEEP_OLD`)이 출력을 덮었으면 다시 구워야 한다."""
     mark = src.with_name(src.name + ".built")
     h = digest(src)
-    if not force and dst.exists() and mark.exists() and mark.read_text(encoding="utf-8").strip() == h:
+    if not force and dst.exists() and mark.exists() and mark.read_text(encoding="utf-8").split() == [h, digest(dst)]:
         return None
     had = dst.exists()
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-ar", "44100", "-ac", "1", "-b:a", "128k", str(dst)], check=True)
-    mark.write_text(h, encoding="utf-8")
+    mark.write_text(f"{h} {digest(dst)}", encoding="utf-8")
     return f"{dst.stem}(갈아끼움)" if had else dst.stem
 
 
@@ -428,7 +438,7 @@ def sync_turnvoice(force: bool) -> None:
                     continue
                 voiced[lang].add(officer["id"])
                 dub = TURNVOICE_DUB / lang / f"turn.{officer['id']}.wav"
-                if dub.exists():
+                if dub.exists() and officer["id"] not in TURNVOICE_DUB_KEEP_OLD.get(lang, set()):
                     name = encode_if_newer(dub, TURNVOICE_OUT / f"{officer['id']}.{lang}.mp3", force)
                     if name: copied.append(f"{name}·새녹음")
                     else: skipped += 1
