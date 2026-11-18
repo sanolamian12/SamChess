@@ -33,6 +33,7 @@ import type { Grade, OfficerId } from '@samchess/rules';
 import { officerById } from '@samchess/data';
 import { normalizeCityName } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { GradeBadge } from './GradeBadge.tsx';
 import { OfficerActionArt } from './OfficerArt.tsx';
 import { pickOfficerName } from '../i18n/story.ts';
@@ -208,7 +209,7 @@ export function NewGameScreen({ onStart, onBack }: {
         <button className="btn" data-action="newgameBack" onClick={onBack} disabled={busy}>
           {t('newgame.back')}
         </button>
-        {why && <p className="note" data-field="why">{why}</p>}
+        <Say text={why} level={1} name="why" />
       </div>
       {made && (
         <div className="ngo-stage" data-modal="signupOpening" data-frame={frame} data-step={step}>

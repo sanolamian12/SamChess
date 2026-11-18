@@ -12,6 +12,7 @@ import {
   applyCityUpgrade, BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, canUpgradeCity, upgradeCost,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { upgradeCityOnServer } from '../meta/city.ts';
 import { t } from '../i18n/index.ts';
 import { reasonText } from '../i18n/reason.ts';
@@ -75,17 +76,11 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
             </>
           )}
       </button>
-      {/* 왜 안 되는지는 **[도시 증축] 바로 밑**에 판 안의 글씨로 (2026-09-18 지정 — 예전엔
-          판 밖 주황 글씨였다). 규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`)이
-          같은 자리에 온다 — 둘 다 이 단추의 이야기다. 자재가 모자란 이유만은 안 뜬다
-          (자재 줄의 「75 / 25」가 이미 말한다, `why` 주석 참조). 규칙의 이유는 **코드로
-          번역한다**(`reasonText`) — 서버가 거부한 이유(`refused`)는 코드가 없어 원문이다 */}
-      {(whyShown || refused) && (
-        <div className="cty-whys">
-          {whyShown && <p className="cty-why" data-field="why" data-code={why.code}><GameIcon name="mk-lock" label={reasonText(why)} text /></p>}
-          {refused && <p className="cty-why" data-field="refused">{refused}</p>}
-        </div>
-      )}
+      {/* 왜 안 되는지는 내관이 말한다(2026-11-19 기획자 — 옛 「[도시 증축] 바로 밑의 판 안 글씨」는 판 크기를 출렁여 걷었다).
+          규칙이 거부한 것(`why`)과 서버가 거부한 것(`refused`). 자재가 모자란 이유만은 안 말한다(자재 줄의 「75 / 25」가 이미 말한다,
+          `why` 주석 참조). 규칙의 이유는 코드로 번역한다(`reasonText`) — 서버가 거부한 이유는 코드가 없어 원문이다 */}
+      <Say text={whyShown ? reasonText(why) : null} level={profile.cityLevel} name="why" code={whyShown ? why.code : undefined} />
+      <Say text={refused} level={profile.cityLevel} name="refused" />
 
       {layer(<>
       {asking && cost !== null && (

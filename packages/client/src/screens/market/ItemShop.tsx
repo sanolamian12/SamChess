@@ -37,6 +37,7 @@ import {
   marketBasketGold, marketHeldCount, marketItemsOf, marketStockLeft, marketUnits, uncarryItem, unequipOfficer,
 } from '@samchess/meta';
 import type { MarketBasket, PlayerProfile } from '@samchess/meta';
+import { Say } from '../Steward.tsx';
 import { buyMarketItemsOnServer } from '../../meta/city.ts';
 import { t } from '../../i18n/index.ts';
 import { reasonText } from '../../i18n/reason.ts';
@@ -245,7 +246,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
               <li key={item.id} data-item={item.id}>{pickMarketItemName(item)}</li>
             ))}
           </ul>
-          {!can.ok && <p className="note" data-field="orderWhy">{reasonText(can)}</p>}
+          <Say text={can.ok ? null : reasonText(can)} level={profile.cityLevel} name="orderWhy" />
         </ConfirmModal>
       )}
 
@@ -406,7 +407,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
             <Pager page={cur} pageCount={pageCount} onPage={setPage} field="storagePager" />
           </>
         )}
-        {note && <p className="note" data-field="storageNote">{note}</p>}
+        <Say text={note} level={profile.cityLevel} name="storageNote" />
       </section>
 
       <section className="place-panel mkt-cmds">

@@ -544,7 +544,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   // 튜토리얼이 열렸다 (G3, 2026-10-22) — 가입 직후에는 [튜토리얼]이 열려 있고 [출정하기]가 잠겨 있다(`sortieGate`)
   if (doors.find((d) => d.action === 'tutorial')?.locked) fail('[튜토리얼]이 잠겨 있다 — 가입 직후 열려 있어야 한다 (G3)');
   if (!doors.find((d) => d.action === 'sortie')?.locked) fail('기본 튜토리얼 전인데 [출정하기]가 열려 있다 (G3)');
-  if (!await page.$('.scr-place-barracks [data-field="sortieBlocked"][data-code="tutorial.required"]')) {
+  if (!await page.$('.stw[data-say="sortieBlocked"][data-say-code="tutorial.required"]')) {
     fail('[출정하기]가 잠긴 이유(기본 튜토리얼)가 안 적혀 있다 (G3)');
   }
   /*
@@ -603,7 +603,7 @@ await expectBackdrop('.scr-place', 'place-1-barracks.jpg', '병영');
   const code = await page.getAttribute('.scr-place-barracks [data-action="sortie"]', 'data-blocked');
   if (code !== 'sortie.noGarrison') fail(`기본 셋을 끝낸 뒤 [출정하기]를 막는 이유가 수비군이 아니다 — "${code}"`);
   // 수비군 이유는 단추 밑에 안 적는다 — 내관이 말한다(2026-11-12 기획자)
-  if (await page.$('.scr-place-barracks [data-field="sortieBlocked"]')) fail('수비군이 없어 막힌 이유가 [출정하기] 밑에 글로 남아 있다');
+  if (await page.$('.stw[data-say="sortieBlocked"]')) fail('수비군이 없어 막힌 이유가 [출정하기] 밑에 글로 남아 있다');
   console.log('✓ 기본 튜토리얼 셋을 끝내면 다음 막힘은 수비군이다 — 부대를 만들라고 말한다');
 }
 
@@ -985,7 +985,7 @@ const matchView = () => page.evaluate(() => {
   const q = (f: string) => document.querySelector(`[data-field="${f}"]`)?.textContent ?? '';
   return {
     state: bar?.dataset.state ?? '', kind: bar?.dataset.kind ?? '',
-    name: q('foeName'), members: q('foeMembers'), odds: q('odds'), why: q('noDecline'),
+    name: q('foeName'), members: q('foeMembers'), odds: q('odds'), why: document.querySelector('.stw[data-say="noDecline"] [data-field="guideText"]')?.textContent ?? '',
     power: Number(document.querySelector('.mtc-foe')?.getAttribute('data-power') ?? '0'),
     decline: document.querySelector('[data-action="decline"]') !== null,
   };
@@ -2002,7 +2002,7 @@ const waitLevelUp = async (what: string): Promise<void> => {
   await page.waitForFunction(() =>
     (document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null)?.dataset.step === 'manage',
   undefined, { timeout: 8_000 }).catch(() => fail(`${what} — [확정] 뒤 8초가 지나도 관리 걸음으로 안 돌아온다`));
-  const note = await page.textContent('[data-field="respecNote"]').catch(() => null);
+  const note = await page.textContent('.stw[data-say="respecNote"] [data-field="guideText"]').catch(() => null);
   if (note) fail(`${what} — 서버가 거절했다: "${note}"`);
 };
 await waitLevelUp('레벨업');
@@ -2085,7 +2085,7 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   await openRespec();
   await page.click('[data-modal="respecAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-modal="respecDone"]', { timeout: 8_000 })
-    .catch(async () => fail(`[확정]을 눌렀는데 8초가 지나도 완료 판이 안 뜬다: "${await page.textContent('[data-field="refused"]').catch(() => '')}"`));
+    .catch(async () => fail(`[확정]을 눌렀는데 8초가 지나도 완료 판이 안 뜬다: "${await page.textContent('.stw[data-say="refused"] [data-field="guideText"]').catch(() => '')}"`));
   const refunded = await page.textContent('[data-modal="respecDone"] [data-field="refund"]');
   if (!refunded?.includes('3')) fail(`완료 판의 회수 카드가 「${refunded}」다 — ×3이라야 한다`);
   // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 기획자 지정 — 예전에는 전면
@@ -2414,7 +2414,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
     await page.waitForSelector('[data-screen="buildings"]');
     return page.evaluate(() => ({
       upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
-      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
+      why: document.querySelector('.stw[data-say="why"] [data-field="guideText"]')?.textContent ?? '',
     }));
   };
 
@@ -2500,10 +2500,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.click('[data-action="upgradeConfirm"]');
   // **증축은 서버 왕복이다**(`POST /city/upgrade`) — 고정 대기 대신 결과(완료 팝업) 또는
   // 거절(이유 한 줄)이 뜰 때까지 본다. 거절이면 그 말을 그대로 실패에 싣는다
-  await page.waitForSelector('[data-modal="upgradeDone"], [data-field="refused"]', { timeout: 8_000 })
+  await page.waitForSelector('[data-modal="upgradeDone"], .stw[data-say="refused"]', { timeout: 8_000 })
     .catch(() => fail('[증축 확인]을 눌렀는데 8초가 지나도 완료도 거절도 안 뜬다'));
   {
-    const refused = await page.textContent('[data-field="refused"]').catch(() => null);
+    const refused = await page.textContent('.stw[data-say="refused"] [data-field="guideText"]').catch(() => null);
     if (refused) fail(`서버가 증축을 거절했다: "${refused}"`);
   }
   await page.click('[data-action="doneOk"]');
@@ -2706,14 +2706,14 @@ console.log(`✓ 저장 유지 — ${kept}`);
     const btn = await page.$('.ofcard-modal [data-action="healOfficer"]');
     if (!btn) fail('병원이 있는데 카드에 [입원시키기]가 없다');
     if (await btn!.isDisabled()) {
-      fail(`빈 치료실이 있는데 [입원시키기]가 잠겼다: "${await page.textContent('.ofcard-modal [data-field="healBlocked"]').catch(() => '')}"`);
+      fail(`빈 치료실이 있는데 [입원시키기]가 잠겼다: "${await page.textContent('.stw[data-say="healBlocked"] [data-field="guideText"]').catch(() => '')}"`);
     }
     await Promise.all([
       page.waitForResponse((r) => r.url().includes('/city/heal'), { timeout: 8_000 }),
       btn!.click(),
     ]);
     await page.waitForSelector('.ofcard-modal [data-field="injury"][data-healing="1"]', { timeout: 5_000 })
-      .catch(async () => fail(`입원시켰는데 카드가 「치료 중」이 아니다: "${await page.textContent('.ofcard-modal [data-field="healError"]').catch(() => '')}"`));
+      .catch(async () => fail(`입원시켰는데 카드가 「치료 중」이 아니다: "${await page.textContent('.stw[data-say="healError"] [data-field="guideText"]').catch(() => '')}"`));
     const healed = await getProfile(player.uid);
     if (healed!.roster[who!]!.healingAt === undefined) fail('입원이 서버에 안 남았다 — 화면만 바뀌었다');
     console.log('✓ 부상 카드 — 병원 Lv1 → [입원시키기] → 서버에 치료 기록 · 카드는 「치료 중」');

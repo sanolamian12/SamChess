@@ -25,6 +25,7 @@ import {
   recycleSources, recycleTargets,
 } from '@samchess/meta';
 import type { GachaPullKind, PlayerProfile } from '@samchess/meta';
+import { Say } from '../Steward.tsx';
 import { pullGachaOnServer, recycleOnServer } from '../../meta/city.ts';
 import { playSfx } from '../../audio/sfx.ts';
 import type { SfxId } from '../../audio/sfx.ts';
@@ -189,11 +190,9 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
               })}
             </div>
             {/* 금화가 모자라면 **왜인지 적는다** — 눌리지 않는 단추만 두면 「고장인가」가 남는다 */}
-            {!canAffordGacha(profile, 'single').ok && (
-              <p className="note" data-field="pullWhy">
-                {t('market.pull.notEnough', { have: profile.gold, need: gachaPullCost('single').gold })}
-              </p>
-            )}
+            {/* 금화가 모자라면 내관이 말한다(2026-11-19 기획자 — 판 안의 줄을 걷었다) */}
+            <Say text={canAffordGacha(profile, 'single').ok ? null : t('market.pull.notEnough', { have: profile.gold, need: gachaPullCost('single').gold })}
+              level={profile.cityLevel} name="pullWhy" />
             <button className="btn wide" data-action="pullBack" onClick={() => setPull(null)}>{t('market.backHome')}</button>
           </div>
         </div>

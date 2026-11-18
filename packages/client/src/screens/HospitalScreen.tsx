@@ -34,6 +34,7 @@ import type { OfficerId } from '@samchess/rules';
 import { CityActionRejected, devGrantOnServer, devGrantsEnabled, healOnServer } from '../meta/city.ts';
 import { currentSession } from '../meta/auth.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { Say } from './Steward.tsx';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
@@ -196,9 +197,10 @@ export function HospitalScreen({ profile, onBack, onChange }: {
               <span className="lbl"><GameIcon name="hosp-admit" label={t('hospital.admit')} text /></span>
             </button>
             {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
-            {admitBlocked && rooms > 0 && <p className="hint" data-field="admitBlocked">{admitBlocked}</p>}
+            {/* 안 되는 이유는 의원이 말한다(2026-11-19 기획자) */}
+            <Say text={admitBlocked && rooms > 0 ? admitBlocked : null} who="doctor" level={profile.cityLevel} name="admitBlocked" />
           </div>
-          {error && !picking && <p className="note" data-field="error">{error}</p>}
+          <Say text={error} who="doctor" level={profile.cityLevel} name="error" />
         </section>
 
         {/* 부상을 만드는 길이 전투에서 지는 것뿐이라 병원을 시험하려면 판을 져야 했다.
@@ -251,7 +253,6 @@ export function HospitalScreen({ profile, onBack, onChange }: {
                 </li>
               ))}
             </ul>
-            {error && <p className="note" data-field="error">{error}</p>}
             <div className="frg-confirm-acts">
               <button className="btn wide" data-action="closePick" onClick={() => setPicking(false)}>
                 {t('hospital.pick.close')}

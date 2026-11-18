@@ -170,7 +170,7 @@ try {
   // 몽골어만 남은 시간이 다음 줄이다(기획자 지정) — 나머지 언어는 한 줄
   const brs = await page.$$eval('.hsp-ward[data-state="healing"] .hsp-ward-st br', (els) => els.length);
   if ((LANG === 'mn') !== (brs > 0)) fail(`치료 중 줄의 줄바꿈이 어긋났다 — 언어 ${LANG || 'ko'}, <br> ${brs}개`);
-  const why = await page.textContent('[data-field="admitBlocked"]');
+  const why = await page.textContent('.stw[data-say="admitBlocked"] [data-field="guideText"]');
   ok(`치료 중 둘 · 단추 꺼짐 — "${why}"`);
   await shot('hsp-04-full');
 

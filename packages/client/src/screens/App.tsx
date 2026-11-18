@@ -46,6 +46,7 @@ import {
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, squadById, squadSlot, syncCity, pendingGuide,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
+import { setSayLevel } from './Steward.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
 import { officerById } from '@samchess/data';
 import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
@@ -281,6 +282,8 @@ const WHITE_IN_MS = 800;
 
 export function App(): React.JSX.Element {
   const [profile, setProfileState] = useState<PlayerProfile | null>(null);
+  // 한 마디 안내(`Say`)의 옷 — 계정을 안 받는 화면(장수 카드 · 로그인)도 지금 도시 레벨의 내관이 선다
+  if (profile) setSayLevel(profile.cityLevel);
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
   /** 세션·프로필을 아직 확인하는 중 — 로그인이 되어 있는데도 간판이 잠깐 보이지 않게 한다 */
   const [booting, setBooting] = useState(true);

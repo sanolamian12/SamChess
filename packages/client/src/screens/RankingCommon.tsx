@@ -14,6 +14,7 @@ import type { EquipmentData } from '@samchess/data';
 import { INJURY_PENALTY, RECORD_FILTERS, injuredStat } from '@samchess/meta';
 import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { Say } from './Steward.tsx';
 import { fetchRanking } from '../meta/ranking.ts';
 import { OfficerActionArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
@@ -609,10 +610,10 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
                         onClick={injury.heal.onHeal}>
                         <GameIcon name="hosp-admit" label={t('hospital.admit')} text />
                       </button>
-                      {injury.heal.blocked && <span className="ofcard-injury-why" data-field="healBlocked">{injury.heal.blocked}</span>}
+                      <Say text={injury.heal.blocked} who="doctor" name="healBlocked" />
                     </>
                   )}
-                  {injury.heal?.error && <span className="ofcard-injury-why" data-field="healError">{injury.heal.error}</span>}
+                  <Say text={injury.heal?.error} who="doctor" name="healError" />
                 </div>
               )}
             </div>
@@ -723,7 +724,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           >
             <span className="lbl">{action.label}</span>
           </button>
-          {action.blocked && <p className="ofcard-action-note" data-field="cardActionNote">{action.blocked}</p>}
+          <Say text={action.blocked} name="cardActionNote" />
           {!action.lead && (
             <button className="btn wide" data-action="cardBack" onClick={onClose}>
               <span className="lbl">{stripBackArrow(t('match.back'))}</span>

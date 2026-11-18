@@ -74,7 +74,7 @@ onFail = async () => {
     screen: (document.querySelector('[data-screen]') as HTMLElement | null)?.dataset['screen'] ?? null,
     frame: document.getElementById('frame')?.className,
     alert: (document.querySelector('[data-modal="raidAlert"]') as HTMLElement | null)?.dataset['kind'] ?? null,
-    alertError: document.querySelector('[data-modal="raidAlert"] [data-field="error"]')?.textContent ?? null,
+    alertError: document.querySelector('.stw[data-say="error"] [data-field="guideText"]')?.textContent ?? null,
   }));
   console.error(`    화면 ${JSON.stringify(where)}`);
   for (const e of errors) console.error(`    콘솔: ${e}`);
@@ -213,7 +213,8 @@ try {
   };
   // King보다 먼저 Rock을 세우면 규칙이 거부하고 이유가 줄 밑에 뜬다
   await pickFor('Rock');
-  if (!(await page.$('.frm-guards [data-field="error"]'))) await fail('King 없이 Rock을 세웠는데 이유가 안 뜬다');
+  // 농부가 말한다(2026-11-19) — 상태가 바뀐 다음 렌더에 들어오므로 기다린다
+  if (!(await page.waitForSelector('.stw[data-say="error"] [data-field="guideText"]', { timeout: 3_000 }).catch(() => null))) await fail('King 없이 Rock을 세웠는데 이유가 안 뜬다');
   await pickFor('King');
   // 첫 장수는 이미 King이다 — 그를 Rock으로 옮기면 King이 비어 규칙이 거부한다. 다른 장수를 세운다
   await pickFor('Rock', 1);
@@ -260,7 +261,7 @@ try {
   const sortieDisabled = await page.$eval('[data-action="sortie"]', (b) => (b as HTMLButtonElement).disabled);
   if (!sortieDisabled) await fail('도적떼가 살아 있는데 [출정하기]가 눌린다');
   // 막은 쪽이 **도적떼**여야 한다 — 기본 튜토리얼도 같은 단추를 잠그므로 「잠겼다」만 보면 도적떼 없이도 통과한다
-  if (!(await page.$('[data-field="sortieBlocked"][data-code="raid.blocksSortie"]'))) await fail('막힌 이유(도적떼)가 제 단추 밑에 없다');
+  if (!(await page.$('.stw[data-say="sortieBlocked"][data-say-code="raid.blocksSortie"]'))) await fail('막힌 이유(도적떼)가 제 단추 밑에 없다');
   await shot('raid-03-sortie-blocked');
   ok('출정이 막혔고 이유가 적혀 있다');
 
@@ -346,7 +347,7 @@ try {
     return {
       raid: scr.dataset['raid'],
       loot: Number(scr.dataset['loot'] ?? -1),
-      error: scr.querySelector('[data-field="error"]')?.textContent ?? null,
+      error: document.querySelector('.stw[data-say="error"] [data-field="guideText"]')?.textContent ?? null,
     };
   });
   if (result.error) await fail(`결과가 서버에 안 남았다 — ${result.error}`);

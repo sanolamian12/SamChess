@@ -221,24 +221,24 @@ try {
   await page.screenshot({ path: `${SHOTS}/palace-06-buildings-after.png` });
   if (after.lv !== '1') fail(`[짓기]를 확인했는데 태학이 Lv1이 아니다 — ${after.lv}`);
   if (!after.note) fail('건설 기회를 다 썼는데 잠김 안내가 없다');
-  // [도시 증축]은 이 화면 바닥 판에 — [뒤로 가기] 위, 막힌 이유는 그 바로 밑 (2026-11-13). 자재 5라 막혀 있다.
+  // [도시 증축]은 이 화면 바닥 판에 — [뒤로 가기] 위 (2026-11-13). 자재 5라 막혀 있다. 막힌 이유는 내관이 말한다(2026-11-19).
   // 「건설 기회가 남았다」는 이유로 안 띄운다 — 머리의 「남은 건설 기회」(남았으면 붉은 글)가 말한다
   const upg = await page.evaluate(() => {
     const acts = document.querySelector('.scr-city .place-panel.cty-acts')!;
     const up = acts.querySelector('[data-action="upgrade"]');
     const back = acts.querySelector('[data-action="backBottom"]');
-    const why = acts.querySelector('.cty-whys');
     return {
       up: !!up, before: !!(up && back && (up.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING)),
       disabled: (up as HTMLButtonElement | null)?.disabled ?? null,
-      whyAfter: !why || up?.nextElementSibling === why,
-      why: document.querySelector('[data-field="why"]')?.textContent ?? '',
-      whyCode: (document.querySelector('[data-field="why"]') as HTMLElement | null)?.dataset.code ?? '',
+      why: document.querySelector('.stw[data-say="why"] [data-field="guideText"]')?.textContent ?? '',
+      whyCode: (document.querySelector('.stw[data-say="why"]') as HTMLElement | null)?.dataset.sayCode ?? '',
+      // 판 안에 숨었다 나타나는 줄이 남지 않았다
+      oldLine: !!acts.querySelector('.cty-whys, [data-field="why"]'),
     };
   });
   if (!upg.up || !upg.before) fail(`건물 관리 바닥에 [도시 증축]이 [뒤로 가기] 위에 없다 — ${JSON.stringify(upg)}`);
   if (upg.disabled !== true) fail('자재가 5인데 [도시 증축]이 눌린다');
-  if (!upg.whyAfter) fail('막힌 이유가 [도시 증축] 바로 밑이 아니다');
+  if (upg.oldLine) fail('막힌 이유가 아직 판 안의 줄로 뜬다');
   if (upg.whyCode === 'city.credits') fail('「건설 기회가 남았다」 이유가 아직 뜬다');
   if (upg.why && !upg.whyCode) fail('막힌 이유에 번역 코드가 없다');
   // 한국어가 아닌 화면에서 한국어 원문이 새지 않는가

@@ -190,7 +190,8 @@ try {
     await shot(page, 'p6-skill');
   }
   await page.click('[data-action="savePolicy"]');
-  await page.waitForSelector('[data-field="saved"]', { timeout: 3_000 }).catch(() => fail('[저장]을 눌렀는데 「저장했다」가 없다'));
+  // 「저장했다」 줄은 걷었다(2026-11-19 기획자) — 저장하면 [저장]이 다시 잠긴다
+  await page.waitForSelector('[data-action="savePolicy"]:disabled', { timeout: 3_000 }).catch(() => fail('[저장]을 눌렀는데 [저장]이 다시 안 잠긴다'));
   ok(`방침 화면 — 행동(${second.piece} → 호위) · 책략 3줄(공포 30% 추가 · 첫 줄 아래로) · 고유기술(${firstSkill ?? '없음'}) · [저장]`);
 
   // 방침 화면의 [저장]은 초안이다 — 부대 편집으로 돌아가 [저장]해야 계정에 얹힌다 (2026-11-17)

@@ -45,6 +45,7 @@ import {
   garrisonMissionPending, heldFor, isInjured, marketHeldCount, marketUnits, officerRankRows, pendingGuide, remapDeployment, saveSquadSlot,
   squadById, squadSlot, teamSize, uncarryItem, unequipOfficer, validateSquad,
 } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { guidesEnabled } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
 import type { PlayerProfile, RosterPick, Squad, SquadRole } from '@samchess/meta';
@@ -374,7 +375,8 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
             칸이 넓어져 이름을 다 쓴다 */}
         <section className="place-panel sqd-acts sqe-acts">
           {/* 왜 배치가 안 되는지 — 다 채운 뒤에만 말한다. 채우는 중에 「3명이 필요하다」를 띄우면 방해만 된다 */}
-          {picks.length === size && !check.ok && <p className="note" data-field="why">{check.reason}</p>}
+          {/* 다 채운 뒤에만 무관이 말한다(2026-11-19 기획자 — 판 안의 줄을 걷었다) */}
+          <Say text={picks.length === size && !check.ok ? check.reason : null} who="army" level={profile.cityLevel} name="why" />
           <div className="sqe-grid">
             {/* [부대 배치] · [AI 수비 방침]은 미색 판(부대 관리의 [뒤로 가기]와 같은 그림), [저장 및 뒤로가기]만 옥색 — 이 화면의 한 수 (2026-11-17 기획자) */}
             <button className="btn" data-action="toDeploy" disabled={!complete}

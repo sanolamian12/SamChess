@@ -378,7 +378,7 @@ try {
   await shot('give-swap');
   ok('병기를 든 장수에게 주면 되묻는다');
   await page.click('[data-modal="giveSwap"] [data-action="confirmOk"]');
-  await page.waitForSelector('[data-field="storageNote"]', { timeout: 5_000 });
+  await page.waitForSelector('.stw[data-say="storageNote"] [data-field="guideText"]', { timeout: 5_000 });
   const heldRow = `[data-field="storage"] .mkt-irow[data-holder="${X}"]`;
   if (!await page.$(heldRow)) fail('지급한 줄에 장수 이름이 안 붙었다');
   if (!await page.$(`${heldRow} [data-action="revokeItem"]`)) fail('지급한 줄의 명령이 [아이템 회수]가 아니다');

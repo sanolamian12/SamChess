@@ -200,7 +200,7 @@ try {
   await pa.click('[data-action="declare"]');
   await pa.waitForSelector('[data-modal="siegeTarget"][data-online="0"] [data-action="siegeReady"]', { timeout: 10_000 })
     .catch(() => fail('방금 끊은 D에게 걸었는데 상세가 공성전 모양이 안 된다'));
-  if (!await pa.$('[data-modal="siegeTarget"] [data-field="error"]')) fail('「방금 접속을 끊었다」가 안 뜬다');
+  if (!await pa.$('.stw[data-say="error"] [data-field="guideText"]')) fail('「방금 접속을 끊었다」가 안 뜬다');
   await shot(pa, 'w2-target-offline');
   await pa.click('[data-action="siegeClose"]');
   ok('화면 — 전투 중은 주황 점 · [선전포고] 꺼짐 · 누르는 순간 끊겼으면 상세가 공성전 모양');

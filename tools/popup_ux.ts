@@ -111,9 +111,23 @@ try {
   if (!rn.ok.includes('btn-primary') || !rn.no.includes('btn-secondary')) fail(`단추 그림이 다르다 — ${rn.ok} / ${rn.no}`);
   await shot('popup-02-rename');
   await page.fill('[data-modal="rename"] .field', '');
-  await page.waitForSelector('[data-modal="rename"] [data-field="why"]');
+  // 빈 이름 · 같은 이름은 말하지 않고 단추만 잠근다(2026-11-19 기획자 — 판 안에 숨었다 나타나던 「지금과 같은 이름이다」를 걷었다)
+  await page.waitForSelector('[data-action="renameConfirm"]:disabled');
+  await page.waitForTimeout(600);
+  if (await page.$('.stw[data-say="why"]')) fail('빈 이름인데 내관이 이유를 말한다');
+  if (await page.$('[data-modal="rename"] [data-field="why"]')) fail('판 안에 막힌 이유 줄이 남아 있다');
   await shot('popup-02b-rename-why');
-  ok('이름 변경 — 나무판 · 명패 · 두루마리 칸 · 옥색/참나무 단추 · 막힌 이유');
+  // 새 이름 — 금화가 모자라거나 쿨다운이면 내관이 말하고, 말풍선은 팝업을 덮지 않게 비켜 선다
+  await page.fill('[data-modal="rename"] .field', `새이름${Date.now() % 1000}`);
+  await page.waitForTimeout(1500);
+  const say = await page.evaluate(() => {
+    const b = document.querySelector('.stw[data-say="why"] .stw-bubble')?.getBoundingClientRect();
+    const m = document.querySelector('[data-modal="rename"] .modal')?.getBoundingClientRect();
+    return b && m ? { text: document.querySelector('.stw[data-say="why"] .stw-text')?.textContent ?? '', overlap: b.bottom > m.top && b.top < m.bottom } : null;
+  });
+  if (say?.overlap) fail(`내관의 말풍선이 이름 변경 판을 덮는다 — 「${say.text}」`);
+  await shot('popup-02c-rename-say');
+  ok('이름 변경 — 나무판 · 명패 · 두루마리 칸 · 옥색/참나무 단추 · 빈 이름은 단추만 잠김');
   await page.click('[data-action="renameCancel"]');
 
   // ③ 장수 랭킹 → 카드 → 책략 칩 — 어두운 화면에서도 궁궐과 같은 두루마리인가

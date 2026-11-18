@@ -45,6 +45,7 @@ import {
 import { currentSession } from '../meta/auth.ts';
 import { pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { reasonText } from '../i18n/reason.ts';
+import { Say } from './Steward.tsx';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
@@ -258,9 +259,10 @@ export function AcademyScreen({ profile, onBack, onChange }: {
               </button>
             )}
             {/* 안 되는 이유는 제 단추 바로 밑에 — 끝에 몰면 어느 단추 이야기인지 모른다 */}
-            {researchBlocked && level > 0 && <p className="hint" data-field="researchBlocked">{researchBlocked}</p>}
+            {/* 안 되는 이유는 학사가 말한다(2026-11-19 기획자 — 판 안에 숨었다 나타나는 줄을 걷었다) */}
+            <Say text={researchBlocked && level > 0 ? researchBlocked : null} who="school" level={profile.cityLevel} name="researchBlocked" />
           </div>
-          {error && modal === null && <p className="note" data-field="error">{error}</p>}
+          <Say text={error} who="school" level={profile.cityLevel} name="error" />
         </section>
 
         {/* 1시간을 기다릴 수 없어 시험용으로 민다 — 병원의 강제 부상과 같은 스위치(`SAMCHESS_DEV_GRANTS=1`) */}
@@ -304,7 +306,6 @@ export function AcademyScreen({ profile, onBack, onChange }: {
                   </button>
                 ))}
               </div>
-              {error && <p className="note" data-field="error">{error}</p>}
               {/* [연구 시작] — 목록 맨 아래 한 곳. 아무것도 안 골랐으면 눌리지 않는다 */}
               <div className="ofc-pickacts">
                 <button
@@ -357,7 +358,6 @@ export function AcademyScreen({ profile, onBack, onChange }: {
           <div className="modal frg-confirm" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{t('academy.cancel.title')}</p>
             <p className="frg-confirm-body">{t('academy.cancel.body')}</p>
-            {error && <p className="note" data-field="error">{error}</p>}
             <div className="frg-confirm-acts">
               <button className="btn wide" data-action="confirmCancel" disabled={busy || !research}
                 onClick={() => run(cancelResearchOnServer, () => setModal(null))}>

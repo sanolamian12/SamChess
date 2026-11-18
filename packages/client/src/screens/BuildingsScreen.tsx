@@ -30,6 +30,7 @@ import { useState } from 'react';
 import { applyBuild, buildCreditsLeft, buildingLevel, buildingRows, growthCue, pendingGuide } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
+import { Say } from './Steward.tsx';
 import { buildingCanText, buildingLineText, buildingNameText } from './buildingText.ts';
 import { guidesEnabled } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
@@ -185,7 +186,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
           ))}
 
           {/* 화면은 눌리는데 서버가 거부한 경우 — 서버가 한 말을 그대로 옮긴다 */}
-          {refused && <p className="note" data-field="refused">{refused}</p>}
+          <Say text={refused} level={profile.cityLevel} name="refused" />
         </section>
 
         {/* 명령 판 — 화면 바닥(2026-09-18 지정). 도시 관리의 명령 판과 같은 판이라

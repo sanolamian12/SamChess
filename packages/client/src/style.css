@@ -3342,8 +3342,6 @@ button.lv-tactic-row {
 /* 왜 안 되는지 — **[도시 증축] 바로 밑, 판 안** (2026-09-18 지정. 2026-09-04엔 판 밖 주황
    글씨였다). 양피지 위라 그림자 없이 짙은 붉은 먹색 — 병영 「군량이 모자란다」(`.note`)와
    같은 결이다. 가운데 정렬로 단추에 붙어 있어야 어느 단추 이야기인지 읽힌다 */
-.cty-whys { display: flex; flex-direction: column; gap: .1rem; margin: -.1rem 0 .15rem; }
-.cty-why { margin: 0; font-size: .8rem; font-weight: 700; text-align: center; color: #8a2f17; }
 
 /* 건물 줄 사이에 가짜 붓선 — 장수 일람 표(`.ofc-row`)와 같은 그라디언트 */
 .scr-city .cty-bld { position: relative; padding: .18rem 0; }
@@ -3422,7 +3420,6 @@ button.lv-tactic-row {
 /* 홈이 아닌 판은 목록이 위에 붙고 명령 판이 바닥에 — 대장간 `.frg-body-pinned`와 같은 결 */
 .mkt-body-flow { margin-top: 0; padding-top: .5rem; flex: 1; min-height: 0; overflow-y: auto; }
 .mkt-body-flow > .mkt-cmds { margin-top: auto; flex: none; }
-.mkt-refused { margin: 0 .75rem; text-align: center; color: #ffd9c2; text-shadow: 0 1px 3px #000; font-weight: 700; }
 
 /* ── 현황판 (76쪽) — 제목 바 바로 밑, `.place-body` 밖 (궁궐·병영 현황 판과 같은 자리) ── */
 .place-panel.mkt-status { margin: 0 .75rem; padding: .35rem .6rem .45rem; gap: .3rem; }
@@ -4956,7 +4953,6 @@ button.lv-tactic-row {
 .ofcard .btn.primary.ofcard-release { border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; color: #f3e8c8; text-shadow: 0 1px 2px #000a; }
 .ofcard .btn.primary.ofcard-select:disabled,
 .ofcard .btn.primary.ofcard-release:disabled { opacity: .5; cursor: not-allowed; }
-.ofcard .ofcard-action-note { margin: -.2rem 0 0; text-align: center; font-size: .8rem; font-weight: 700; color: #8a2f17; }
 .scr-officers .ofc-row-equip .c-eq { color: #5a4128; }
 
 /* ── 환경설정 팝업 (33쪽 오른쪽) ──────────────────────────── */
@@ -7513,7 +7509,6 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .15rem .5rem;
   font-weight: 700;
 }
-.ofcard-injury-why { flex-basis: 100%; text-align: center; font-weight: 400; color: #5a4a38; font-size: .8rem; }
 
 /* 「빈 줄」 — 책략이 없으면 줄째로 숨기지 않고 이 문구를 보여준다(2026-08-27,
    처음엔 숨겼었다 — §헤더 주석). 고유기술은 이제 이 규칙 밖이다 — 아래 참조. */
@@ -9127,7 +9122,6 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .modal.clx-ask { gap: .55rem; text-align: center; }
 .clx-ask-what { margin: 0; font-size: .9rem; }
 .clx-ask-warn { margin: 0; font-size: .8rem; color: #f0a08a; }
-.clx-ask-err { margin: 0; font-size: .8rem; color: #ff8a7a; }
 .clx-ask-btns { display: flex; gap: .5rem; justify-content: center; }
 .clx-ask-btns .btn { min-width: 5rem; }
 
@@ -9223,7 +9217,6 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .mail-ask p { margin: 0 0 .35rem; font-size: .8rem; line-height: 1.5; color: #7a2a1a; font-weight: 700; word-break: keep-all; }
 .mail-ask-btns { display: flex; gap: .3rem; }
 .mail-ask-btns .btn { flex: 1; font-size: .8rem; padding: .25rem 0; }
-.mail-err { margin: .3rem 0 0; font-size: .8rem; color: #9a2a1a; word-break: keep-all; }
 
 /* ── 지난 설명 (2026-10-23, `Steward.tsx`의 `GuideReplay`) ─────────────────────
  *

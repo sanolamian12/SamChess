@@ -47,6 +47,7 @@ import { currentSession } from '../meta/auth.ts';
 import {
   pickEquipLore, pickEquipName, pickEquipText, pickOfficerNameById,
 } from '../i18n/story.ts';
+import { Say } from './Steward.tsx';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
@@ -521,7 +522,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                 )}
               </>
             )}
-            {error && <p className="note" data-field="error">{error}</p>}
+            <Say text={error} who="blacksmith" level={profile.cityLevel} name="error" />
           </section>
         )}
 

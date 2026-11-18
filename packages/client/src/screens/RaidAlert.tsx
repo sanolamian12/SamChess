@@ -14,6 +14,7 @@
 import { officerById } from '@samchess/data';
 import { RAID_ABANDON_MS, RAID_LOOT_PCT, guardsOf, raidAbandoned, raidLoot, raidLootPct, raidRemainingMs } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { pickOfficerName } from '../i18n/story.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -102,7 +103,7 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onPrepar
               <span className="raid-left-time">{left}</span>
               <CityBonusMark profile={profile} keys={['raidResp']} atMs={raid.spawnedAt} />
             </p>
-            {error && <p className="note" data-field="error">{error}</p>}
+            <Say text={error} level={profile.cityLevel} name="error" />
             {/* 단추 셋 — 위에서부터 [항복](붉은 판) · [전투 준비](금빛 두루마리) · [지금 전투](옥색 판).
                 파수꾼이 없으면 싸울 수 없으니 [지금 전투]는 꺼지고, [전투 준비]가 농지(파수꾼 관리)로 보내며
                 빛나서 그쪽으로 이끈다(2026-10-15 지정 — 옛 [파수꾼 배치] 단추를 대신한다).

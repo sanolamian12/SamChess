@@ -261,7 +261,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
           <button className="btn primary wide" data-action="savePolicy" data-guide-cue={mission && anyDirty ? '' : undefined} disabled={!anyDirty} onClick={save}>
             <span className="lbl">{t('gp.save')}</span>
           </button>
-          {saved && <p className="hint" data-field="saved">{t('gp.saved')}</p>}
+          {/* 「저장했다」 줄은 걷었다(2026-11-19 기획자) — 저장하면 [저장]이 다시 잠겨 빤하다 */}
         </section>
       </div>
 

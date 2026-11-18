@@ -21,6 +21,7 @@ import {
   WAR_POLL_MS, garrisonOf, grainCost, isWarOpen, opponentMembers, rewardTier, winChance,
 } from '@samchess/meta';
 import type { MatchOpponent, PlayerProfile, Squad, WarSquadView, WarStatus, WarView } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { connectWarBattle } from '../battle/online.ts';
 import type { OnlineTransport } from '../battle/online.ts';
 import { currentSession } from '../meta/auth.ts';
@@ -220,7 +221,7 @@ export function WarInbox({ initial, profile, onBattle, onClose }: {
         ) : war.status === 'accepted' || war.status === 'started' ? (
           <p className="row" data-field="warState">{t('war.joining')}</p>
         ) : null}
-        {err && <p className="note" data-field="error">{err}</p>}
+        <Say text={err} who="army" level={profile.cityLevel} name="error" />
         <div className="srt-modal-acts">
           {end ? (
             <button className="btn wide" data-action="warOk" onClick={onClose}>{t('war.ok')}</button>

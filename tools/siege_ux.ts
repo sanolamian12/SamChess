@@ -230,7 +230,7 @@ try {
   const grainStale = (await getProfile(A.uid))!.grain;
   await seen(O.uid, 0);
   await page.click('[data-action="siegeReady"]');
-  await page.waitForSelector('[data-modal="siegeTarget"][data-online="1"] [data-field="error"]', { timeout: 10_000 })
+  await page.waitForSelector('.stw[data-say="error"]', { timeout: 10_000 })
     .catch(() => fail('낡은 목록으로 접속 중인 O를 눌렀는데 「방금 접속」이 안 뜬다'));
   if (!await page.$('[data-modal="siegeTarget"] [data-action="declare"]')) fail('거절된 뒤 상세가 선전포고 모양으로 안 바뀌었다');
   const afterStale = (await getProfile(A.uid))!;

@@ -26,9 +26,11 @@
  *   건너뛴 것도 「들었다」로 적는다 — 다시 들을 길은 [사용 안내]에 있다. 내관을 **톡 누르기만** 하면 ✔와 같다.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { stewardTier as stewardTierOf } from '@samchess/meta';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, GuideShelf, StewardTier } from '@samchess/meta';
+import type { GuideSpeaker } from './guideScript.ts';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
 import { t } from '../i18n/index.ts';
 import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix, GUIDE_ABOVE, GUIDE_HOLD } from './guideScript.ts';
@@ -58,6 +60,11 @@ const HOLD_SELECTOR = [
   // 기다리는 자기 자신(`wait`)은 세지 않는다
   '#frame .stw:not([data-phase="wait"])',
 ].join(', ');
+/**
+ * 한 마디 안내(`Say`)가 기다리는 것 — 입장 하늘과 **다른 사람이 말하는 중**뿐이다. 팝업은 안 기다린다 — 그 팝업 안의 일(이름 변경 · 도적떼 알림의
+ * 오류)을 말하러 나오는 것이라 팝업 위에 선다
+ */
+const SAY_HOLD_SELECTOR = '#frame[data-sky], #frame .stw:not([data-phase="wait"])';
 
 /** 이보다 덜 움직였으면 끈 것이 아니라 누른 것이다 */
 const TAP_SLOP = 6;
@@ -88,7 +95,28 @@ function dodge(frame: HTMLElement, bubble: HTMLElement | null, target: Element |
   return Math.max(0, f.height - (bottom + DODGE_GAP + h));
 }
 
-export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone }: {
+/**
+ * 한 마디 안내가 떠 있는 팝업 · 장수 카드를 비켜 서는 자리 — 대본 안내의 `dodge`와 같되, 위아래 어디에도 안 들어가면
+ * **머리 줄 바로 밑**에 선다(팝업의 단추는 대개 바닥에 모여 있다 — 바닥에 서면 [뒤로]를 가렸다, 2026-11-19 raid_play)
+ */
+function dodgeSay(frame: HTMLElement, bubble: HTMLElement | null, target: Element | null): number | null {
+  if (!bubble || !target) return null;
+  const f = frame.getBoundingClientRect();
+  const r = target.getBoundingClientRect();
+  if (r.width === 0 && r.height === 0) return null;
+  const h = bubble.offsetHeight;
+  const homeBottom = f.width * BUBBLE_BOTTOM;
+  const homeTop = f.height - homeBottom - h;
+  const top = r.top - f.top;
+  const bottom = r.bottom - f.top;
+  if (bottom <= homeTop || top >= f.height - homeBottom) return null;
+  const head = f.width * 0.18;
+  if (top - DODGE_GAP - h >= head) return f.height - (top - DODGE_GAP);
+  if (f.height - (bottom + DODGE_GAP + h) >= 0) return f.height - (bottom + DODGE_GAP + h);
+  return f.height - head - h;
+}
+
+export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone, speaker: who, say, sayCode, leaving }: {
   /** 어느 안내인가 — 화면에는 안 쓰고 `data-guide`로만 단다(눈 확인 도구가 건다) */
   id?: GuideId;
   tier: StewardTier;
@@ -101,6 +129,14 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   onRead?: () => void;
   /** 다 물러났다 */
   onDone: () => void;
+  /** 누가 서는가 — 안내(`id`)가 정하는 대신 밖에서 준다(한 마디 안내 `Say`) */
+  speaker?: GuideSpeaker;
+  /** 한 마디 안내의 이름 — 있으면 팝업 위에 서고, 팝업을 안 기다리며, `data-say`로 단다(검사가 건다) */
+  say?: string;
+  /** 막은 까닭의 코드(`MetaResult.code`) — `data-say-code`. 검사가 글자 대신 이것을 본다 */
+  sayCode?: string | undefined;
+  /** 말할 까닭이 사라졌다 — 물러난다(아직 안 들어왔으면 그대로 끝난다) */
+  leaving?: boolean;
 }): React.JSX.Element | null {
   const [phase, setPhase] = useState<'wait' | 'in' | 'out'>('wait');
   const [idx, setIdx] = useState(0);
@@ -110,7 +146,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   // 호칭은 들어오는 순간의 것 하나 — 계정이 바뀌어도(마지막 마디의 「들었다」 저장) 들어오기를 다시 돌리지 않는다
   const honorRef = useRef(honor);
   /** 누가 서는가 — 안내마다 정해진다(`guideSpeaker` — 갈래마다). 들어오는 순간의 목소리도 이것으로 고른다 */
-  const speaker = guideSpeaker(id);
+  const speaker = who ?? guideSpeaker(id);
   honorRef.current = honor;
 
   // 들어오기 — 미루고, 입장 하늘 · 불러오는 중 가리개가 걷힐 때까지 더 기다린다
@@ -118,7 +154,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
     let timer = 0;
     const tryIn = (): void => {
       const extra = id ? GUIDE_HOLD[id] : undefined;
-      if (document.querySelector(HOLD_SELECTOR) || (extra && document.querySelector(extra))) timer = window.setTimeout(tryIn, 300);
+      if (document.querySelector(say ? SAY_HOLD_SELECTOR : HOLD_SELECTOR) || (extra && document.querySelector(extra))) timer = window.setTimeout(tryIn, 300);
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다
@@ -144,7 +180,19 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   const [bubbleBottom, setBubbleBottom] = useState<number | null>(null);
   useEffect(() => {
     const frame = document.getElementById('frame');
-    if (!frame || !spot) { setBubbleBottom(null); return; }
+    // 한 마디 안내는 가리킬 자리가 없다 — 대신 **떠 있는 팝업을 덮지 않게** 비켜 선다(팝업 위에 서므로 [닫기] 같은 단추를 가렸다, 2026-11-19 war_ux)
+    const sayMode = !spot && !!say && phase === 'in';
+    if (!frame || (!spot && !sayMode)) { setBubbleBottom(null); return; }
+    if (sayMode) {
+      const markSay = (): void => {
+        const modals = frame.querySelectorAll('.modal-back .modal, .ofcard');
+        setBubbleBottom(dodgeSay(frame, bubbleRef.current, modals[modals.length - 1] ?? null));
+      };
+      markSay();
+      const t = window.setInterval(markSay, 400);
+      return () => window.clearInterval(t);
+    }
+    if (!spot) return;
     frame.dataset.guideSpot = spot;
     const mark = (): void => {
       if (!select) return;
@@ -159,7 +207,13 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
       delete frame.dataset.guideSpot;
       frame.querySelectorAll('[data-guide-glow]').forEach((el) => el.removeAttribute('data-guide-glow'));
     };
-  }, [spot, select]);
+  }, [spot, select, say, phase]);
+
+  useEffect(() => {
+    if (!leaving) return;
+    if (phase === 'wait') onDone();
+    else if (phase === 'in') setPhase('out');
+  }, [leaving, phase, onDone]);
 
   useEffect(() => {
     if (phase !== 'out') return;
@@ -217,7 +271,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone 
   const line = lines[idx];
   if (!line) return null;
   const layer = (
-    <div className="stw" data-guide={id} data-above={id && GUIDE_ABOVE.has(id) ? '' : undefined} data-phase={phase} data-guide-line={idx} data-guide-lines={lines.length}>
+    <div className="stw" data-guide={id} data-say={say} data-say-code={sayCode || undefined} data-above={say || (id && GUIDE_ABOVE.has(id)) ? '' : undefined} data-phase={phase} data-guide-line={idx} data-guide-lines={lines.length}>
       {/* 끄는 동안 판 전체(말풍선 + 내관)가 손을 따라 밀린다. 물러나는 연출은 그 안에서 돌아 밀린 자리에서 이어진다 */}
       <div
         className="stw-drag"
@@ -377,5 +431,52 @@ export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
         <button className="btn primary wide" data-action="guideReplayClose" onClick={onClose}>{t('guide.replay.close')}</button>
       </div>
     </div>
+  );
+}
+
+/**
+ * **한 마디 안내** (2026-11-19 기획자) — 판 안에 숨었다가 나타나던 안내 · 오류 줄(「지금과 같은 이름이다」 · 「서버에 닿지 못했다」)을 걷고,
+ * 그 자리의 사람(내관 · 무관 · 학사 …)이 말풍선으로 말한다. 판 크기가 조작에 따라 출렁이지 않는다.
+ *
+ * - `text`가 생기는 **그 순간** 들어온다(기획자 — 단추를 누를 때가 아니라). 글이 바뀌면 새로 들어오고, `null`이 되면 물러난다.
+ * - 「들었다」로 적지 않는다(대본 안내가 아니다). 목소리도 없다 — 조작마다 인사하면 시끄럽다.
+ * - **빤한 것은 말하지 않는다** — 이름 변경 판에서 같은 이름이라 [변경한다]가 막힌 것처럼, 그 판에 들어온 까닭으로 알 수 있는 것은
+ *   부르는 쪽이 `text`를 `null`로 둔다(단추만 막는다).
+ */
+/** 지금 계정의 도시 레벨 — `App`이 계정을 받을 때마다 적는다(`setSayLevel`). 계정을 안 받는 화면(장수 카드 · 로그인)의 `Say`가 이것으로 옷을 고른다 */
+let sayLevel = 1;
+export const setSayLevel = (level: number): void => { sayLevel = level; };
+
+export function Say({ text, who = 'steward', level, name, code }: {
+  /** 할 말 — `null`이면 아무도 안 선다(서 있으면 물러난다) */
+  text: string | null | undefined;
+  who?: GuideSpeaker;
+  /** 도시 레벨 — 내관 · 병사의 옷(`stewardTier`). 없으면 앱이 적어 둔 지금 계정의 것 */
+  level?: number;
+  /** 무엇에 대한 말인가 — `data-say`(검사가 건다). 옛 `data-field` 이름을 그대로 쓴다 */
+  name: string;
+  /** 막은 까닭의 코드 — `data-say-code`(옛 `data-code`) */
+  code?: string | undefined;
+}): React.JSX.Element | null {
+  const [shown, setShown] = useState<{ text: string; leaving: boolean } | null>(null);
+  useEffect(() => {
+    if (text) setShown({ text, leaving: false });
+    else setShown((s) => (s && !s.leaving ? { ...s, leaving: true } : s));
+  }, [text]);
+  const done = useCallback(() => setShown((s) => (s && s.leaving ? null : s)), []);
+  const closed = useCallback(() => setShown(null), []);
+  if (!shown) return null;
+  return (
+    <Steward
+      key={shown.text}
+      tier={stewardTierOf(level ?? sayLevel)}
+      speaker={who}
+      say={name}
+      sayCode={code}
+      lines={[{ text: shown.text }]}
+      delayMs={120}
+      leaving={shown.leaving}
+      onDone={shown.leaving ? done : closed}
+    />
   );
 }

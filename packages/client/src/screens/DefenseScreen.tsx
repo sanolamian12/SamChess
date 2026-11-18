@@ -26,6 +26,7 @@ import { DEFENSE_PAGE_SIZE, defenseHeld, defenseRate } from '@samchess/meta';
 import type { DefenseReplayData, DefenseRow, DefenseSummary, PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { fetchDefense, fetchDefenseReplay, markDefenseSeen } from '../meta/defense.ts';
+import { Say } from './Steward.tsx';
 import { rankingBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
@@ -144,7 +145,7 @@ export function DefenseScreen({ profile, onBack, onReplay }: {
               ))}
             </div>
           )}
-          {err && <p className="note" data-field="error">{err}</p>}
+          <Say text={err} level={profile.cityLevel} name="error" />
           <Pager page={current} pageCount={pageCount} onPage={setPage} ends />
         </section>
       </div>

@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BANDIT_SIDE, createBattle } from '@samchess/rules';
 import { raidBattleConfig, raidIntentsOf, resumeRaidState } from '@samchess/meta';
 import type { PlayerProfile, RaidState } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { bootBattle } from '../battle/boot.ts';
 import { LocalTransport } from '../battle/transport.ts';
 import { RaidIntentUploader, RaidRequestFailed, settleRaidOnServer } from '../meta/raid.ts';
@@ -154,7 +155,7 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
         <>
           <h1 className="brs-ttl" style={{ fontSize: `${Math.min(12, titleSize(verdict))}cqw` }}>{verdict}</h1>
           <p className="brs-lede" data-field="bandits" data-n={banditsLeft}>{t('raid.result.bandits', { n: banditsLeft })}</p>
-          {error && <p className="brs-lede" data-field="error">{error}</p>}
+          <Say text={error} name="error" />
         </>
       );
     }

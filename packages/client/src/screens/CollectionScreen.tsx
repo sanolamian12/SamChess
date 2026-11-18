@@ -24,6 +24,7 @@ import {
   sortCollections,
 } from '@samchess/meta';
 import type { CollectionRankRow, CollectionRow, CollectionSort, PlayerProfile, SlotBlock } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { CityActionRejected, registerCollectionOnServer } from '../meta/city.ts';
 import { fetchCollectionRanking } from '../meta/ranking.ts';
@@ -462,7 +463,7 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
                 : t('collection.ask.good', { name: slotLabel(asked), from: askedState.have, to: askedState.have - 1 })}
             </p>
             <p className="clx-ask-warn">{t('collection.ask.final')}</p>
-            {error && <p className="clx-ask-err">{error}</p>}
+            <Say text={error} level={profile.cityLevel} name="collectionError" />
             <div className="clx-ask-btns">
               <button className="btn" data-action="cancelRegister" disabled={busy} onClick={() => setAsking(null)}>
                 {t('collection.ask.no')}

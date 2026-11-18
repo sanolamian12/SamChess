@@ -28,6 +28,7 @@ import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import {
   buyGrainOnServer, buyMaterialsOnServer, resetAcademyOnServer, respecOnServer,
 } from '../../meta/city.ts';
+import { Say } from '../Steward.tsx';
 import { t } from '../../i18n/index.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { pickOfficerName } from '../../i18n/story.ts';
@@ -305,7 +306,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
             <p className="mkt-confirm-lead">{t('market.respec.what', { name: nameOf(officer), level })}</p>
             <Portrait officer={officer} size="sm" />
             <p>{t('market.respec.refund', { n: refund })}</p>
-            {!can.ok && <p className="note">{can.reason}</p>}
+            <Say text={can.ok ? null : can.reason} level={profile.cityLevel} name="respecWhy" />
             <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
           </ConfirmModal>
         );

@@ -28,6 +28,7 @@ import { useMemo, useRef, useState } from 'react';
 import { EQUIPMENT, marketItemById } from '@samchess/data';
 import { mailGrainLoss, mailText } from '@samchess/meta';
 import type { MailReward, PlayerProfile } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { claimMailOnServer, readMailOnServer } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
@@ -228,7 +229,7 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
                       ? <GameIcon name="mk-done" label={t('mail.claimed')} text />
                       : <GameIcon name="mk-claim" label={t('mail.claim')} text />}</button>
                   )}
-                  {error && <p className="mail-err" data-field="mailError">{error}</p>}
+                  <Say text={error} level={profile.cityLevel} name="mailError" />
                 </div>
               )}
             </div>

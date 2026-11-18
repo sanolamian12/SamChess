@@ -70,6 +70,7 @@ import {
   canLevelUp, officerLevelCap, cardsToLevelUp, growthPreview, statPicksOf, tacticChoices, tacticsOf,
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
+import { Say } from './Steward.tsx';
 import { levelUpOnServer } from '../meta/city.ts';
 import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
@@ -230,7 +231,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
             >
               {need === null ? t('levelup.max') : t('levelup.go', { need })}
             </button>
-            {respecNote && <p className="note" data-field="respecNote">{respecNote}</p>}
+            <Say text={respecNote} name="respecNote" />
             {/* 장수 레벨의 상한은 도시 레벨이다 (2026-09-14) — 전면 화면(`LevelUpScreen`)과 같은 줄 */}
             {need !== null && inst.level >= officerLevelCap(profile) && (
               <p className="note" data-field="levelCap">

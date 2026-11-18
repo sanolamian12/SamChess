@@ -40,6 +40,7 @@ import { pickEquipName, pickOfficerName } from '../i18n/story.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { Say } from './Steward.tsx';
 import { buildingBackdrop } from './backdrop.ts';
 import { ItemThumb } from './EquipThumb.tsx';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
@@ -319,7 +320,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
                 );
               })}
             </div>
-            {error && <p className="note" data-field="error">{error}</p>}
+            <Say text={error} who="farm" level={profile.cityLevel} name="error" />
           </section>
         )}
 

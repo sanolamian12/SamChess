@@ -46,6 +46,7 @@ import {
 } from '@samchess/meta';
 import type { AiBattleState, MatchOpponent, PlayerProfile, SiegeListRow, SiegeTab, Squad, WarStatus, WarView } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
+import { Say } from './Steward.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { startAiOnServer } from '../meta/aiBattle.ts';
 import { fetchSiegeTargets, matchSiegeOnServer } from '../meta/siege.ts';
@@ -342,7 +343,7 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onSt
             {weak && <p className="note" data-field="weak"><GameIcon name="mk-warn" label={t('siege.weak')} text /></p>}
           </>
         )}
-        {err && <p className="note" data-field="error">{err}</p>}
+        <Say text={err} who="army" level={profile.cityLevel} name="error" />
         {online && !err && !war && (
           <p className="hint" data-field="declareHint">{t(cityBusy ? 'war.hintBusy' : 'war.hint')}</p>
         )}

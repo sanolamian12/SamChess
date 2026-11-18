@@ -105,7 +105,7 @@ try {
     return !!(up && back && (up.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING));
   });
   if (!order) fail('[도시 증축]이 [뒤로 가기] 위에 없다');
-  if (await page.$('[data-field="why"][data-code="city.credits"]')) fail('「건설 기회가 남았다」 이유가 뜬다');
+  if (await page.$('.stw[data-say="why"][data-say-code="city.credits"]')) fail('「건설 기회가 남았다」 이유가 뜬다');
   await shot('4c-buildings');
   await page.click('[data-action="upgrade"]');
   await page.waitForSelector('[data-modal="upgrade"]');
@@ -169,7 +169,8 @@ try {
   await page.waitForTimeout(800);
   if (await page.$('.guide-target[data-guide-target^="growth-"]')) fail('다 지었는데 메인 궁궐 위 가리킴이 남았다');
   const saved = (await getProfile(u.uid))!;
-  if (saved.cityLevel !== 2 || !['city.ready', 'palace.upgrade', 'city.upgrade', 'city.build', 'buildings.intro'].every((g) => saved.guide?.seen.includes(g as GuideId))) {
+  // city.ready는 증축마다 다시 말하므로 증축하면 들은 목록에서 빠진다(2026-11-14 meta applyCityUpgrade)
+  if (saved.cityLevel !== 2 || saved.guide?.seen.includes('city.ready') || !['palace.upgrade', 'city.upgrade', 'city.build', 'buildings.intro'].every((g) => saved.guide?.seen.includes(g as GuideId))) {
     fail(`저장된 계정이 다르다 — Lv${saved.cityLevel}, 들은 것 ${JSON.stringify(saved.guide?.seen)}`);
   }
   await browser.close();

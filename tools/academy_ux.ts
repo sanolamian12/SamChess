@@ -178,7 +178,7 @@ try {
   if (await page.$('[data-action="openResearch"]')) fail('연구 중인데 [연구하기]가 남아 있다');
   if (!await page.$('.acd-home [data-action="cancelResearch"].acd-cancel-research')) fail('바닥 판에 [연구 취소]가 없다');
   if (await page.$('.acd-status [data-action="cancelResearch"]')) fail('현황판에 작은 [취소]가 남아 있다');
-  if (await page.$('[data-field="researchBlocked"]')) fail('연구 중 안내문이 남아 있다');
+  if (await page.$('.stw[data-say="researchBlocked"] [data-field="guideText"]')) fail('연구 중 안내문이 남아 있다');
   const cancelArt = await page.$eval('.acd-home [data-action="cancelResearch"]', (e) => getComputedStyle(e).borderImageSource);
   if (!cancelArt.includes('btn-forcedcancel')) fail(`[연구 취소]가 붉은 목판이 아니다 — ${cancelArt}`);
   ok(`서버의 research가 증폭+ · 바닥 판은 붉은 [연구 취소](${await page.textContent('.acd-home [data-action="cancelResearch"]')}) · 현황판 [취소]·안내문 없음`);

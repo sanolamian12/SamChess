@@ -46,6 +46,7 @@ import {
   growthCue, guideSeen, poolCap, poolUsed, SORTIE_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, squadAt, squadSlot, squadStateAt, sumTally,
   tutorialDone, tutorialStatus,
 } from '@samchess/meta';
+import { normalizeCityName } from '@samchess/meta';
 import type { MetaResult, PlayerProfile } from '@samchess/meta';
 import type { BattleMode } from '@samchess/rules';
 import { useEffect, useState } from 'react';
@@ -55,6 +56,7 @@ import { reasonText } from '../i18n/reason.ts';
 import { currentSession } from '../meta/auth.ts';
 import { renameCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
+import { Say } from './Steward.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import type { PlaceId } from './backdrop.ts';
@@ -110,7 +112,7 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
 
       <div className="place-body">
         {place === 'barracks' && (
-          <BarracksDoors onSortie={onSortie} onSquads={onSquads} onTutorial={onTutorial} blocked={sortieBlocked} />
+          <BarracksDoors onSortie={onSortie} onSquads={onSquads} onTutorial={onTutorial} blocked={sortieBlocked} level={profile.cityLevel} />
         )}
         {place === 'palace' && (
           /* 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있던 동안
@@ -203,8 +205,8 @@ function PalaceStatus({ profile, onChange }: {
         <span className="plc-cell" data-field="palaceLevel">{t('palace.summary.level', { level: buildingLevel(profile, 'palace') })}</span>
         <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
       </div>
-      {refused && <p className="note" data-field="refused">{refused}</p>}
     </section>
+    <Say text={refused} level={profile.cityLevel} name="refused" />
     {renaming && <RenameModal profile={profile} onClose={() => setRenaming(false)} onConfirm={rename} />}
     {busy && <BusyVeil />}
     </>
@@ -222,6 +224,10 @@ function RenameModal({ profile, onClose, onConfirm }: {
 }): React.JSX.Element {
   const [name, setName] = useState(profile.cityName);
   const check = canRenameCity(profile, name, Date.now());
+  // 빈 이름 · 지금과 같은 이름은 말하지 않는다 — 이름을 바꾸러 들어온 판이라 [변경한다]가 막힌 까닭이 빤하다(2026-11-19 기획자).
+  // 쿨다운 · 금화처럼 판만 봐서는 모를 것만 내관이 말한다
+  const typed = normalizeCityName(name);
+  const why = !check.ok && typed && typed !== profile.cityName ? check.reason : null;
 
   return (
     <div className="modal-back" data-modal="rename" onClick={onClose}>
@@ -237,7 +243,7 @@ function RenameModal({ profile, onClose, onConfirm }: {
           autoFocus
         />
         <p className="row dim" data-field="cost">{t('city.rename.cost', { gold: CITY_RENAME_GOLD })}</p>
-        {!check.ok && <p className="note" data-field="why">{check.reason}</p>}
+        <Say text={why} level={profile.cityLevel} name="why" />
         <div className="cty-acts">
           <button
             className="btn primary wide"
@@ -322,7 +328,8 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
       ))}
       <TutorialLine profile={profile} />
       {/* 참가비 줄은 2026-09-16에 뺐다(기획자 지정). **모자랄 때 말하는 것은 남는다** — 그쪽이 「왜 안 되는가」의 답이다 */}
-      {low && <p className="note" data-field="lowGrain">{t('barracks.lowGrain')}</p>}
+      {/* 모자랄 때는 무관이 말한다(2026-11-19 기획자 — 판 안에 숨었다 나타나는 줄을 걷었다) */}
+      <Say text={low ? t('barracks.lowGrain') : null} who="army" level={profile.cityLevel} name="lowGrain" />
       <SquadStatus profile={profile} />
     </section>
   );
@@ -443,7 +450,8 @@ function SquadStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element
  * **눌리지 않는 것 자체로** 말한다는 판단이다. 되살릴 자리는 여기 한 곳이고
  * 문구는 열 언어에 그대로 남아 있다.
  */
-function BarracksDoors({ onSortie, onSquads, onTutorial, blocked }: {
+function BarracksDoors({ onSortie, onSquads, onTutorial, blocked, level }: {
+  level: number;
   onSortie: () => void;
   onSquads: () => void;
   onTutorial: () => void;
@@ -473,7 +481,8 @@ function BarracksDoors({ onSortie, onSquads, onTutorial, blocked }: {
       {/* 안 되는 이유는 제 단추 바로 밑에 — 기본 튜토리얼을 안 끝냈거나 도적떼가 농지를 노리는 동안이다 */}
       {/* `data-code` — 막은 쪽(튜토리얼 · 도적떼). 스모크가 글자가 아니라 이것으로 누가 막았는지 본다 */}
       {/* 막은 쪽은 글자가 없어도 단추의 `data-blocked`가 말한다 */}
-      {said && <p className="hint" data-field="sortieBlocked" data-code={code}>{why}</p>}
+      {/* 판 안의 줄 대신 무관이 말한다(2026-11-19 기획자). 누가 막았는지는 단추의 `data-blocked`가 말한다 */}
+      <Say text={said ? why : null} who="army" level={level} name="sortieBlocked" code={code} />
     </section>
   );
 }
