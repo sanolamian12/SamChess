@@ -611,7 +611,13 @@ GRASS_TOP = {"관우": 32, "동량": 36}  # 동량: 걸음 칸 앞다리 · 평�
 # 원본은 두고, 그 칸에서 몸에 갇힌 구멍 가운데 이 넓이(원본 px) 이하만 바로 아래 몸을 끌어올려 메운다 —
 # 창 궤적과 몸 사이처럼 원래 비어 있는 넓은 자리(뇌동 2,051px)는 안 메운다. {이름: {칸: 넓이 상한}}
 HOLE_FILL = {"뇌동": {2: 600}}
+# 〃 투구처럼 매끈한 면에 난 구멍(2026-11-18, 비관 — 흰 반사광이 바탕으로 빠졌다): 아래를 끌어올리면 얼굴이 올라오므로
+# 가장 가까운 둘레 색으로 메운다. 그림 위쪽 절반의 구멍만 — 다리 사이 같은 아래쪽 틈은 안 건드린다
+HOLE_FILL_NEAR = {"비관": {0: 900, 2: 900, 3: 900, 4: 900}}
 HOLE_RIM = 2   # 〃 구멍 둘레의 번진 테두리(px)
+HOLE_PINK = 20       # 〃 둘레 색으로 메울 때(`HOLE_FILL_NEAR`) min(R, B) − G 가 이만큼 넘는 분홍 기운도 메운다
+HOLE_SMOOTH = 40     # 〃 메운 자리를 고르게 펴는 횟수
+HOLE_PINK_REACH = 4  # 〃 구멍에서 이만큼(px) 안쪽만
 
 # 발 곁에 돌맹이 · 연황색 덩이가 몸에 붙어 그려진 원본(2026-11-17, 마량 — 기획자): 잔디를 걷어도 발에 이어져 남고,
 # Gemini가 그것을 두루마리로 읽어 사이 칸에 들고 나왔다. 원본은 두고 그 칸의 이 네모(원본 px, x0 · y0 · x1 · y1 — 끝 포함)를
@@ -661,9 +667,14 @@ def patch_boxes(rgb: np.ndarray, fg: np.ndarray, boxes: list[tuple[int, int, int
     return rgb, fg
 
 
-def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
+def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int, near: bool = False
                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     holes = ndimage.binary_fill_holes(fg) & ~fg
+    if near:
+        # 반쯤 빠진 픽셀(반투명)도 구멍이다 — 짙은 판 위에서 투구에 회색 얼룩, 밝은 판 위에서 분홍 줄로 비친다
+        solid_fg = fg & (alpha > 200)
+        holes |= ndimage.binary_fill_holes(solid_fg) & ~solid_fg
+        holes[holes.shape[0] // 2:] = False
     lab, n = ndimage.label(holes)
     if not n:
         return rgb, fg, alpha
@@ -671,6 +682,11 @@ def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
     fill = np.isin(lab, np.nonzero(sizes <= max_area)[0] + 1)
     # 구멍 둘레에는 흰 바탕이 번진 회색 테두리가 남아 있다 — 그것까지 메울 자리로 넣고, 색은 그 바깥의 몸에서 가져온다
     fill = ndimage.binary_dilation(fill, EIGHT, iterations=HOLE_RIM) & (fill | fg)
+    if near:
+        # 투구 구멍 둘레에는 바탕(마젠타)이 번진 분홍 줄이 더 넓게 남아 있다 — 구멍 곁의 분홍 기운도 메울 자리로
+        c = rgb.astype(int)
+        pink = np.minimum(c[..., 0], c[..., 2]) - c[..., 1] >= HOLE_PINK
+        fill |= ndimage.binary_dilation(fill, EIGHT, iterations=HOLE_PINK_REACH) & pink & fg
     solid = fg & (alpha > 200) & ~fill
     # 가장 가까운 색으로 메우면 둘레의 회색 사슬갑옷이 방사 줄무늬로 번진다 — 대신 구멍 **바로 아래** 갑옷판을
     # 구멍 높이만큼 끌어올린다(갑옷판은 가로 줄무늬라 그대로 이어진다). 아래가 몸이 아닌 자리만 가장 가까운 색
@@ -680,8 +696,13 @@ def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
     for i in range(1, m + 1):                    # 구멍마다 제 높이로
         ys, xs = np.nonzero(parts == i)
         src_y = np.minimum(ys + int(ys.max() - ys.min() + 1), fill.shape[0] - 1)
-        ok = solid[src_y, xs]
+        ok = solid[src_y, xs] & (not near)
         rgb[ys, xs] = np.where(ok[:, None], rgb[src_y, xs], rgb[iy[ys, xs], ix[ys, xs]])
+    if near:
+        # 가장 가까운 색만 쓰면 둘레에서 방사 줄무늬가 진다 — 메운 자리 안을 둘레에서 번져 들어오게 고르게 편다(확산)
+        for _ in range(HOLE_SMOOTH):
+            blur = ndimage.uniform_filter(rgb.astype(np.float32), size=(3, 3, 1))
+            rgb[fill] = blur[fill]
     return rgb, fg | fill, np.where(fill, 255.0, alpha)
 
 
@@ -711,6 +732,8 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
             fg = strip_ground(cell_rgb, fg, body["foot"], GRASS_TOP.get(path.stem))
         if k in HOLE_FILL.get(path.stem, {}):
             cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, alpha, HOLE_FILL[path.stem][k])
+        if k in HOLE_FILL_NEAR.get(path.stem, {}):
+            cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, cell_alpha, HOLE_FILL_NEAR[path.stem][k], near=True)
         # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
         frame_rgb, _ = defringe(cell_rgb, np.where(fg, cell_alpha, 0.0))
 
