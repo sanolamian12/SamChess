@@ -61,7 +61,7 @@ import { GarrisonPolicyScreen } from './GarrisonPolicyScreen.tsx';
 import { SQUAD_ROWS } from './SquadViewScreen.tsx';
 import { SquadHead, SquadLine } from './SquadListScreen.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
-import { BlinkGlow, equipBlink, itemBlink } from './BlinkGlow.tsx';
+import { BlinkGlow, STAND_GLOW, equipBlink, itemBlink } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { t } from '../i18n/index.ts';
@@ -76,8 +76,6 @@ const START_PIECES: Record<BattleMode, PieceType[]> = {
 /** King 줄 밖에서 고를 수 있는 기물 — King은 맨 윗줄에 박혀 있다 */
 const SWAP_PIECES: readonly PieceType[] = PIECE_TYPES.filter((p) => p !== 'King');
 
-/** 명단 꼬마의 후광 — 부대 관리 · 농지와 같은 표: S급 자주 · A급 흰 별빛 · E급(황제) 금 */
-const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
 
 /** 빈 칸을 채울 껍데기 — 칸(모드 · 역할)과 처음 포지션만 있다 (2026-11-14 부대 개편 — 이름 걸음이 없어졌다) */
 export function emptySquad(mode: BattleMode, role: SquadRole): Squad {

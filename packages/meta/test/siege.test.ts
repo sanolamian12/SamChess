@@ -38,7 +38,8 @@ function defenderCity(level = 2): PlayerProfile {
   const base = withGarrisons({ ...createProfile('수비성', 21), cityLevel: level, tutorial: { done: [...SORTIE_TUTORIALS] } });
   const squad = garrisonOf(base, '3v3')!;
   const cells = defaultSquadCells('3v3', 'P2', squad.picks);
-  const swapped = cells.map((c, i) => (i === 0 ? { ...c, x: cells[1]!.x, y: cells[1]!.y } : i === 1 ? { ...c, x: cells[0]!.x, y: cells[0]!.y } : c));
+  // 왼쪽 · 오른쪽을 맞바꾼다 — 부대의 기본 배치(King 가운데)와도, 엔진의 기본 배치(로스터 차례)와도 다르다
+  const swapped = cells.map((c, i) => (i === 1 ? { ...c, x: cells[2]!.x, y: cells[2]!.y } : i === 2 ? { ...c, x: cells[1]!.x, y: cells[1]!.y } : c));
   return { ...base, squads: base.squads.map((s) => (s.id === squad.id ? withDeployment(s, 'P2', swapped) : s)) };
 }
 
@@ -72,9 +73,9 @@ describe('상대 — 다른 도시의 수비군', () => {
     const t = target();
     const placed = new Map(t.deploy!.map((d) => [d.unit, d.pos]));
     const plain = target({ ...defenderCity(), squads: defenderCity().squads.map((s) => withDeployment(s, 'P2', null)) });
-    assert.equal(plain.deploy, null);
+    assert.notEqual(plain.deploy, null, '저장 안 해도 부대의 기본 배치가 실린다(2026-11-18)');
     const r = aiBattleState(fighting(t).aiBattle!);
-    const base = aiBattleState(fighting(plain).aiBattle!);
+    const base = aiBattleState(fighting({ ...plain, deploy: null }).aiBattle!);
     assert.ok(r.ok && base.ok);
     if (!r.ok || !base.ok) return;
     let moved = 0;

@@ -719,12 +719,12 @@ const makeSquad = async (slot: string, pieces: string[], deploy: boolean): Promi
      * 깔렸는가」가 **깔리지 않아도 통과한다** — 판이 어차피 같은 자리에 세우기
      * 때문이다. 방어를 넣었으면 그것이 발동하는 입력을 만들어 본다(B의 교훈).
      */
-    // [장수 배치](2026-11-17) — 첫 차례가 King이다(머리 판 왼쪽 = 기물 차례). F16에 세우고 [장수 배치]를 다시 눌러 멈춘다
-    await page.click('[data-action="deployPlace"]');
-    if (await page.getAttribute('.sqb-board', 'data-placing') !== 'King') fail('[장수 배치]의 첫 차례가 King이 아니다');
+    // King 카드(2026-11-18 — 장수 카드, 한 명씩) → F16을 누르면 서고 차례가 꺼진다
+    await page.click('[data-action="deployPlace"][data-piece="King"]');
+    if (await page.getAttribute('.sqb-board', 'data-placing') !== 'King') fail('King의 카드를 눌렀는데 King 차례가 아니다');
     await page.click('.sqb-cell[data-x="5"][data-y="15"]');
     await page.waitForTimeout(120);
-    await page.click('[data-action="deployPlace"]');
+    if (await page.getAttribute('.sqb-board', 'data-placing')) fail('한 명을 세웠는데 차례가 안 꺼졌다');
     if (!await page.$('.sqb-cell[data-x="5"][data-y="15"][data-piece="King"]')) fail('배치 편집기에서 기물이 안 옮겨진다');
     await page.click('[data-action="deploySave"]');
   } else {

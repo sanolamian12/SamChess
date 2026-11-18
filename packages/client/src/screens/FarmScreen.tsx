@@ -48,7 +48,7 @@ import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
-import { BlinkGlow } from './BlinkGlow.tsx';
+import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { GameIcon, HealthIcon } from './GameIcon.tsx';
@@ -85,9 +85,6 @@ function layoutOf(guards: readonly RosterPick[], prev: readonly PieceType[] | nu
   }
   return out;
 }
-
-/** 명단 꼬마의 후광 — 부대 관리 명단(`SquadListScreen`)과 같은 표: S급 자주 · A급 흰 별빛 · E급(황제) 금, B~D급은 없다 */
-const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
 
 /** 기물 열 — 영어 이름 대신 아이콘. 부대 현황(`SquadViewScreen`)과 같은 그림, 이름은 `title`로 */
 function PieceArt({ piece }: { piece: PieceType }): React.JSX.Element {

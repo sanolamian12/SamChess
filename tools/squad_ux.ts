@@ -242,15 +242,12 @@ try {
   const rockAt = before.find((c: any) => c.piece === 'Rock');
   const knight = await page.$(`.sqb-cell[data-x="${rockAt.x}"][data-y="${rockAt.y}"][data-piece="Knight"][data-team="ours"]`);
   if (!knight) fail(`옛 Rock 자리(${rockAt.x},${rockAt.y})에 Knight가 없다`);
-  // [장수 배치] — 머리 판 왼쪽 장수부터 한 명씩 칸을 누른다(2026-11-17). Knight만 빈 칸으로, 나머지는 제 칸을 다시 눌러 넘긴다
-  await page.click('[data-action="deployPlace"]');
+  // Knight 카드(2026-11-18 — 장수 카드) → 빈 우리 칸 하나
+  await page.click('[data-action="deployPlace"][data-piece="Knight"]');
   const target = await page.$('.sqb-cell[data-zone="ours"][data-team=""]:not([data-depot])');
   const tx = await target!.getAttribute('data-x'); const ty = await target!.getAttribute('data-y');
-  for (const piece of await page.$$eval('[data-field="deployWho"]', (e) => e.map((x) => (x as HTMLElement).dataset.piece))) {
-    if (piece === 'Knight') await page.click(`.sqb-cell[data-x="${tx}"][data-y="${ty}"]`);
-    else await page.click(`.sqb-cell[data-team="ours"][data-piece="${piece}"]`);
-    await page.waitForTimeout(60);
-  }
+  await page.click(`.sqb-cell[data-x="${tx}"][data-y="${ty}"]`);
+  await page.waitForTimeout(60);
   if (!await page.$(`.sqb-cell[data-x="${tx}"][data-y="${ty}"][data-piece="Knight"]`)) fail('칸을 눌렀는데 옮겨지지 않았다');
   if ((await page.textContent('[data-action="deploySave"]'))?.trim() !== '배치 완료') fail('배치 마지막 단추가 「배치 완료」가 아니다');
   await page.click('[data-action="deploySave"]');

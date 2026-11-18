@@ -88,7 +88,8 @@ describe('스냅샷 — 공성전의 상대가 이 값으로 선다', () => {
     assert.equal(snap.power, battlePower('5v5', entries));
     assert.deepEqual(snap.policy, resolvePolicy(p, squad), '방침은 판에 싣는 값(풀린 것)이다 — 단계 6');
     assert.equal(snap.policy.stances.King, 'hold', '손대지 않은 부대는 기본 — King 수성');
-    assert.equal(snap.deploy, null, '북군 배치 프리셋이 없으면 null(기본 배치)');
+    // 북군 배치 프리셋이 없으면 부대의 기본 배치(King 가운데, 2026-11-18) — 엔진의 기본 배치가 아니다
+    assert.deepEqual(snap.deploy, defaultSquadCells('5v5', 'P2', squad.picks).map((c) => ({ unit: `P2-${c.piece}`, pos: { x: c.x, y: c.y } })));
   });
 
   it('북군 배치 프리셋을 싣는다 — 남군 것이 아니라', () => {
@@ -100,7 +101,7 @@ describe('스냅샷 — 공성전의 상대가 이 값으로 선다', () => {
     const snap = garrisonSnapshot(placed, '3v3')!;
     assert.deepEqual(snap.deploy?.map((d) => d.unit).sort(), squad.picks.map((x) => `P2-${x.piece}`).sort());
     const southOnly = { ...p, squads: p.squads.map((s) => (s.id === squad.id ? withDeployment(s, 'P1', defaultSquadCells('3v3', 'P1', squad.picks)) : s)) };
-    assert.equal(garrisonSnapshot(southOnly, '3v3')!.deploy, null);
+    assert.deepEqual(garrisonSnapshot(southOnly, '3v3')!.deploy?.map((d) => d.pos.y), [2, 2, 2], '남군 것만 있으면 북군은 기본 배치');
   });
 });
 

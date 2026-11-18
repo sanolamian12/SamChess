@@ -45,7 +45,8 @@ export const SPOT_SELECTOR = {
   pick2: '[data-action="pickOfficer"][data-row="2"]',
   queenPiece: '[data-field="piece-2"]',
   toDeploy: '[data-action="toDeploy"]',
-  missionCell: '.sqb-cell[data-mission]',
+  // 첫 편성 배치 미션의 다음에 누를 곳 — 그 장수의 카드 단추 또는 판의 칸(2026-11-18)
+  missionCell: '.scr-squad-deploy [data-mission]',
   // 배치 판 아래 안내 3 · 4줄 — 가상의 상대(알파벳) · 우리 군량고 (2026-11-13 기획자: 판에 표시하며 말로 넘어간다)
   enemyCells: '.sqb-cell[data-team="enemy"]',
   ourDepot: '.sqb-cell[data-depot="ours"]',

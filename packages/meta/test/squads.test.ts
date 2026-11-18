@@ -322,13 +322,27 @@ describe('배치 프리셋', () => {
     assert.notEqual(placements, null);
     assert.equal(placements!.length, 3);
     assert.deepEqual(placements!.map((p) => p.unit).sort(), ['P1-Bishop', 'P1-King', 'P1-Rock']);
-    assert.equal(squadDeployment(profile, saved, 'P2'), null, '북군은 저장한 적이 없다');
+    // 저장 안 한 진영도 부대의 기본 배치(King 가운데)로 선다 — 엔진의 기본 배치(로스터 차례)가 아니다 (2026-11-18 기획자)
+    const north = squadDeployment(profile, saved, 'P2');
+    assert.deepEqual(north, defaultSquadCells(squad.mode, 'P2', squad.picks).map((c) => ({ unit: `P2-${c.piece}`, pos: { x: c.x, y: c.y } })), '북군은 저장한 적이 없다');
+  });
+
+  it('기본 배치 — King이 가운데, 나머지는 고른 차례대로 왼쪽 · 오른쪽 · 더 왼쪽 · 더 오른쪽 (2026-11-18 기획자)', () => {
+    const col = (x: number) => String.fromCharCode(65 + x);
+    const pk = (piece: PieceType) => ({ piece, officer: 'x' as OfficerId });
+    // King이 첫째가 아니어도 가운데 — 나머지 차례는 고른 차례
+    const three = defaultSquadCells('3v3', 'P2', [pk('Rock'), pk('King'), pk('Queen')]);
+    assert.deepEqual(three.map((c) => `${c.piece}@${col(c.x)}${c.y + 1}`), ['King@M3', 'Rock@H3', 'Queen@R3']);
+    const five = defaultSquadCells('5v5', 'P2', [pk('King'), pk('Rock'), pk('Queen'), pk('Bishop'), pk('Knight')]);
+    assert.deepEqual(five.map((c) => `${c.piece}@${col(c.x)}${c.y + 1}`), ['King@M3', 'Rock@H3', 'Queen@R3', 'Bishop@C3', 'Knight@W3']);
+    const south = defaultSquadCells('3v3', 'P1', [pk('King'), pk('Rock'), pk('Queen')]);
+    assert.deepEqual(south.map((c) => `${col(c.x)}${c.y + 1}`), ['M18', 'H18', 'R18']);
   });
 
   it('**남군 좌표를 북군에 쓸 수 없다** — 구역이 위아래로 다르다', () => {
     const { profile, squad } = made();
     const cells = defaultSquadCells(squad.mode, 'P1', squad.picks);
-    const wrong: Squad = { ...squad, deploy: { P1: null, P2: cells } };
+    const wrong: Squad = { ...squad, deploy: { P1: defaultSquadCells(squad.mode, 'P1', squad.picks), P2: cells } };
     assert.equal(squadDeployment(profile, wrong, 'P2'), null);
   });
 

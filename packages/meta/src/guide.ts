@@ -39,10 +39,10 @@
  * 새 편성 — 이름을 적었다      squadNew.mode      [3 vs 3] → [다음]
  * 부대원 — King · Rock · Queen   squadEdit.king · squadEdit.rock · squadEdit.queen   차례로 [선택] (Queen은 기물을 바꿀 수 있다)
  * 부대원 — 다 찼다            squadEdit.deploy   [부대 배치]
- * 배치 — King이 가운데가 아니다 squadDeploy.swap   기물을 누르면 옮길 칸이 보인다 · King과 Rock의 자리를 바꾼다(단검이 누를 곳을 가리킨다)
- * 배치 — 처음 기물을 집었다    squadDeploy.pick   노란 칸이 설 수 있는 자리 · 단검이 가리키는 칸을 누르라
- * 배치 — 바꿨다              squadDeploy.range  King을 두 번 눌러 움직일 수 있는 칸을 보라 (2026-11-13 기획자 — 판 아래 안내 1 · 2줄을 한 걸음씩)
- * 배치 — 두 번 눌러 봤다       squadDeploy.done   움직일 칸 · 가상의 상대 · 군량고(3 · 4줄은 판에 표시만) · [편성 완료]
+ * 배치 — King이 가운데가 아니다 squadDeploy.swap   King과 Rock의 자리를 바꾼다 · King 카드를 누르라 (2026-11-18 — 몸짓을 장수 카드로)
+ * 배치 — 카드를 골랐다        squadDeploy.pick   King의 차례 · 우리 장수가 선 칸을 누르면 둘이 바꾼다 · 단검이 가리키는 칸을 누르라
+ * 배치 — 바꿨다              squadDeploy.range  King을 눌러 움직일 수 있는 칸을 보라
+ * 배치 — King을 눌러 봤다       squadDeploy.done   움직일 칸 · 가상의 상대 · 군량고(판에 가리키며) · [배치 완료]
  * 부대 현황 — 3인팀이 생겼다    squadView.garrison 첫 부대가 수비군이다 · [수비군 설정]으로
  *
  * 수비군 설정 미션 (2026-11-13 기획자) — 3인팀 수비군의 방침을 아직 한 번도 저장하지 않았다(`garrisonMissionPending`)
@@ -253,13 +253,13 @@ export interface GuideContext {
    * 첫 편성의 화면 사정 (2026-11-13) — 계정에 없는, 화면만 아는 값.
    * `squad` — 지금 만드는 것이 새 3인팀인가(새 편성 화면은 언제나 참). `named` — 이름이 규칙을 통과했나(새 편성).
    * `filled` — 앞에서부터 장수가 찬 줄 수(부대원). `swapped` — King이 가운데 · Rock이 왼쪽에 섰나(배치)
-   * `held` — 우리 기물을 집고 있나 · `ranged` — 바꾼 뒤 King을 두 번 눌러 움직일 칸을 봤나(배치)
+   * `placing` — 카드 차례가 켜져 있나 · `ranged` — 바꾼 뒤 King을 눌러 움직일 칸을 봤나(배치)
    */
   squad?: boolean;
   named?: boolean;
   filled?: number;
   swapped?: boolean;
-  held?: boolean;
+  placing?: boolean;
   ranged?: boolean;
   /** 수비군 설정 — 손댄 칸이 있나 · 방금 저장했나 */
   dirty?: boolean;
@@ -352,8 +352,8 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
     }
     case 'squadDeploy':
       if (!firstSquadPending(profile) || !ctx.squad) return null;
-      // 판 아래 안내 1줄(누르면 옮길 칸)은 바꾸기로, 2줄(두 번 누르면 움직일 칸)은 바꾼 뒤 King으로 해 본다 — 3 · 4줄은 끝 마디가 판에 가리키며 말한다
-      if (!ctx.swapped) return once(profile, 'squadDeploy.swap') ?? (ctx.held ? once(profile, 'squadDeploy.pick') : null);
+      // King의 카드로 바꾸기 → 바꾼 뒤 King을 눌러 움직일 칸 — 가상의 상대 · 군량고는 끝 마디가 판에 가리키며 말한다
+      if (!ctx.swapped) return once(profile, 'squadDeploy.swap') ?? (ctx.placing ? once(profile, 'squadDeploy.pick') : null);
       return once(profile, ctx.ranged ? 'squadDeploy.done' : 'squadDeploy.range');
     // 첫 3인팀 직후 — 그 부대(3인팀 수비군)의 현황에서 수비군 설정으로 (2026-11-13). `ctx.squad` — 지금 보는 부대가 3인팀 수비군인가
     case 'squadView':

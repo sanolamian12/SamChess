@@ -35,14 +35,11 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
-import { BlinkGlow } from './BlinkGlow.tsx';
+import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
-
-/** 명단 꼬마의 후광 (2026-11-13 기획자) — S급 자주 · A급 흰 별빛 · E급(황제) 금, B~D급은 없다 */
-const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
 
 const MODES: readonly BattleMode[] = ['3v3', '5v5'];
 

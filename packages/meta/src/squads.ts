@@ -333,14 +333,21 @@ export function squadPower(profile: PlayerProfile, squad: Squad): number | null 
 // ── 배치 프리셋 ────────────────────────────────────────────────
 
 /**
- * 부대의 기본 배치 — **엔진이 세우는 바로 그 자리다**(`defaultDeployPos`).
+ * 부대의 기본 배치 — 칸은 엔진의 기본 자리(`defaultDeployPos`)이고, **누가 어디에 서는지만** 부대가 정한다
+ * (2026-11-18 기획자): **King이 가운데**, 나머지는 고른 차례대로 왼쪽 · 오른쪽 · 더 왼쪽 · 더 오른쪽 —
+ * 3인팀 M · H · R, 5인팀 M · H · R · C · W(북군은 3행, 남군은 18행).
  *
- * 편집기의 「기본 배치로」가 이걸 부른다. 화면이 `5×5의 중앙`을 다시 적으면
- * 배치 구역 규칙이 바뀌었을 때 **미리보기만** 조용히 어긋난다.
+ * 엔진의 기본 배치(로스터 차례대로 왼쪽부터)와 다르므로 **저장 안 한 부대도 이 배치로 판에 선다** —
+ * `squadDeployment()`가 저장된 배치가 없으면 이것을 쓴다. 편집기의 「기본 배치로」도 이걸 부른다.
  */
 export function defaultSquadCells(mode: BattleMode, side: Side, picks: readonly RosterPick[]): SquadCell[] {
-  return picks.map((pick, i) => {
-    const { x, y } = defaultDeployPos(mode, side, i);
+  const n = picks.length;
+  const mid = Math.floor(n / 2);
+  /** 가운데에서 바깥으로 — 0 → mid, 1 → mid−1, 2 → mid+1, 3 → mid−2, 4 → mid+2 */
+  const slot = (k: number): number => (k === 0 ? mid : k % 2 === 1 ? mid - (k + 1) / 2 : mid + k / 2);
+  const order = [...picks.filter((p) => p.piece === 'King'), ...picks.filter((p) => p.piece !== 'King')];
+  return order.map((pick, k) => {
+    const { x, y } = defaultDeployPos(mode, side, slot(k));
     return { piece: pick.piece, x, y };
   });
 }
@@ -357,8 +364,9 @@ export function defaultSquadCells(mode: BattleMode, side: Side, picks: readonly 
 export function squadDeployment(
   profile: PlayerProfile, squad: Squad, side: Side,
 ): { unit: UnitId; pos: Vec2 }[] | null {
-  const cells = squad.deploy[side];
-  if (!cells || cells.length !== teamSize(squad.mode)) return null;
+  // 저장 안 한 진영은 부대의 기본 배치(King 가운데) — 엔진의 기본 배치(로스터 차례)와 다르다
+  const cells = squad.deploy[side] ?? defaultSquadCells(squad.mode, side, squad.picks);
+  if (cells.length !== teamSize(squad.mode)) return null;
   if (!validateSquad(profile, squad).ok) return null;
 
   const want = new Set(squad.picks.map((p) => p.piece));

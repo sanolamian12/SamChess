@@ -33,6 +33,12 @@ const FILE: Record<BlinkTone, string> = {
 export const officerBlink = (grade: Grade | string): BlinkTone =>
   grade === 'E' ? 'gold' : grade === 'S' ? 'purple' : 'plain';
 
+/**
+ * 꼬마 뒤 후광 — S급 자주 · A급 흰 별빛 · E급(황제) 금, B · C · D급은 없다(2026-11-13 기획자 — 부대 관리 · 부대원 · 농지, 2026-11-18 배치 편집).
+ * 장수 그림 뒤(`officerBlink`)와 달리 낮은 등급에는 안 단다 — 꼬마가 줄지어 서는 화면이라 다 빛나면 등급이 안 갈린다
+ */
+export const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
+
 const EQUIP_MAX = Math.max(...EQUIPMENT.map((e) => e.unlockLevel));
 const ITEM_MAX = Math.max(...MARKET_ITEMS.map((m) => m.unlockLevel));
 
