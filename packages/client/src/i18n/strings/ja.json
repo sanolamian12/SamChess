@@ -375,8 +375,6 @@
   "squad.power.unit": "点",
   "squad.power.note": "メンバーの構成クラスとレベルの組み合わせで戦闘力が決まる。",
   "squad.deploy": "配置",
-  "squad.deploy.p1": "南軍",
-  "squad.deploy.p2": "北軍",
   "squad.deploy.saved": "保存済み",
   "squad.deploy.none": "既定",
   "squad.save.new": "登録完了",

@@ -373,7 +373,9 @@ function readSquads(
 
   const strip = (x: Loose, id: string, role: Squad['role']): Squad => {
     const { name: _name, id: _id, policy, ...rest } = x;
-    return { id, role, ...rest, ...(role === 'defense' && policy ? { policy } : {}) };
+    // 공격대의 북군 배치는 남군 배치를 돌려 낸다(`squadDeployment`, 2026-11-18) — 옛 북군 프리셋은 버린다
+    const deploy = role === 'attack' ? { P1: rest.deploy.P1, P2: null } : rest.deploy;
+    return { id, role, ...rest, deploy, ...(role === 'defense' && policy ? { policy } : {}) };
   };
 
   // ── v8 — 칸 id인 것만, 칸마다 하나 ──

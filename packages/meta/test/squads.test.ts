@@ -322,9 +322,36 @@ describe('배치 프리셋', () => {
     assert.notEqual(placements, null);
     assert.equal(placements!.length, 3);
     assert.deepEqual(placements!.map((p) => p.unit).sort(), ['P1-Bishop', 'P1-King', 'P1-Rock']);
-    // 저장 안 한 진영도 부대의 기본 배치(King 가운데)로 선다 — 엔진의 기본 배치(로스터 차례)가 아니다 (2026-11-18 기획자)
+    // 공격대의 북군은 남군 배치를 180° 돌린 것이다 (2026-11-18 기획자 — 사람은 언제나 남군 기준으로 둔다)
     const north = squadDeployment(profile, saved, 'P2');
-    assert.deepEqual(north, defaultSquadCells(squad.mode, 'P2', squad.picks).map((c) => ({ unit: `P2-${c.piece}`, pos: { x: c.x, y: c.y } })), '북군은 저장한 적이 없다');
+    assert.deepEqual(north, cells.map((c) => ({ unit: `P2-${c.piece}`, pos: { x: 24 - c.x, y: 19 - c.y } })), '북군이 남군을 돌린 것이 아니다');
+  });
+
+  it('**공격대의 북군은 남군 배치를 돌린 것** — 옮긴 남군 배치가 그대로 따라오고, 저장된 북군 배치는 안 읽는다', () => {
+    const { profile, squad } = made();
+    // 기본 배치와 다른 남군 배치 — 기본값과 같은 값을 보면 아무것도 확인하지 않는다
+    const south = defaultSquadCells(squad.mode, 'P1', squad.picks).map((c, i) => ({ ...c, y: 15 + i }));
+    const stale = defaultSquadCells(squad.mode, 'P2', squad.picks);
+    const saved: Squad = { ...squad, deploy: { P1: south, P2: stale } };
+    const north = squadDeployment(profile, saved, 'P2')!;
+    for (const c of south) {
+      assert.deepEqual(north.find((p) => p.unit === `P2-${c.piece}`)!.pos, { x: 24 - c.x, y: 19 - c.y }, c.piece);
+    }
+    // 수비대는 수성전의 북군 자리를 그대로 편집한다 — 저장된 북군 배치를 쓴다
+    const def: Squad = { ...saved, id: squadSlot('3v3', 'defense'), role: 'defense' };
+    assert.deepEqual(squadDeployment(profile, def, 'P2')!.map((p) => p.pos), stale.map((c) => ({ x: c.x, y: c.y })));
+  });
+
+  it('되접기는 공격대의 옛 북군 배치를 버린다 — 수비대 것은 남긴다', () => {
+    const { profile } = made();
+    const south = defaultSquadCells('3v3', 'P1', picksOf('3v3'));
+    const north = defaultSquadCells('3v3', 'P2', picksOf('3v3'));
+    const two = saveSquadSlot(saveSquadSlot(profile, { ...draft('3v3'), deploy: { P1: south, P2: north } }),
+      { ...draft('3v3', 'defense'), deploy: { P1: null, P2: north } });
+    const back = migrateProfile(JSON.parse(JSON.stringify(two)))!;
+    assert.equal(squadAt(back, '3v3', 'attack')!.deploy.P2, null);
+    assert.deepEqual(squadAt(back, '3v3', 'attack')!.deploy.P1, south);
+    assert.deepEqual(squadAt(back, '3v3', 'defense')!.deploy.P2, north);
   });
 
   it('기본 배치 — King이 가운데, 나머지는 고른 차례대로 왼쪽 · 오른쪽 · 더 왼쪽 · 더 오른쪽 (2026-11-18 기획자)', () => {
@@ -339,8 +366,9 @@ describe('배치 프리셋', () => {
     assert.deepEqual(south.map((c) => `${col(c.x)}${c.y + 1}`), ['M18', 'H18', 'R18']);
   });
 
-  it('**남군 좌표를 북군에 쓸 수 없다** — 구역이 위아래로 다르다', () => {
-    const { profile, squad } = made();
+  it('**남군 좌표를 북군에 쓸 수 없다** — 구역이 위아래로 다르다(수비대 — 북군 자리를 그대로 편집한다)', () => {
+    const { profile, squad: atk } = made();
+    const squad: Squad = { ...atk, id: squadSlot('3v3', 'defense'), role: 'defense' };
     const cells = defaultSquadCells(squad.mode, 'P1', squad.picks);
     const wrong: Squad = { ...squad, deploy: { P1: defaultSquadCells(squad.mode, 'P1', squad.picks), P2: cells } };
     assert.equal(squadDeployment(profile, wrong, 'P2'), null);

@@ -375,8 +375,6 @@
   "squad.power.unit": "pts",
   "squad.power.note": "O poder vem da classe e do nível de cada membro.",
   "squad.deploy": "Posicionamento",
-  "squad.deploy.p1": "Exército do Sul",
-  "squad.deploy.p2": "Exército do Norte",
   "squad.deploy.saved": "guardado",
   "squad.deploy.none": "predefinido",
   "squad.save.new": "Concluir registo",

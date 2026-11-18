@@ -6,7 +6,7 @@
  */
 
 import { DEFAULT_BOARD } from '@samchess/rules';
-import type { Vec2 } from '@samchess/rules';
+import type { Side, Vec2 } from '@samchess/rules';
 
 export const CELL_W = 96;
 export const CELL_H = 120;
@@ -22,10 +22,30 @@ export interface BoardDims {
   /** 월드 픽셀 */
   w: number;
   h: number;
+  /** 판을 180° 돌려 그린다 — 북군으로 앉은 사람(`boardFlipFor`, 2026-11-18) */
+  flip: boolean;
 }
 
-export const boardDims = (size: Readonly<Vec2> = DEFAULT_BOARD): BoardDims =>
-  ({ cols: size.x, rows: size.y, w: size.x * CELL_W, h: size.y * CELL_H });
+export const boardDims = (size: Readonly<Vec2> = DEFAULT_BOARD, flip = false): BoardDims =>
+  ({ cols: size.x, rows: size.y, w: size.x * CELL_W, h: size.y * CELL_H, flip });
+
+/**
+ * **판을 돌려 그리는가** (2026-11-18 기획자) — 사람은 언제나 남군처럼 아래에서 위로 올라가며 둔다.
+ *
+ * 엔진 · 서버는 절대 좌표 판 하나 그대로이고(`rotate180`), 북군으로 앉은 사람의 **화면만** 판을 180° 돌린다 — 칸 ↔ 화면의
+ * 변환 둘(`cellCenter` · `cellAt`)이 `BoardDims.flip`을 보고, 좌표 눈금은 Y…A · 20…1로 선다. 지도 그림은 장식이라 안 돌린다
+ * (돌리면 그려진 성 · 산이 거꾸로 선다). 판정에 쓰이는 칸(성채 · 군량고)은 칸에 붙어 있어 함께 돈다.
+ *
+ * **수성전은 안 돌린다** — 방어자는 수비대 편집(성채가 위)에서 본 그대로 제 성을 지키는 판을 본다(리플레이 · 관전).
+ * 서버 없이 이 길을 보는 통로는 데모 판의 `?demo=1&side=P2`다(`tools/flip_ux.ts`).
+ */
+export function boardFlipFor(viewSide: Side, scenario: string | null | undefined): boolean {
+  return viewSide === 'P2' && scenario !== 'siege';
+}
+
+/** 판 칸 → 화면 칸. 돌려 그리면 뒤집는다 — **제 역함수**라 화면 칸 → 판 칸도 이것이다 */
+export const viewCell = (x: number, y: number, dims: BoardDims): { x: number; y: number } =>
+  (dims.flip ? { x: dims.cols - 1 - x, y: dims.rows - 1 - y } : { x, y });
 
 /** 대전 판 — 25 × 20, 2400 × 2400 */
 export const DUEL_BOARD: BoardDims = boardDims();
@@ -86,19 +106,31 @@ export const LABEL = {
   cornerInset: 0.02,
 } as const;
 
-/** 격자 좌표 → 셀 중심의 픽셀 좌표 */
-export const cellCenter = (x: number, y: number): { x: number; y: number } => ({
-  x: x * CELL_W + CELL_W / 2,
-  y: y * CELL_H + CELL_H / 2,
-});
+/**
+ * 판 칸 → 셀 중심의 픽셀 좌표. **판을 받는다** — 북군 화면은 돌려 그리므로(`boardFlipFor`) 판 없이 부르는 자리가
+ * 하나라도 있으면 그 그림만 반대편에 선다. 인자를 빼먹을 수 없게 필수로 둔다.
+ */
+export const cellCenter = (x: number, y: number, dims: BoardDims): { x: number; y: number } => {
+  const v = viewCell(x, y, dims);
+  return { x: v.x * CELL_W + CELL_W / 2, y: v.y * CELL_H + CELL_H / 2 };
+};
 
-/** 픽셀 좌표 → 격자 좌표. 보드 밖이면 null */
+/** 셀의 왼쪽 위 픽셀 — 칸을 칠하는 자리(`fillRect`)가 쓴다 */
+export const cellCorner = (x: number, y: number, dims: BoardDims): { x: number; y: number } => {
+  const v = viewCell(x, y, dims);
+  return { x: v.x * CELL_W, y: v.y * CELL_H };
+};
+
+/** 픽셀 좌표 → 판 칸. 보드 밖이면 null */
 export function cellAt(px: number, py: number, dims: BoardDims = DUEL_BOARD): { x: number; y: number } | null {
   const x = Math.floor(px / CELL_W);
   const y = Math.floor(py / CELL_H);
   if (x < 0 || x >= dims.cols || y < 0 || y >= dims.rows) return null;
-  return { x, y };
+  return viewCell(x, y, dims);
 }
+
+/** 화면 방향(오른쪽 = 1) ↔ 판 방향 — 돌려 그리면 좌우가 뒤집힌다(`facingOf`) */
+export const screenDir = (dir: 1 | -1, dims: BoardDims): 1 | -1 => (dims.flip ? (dir === 1 ? -1 : 1) : dir);
 
 export const COLOR = {
   boardLight: 0x2a2d34,

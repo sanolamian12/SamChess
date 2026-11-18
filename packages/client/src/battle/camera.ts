@@ -111,7 +111,7 @@ export function viewOf(
   // 대전 판(정사각 2400)과 도적떼 판은 이 값이 `fitZoom`과 같아 아무것도 안 바뀐다
   const duelFit = Math.min(viewW / DUEL_BOARD.w, viewH / DUEL_BOARD.h);
   const zoom = cue.scale > 1 ? Math.max(fitZoom, Math.min(fitZoom, duelFit) * cue.scale) : fitZoom * cue.scale;
-  const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y) : { x: board.w / 2, y: board.h / 2 };
+  const center = cue.cell ? cellCenter(cue.cell.x, cue.cell.y, board) : { x: board.w / 2, y: board.h / 2 };
   return {
     zoom,
     x: clampAxis(center.x + (cue.lean ?? 0) * (viewW / zoom), viewW / zoom, board.w),

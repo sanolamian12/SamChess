@@ -43,7 +43,7 @@
 
 import {
   CONTROL_MS, DUEL_OUTRO_MS, deployLimitMs, duelStepKey, duelStepMs, RECONNECT_GRACE_MS, ROOM_IDLE_MS, SCOUT_MS, WAITING_MS,
-  REFEREE_INTENTS, advanceTime, apply, createBattle, eventsFor, revealWithRng, toWire, validate,
+  REFEREE_INTENTS, advanceTime, apply, createBattle, eventsFor, orientDeploy, revealWithRng, toWire, validate,
 } from '@samchess/rules';
 import type {
   BattleEvent, BattleMode, BattlePhase, BattleState, Intent, RoomClose, ServerMsg, Side,
@@ -124,8 +124,12 @@ export interface StepResult {
  * 프리셋이 「내가 언제나 남군」인 오프라인에서 한 번도 안 돈다. 판정이 서버로
  * 오면서 자리도 함께 왔다.
  *
- * **어긋난 프리셋은 아무 말 없이 안 깐다**(§5-45) — 구성을 고쳤거나 남군 좌표를
- * 북군에 쓴 경우다. 여기서 막으면 「부대를 고쳤더니 전투에 못 들어간다」가 된다.
+ * **어긋난 프리셋은 아무 말 없이 안 깐다**(§5-45) — 구성을 고쳤을 때다. 여기서 막으면
+ * 「부대를 고쳤더니 전투에 못 들어간다」가 된다.
+ *
+ * **대기열은 남군 배치를 싣는다 — 북군 자리에 앉으면 180° 돌려 깐다** (2026-11-18 기획자, `orientDeploy`).
+ * 진영은 여기서 정해지므로 보내는 쪽은 모른다. 예전에는 그 남군 좌표가 북군 구역에서 검사에 걸려 **북군은 언제나
+ * 기본 배치**였다. 선전포고는 이미 그 진영 것(`warEnlist`)을 싣고, 그때는 그대로 둔다.
  */
 export function openRoom(
   matchId: string, seed: number, mode: BattleMode,
@@ -139,8 +143,9 @@ export function openRoom(
   });
 
   for (const side of SIDES) {
-    const placements = seats[side].deploy;
-    if (!placements) continue;
+    const raw = seats[side].deploy;
+    if (!raw) continue;
+    const placements = orientDeploy(raw, side, battle.boardSize);
     if (!validate(battle, side, { t: 'deploy', placements }).ok) continue;
     battle = apply(battle, side, { t: 'deploy', placements }).state;
   }

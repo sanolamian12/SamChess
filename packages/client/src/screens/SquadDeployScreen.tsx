@@ -4,7 +4,7 @@
  * ```
  * [← 뒤로 가기]        부대 배치 편집           ← 뒤로 가기도 저장하고 돌아간다
  * ┌ 머리 판 ────────────────────────────────────┐
- * │ 장수 배치                     [남군|북군]      │ ← 제목 (탭은 공격대만)
+ * │ 장수 배치                                    │ ← 제목 (진영 탭 없음 — 공격대는 남군, 수비대는 북군)
  * │ '가후'를 배치해주세요.                          │ ← 안내 한 줄 (왼쪽 정렬)
  * │ ┌────┐┌────┐┌────┐┌────┐┌────┐               │ ← 장수 카드 다섯 칸 — 위 기물 + 꼬마,
  * │ │♜🧍 ││♚🧍 ││♛🧍 ││ 🔒 ││ 🔒 │               │   아래 띠에 좌표. 3인팀은 남는 칸에
@@ -32,17 +32,15 @@
  * 「5×5의 가운데」를 다시 적지 않는다.
  *
  * ────────────────────────────────────────────────────────────────
- * 두 진영은 **작업본 둘**을 함께 든다
+ * 한 진영만 편집한다 — 공격대는 남군, 수비대는 북군 (2026-11-18 기획자)
  * ────────────────────────────────────────────────────────────────
  *
- * [남군]·[북군]을 오가도 각자 고친 것이 남아 있어야 한다(기획자 지정) — 그래서 칸
- * 목록을 진영별로 들고(`cells.P1`·`cells.P2`), 마지막 단추 하나가 **둘 다** 넘긴다.
- * 상대 작업본도 진영별이다 — 남군 화면에서 옮겨 본 상대가 북군 화면으로 따라오면
- * 안 된다(거기서 상대는 반대편에 선다).
+ * 예전 공격대는 [남군]·[북군] 탭으로 두 배치를 따로 들었다. 이제 **사람은 언제나 남군 기준으로 둔다** —
+ * 북군 자리에 앉으면 판에는 남군 배치를 180° 돌려 깔고(`deployCells`), 전투 화면도 판을 돌려 그려
+ * (`battle/layout.ts`의 `BoardView`) 남군에서 둔 모습 그대로 보인다. 그래서 탭이 없고 북군 배치는 저장하지 않는다(`null`).
  *
- * **저장할 수 있는지는 규칙에 묻는다**(`isDeployable`) — 두 진영 모두 통과해야 단추가
- * 켜진다. 기본 배치와 똑같은 진영은 `null`로 넘긴다 — 「배치 없음」과 「기본 배치를
- * 저장함」이 갈리면 기본 배치 규칙이 바뀐 날 옛 좌표가 조용히 남는다.
+ * **저장할 수 있는지는 규칙에 묻는다**(`isDeployable`). 기본 배치와 똑같으면 `null`로 넘긴다 — 「배치 없음」과
+ * 「기본 배치를 저장함」이 갈리면 기본 배치 규칙이 바뀐 날 옛 좌표가 조용히 남는다.
  *
  * ────────────────────────────────────────────────────────────────
  * 옮기기는 장수 카드 한 길이다 (2026-11-17 기획자 · 2026-11-18 장수마다 카드로)
@@ -72,7 +70,6 @@
  * 남군 배치는 저장해도 아무 판에도 안 선다. 그래서 진영 탭을 없애고(깃발도 안 단다 — 2026-11-17 기획자), 판은
  * **수성전 판 그대로** 그린다: 북군 군량고 자리에 성채 3×3(`siegeCastle()` — 전투와 같은 조각 그림),
  * 북군 군량고는 없음, 남군 군량고만(`supplyDepotOf`에 `scenario: 'siege'`). 남군 배치는 `null`로 넘긴다.
- * 공격대는 온라인 야전에서 어느 쪽에 앉을지 모르므로 두 진영 그대로다.
  *
  * ────────────────────────────────────────────────────────────────
  * 확대 창 + 미니맵 (2026-11-17 기획자)
@@ -174,8 +171,9 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
   /** 수비대 — 북군 한 진영 · 수성전 판(머리말) */
   const defense = squad.role === 'defense';
 
-  const [side, setSide] = useState<Side>(defense ? SIEGE_DEFENDER : 'P1');
-  const [focus, setFocus] = useState<Vec2>(() => homeFocus(defense ? SIEGE_DEFENDER : 'P1'));
+  /** 편집하는 진영 — 공격대는 남군, 수비대는 북군(머리말) */
+  const side: Side = defense ? SIEGE_DEFENDER : 'P1';
+  const [focus, setFocus] = useState<Vec2>(() => homeFocus(side));
   const [cells, setCells] = useState<Record<Side, SquadCell[]>>(() => ({
     P1: initial.P1 ?? defaults('P1'),
     P2: initial.P2 ?? defaults('P2'),
@@ -255,10 +253,6 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
     if (show && occ.team === 'ours' && occ.cell.piece === 'King' && side === 'P1') setRanged(true);
   };
 
-  const switchSide = (next: Side): void => {
-    setSide(next); setRange(null); setFocus(homeFocus(next)); setPlacing(null); setNote(null);
-  };
-
   const resetSide = (): void => {
     setCells((prev) => ({ ...prev, [side]: defaults(side) }));
     setEnemy((prev) => ({ ...prev, [side]: enemyCells(mode, other(side)) }));
@@ -266,10 +260,8 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
     setRange(null); setPlacing(null); setNote(null);
   };
 
-  // 수비대는 북군만 본다 — 남군은 넘기지 않으니(`result`) 물을 것도 없다
-  const ok = defense
-    ? isDeployable(profile, squad, SIEGE_DEFENDER, cells[SIEGE_DEFENDER])
-    : isDeployable(profile, squad, 'P1', cells.P1) && isDeployable(profile, squad, 'P2', cells.P2);
+  // 편집하는 한 진영만 본다 — 다른 진영은 넘기지 않으니(`result`) 물을 것도 없다
+  const ok = isDeployable(profile, squad, side, cells[side]);
 
   /*
    * 첫 편성의 배치 미션 (2026-11-13 기획자) — King을 가운데로, 가운데 기물(Rock)을 왼쪽으로 바꾸게 한다. 2026-11-18부터 기본 배치가 King 가운데라
@@ -295,16 +287,16 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
     squad: mission, swapped, placing: placing !== null, ranged,
   }), 'squadDeploy');
 
-  /** 기본 배치와 같은 진영은 `null` — 「배치 없음」 하나로 둔다(머리말 참조). 수비대의 남군은 언제나 `null` */
-  const result = (): Squad['deploy'] => ({
-    P1: defense || sameCells(cells.P1, defaults('P1')) ? null : cells.P1,
-    P2: sameCells(cells.P2, defaults('P2')) ? null : cells.P2,
-  });
+  /** 기본 배치와 같으면 `null` — 「배치 없음」 하나로 둔다(머리말 참조). 편집하지 않는 진영은 언제나 `null` */
+  const result = (): Squad['deploy'] => {
+    const mine = sameCells(cells[side], defaults(side)) ? null : cells[side];
+    return side === 'P1' ? { P1: mine, P2: null } : { P1: null, P2: mine };
+  };
 
   const finish = (): void => {
     // 새 부대를 **한 번도 안 만지고** 끝내면 기본 배치라는 것을 한 번 알린다(72쪽). 첫 편성 미션은 무관이 이미 말했다 —
     // 기본 배치가 King 가운데라(2026-11-18) 미션은 아무것도 안 옮기고 끝난다
-    if (isNew && !touched.P1 && !touched.P2 && !missionOn) { setAsking(true); return; }
+    if (isNew && !touched[side] && !missionOn) { setAsking(true); return; }
     onSave(result());
   };
   /** 머리 막대의 [뒤로 가기]도 배치를 저장하고 돌아간다(2026-11-18 기획자 — [배치 완료]가 뒤로 가기를 겸한다). 저장할 수 없는 배치면 그냥 돌아간다 */
@@ -414,28 +406,6 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
         <section className="place-panel sqe-top sqb-head" data-field="deployHead">
           <div className="sqb-head-top">
             <h3 className="sqb-head-ttl">{t('deploy.place')}</h3>
-            {/* 남군 · 북군 — 공격대만(수비대는 북군뿐이라 탭도 깃발도 없다, 2026-11-17 기획자) */}
-            {!defense && (
-              <div className="sqb-sides" role="tablist">
-                {(['P1', 'P2'] as Side[]).map((s) => (
-                  <button
-                    key={s}
-                    role="tab"
-                    className={`sqb-side${side === s ? ' on' : ''}`}
-                    data-action="deploySide"
-                    data-side={s}
-                    data-on={side === s ? '1' : '0'}
-                    aria-selected={side === s}
-                    aria-label={t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
-                    title={t(s === 'P1' ? 'squad.deploy.p1' : 'squad.deploy.p2')}
-                    onClick={() => switchSide(s)}
-                  >
-                    <img className="sqb-flag" src={s === 'P1' ? 'ui/gi/army-south.png' : 'ui/gi/army-north.png'} alt="" draggable={false} />
-                    {side === s && <img className="sqb-flag-on" src="icons/tutorial/next.png" alt="" draggable={false} />}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
           <p className="sqb-msg" data-field="deployMsg" data-kind={msgKind} ref={msgBox.box}>
             <span className="sqb-msg-in">

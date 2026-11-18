@@ -3,7 +3,7 @@
  * 머리 판: 왼쪽 위 제목 「장수 배치」 · 그 밑 안내 한 줄(왼쪽) · 장수 카드 다섯 칸(위 기물 + 꼬마 · 아래 띠 좌표, 3인팀은 남는 칸 자물쇠).
  * 본 판: 지도뿐(단추 없음) · 15 × 8 창 · 좌표 · 화살표 넷(제 쪽으로 둥실) · 미니맵은 창 귀퉁이 4 × 4칸 자리(남군 화면은 오른쪽 위 · 북군은 오른쪽 아래, 구석 창이면 위) · 위아래 여백 같음.
  * 조작 판: [기본 배치로] 위 · [배치 완료] 아래, [뒤로 가기] 없음 — 머리 막대의 [뒤로 가기]도 저장하고 돌아간다.
- * 카드 한 명씩(고른 카드 금빛 테 · 판의 기물 금빛 점멸)(구역 밖 경고 · 빈 칸 · 자리 바꾸기 · 좌표 갱신), 공격대(남군 · 북군) · 수비대(북군 고정 · 깃발 없음 · 수성전 판)
+ * 카드 한 명씩(고른 카드 금빛 테 · 판의 기물 금빛 점멸)(구역 밖 경고 · 빈 칸 · 자리 바꾸기 · 좌표 갱신), 공격대(남군 고정 · 탭 없음 — 북군은 판에서 돌려 깐다, 2026-11-18) · 수비대(북군 고정 · 깃발 없음 · 수성전 판)
  *
  *   VW=760 VH=1200 SHOTS=<dir> [UI_LANG=mn] node --experimental-strip-types --env-file=.env tools/deploy_ux.ts
  *
@@ -206,12 +206,12 @@ try {
     console.log(`  ${JSON.stringify(look)}`);
     const defense = slot.startsWith('def-');
     const want = slot.endsWith('3v3') ? 3 : 5;
-    // 수비대는 북군 고정에 깃발도 없다 · 성채 아홉 칸. 공격대는 진영 탭 둘
+    // 수비대는 북군 고정에 깃발도 없다 · 성채 아홉 칸. 공격대는 남군 고정 · 탭 없음(2026-11-18 — 북군은 남군 배치를 돌려 깐다)
     if (defense) {
       if (look.side !== 'P2' || look.tabs !== 0 || look.flag) fail(`${slot}: 북군 고정 · 깃발 없음이 아니다 — ${look.side} · 탭 ${look.tabs} · 깃발 ${look.flag}`);
       if (look.castle !== 9) fail(`${slot}: 성채 칸이 ${look.castle}개다`);
     } else {
-      if (look.side !== 'P1' || look.tabs !== 2) fail(`${slot}: 공격대 진영 탭이 아니다 — ${look.side} · ${look.tabs}`);
+      if (look.side !== 'P1' || look.tabs !== 0) fail(`${slot}: 공격대가 남군 고정 · 탭 없음이 아니다 — ${look.side} · 탭 ${look.tabs}`);
       if (look.castle !== 0) fail(`${slot}: 공격대 판에 성채가 있다`);
     }
     // 창은 15 × 8
@@ -251,14 +251,14 @@ try {
     const overlap = await page.evaluate(() => {
       const hit = (a: DOMRect, b: DOMRect) => a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
       const view = document.querySelector('.sqb-view')!.getBoundingClientRect();
-      const others = [...document.querySelectorAll('.sqb-sides, .sqb-card')].map((e) => [e.className, e.getBoundingClientRect()] as const);
+      const others = [...document.querySelectorAll('.sqb-card')].map((e) => [e.className, e.getBoundingClientRect()] as const);
       return [...document.querySelectorAll('[data-action="deployPan"]')].flatMap((b) => {
         const r = b.getBoundingClientRect();
         const what = [...(hit(r, view) ? [`판 ${Math.round(r.bottom - view.top)}px`] : []), ...others.filter(([, o]) => hit(r, o)).map(([n]) => n)];
         return what.length ? [`${(b as HTMLElement).dataset.dir}: ${what.join(' · ')}`] : [];
       });
     });
-    if (overlap.length) fail(`${slot}: 화살표 [${overlap.join(',')}]가 판 · 탭 · 카드를 덮는다`);
+    if (overlap.length) fail(`${slot}: 화살표 [${overlap.join(',')}]가 판 · 카드를 덮는다`);
     // 미니맵에 가린 우리 장수 — 그 칸은 못 누른다(기획자에게 알릴 값)
     const hidden = await page.evaluate(() => [...document.querySelectorAll('.sqb-cell[data-team="ours"]')].filter((c) => {
       const r = c.getBoundingClientRect();

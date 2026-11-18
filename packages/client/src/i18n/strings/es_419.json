@@ -375,8 +375,6 @@
   "squad.power.unit": "pts",
   "squad.power.note": "El poder se calcula por la clase y el nivel de cada miembro.",
   "squad.deploy": "Despliegue",
-  "squad.deploy.p1": "Ejército del Sur",
-  "squad.deploy.p2": "Ejército del Norte",
   "squad.deploy.saved": "guardado",
   "squad.deploy.none": "por defecto",
   "squad.save.new": "Registrar escuadra",

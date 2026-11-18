@@ -344,6 +344,11 @@ interface TurnCue { unit: UnitId; at: number; dir: Facing }
 export class PoseDirector {
   /** 지난 계획들이 끝난 뒤 바라보는 쪽 — 없으면 그림 그대로(`1`) */
   private facing = new Map<UnitId, Facing>();
+  /**
+   * 아직 돌아선 적 없는 장수가 보는 쪽 — **판 방향**(오른쪽 = x가 커지는 쪽)으로 적는다. 그림은 처음에 전원 화면 오른쪽을 보므로,
+   * 판을 돌려 그리는 북군 화면(`BoardDims.flip`)은 −1이다 — `BattleScene`이 판을 그릴 때 정한다(2026-11-18)
+   */
+  restFacing: Facing = 1;
   /** 이번 계획의 돌아섬. 다음 계획(또는 `clear()`)이 `facing`에 접어 넣는다 */
   private turns: TurnCue[] = [];
   private tracks = new Map<UnitId, Track>();
@@ -910,13 +915,13 @@ export class PoseDirector {
   }
 
   /**
-   * 지금 바라보는 쪽 (`Facing`). 미리보기로 걷는 장수는 도착지 쪽, 그 밖은 이번 계획에서 이미 지난
+   * 지금 바라보는 쪽 (`Facing`, **판 방향** — 화면 방향은 `screenDir`가 낸다). 미리보기로 걷는 장수는 도착지 쪽, 그 밖은 이번 계획에서 이미 지난
    * 마지막 돌아섬 — 없으면 기억해 둔 쪽.
    */
   facingOf(unit: UnitId): Facing {
     const pv = this.pv;
     if (pv?.unit === unit && pv.to.x !== pv.fromX) return pv.to.x > pv.fromX ? 1 : -1;
-    let dir = this.facing.get(unit) ?? 1;
+    let dir = this.facing.get(unit) ?? this.restFacing;
     for (const c of this.turns) {
       if (c.at > this.t) break;
       if (c.unit === unit) dir = c.dir;

@@ -375,8 +375,6 @@
   "squad.power.unit": "pt",
   "squad.power.note": "La potenza dipende da classe e livello di ogni membro.",
   "squad.deploy": "Schieramento",
-  "squad.deploy.p1": "Armata del Sud",
-  "squad.deploy.p2": "Armata del Nord",
   "squad.deploy.saved": "salvato",
   "squad.deploy.none": "predefinito",
   "squad.save.new": "Registra squadra",

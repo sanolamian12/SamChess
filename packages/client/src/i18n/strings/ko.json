@@ -670,8 +670,6 @@
   "squad.level": "레벨",
   "squad.levelNote": "레벨은 궁궐에서 키운 장수의 지금 레벨 그대로 따라간다",
   "squad.deploy": "배치",
-  "squad.deploy.p1": "남군",
-  "squad.deploy.p2": "북군",
   "squad.deploy.saved": "저장됨",
   "squad.deploy.none": "기본",
   "squad.save.new": "등록 완료",

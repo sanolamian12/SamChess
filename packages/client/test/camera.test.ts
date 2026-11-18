@@ -36,7 +36,7 @@ test('포커스 — 배율이 정확히 SCALE_FOCUS배이고 지정한 칸을 �
   const v = viewOf({ from: 0, scale: SCALE_FOCUS, cell }, FIT, VIEW, VIEW);
   // 배율은 기획자가 눈으로 보며 조정하는 값이라 숫자를 박지 않고 상수로 검증한다
   assert.equal(v.zoom, FIT * SCALE_FOCUS);
-  assert.deepEqual({ x: v.x, y: v.y }, cellCenter(cell.x, cell.y));
+  assert.deepEqual({ x: v.x, y: v.y }, cellCenter(cell.x, cell.y, DUEL_BOARD));
 });
 
 test('포커스 — 가장자리를 비춰도 화면이 판 밖으로 나가지 않는다', () => {
@@ -64,9 +64,9 @@ test('비켜 세우기(lean) — 칸이 화면 왼쪽 가운데에 오고, 판 �
   const cell = { x: 8, y: 10 };
   const v = viewOf({ from: 0, scale: SCALE_FOCUS, cell, lean: 0.25 }, FIT, VIEW, VIEW);
   // 칸의 화면 위치 = 화면 폭의 1/4 (= 가운데에서 왼쪽으로 1/4)
-  const screenX = (cellCenter(cell.x, cell.y).x - (v.x - span / 2)) / span;
+  const screenX = (cellCenter(cell.x, cell.y, DUEL_BOARD).x - (v.x - span / 2)) / span;
   assert.ok(Math.abs(screenX - 0.25) < 1e-9, `칸이 화면 ${screenX.toFixed(3)} 자리에 있다`);
-  assert.equal(v.y, cellCenter(cell.x, cell.y).y);           // 세로는 그대로
+  assert.equal(v.y, cellCenter(cell.x, cell.y, DUEL_BOARD).y);           // 세로는 그대로
   // 오른쪽 끝의 칸은 못 민다 — 판 밖을 비추지 않는다
   const far = viewOf({ from: 0, scale: SCALE_FOCUS, cell: { x: 24, y: 10 }, lean: 0.25 }, FIT, VIEW, VIEW);
   assert.equal(far.x, BOARD_W - span / 2);

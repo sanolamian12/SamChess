@@ -375,8 +375,6 @@
   "squad.power.unit": "pts",
   "squad.power.note": "Power comes from each member’s class and level.",
   "squad.deploy": "Deploy",
-  "squad.deploy.p1": "South",
-  "squad.deploy.p2": "North",
   "squad.deploy.saved": "saved",
   "squad.deploy.none": "default",
   "squad.save.new": "Create Squad",

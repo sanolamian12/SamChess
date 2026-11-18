@@ -375,8 +375,6 @@
   "squad.power.unit": "点",
   "squad.power.note": "战斗力由成员的兵种与等级组合计算。",
   "squad.deploy": "布阵",
-  "squad.deploy.p1": "南军",
-  "squad.deploy.p2": "北军",
   "squad.deploy.saved": "已保存",
   "squad.deploy.none": "默认",
   "squad.save.new": "完成登记",

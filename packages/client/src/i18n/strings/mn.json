@@ -375,8 +375,6 @@
   "squad.power.unit": "оноо",
   "squad.power.note": "Хүчийг гишүүн бүрийн ангилал, түвшнээр тооцно.",
   "squad.deploy": "Байрлал",
-  "squad.deploy.p1": "Өмнөд",
-  "squad.deploy.p2": "Хойд",
   "squad.deploy.saved": "хадгалсан",
   "squad.deploy.none": "үндсэн",
   "squad.save.new": "Бүртгэж дуусгах",

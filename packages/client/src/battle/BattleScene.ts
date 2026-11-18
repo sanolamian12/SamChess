@@ -20,7 +20,7 @@ import type { BattleEvent, BattleState, Intent, Side, TacticId, UnitId, UnitStat
 import type { TutorialSpot } from '@samchess/meta';
 import {
   BADGE, BAR_H, BAR_LEFT, BAR_PITCH, BAR_TOP, BAR_W,
-  CELL_H, CELL_W, COLOR, LABEL, boardDims, cellAt, cellCenter,
+  CELL_H, CELL_W, COLOR, LABEL, boardDims, boardFlipFor, cellAt, cellCenter, cellCorner, screenDir, viewCell,
 } from './layout.ts';
 import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
@@ -380,7 +380,9 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     // 판 크기는 **판이 정한다** — 도적떼 방어전은 25×15다(GDD §5.11). 재생기가 서기 전에
     // 판을 그려야 하므로 `bootBattle`이 시작 상태의 크기를 registry에 실어 둔다
-    this.board = boardDims(this.registry.get('boardSize') as Vec2 | undefined);
+    // 북군으로 앉으면 판을 돌려 그린다(`boardFlipFor`, 2026-11-18) — 보는 쪽은 `bootBattle`이 실어 둔다
+    this.board = boardDims(this.registry.get('boardSize') as Vec2 | undefined, this.registry.get('flip') === true);
+    this.poses.restFacing = screenDir(1, this.board);
     this.drawBoard();
     this.drawBuoys();
     this.hints = this.add.graphics().setDepth(5);
@@ -690,8 +692,10 @@ export class BattleScene extends Phaser.Scene {
     // 진영 구역. 지도가 있으면 **색조만** 얹는다 (위아래가 누구 자리인지만 보이면 된다).
     // 지도를 눌러 굽고 나서 더 낮췄다 — 옅은 지도 위에서는 같은 값도 더 진해 보인다.
     const camp = map ? 0.13 : 1;
-    g.fillStyle(COLOR.campP2, camp).fillRect(0, 0, this.board.w, 5 * CELL_H);
-    g.fillStyle(COLOR.campP1, camp).fillRect(0, this.board.h - 5 * CELL_H, this.board.w, 5 * CELL_H);
+    // 위 · 아래 진영 색 — 판을 돌려 그리면(북군 화면) 위가 남군이다
+    const [top, bottom] = this.board.flip ? [COLOR.campP1, COLOR.campP2] : [COLOR.campP2, COLOR.campP1];
+    g.fillStyle(top, camp).fillRect(0, 0, this.board.w, 5 * CELL_H);
+    g.fillStyle(bottom, camp).fillRect(0, this.board.h - 5 * CELL_H, this.board.w, 5 * CELL_H);
     if (!map) {
       g.fillStyle(COLOR.boardDark, 1).fillRect(0, 5 * CELL_H, this.board.w, this.board.h - 10 * CELL_H);
 
@@ -739,14 +743,15 @@ export class BattleScene extends Phaser.Scene {
       color: onMap ? COLOR.labelInk : COLOR.label,
     };
     const stroke: [string, number] = onMap ? [COLOR.labelPaper, 8] : ['#000000', 8];
+    // 글자는 화면 자리(`x` · `y`)에 서고 **판 칸의 이름**을 적는다 — 돌려 그린 판(북군 화면)은 Y…A · 20…1이다(`viewCell`)
     for (let x = 0; x < this.board.cols; x++) {
       this.labels.push(this.add
-        .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + x), style)
+        .text(x * CELL_W + CELL_W / 2, LABEL.pad, String.fromCharCode(65 + viewCell(x, 0, this.board).x), style)
         .setOrigin(0.5, 0).setDepth(16).setStroke(...stroke).setData('axis', 'col').setData('i', x));
     }
     for (let y = 0; y < this.board.rows; y++) {
       this.labels.push(this.add
-        .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(y + 1), style)
+        .text(LABEL.pad, y * CELL_H + CELL_H / 2, String(viewCell(0, y, this.board).y + 1), style)
         .setOrigin(0, 0.5).setDepth(16).setStroke(...stroke).setData('axis', 'row').setData('i', y));
     }
     this.syncScreenScale();
@@ -1077,7 +1082,7 @@ export class BattleScene extends Phaser.Scene {
       live.add(key);
       let img = this.terrainViews.get(key);
       if (!img) {
-        const p = cellCenter(tile.pos.x, tile.pos.y);
+        const p = cellCenter(tile.pos.x, tile.pos.y, this.board);
         img = this.add.image(p.x, p.y, texture).setDepth(3).setAlpha(TERRAIN_ALPHA);
         img.setDisplaySize(w, h);
         this.terrainViews.set(key, img);
@@ -1112,7 +1117,7 @@ export class BattleScene extends Phaser.Scene {
     for (const side of SIDES) {
       const pos = supplyDepotOf(this.state, side);
       if (!pos) continue;
-      const c = cellCenter(pos.x, pos.y);
+      const c = cellCenter(pos.x, pos.y, this.board);
       const base = this.add.ellipse(c.x, c.y + CELL_H * 0.28, CELL_W * 0.92, CELL_H * 0.34,
         side === 'P1' ? COLOR.p1 : COLOR.p2, SUPPLY_BASE_ALPHA).setDepth(4);
       const art = this.textures.exists(`terrain:${SUPPLY_ART}`)
@@ -1233,7 +1238,7 @@ export class BattleScene extends Phaser.Scene {
     if (!this.textures.exists('terrain:buoy')) return;
     const size = Math.min(CELL_W, CELL_H) * 0.95;
     for (const b of buoys) {
-      const { x, y } = cellCenter(b.x, b.y);
+      const { x, y } = cellCenter(b.x, b.y, this.board);
       this.add.image(x, y, 'terrain:buoy').setDisplaySize(size, size).setDepth(4);
     }
     this.debugBuoys = buoys.length;
@@ -1244,7 +1249,7 @@ export class BattleScene extends Phaser.Scene {
     if (!this.textures.exists('terrain:buoy')) return;
     const size = Math.min(CELL_W, CELL_H) * 0.95;
     for (const b of buoys) {
-      const { x, y } = cellCenter(b.x, b.y);
+      const { x, y } = cellCenter(b.x, b.y, this.board);
       const img = this.add.image(x, y, 'terrain:buoy').setDisplaySize(size * 0.4, size * 0.4).setDepth(4).setAlpha(0);
       this.tweens.add({ targets: img, alpha: 1, displayWidth: size, displayHeight: size, duration: 500, ease: 'Back.easeOut' });
     }
@@ -1318,7 +1323,7 @@ export class BattleScene extends Phaser.Scene {
 
       // 이동 연출 중에는 권위 좌표가 아니라 밟고 있는 칸을 보여준다
       const at = this.poses.cellOf(unit.id) ?? unit.pos;
-      const p = cellCenter(at.x, at.y);
+      const p = cellCenter(at.x, at.y, this.board);
       if (!this.retreated.has(unit.id)) view.container.setPosition(p.x, p.y);
       view.container.setVisible(true);
       view.container.setAlpha(this.poses.alphaOf(unit.id));
@@ -1342,8 +1347,8 @@ export class BattleScene extends Phaser.Scene {
        */
       const depth = frame === POSE.idle ? 10 : 10.5;
       if (view.container.depth !== depth) view.container.setDepth(depth);
-      // 그림은 전원 오른쪽을 본다 — 왼쪽을 볼 때만 뒤집는다 (`poses.ts`의 `Facing`, 2026-10-10)
-      view.portrait.setFlipX(this.poses.facingOf(unit.id) < 0);
+      // 그림은 전원 오른쪽을 본다 — 화면 왼쪽을 볼 때만 뒤집는다 (`poses.ts`의 `Facing`, 2026-10-10). 돌려 그린 판은 좌우가 반대다
+      view.portrait.setFlipX(screenDir(this.poses.facingOf(unit.id), this.board) < 0);
 
       // **게이지는 피격 그림과 함께 움직인다** (기획자 지적 2026-08-13).
       // 엔진은 판정을 이미 끝냈으므로 `unit.hp`는 맞은 뒤 값이다 — 아직 오지 않은
@@ -1705,8 +1710,9 @@ export class BattleScene extends Phaser.Scene {
       this.hints.fillStyle(color, alpha);
       this.marks.lineStyle(line, color, Math.min(1, alpha * 3));
       for (const c of cells) {
-        this.hints.fillRect(c.x * CELL_W + 3, c.y * CELL_H + 3, CELL_W - 6, CELL_H - 6);
-        this.marks.strokeRect(c.x * CELL_W + 2, c.y * CELL_H + 2, CELL_W - 4, CELL_H - 4);
+        const o = cellCorner(c.x, c.y, this.board);
+        this.hints.fillRect(o.x + 3, o.y + 3, CELL_W - 6, CELL_H - 6);
+        this.marks.strokeRect(o.x + 2, o.y + 2, CELL_W - 4, CELL_H - 4);
       }
     };
 
@@ -1780,7 +1786,7 @@ export class BattleScene extends Phaser.Scene {
       const target = this.state.units[id];
       const f = forecastAttack(this.state, attacker, id);
       if (!target || !f) continue;
-      const p = cellCenter(target.pos.x, target.pos.y);
+      const p = cellCenter(target.pos.x, target.pos.y, this.board);
       const label = f.execute ? t('board.instantKill') : t('board.criticalRate', { n: f.criticalRate });
       const text = this.add.text(p.x, p.y, label, {
         fontFamily: serifFont(), fontSize: '34px', fontStyle: 'bold',
@@ -1832,7 +1838,7 @@ export class BattleScene extends Phaser.Scene {
       ? { zoom: cam.zoom, x: cam.worldView.centerX, y: cam.worldView.centerY }
       : this.viewOfCue(this.wantedCue());
     const span = this.scale.width / view.zoom;
-    const at = (cellCenter(unit.pos.x, unit.pos.y).x - (view.x - span / 2)) / span;
+    const at = (cellCenter(unit.pos.x, unit.pos.y, this.board).x - (view.x - span / 2)) / span;
     return at > 0.5 ? 'left' : 'right';
   }
 
@@ -1917,7 +1923,7 @@ export class BattleScene extends Phaser.Scene {
       const cell = h?.at === 'cell' ? h.cell : h?.at === 'unit' ? this.state.units[h.unit]?.pos : undefined;
       this.tutGlow.clear().setVisible(!!cell);
       if (cell) {
-        const c = cellCenter(cell.x, cell.y);
+        const c = cellCenter(cell.x, cell.y, this.board);
         const inset = 5;
         const [x, y, w, h] = [c.x - CELL_W / 2 + inset, c.y - CELL_H / 2 + inset, CELL_W - inset * 2, CELL_H - inset * 2];
         this.tutGlow.fillStyle(COLOR.tutGlow, 0.3).fillRect(x, y, w, h);
@@ -1983,7 +1989,7 @@ export class BattleScene extends Phaser.Scene {
   playAppear(f: { appear: readonly { officer: string; at: Vec2 }[] }): Promise<void> {
     const arrive = f.appear.map((a, i) => new Promise<void>((done) => {
       const key = `act:${a.officer}`;
-      const c = cellCenter(a.at.x, a.at.y);
+      const c = cellCenter(a.at.x, a.at.y, this.board);
       const sprite = this.add.sprite(c.x, c.y - CELL_H * 0.6, this.textures.exists(key) ? key : '__MISSING', POSE.idle)
         .setOrigin(0.5, FRAME_ORIGIN_Y).setDisplaySize((CELL_H - 10) * FRAME_W / FRAME_SIZE, (CELL_H - 10) * FRAME_H / FRAME_SIZE).setDepth(11).setAlpha(0);
       this.finaleSprites.set(a.officer, sprite);
@@ -2014,7 +2020,7 @@ export class BattleScene extends Phaser.Scene {
       if ('officer' in r) {
         const sprite = this.finaleSprites.get(r.officer);
         if (!sprite) { done(); return; }
-        const to = cellCenter(r.to.x, r.to.y);
+        const to = cellCenter(r.to.x, r.to.y, this.board);
         sprite.setFrame(POSE.move);
         this.tweens.add({
           targets: sprite, x: to.x, y: to.y, delay: 450, duration: 1500, ease: 'Sine.easeInOut',
@@ -2029,7 +2035,7 @@ export class BattleScene extends Phaser.Scene {
       const view = this.views.get(r.unit);
       if (!view) { done(); return; }
       this.retreated.add(r.unit);
-      const to = cellCenter(r.to.x, r.to.y);
+      const to = cellCenter(r.to.x, r.to.y, this.board);
       // 물러나는 걸음 — 판은 반전을 안 한다(`facingOf`), 걷는 자세만 준다. 여럿이면 함께 걷는다
       view.portrait.setFrame(POSE.move);
       this.tweens.add({

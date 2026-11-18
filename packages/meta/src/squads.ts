@@ -46,7 +46,7 @@
 
 import { officerById } from '@samchess/data';
 import { releaseGuards } from './raid.ts';
-import { defaultDeployPos, deployZone, inZone } from '@samchess/rules';
+import { defaultDeployPos, deployZone, inZone, rotate180 } from '@samchess/rules';
 import type { BattleMode, Grade, OfficerId, PieceType, Side, UnitId, Vec2 } from '@samchess/rules';
 import { statsOf } from './profile.ts';
 import { teamSize, toRosterEntries, validateRoster } from './roster.ts';
@@ -353,6 +353,19 @@ export function defaultSquadCells(mode: BattleMode, side: Side, picks: readonly 
 }
 
 /**
+ * 그 진영에 깔 칸 — **공격대의 북군은 남군 배치를 180° 돌린 것이다** (2026-11-18 기획자). 사람은 언제나 남군 기준으로 두고
+ * (배치 편집에 진영 토글이 없다), 북군으로 앉으면 화면도 판을 돌려 그리므로 남군에서 둔 그대로 보인다(`rotate180`).
+ * 수비대는 수성전의 북군 자리를 그 자리 그대로 편집하므로 저장된 진영 것을 쓴다.
+ * 저장 안 한 진영은 부대의 기본 배치(King 가운데) — 엔진의 기본 배치(로스터 차례)와 다르다.
+ */
+export function deployCells(squad: Squad, side: Side): SquadCell[] {
+  if (side === 'P2' && squad.role === 'attack') {
+    return deployCells(squad, 'P1').map((c) => ({ piece: c.piece, ...rotate180(c) }));
+  }
+  return squad.deploy[side] ?? defaultSquadCells(squad.mode, side, squad.picks);
+}
+
+/**
  * 저장된 배치를 엔진의 `deploy` 의도로 편다. **어긋나면 `null`.**
  *
  * 보는 것 넷 — ① 지금 구성의 기물과 정확히 짝이 맞는가 ② 인원이 맞는가
@@ -364,8 +377,7 @@ export function defaultSquadCells(mode: BattleMode, side: Side, picks: readonly 
 export function squadDeployment(
   profile: PlayerProfile, squad: Squad, side: Side,
 ): { unit: UnitId; pos: Vec2 }[] | null {
-  // 저장 안 한 진영은 부대의 기본 배치(King 가운데) — 엔진의 기본 배치(로스터 차례)와 다르다
-  const cells = squad.deploy[side] ?? defaultSquadCells(squad.mode, side, squad.picks);
+  const cells = deployCells(squad, side);
   if (cells.length !== teamSize(squad.mode)) return null;
   if (!validateSquad(profile, squad).ok) return null;
 

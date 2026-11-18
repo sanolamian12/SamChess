@@ -274,6 +274,26 @@ export function defaultDeployPos(mode: BattleConfig['mode'], side: Side, index: 
   };
 }
 
+/**
+ * 판을 180° 돌린 칸 — 남군 칸 ↔ 북군 칸 (2026-11-18 기획자).
+ *
+ * **사람은 언제나 남군 기준으로 둔다** — 공격대의 배치는 남군 것 하나만 저장하고 북군으로 설 때 이것으로 돌려 깔며
+ * (`squadDeployment` · 온라인 방의 `openRoom`), 북군으로 앉은 사람의 화면은 판을 이것으로 돌려 그린다(`battle/layout.ts`).
+ * 엔진 · 서버는 절대 좌표 판 하나 그대로다. 이것이 성립하는 것은 **규칙이 180° 회전에 대칭이라서**다 — 기물 마스크 · 배치 구역 ·
+ * 군량고가 전부 대칭이고 `state.test.ts`의 「판은 180° 대칭이다」가 고정한다(앞뒤가 있는 기물을 들이면 거기서 깨진다).
+ */
+export const rotate180 = (p: Readonly<Vec2>, size: Readonly<Vec2> = { x: FORMULA.board.cols, y: FORMULA.board.rows }): Vec2 =>
+  ({ x: size.x - 1 - p.x, y: size.y - 1 - p.y });
+
+/** 다른 진영에 쓰라고 낸 배치를 이 진영으로 돌린다 — 유닛 id의 진영 머리도 갈아 끼운다. 이미 이 진영 것이면 그대로 */
+export function orientDeploy(
+  placements: readonly { unit: UnitId; pos: Vec2 }[], side: Side, size?: Readonly<Vec2>,
+): { unit: UnitId; pos: Vec2 }[] {
+  return placements.map((p) => (p.unit.startsWith(`${side}-`)
+    ? { unit: p.unit, pos: { ...p.pos } }
+    : { unit: `${side}-${p.unit.slice(p.unit.indexOf('-') + 1)}` as UnitId, pos: rotate180(p.pos, size) }));
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 군량고 (GDD §3.9, 2026-10-19 기획자 확정)
 // ═══════════════════════════════════════════════════════════════

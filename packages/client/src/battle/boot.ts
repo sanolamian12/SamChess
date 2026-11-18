@@ -13,6 +13,7 @@ import Phaser from 'phaser';
 import { STATUS_META } from '@samchess/rules';
 import type { BattleState, Vec2 } from '@samchess/rules';
 import { BattleScene } from './BattleScene.ts';
+import { boardFlipFor } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { BattleTransport, RoomClose } from './transport.ts';
 import type { BattleTheme } from '../audio/bgm.ts';
@@ -70,6 +71,9 @@ export function bootBattle(opts: {
   game.registry.set('boardSize', opts.transport.initial.boardSize);
   // 판의 종류 — 도적떼 판은 제 지도를 깐다
   game.registry.set('scenario', opts.transport.initial.scenario ?? null);
+  // 판을 돌려 그리는가 — 북군으로 앉은 사람은 남군처럼 아래에서 위로 본다(2026-11-18). 보는 쪽은 재생기와 같은 식(`Playback.viewSide`)
+  const viewSide = opts.transport.humanSide ?? opts.transport.viewSide ?? 'P1';
+  game.registry.set('flip', boardFlipFor(viewSide, opts.transport.initial.scenario));
   game.registry.set('boardMap', opts.boardMap ?? null);
   game.registry.set('bgm', opts.bgm ?? null);
   game.registry.set('tutorialHint', !!opts.tutorialHint);

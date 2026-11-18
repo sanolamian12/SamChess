@@ -6534,25 +6534,6 @@ button.sql-row:hover { background: #3a2c1e14; }
 
 /* 배치 편집 — 판 전체 (69·72쪽) */
 .sqb-panel { gap: .35rem; }
-/* 남군 · 북군 — 글자 없이 깃발 둘 (2026-11-13 기획자). 판은 명령 단추 한 장(`btn-battle-command.png`)을 반반으로 쓰고, 깃발은
-   `battle_system_flags_north_south`를 반씩 구운 `gi/army-south` · `gi/army-north`. 지금 고치는 쪽에 투구 메달(`icons/tutorial/next.png`)을
-   깃발 오른쪽 아래로 비껴 겹친다 — 안 고르는 쪽은 잿빛으로 가라앉는다 */
-.sqb-sides {
-  display: flex; border-style: solid; border-color: transparent; border-width: .3rem;
-  border-image: url(ui/btn-battle-command.png) 100 fill / .6rem; background: #2a2420;
-}
-.sqb-side {
-  position: relative; flex: 1 1 0; width: 2.9rem; height: 2.3rem; padding: 0; cursor: pointer;
-  border: 0; background: transparent; display: flex; align-items: center; justify-content: center;
-}
-.sqb-side + .sqb-side { box-shadow: inset 1px 0 0 #00000080, inset 2px 0 0 #ffffff1f; }   /* 반반의 금 */
-.sqb-flag { height: 2.15rem; width: auto; pointer-events: none; filter: grayscale(.85) brightness(.55); transition: filter .15s; }
-.sqb-side.on .sqb-flag { filter: drop-shadow(0 0 .2rem #f0c67499); }
-.sqb-side:hover:not(.on) .sqb-flag { filter: grayscale(.4) brightness(.8); }
-.sqb-flag-on {
-  position: absolute; right: -.05rem; bottom: -.05rem; width: 1.15rem; height: 1.15rem; pointer-events: none;
-  filter: drop-shadow(0 1px 2px #000c);
-}
 /* 장수 밑 [배치] — 옥색 칩(`chip-selected.png`), 흰 글자. 켜진 쪽은 금빛으로 빛난다 (2026-11-18 기획자 — 장수마다 하나) */
 .sqb-chip {
   font: inherit; font-size: .76rem; cursor: pointer; padding: .1rem .4rem; border-radius: 0; white-space: nowrap;
@@ -6629,11 +6610,10 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-squad-deploy .sqb-panel { flex: none; }
 .scr-squad-deploy .place-body > .sqb-acts { margin-top: auto; padding-top: .25rem; padding-bottom: .4rem; }
 .scr-squad-deploy .sqd-acts.sqb-acts > .btn { min-height: 0; padding-top: .3rem; padding-bottom: .3rem; }
-/* 머리 판 — 장수 + 좌표 한 쌍씩(최대 다섯) · 안내 한 줄 (2026-11-17 기획자). 공격대는 오른쪽 끝에 남군 · 북군 탭 */
+/* 머리 판 — 장수 + 좌표 한 쌍씩(최대 다섯) · 안내 한 줄 (2026-11-17 기획자). 진영 탭은 없다(2026-11-18 — 공격대는 남군, 수비대는 북군 한 진영) */
 .scr-squad-deploy .sqe-top.sqb-head { padding-top: .2rem; padding-bottom: .25rem; }
-/* 머리 판 (2026-11-18 기획자) — 왼쪽 위 제목 「장수 배치」(공격대는 오른쪽에 남군 · 북군 탭), 그 밑에 안내 한 줄(왼쪽 정렬), 장수 카드 다섯 칸 */
+/* 머리 판 (2026-11-18 기획자) — 왼쪽 위 제목 「장수 배치」, 그 밑에 안내 한 줄(왼쪽 정렬), 장수 카드 다섯 칸 */
 .sqb-head-top { display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-height: 1.6rem; }
-.sqb-head-top > .sqb-sides { flex: none; }
 .sqb-head-ttl { margin: 0; font-size: .95rem; font-weight: 700; line-height: 1.2; color: #3a2a18; letter-spacing: .06em; text-align: left; }
 /*
  * 장수 카드 — 컬렉션 등록 칸 그림(`ui/slot-empty.png`, 360 × 492 — 위 종이 · 아래 좁은 띠)을 9분할로 편다. 아래 조각(그림 높이의 26%)이

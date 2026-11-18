@@ -317,6 +317,17 @@ test('저장된 배치를 서버가 깐다 — 남군도 북군도', () => {
   assert.notDeepEqual(r.battle.units[moved.P1![0]!.unit]!.pos, plain.battle.units[moved.P1![0]!.unit]!.pos);
 });
 
+test('대기열의 남군 배치는 북군 자리에서 180° 돌려 깐다 (2026-11-18)', () => {
+  const plain = room();
+  // 북군 명단의 기물로 **남군 좌표**를 짓는다 — 대기열은 진영을 모른 채 남군 배치를 싣는다
+  const pieces = Object.values(plain.battle.units).filter((u) => u.side === 'P2').map((u) => u.piece);
+  const south = pieces.map((piece, i) => ({ unit: `P1-${piece}` as UnitId, pos: { x: 6 + i * 3, y: 16 } }));
+  const r = room('3v3', 7, { P1: null, P2: south });
+  pieces.forEach((piece, i) => {
+    assert.deepEqual(r.battle.units[`P2-${piece}` as UnitId]!.pos, { x: 24 - (6 + i * 3), y: 3 }, `${piece}가 돌려 깔리지 않았다`);
+  });
+});
+
 test('어긋난 프리셋은 아무 말 없이 안 깐다 — 막으면 전투에 못 들어간다', () => {
   const plain = room();
   const bad: Record<Side, Enlist['deploy']> = {
