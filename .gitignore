@@ -81,3 +81,6 @@ packages/client/public/opening/
 
 # 튜토리얼 더빙 — prompts 명령이 굽는 검토용 프롬프트(작업판 더빙작업판.html과 같은 내용, 다시 구울 때마다 바뀐다)
 Design/튜토리얼더빙/prompts/
+
+# 글자 크기 점검판의 언어별 캡처 — tools/build_font_board.py가 다시 만든다(열 언어 × 55장, 20MB 남짓)
+Design/글자크기점검/shots/

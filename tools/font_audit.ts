@@ -96,7 +96,9 @@ async function audit(page: Page, key: string): Promise<void> {
       if ((scale >= 0.95 ? cssRem : rem) < ref - 0.005) hits.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: Math.round(px * 10) / 10, scale: Math.round(scale * 100) / 100, text: text.slice(0, 40) });
       // 잘림 — 넘침을 숨기는 상자(자신 또는 두 겹 위까지)에서 글자가 칸보다 넓다(말줄임 포함)
       if (el instanceof HTMLElement) {
-        for (let e: HTMLElement | null = el, k = 0; e && k < 3; e = e.parentElement, k++) {
+        // 자기 자신과 바로 위 한 겹만 본다 — 더 올라가면 화면 틀(`.scr`)까지 닿아, 배경 그림이 넓은 만큼을 모든 글자의 잘림으로 셌다(+77px 오탐)
+        for (let e: HTMLElement | null = el, k = 0; e && k < 2; e = e.parentElement, k++) {
+          if (e.id === 'frame' || e.classList.contains('scr') || e === document.body) break;
           const cs = getComputedStyle(e);
           if (cs.overflowX === 'hidden' || cs.overflowX === 'clip' || cs.textOverflow === 'ellipsis') {
             if (e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0) {
@@ -165,6 +167,11 @@ const go = (page: Page, s: Go): Promise<unknown> =>
   page.evaluate((x) => (window as unknown as { __screen: { go: (v: unknown) => void } }).__screen.go(x), s);
 const settle = (page: Page, ms = 1_400): Promise<void> => page.waitForTimeout(ms);
 const click = async (p: Page, sel: string): Promise<void> => { await p.click(sel, { timeout: 5_000 }); };
+/** 덮개(머리 도구 층 · 배경)에 가려 Playwright가 「누를 수 없다」고 보는 단추 — DOM에서 바로 누른다. 없으면 던진다 */
+const jsClick = async (p: Page, sel: string): Promise<void> => {
+  const ok = await p.evaluate((q) => { const e = document.querySelector<HTMLElement>(q); e?.click(); return !!e; }, sel);
+  if (!ok) throw new Error(`${sel} 없음`);
+};
 
 async function setLang(page: Page): Promise<void> {
   if (LANG) await page.evaluate((l) => localStorage.setItem('samchess.lang', l), LANG);
@@ -218,9 +225,9 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['10-main', { name: 'main' }],
     ['11-main-ext', { name: 'main', view: 'ext' }],
     ['12-main-settings', { name: 'main' }, async (p) => { await click(p, '.scr-main [data-action="settings"]'); }],
-    ['13-main-mail', { name: 'main' }, async (p) => { await click(p, '[data-action="mail"]'); }],
-    ['14-main-info', { name: 'main' }, async (p) => { await click(p, '[data-action="info"]'); }],
-    ['15-main-logout', { name: 'main' }, async (p) => { await click(p, '.scr-main [data-action="settings"]'); await settle(p, 600); await click(p, '[data-action="logout"]'); }],
+    ['13-main-mail', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="mail"]'); }],
+    ['14-main-info', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="info"]'); }],
+    ['15-main-logout', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="logout"]'); }],
     ['20-palace', { name: 'place', place: 'palace' }],
     ['20b-palace-rename', { name: 'place', place: 'palace' }, async (p) => { await click(p, '[data-action="rename"]'); }],
     ['21-officers', { name: 'officers' }],
@@ -231,7 +238,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22e-officer-sort', { name: 'officers' }, async (p) => { await click(p, '[data-action="sortMenu"]'); }],
     ['23-city', { name: 'city' }],
     ['24-buildings', { name: 'buildings' }],
-    ['24b-buildings-build', { name: 'buildings' }, async (p) => { await click(p, '[data-action="build"]:not([disabled])'); }],
+    ['24b-buildings-build', { name: 'buildings' }, async (p) => { await jsClick(p, '[data-action="build"]'); }],
     ['30-barracks', { name: 'place', place: 'barracks' }],
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],
@@ -239,7 +246,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['35b-squad-edit-atk', { name: 'squadEdit', draft: atk3, base: atk3 }],
     ['35c-squad-deploy', { name: 'squadEdit', draft: atk3, base: atk3 }, async (p) => { await click(p, '[data-action="toDeploy"]'); }],
     ['35d-squad-swap', { name: 'squadEdit', draft: atk3, base: atk3 }, async (p) => { await click(p, '[data-action="swapPiece"]'); }],
-    ['35e-squad-pick', { name: 'squadEdit', draft: atk3, base: atk3 }, async (p) => { await click(p, '[data-action="pickOfficer"]'); }],
+    ['35e-squad-pick', { name: 'squadEdit', draft: { ...atk3, picks: atk3.picks.slice(0, 2) }, base: atk3 }, async (p) => { await jsClick(p, '[data-action="pickOfficer"]'); }],
     ['36-garrison-policy', { name: 'garrisonPolicy', id: sq3.id }],
     ['37-sortie', { name: 'sortie' }],
     ['37b-sortie-peek', { name: 'sortie' }, async (p) => { await click(p, '[data-action="peekSquad"]'); }],
@@ -282,7 +289,14 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
       if (after) { await after(page); await settle(page, 900); }
       await audit(page, `${d}/${name}`);
     } catch (e) {
-      log(`  ✗ ${name} — ${(e as Error).message.split('\n')[0]}`);
+      log(`  ✗ ${name} — ${(e as Error).message.split(String.fromCharCode(10))[0]}`);
+    }
+    // 팝업을 연 장면 뒤에는 새로 읽는다 — 우편 · 안내 · 로그아웃 확인은 화면 밖 층(머리 도구)에 떠서 화면을 옮겨도 안 닫히고,
+    // 그 위에 덮인 채로 뒤 장면의 클릭을 전부 막았다(열 언어 순회에서 장면 여덟이 함께 떨어졌다)
+    if (after) {
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForSelector('#frame:not([data-sky]) .scr-main', { timeout: 30_000 }).catch(() => {});
+      await settle(page, 600);
     }
   }
 

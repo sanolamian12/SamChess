@@ -1,11 +1,13 @@
 """
-글자 크기 점검판 — 화면을 하나씩 손으로 보며 틱하는 진도판(HTML)을 만든다 (2026-11-18)
+글자 크기 점검판 — 화면을 하나씩 손으로 보며 메모하고 체크하는 진도판(HTML)을 만든다 (2026-11-18)
 
-    python tools/build_font_board.py --audit ko=<dir>/font-audit.json --audit en=<dir>/font-audit.json
+    python tools/build_font_board.py --shots ko=<순회 폴더> --shots en=<순회 폴더> … (열 언어)
 
-`tools/font_audit.ts`가 남긴 결과(장면별 작은 글자 · 잘림)를 로드맵의 각 화면 밑에 「자동 검사가 잡은 것」으로 끼워
-`Design/글자크기점검/점검판.html` 하나로 쓴다. 틱 · 메모는 브라우저의 localStorage에 남는다(파일을 다시 만들어도 그대로 —
-열쇠가 화면 id라서). 결과를 다시 재면 이 도구를 다시 돌린다.
+`tools/font_audit.ts`를 `SHOTS=1`로 돌린 폴더(`portrait_<장면>.jpg`)에서 화면마다 **언어별 캡처**를 줄여 `Design/글자크기점검/shots/<언어>/<id>.jpg`로 옮기고,
+로드맵(아래)과 함께 `Design/글자크기점검/점검판.html` 하나로 쓴다. 한국어 폴더에 가로 캡처(`landscape_<장면>.jpg`)가 있으면 「한국어 · 가로」도 한 장 더.
+틀은 `tools/font_board.template.html`. 판은 단원 버튼 일곱 개 → 그 단원의 화면 카드(캡처를 ◀ ▶로 언어별로 넘김 · 메모 · 완료 체크).
+메모 · 체크는 브라우저의 localStorage에 남는다(열쇠가 화면 id라 판을 다시 만들어도 그대로).
+캡처(`shots/`, 열 언어 × 55장)는 git에 안 올린다 — 이 도구로 다시 만든다.
 """
 from __future__ import annotations
 
@@ -16,8 +18,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "Design" / "글자크기점검" / "점검판.html"
-# 이 수 이상의 화면에서 잡히면 「공통」으로 모은다
-COMMON_MIN = 5
+SHOTS_DIR = OUT.parent / "shots"
+# 캡처 폭(px) — 순회는 세로 700 × 1400, 가로 1920 × 1080으로 찍는다. 크게 볼 때 작은 글자가 읽혀야 해서 세로는 원본 그대로
+SHOT_W = 700
+SHOT_W_LAND = 1280
+# 언어 — 게임의 `LANGS`(i18n/index.ts)와 같은 차례 · 같은 이름
+LANGS = [("ko", "한국어"), ("en", "English"), ("es_419", "Español"), ("it", "Italiano"), ("ja", "日本語"),
+         ("mn", "Монгол"), ("pt_BR", "Português (BR)"), ("pt_PT", "Português (PT)"), ("zh_Hans", "简体中文"), ("zh_Hant", "繁體中文")]
+SHORT = {"ko": "KR", "en": "EN", "es_419": "ES", "it": "IT", "ja": "JA", "mn": "MN", "pt_BR": "BR", "pt_PT": "PT", "zh_Hans": "CN", "zh_Hant": "TW"}
 
 # 로드맵 — (id, 화면, 가는 길, 볼 것, 순회 장면 이름들). 장면이 없으면 순회가 못 연 화면이다(손으로만 본다).
 ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
@@ -103,261 +111,55 @@ ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
 ]
 
 
-def findings(audits: dict[str, dict], scenes: list[str]) -> list[dict]:
-    """장면들에서 잡힌 것 — 같은 선택자(끝 두 마디) · 같은 종류는 하나로 묶고 어디서 잡혔는지(언어/방향)를 단다."""
-    out: dict[tuple[str, str], dict] = {}
-    for lang, data in audits.items():
-        for kind, table in (("small", data.get("results", {})), ("clip", data.get("clips", {}))):
-            for key, hits in table.items():
-                orient, _, scene = key.partition("/")
-                if scene not in scenes:
-                    continue
-                for h in hits:
-                    # 조상의 살짝 줄인 변형(0.95배 이상)은 CSS 크기로 판정한다(`font_audit.ts`와 같은 규칙 — 옛 결과도 걸러지게)
-                    if kind == "small" and h.get("scale", 1) >= 0.95 and h["rem"] / h["scale"] >= 0.795:
-                        continue
-                    leaf = " > ".join(h["sel"].split(" > ")[-2:])
-                    cur = out.setdefault((kind, leaf), {"kind": kind, "sel": leaf, "text": h["text"], "rem": h["rem"], "px": h["px"], "where": set()})
-                    cur["rem"] = min(cur["rem"], h["rem"])
-                    cur["px"] = max(cur["px"], h["px"])
-                    cur["where"].add(f"{lang}·{'세로' if orient == 'portrait' else '가로'}")
-    rows = sorted(out.values(), key=lambda r: (r["kind"] != "small", -r["px"] if r["kind"] == "clip" else r["rem"]))
-    for r in rows:
-        r["where"] = sorted(r["where"])
-    return rows
+def shrink(src: Path, dst: Path, width: int) -> None:
+    from PIL import Image
+    im = Image.open(src).convert("RGB")
+    h = round(im.height * width / im.width)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    im.resize((width, h), Image.LANCZOS).save(dst, quality=70, optimize=True)
 
 
-def covered(audits: dict[str, dict], scenes: list[str]) -> bool:
-    """순회가 이 화면을 실제로 열었나 — 장면이 결과에 하나라도 있어야 한다(못 연 장면은 결과에 없다. 「잡힌 것 없음」과 다르다)"""
-    return any(key.partition("/")[2] in scenes for data in audits.values() for key in data.get("results", {}))
+def shots_of(dirs: dict[str, Path], iid: str, scenes: list[str]) -> list[dict]:
+    """화면의 언어별 캡처 — 첫 장면부터 캡처가 있는 것을 쓴다. 이번에 못 찍었어도 지난번 캡처가 남아 있으면 그것을 쓴다"""
+    out: list[dict] = []
+    order = [(lang, label, "portrait", SHOT_W, lang, SHORT[lang]) for lang, label in LANGS]
+    order.append(("ko", "한국어 · 가로", "landscape", SHOT_W_LAND, "ko-land", "KR 가로"))
+    for lang, label, orient, width, folder, short in order:
+        dst = SHOTS_DIR / folder / f"{iid}.jpg"
+        if lang in dirs:
+            for sc in scenes:
+                src = dirs[lang] / f"{orient}_{sc}.jpg"
+                if src.exists():
+                    shrink(src, dst, width)
+                    break
+        if dst.exists():
+            out.append({"lang": folder, "label": label, "short": short, "src": f"shots/{folder}/{iid}.jpg"})
+    return out
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--audit", action="append", default=[], help="언어=font-audit.json 경로")
+    ap.add_argument("--shots", action="append", default=[], help="언어=순회 폴더(SHOTS=1로 돈 font_audit.ts의 OUT)")
     args = ap.parse_args()
-    audits: dict[str, dict] = {}
-    for a in args.audit:
-        lang, _, path = a.partition("=")
-        audits[lang] = json.loads(Path(path).read_text(encoding="utf-8"))
+    dirs = {lang: Path(path) for lang, _, path in (a.partition("=") for a in args.shots)}
     sections = []
     for sid, title, items in ROADMAP:
         sections.append({"id": sid, "title": title, "items": [
-            {"id": iid, "title": name, "path": path, "focus": focus, "scenes": scenes,
-             "auto": findings(audits, scenes), "covered": covered(audits, scenes)}
+            {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes,
+             "shots": shots_of(dirs, iid, scenes) if scenes else []}
             for iid, name, path, focus, scenes in items
         ]})
-    # 여러 화면에 함께 뜨는 것(머리 제목 · 뒤로 단추 · 쪽 넘김) — 화면마다 되풀이하면 그 화면의 것이 묻힌다.
-    # `COMMON_MIN` 화면 이상에서 잡힌 것은 맨 앞 「공통」 항목으로 모으고 화면별 목록에서 뺀다
-    seen: dict[tuple[str, str], list[dict]] = {}
-    for sec in sections:
-        for it in sec["items"]:
-            for a in it["auto"]:
-                seen.setdefault((a["kind"], a["sel"]), []).append({**a, "screen": it["title"]})
-    common_keys = {k for k, v in seen.items() if len(v) >= COMMON_MIN}
-    common = []
-    for k in sorted(common_keys, key=lambda k: -len(seen[k])):
-        v = seen[k]
-        first = v[0]
-        common.append({**first, "rem": min(x["rem"] for x in v), "px": max(x["px"] for x in v),
-                       "where": [f"{len(v)}개 화면"] + sorted({w for x in v for w in x["where"]})})
-    for sec in sections:
-        for it in sec["items"]:
-            it["auto"] = [a for a in it["auto"] if (a["kind"], a["sel"]) not in common_keys]
-    if common:
-        sections[0]["items"].insert(0, {
-            "id": "common", "title": "공통 — 여러 화면에 함께 뜨는 것", "path": "어느 화면이든",
-            "focus": f"머리 제목 · [뒤로] 단추 · 쪽 넘김처럼 {COMMON_MIN}개 화면 이상에서 잡힌 것. 한 번 고치면 전부 고쳐진다",
-            "scenes": [], "auto": common, "covered": True,
-        })
-    data = {"made": date.today().isoformat(), "langs": sorted(audits), "sections": sections}
+    data = {"made": date.today().isoformat(), "sections": sections}
     html = TEMPLATE.replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html, encoding="utf-8", newline="\n")
     n = sum(len(s["items"]) for s in sections)
-    print(f"→ {OUT.relative_to(ROOT)} — 화면 {n}개, 자동 검사 언어 {', '.join(sorted(audits)) or '없음'}")
+    shots = sum(len(it["shots"]) for s in sections for it in s["items"])
+    print(f"→ {OUT.relative_to(ROOT)} — 화면 {n}개, 캡처 {shots}장")
     return 0
 
 
-TEMPLATE = r"""<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>글자 크기 점검판</title>
-<!-- 만드는 도구: tools/build_font_board.py — 이 파일을 손으로 고치지 않는다(다시 만들면 덮인다). 틱 · 메모는 localStorage에 남는다 -->
-<style>
-:root {
-  --bg: #f6f3ec; --panel: #fffdf8; --ink: #2a241c; --mute: #7a6f60; --line: #e2d9c8;
-  --accent: #8a3b1f; --accent-ink: #fff; --chip: #efe6d4; --done: #2f7a46; --done-bg: #e3f1e6;
-  --small: #a3401f; --clip: #8a6a12;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
-    --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
-    --small: #f08a63; --clip: #e3c15a;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
-  --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
-  --small: #f08a63; --clip: #e3c15a;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
-header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; }
-h1 { margin: 0 0 6px; font-size: 18px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.bar { flex: 1 1 200px; height: 10px; background: var(--chip); border-radius: 999px; overflow: hidden; min-width: 120px; }
-.bar > i { display: block; height: 100%; background: var(--done); width: 0; transition: width .2s; }
-.count { color: var(--mute); font-variant-numeric: tabular-nums; }
-button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 5px 11px; border-radius: 8px; cursor: pointer; }
-button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-details.how { margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
-details.how summary { cursor: pointer; font-weight: 600; }
-details.how ul { margin: 6px 0 2px; padding-left: 20px; }
-code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; word-break: break-all; }
-main { max-width: 980px; margin: 0 auto; padding: 16px; }
-section { margin: 0 0 22px; }
-section > h2 { display: flex; gap: 10px; align-items: baseline; margin: 0 0 8px; font-size: 17px; }
-section > h2 .count { font-size: 14px; font-weight: 400; }
-.item { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 8px; }
-.item[data-done="1"] { background: var(--done-bg); border-color: var(--done); }
-.item-head { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; }
-.item-head input[type="checkbox"] { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; }
-.item-title { font-weight: 700; }
-.item-path { color: var(--mute); font-size: 14px; }
-.item-focus { font-size: 14px; margin-top: 2px; }
-.tag { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--chip); color: var(--mute); white-space: nowrap; }
-.tag.small { color: var(--small); }
-.tag.clip { color: var(--clip); }
-.item-body { padding: 0 12px 10px 44px; }
-.item-body summary { cursor: pointer; color: var(--mute); font-size: 14px; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
-th, td { text-align: left; padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top; }
-th { color: var(--mute); font-weight: 600; }
-td.k-small { color: var(--small); white-space: nowrap; }
-td.k-clip { color: var(--clip); white-space: nowrap; }
-td code { font-size: 12px; }
-textarea { width: 100%; min-height: 2.6em; margin-top: 8px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
-.hide-done .item[data-done="1"] { display: none; }
-.none { color: var(--mute); font-size: 14px; }
-@media (max-width: 560px) { .item-body { padding-left: 12px; } header { padding: 10px 12px; } main { padding: 12px; } }
-</style>
-</head>
-<body>
-<header>
-  <h1>글자 크기 점검판 <span class="count" id="made"></span></h1>
-  <div class="row">
-    <div class="bar"><i id="all-bar"></i></div>
-    <span class="count" id="all-count"></span>
-    <button id="hide-done" type="button">끝난 것 숨기기</button>
-    <button id="export" type="button">진도 복사</button>
-    <button id="import" type="button">진도 붙여넣기</button>
-  </div>
-  <details class="how">
-    <summary>보는 법</summary>
-    <ul>
-      <li><b>기준</b> — 화면 글자는 <b>0.8rem 이상</b>(휴대폰 폭 390px에서 약 12px). 그림 안의 글자는 제외. 스타일시트는 일괄로 올려 두었다.</li>
-      <li><b>볼 것</b> — 잘리거나 말줄임(…)된 글 · 두 줄로 접혀 칸이 커진 곳 · 겹친 글 · 장수 레벨 배지 자리(레벨 열을 없애고 이름 오른쪽에).</li>
-      <li><b>자동 검사</b> — <code>tools/font_audit.ts</code>가 화면을 돌며 잰 것. <span class="tag small">작음</span> 0.8rem 미만 · <span class="tag clip">잘림</span> 칸보다 넓은 글(넘친 px). 순회가 못 여는 화면은 손으로만 본다.</li>
-      <li><b>열기</b> — 개발 서버 <code>http://localhost:5173</code>. 전투 데모는 주소 뒤에 <code>?demo=1…</code>. 가로 화면은 <code>?orient=landscape</code>, 언어는 설정에서.</li>
-      <li><b>틱 · 메모</b>는 이 브라우저에 남는다(파일을 다시 만들어도 그대로). 다른 기기로 옮길 때는 [진도 복사] → [진도 붙여넣기].</li>
-    </ul>
-  </details>
-</header>
-<main id="board"></main>
-<script>
-const DATA = /*DATA*/null;
-const KEY = 'samchess.fontcheck.v1';
-let state = {};
-try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { state = {}; }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* 저장이 막혀도 화면은 돈다 */ } };
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-
-document.getElementById('made').textContent = `· 자동 검사 ${DATA.made} (${DATA.langs.join(', ') || '없음'})`;
-const board = document.getElementById('board');
-const counters = [];
-
-for (const sec of DATA.sections) {
-  const s = el('section'); s.id = sec.id;
-  const h = el('h2'); h.append(el('span', null, sec.title));
-  const c = el('span', 'count'); h.append(c);
-  s.append(h);
-  counters.push(() => { const d = sec.items.filter((i) => state[i.id]?.done).length; c.textContent = `${d} / ${sec.items.length}`; });
-  for (const it of sec.items) {
-    const st = state[it.id] ?? (state[it.id] = {});
-    const box = el('div', 'item'); box.dataset.done = st.done ? '1' : '0';
-    const head = el('div', 'item-head');
-    const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!st.done; cb.setAttribute('aria-label', `${it.title} 완료`);
-    cb.addEventListener('change', () => { st.done = cb.checked; st.at = cb.checked ? new Date().toISOString().slice(0, 16).replace('T', ' ') : undefined; box.dataset.done = cb.checked ? '1' : '0'; save(); refresh(); });
-    const mid = el('div');
-    mid.append(el('div', 'item-title', it.title), el('div', 'item-path', it.path), el('div', 'item-focus', it.focus));
-    const tags = el('div', 'row');
-    const nSmall = it.auto.filter((a) => a.kind === 'small').length;
-    const nClip = it.auto.filter((a) => a.kind === 'clip').length;
-    if (!it.covered) tags.append(el('span', 'tag', '손으로만'));
-    if (nSmall) tags.append(el('span', 'tag small', `작음 ${nSmall}`));
-    if (nClip) tags.append(el('span', 'tag clip', `잘림 ${nClip}`));
-    head.append(cb, mid, tags);
-    box.append(head);
-    const body = el('div', 'item-body');
-    if (it.auto.length) {
-      const det = el('details'); det.append(el('summary', null, `자동 검사가 잡은 것 ${it.auto.length}곳`));
-      const tb = el('table'); const tr0 = el('tr');
-      for (const t of ['종류', '글', '요소', '어디서']) tr0.append(el('th', null, t));
-      tb.append(tr0);
-      for (const a of it.auto) {
-        const tr = el('tr');
-        tr.append(el('td', a.kind === 'small' ? 'k-small' : 'k-clip', a.kind === 'small' ? `작음 ${a.rem}rem` : `잘림 +${a.px}px`));
-        tr.append(el('td', null, a.text));
-        const td = el('td'); td.append(el('code', null, a.sel)); tr.append(td);
-        tr.append(el('td', null, a.where.join(' ')));
-        tb.append(tr);
-      }
-      det.append(tb); body.append(det);
-    } else if (it.covered) {
-      body.append(el('div', 'none', '자동 검사가 잡은 것 없음'));
-    }
-    const memo = el('textarea'); memo.placeholder = '고칠 것 · 메모'; memo.value = st.memo ?? '';
-    memo.addEventListener('input', () => { st.memo = memo.value || undefined; save(); });
-    body.append(memo);
-    box.append(body);
-    s.append(box);
-  }
-  board.append(s);
-}
-
-function refresh() {
-  const all = DATA.sections.flatMap((s) => s.items);
-  const done = all.filter((i) => state[i.id]?.done).length;
-  document.getElementById('all-count').textContent = `${done} / ${all.length} 화면`;
-  document.getElementById('all-bar').style.width = `${(done / all.length) * 100}%`;
-  counters.forEach((f) => f());
-}
-refresh();
-
-const hideBtn = document.getElementById('hide-done');
-let hide = false;
-try { hide = localStorage.getItem(KEY + '.hide') === '1'; } catch { /* */ }
-const applyHide = () => { document.body.classList.toggle('hide-done', hide); hideBtn.classList.toggle('on', hide); };
-applyHide();
-hideBtn.addEventListener('click', () => { hide = !hide; try { localStorage.setItem(KEY + '.hide', hide ? '1' : '0'); } catch { /* */ } applyHide(); });
-
-document.getElementById('export').addEventListener('click', async () => {
-  const text = JSON.stringify(state);
-  try { await navigator.clipboard.writeText(text); alert('진도를 복사했습니다.'); } catch { prompt('아래 글을 복사하세요', text); }
-});
-document.getElementById('import').addEventListener('click', () => {
-  const text = prompt('복사해 둔 진도를 붙여넣으세요');
-  if (!text) return;
-  try { state = JSON.parse(text); save(); location.reload(); } catch { alert('진도 글이 올바르지 않습니다.'); }
-});
-</script>
-</body>
-</html>
-"""
+TEMPLATE = (Path(__file__).resolve().parent / "font_board.template.html").read_text(encoding="utf-8")
 
 if __name__ == "__main__":
     raise SystemExit(main())

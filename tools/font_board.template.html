@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>글자 크기 점검판</title>
+<!-- 만드는 도구: tools/build_font_board.py(틀은 tools/font_board.template.html) — 이 파일을 손으로 고치지 않는다(다시 만들면 덮인다).
+     메모 · 체크는 localStorage에 남는다(열쇠 = 화면 id라 다시 만들어도 그대로). 캡처는 옆의 shots/ 폴더 -->
+<style>
+:root {
+  --bg: #f6f3ec; --panel: #fffdf8; --ink: #2a241c; --mute: #7a6f60; --line: #e2d9c8;
+  --accent: #8a3b1f; --accent-ink: #fff; --chip: #efe6d4; --done: #2f7a46; --done-bg: #e3f1e6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+    --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+  --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 10px 16px; }
+h1 { margin: 0 0 6px; font-size: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar { flex: 1 1 200px; height: 10px; background: var(--chip); border-radius: 999px; overflow: hidden; min-width: 120px; }
+.bar > i { display: block; height: 100%; background: var(--done); width: 0; transition: width .2s; }
+.count { color: var(--mute); font-variant-numeric: tabular-nums; font-weight: 400; }
+button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 5px 11px; border-radius: 8px; cursor: pointer; }
+button:disabled { opacity: .35; cursor: default; }
+button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.sections { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; }
+.sections button { flex: 1 0 auto; white-space: nowrap; padding: 7px 12px; }
+.sections button .count { margin-left: 4px; font-size: 13px; }
+.sections button.on .count { color: inherit; opacity: .85; }
+.sections button[data-all="1"]:not(.on) { border-color: var(--done); color: var(--done); }
+details.how { margin-top: 8px; font-size: 14px; }
+details.how summary { cursor: pointer; color: var(--mute); }
+details.how ul { margin: 4px 0 2px; padding-left: 20px; }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+
+main { padding: 14px 16px 40px; }
+.langbar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0 0 12px; }
+.langbar span { color: var(--mute); font-size: 14px; margin-right: 4px; }
+.langbar button { padding: 2px 9px; font-size: 13px; border-radius: 999px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.card[data-done="1"] { background: var(--done-bg); border-color: var(--done); }
+.hide-done .card[data-done="1"] { display: none; }
+.card-head { display: flex; gap: 8px; align-items: flex-start; }
+.card-head h2 { margin: 0; font-size: 16px; flex: 1; }
+.done-box { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--mute); cursor: pointer; user-select: none; white-space: nowrap; }
+.done-box input { width: 20px; height: 20px; accent-color: var(--done); cursor: pointer; margin: 0; }
+.card[data-done="1"] .done-box { color: var(--done); font-weight: 700; }
+.path { color: var(--mute); font-size: 13px; margin: -4px 0 0; }
+.focus { font-size: 13px; margin: 0; }
+.viewer { position: relative; background: #000; border-radius: 8px; overflow: hidden; }
+.viewer img { display: block; width: 100%; height: auto; cursor: zoom-in; }
+.viewer .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 54px; padding: 0; border-radius: 8px;
+  background: #000a; color: #fff; border: 1px solid #fff4; font-size: 20px; }
+.viewer .nav.prev { left: 6px; } .viewer .nav.next { right: 6px; }
+.viewer .lang { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); background: #000b; color: #fff;
+  padding: 2px 10px; border-radius: 999px; font-size: 13px; white-space: nowrap; }
+.dots { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.dots button { padding: 0 6px; font-size: 11px; border-radius: 999px; line-height: 1.6; }
+.noshot { border: 1px dashed var(--line); border-radius: 8px; padding: 26px 12px; text-align: center; color: var(--mute); font-size: 14px; }
+textarea { width: 100%; min-height: 4.5em; font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
+.zoom { position: fixed; inset: 0; background: #000d; display: none; align-items: center; justify-content: center; z-index: 10; }
+.zoom.on { display: flex; }
+.zoom img { max-width: 92vw; max-height: 92vh; cursor: zoom-out; }
+.zoom .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 52px; height: 80px; background: #000a; color: #fff; border: 1px solid #fff4; font-size: 26px; }
+.zoom .nav.prev { left: 16px; } .zoom .nav.next { right: 16px; }
+.zoom .lang { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); color: #fff; background: #000b; padding: 3px 12px; border-radius: 999px; }
+@media (max-width: 560px) { header, main { padding-left: 16px; padding-right: 16px; } .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>글자 크기 점검판 <span class="count" id="made"></span></h1>
+  <div class="row">
+    <div class="bar"><i id="all-bar"></i></div>
+    <span class="count" id="all-count"></span>
+    <button id="hide-done" type="button">끝난 것 숨기기</button>
+    <button id="export" type="button">진도 복사</button>
+    <button id="import" type="button">진도 붙여넣기</button>
+  </div>
+  <div class="sections" id="sections" role="tablist"></div>
+  <details class="how">
+    <summary>보는 법</summary>
+    <ul>
+      <li>기준 — 화면 글자는 <b>0.8rem 이상</b>(휴대폰 폭 390px에서 약 12px). 그림 안의 글자는 제외. 잘림 · 말줄임(…) · 접혀서 커진 칸 · 겹친 글을 본다.</li>
+      <li>캡처는 ◀ ▶(또는 아래 언어 칩)로 언어를 넘긴다. 누르면 크게 보고, 크게 본 채로도 ◀ ▶ · 키보드 ← → 로 넘긴다. 위의 언어 단추는 이 단원의 카드를 모두 그 언어로.</li>
+      <li>「직접 열어 본다」 화면은 순회가 못 여는 화면이다 — 개발 서버 <code>http://localhost:5173</code>에서 본다(가로 <code>?orient=landscape</code>).</li>
+      <li>메모 · 체크는 이 브라우저에 남는다. 다른 기기로는 [진도 복사] → [진도 붙여넣기].</li>
+    </ul>
+  </details>
+</header>
+<main>
+  <div class="langbar" id="langbar"></div>
+  <div class="cards" id="cards"></div>
+</main>
+<div class="zoom" id="zoom">
+  <button class="nav prev" type="button" aria-label="이전 언어">◀</button>
+  <img alt="">
+  <button class="nav next" type="button" aria-label="다음 언어">▶</button>
+  <span class="lang"></span>
+</div>
+<script>
+const DATA = /*DATA*/null;
+const KEY = 'samchess.fontcheck.v1';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* 저장이 막혀도 화면은 돈다 */ } };
+const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem(`${KEY}.${k}`); localStorage.setItem(`${KEY}.${k}`, v); } catch { return null; } return null; };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const st = (id) => state[id] ?? (state[id] = {});
+const ALL = DATA.sections.flatMap((s) => s.items);
+document.getElementById('made').textContent = `· 캡처 ${DATA.made}`;
+
+// ── 단원 단추 일곱 ──
+const secBar = document.getElementById('sections');
+const secBtns = new Map();
+for (const sec of DATA.sections) {
+  const b = el('button'); b.type = 'button'; b.setAttribute('role', 'tab');
+  b.append(el('span', null, sec.title), el('span', 'count'));
+  b.addEventListener('click', () => showSection(sec.id));
+  secBar.append(b); secBtns.set(sec.id, b);
+}
+
+// ── 한 단원의 화면 카드 ──
+const cards = document.getElementById('cards');
+const langbar = document.getElementById('langbar');
+let viewers = [];
+function showSection(id) {
+  const sec = DATA.sections.find((s) => s.id === id) ?? DATA.sections[0];
+  pref('section', sec.id);
+  if (location.hash !== '#' + sec.id) history.replaceState(null, '', '#' + sec.id);
+  for (const [k, b] of secBtns) b.classList.toggle('on', k === sec.id);
+  cards.replaceChildren(); viewers = [];
+  // 이 단원의 카드를 모두 한 언어로
+  langbar.replaceChildren(el('span', null, '모두 이 언어로'));
+  const langs = [];
+  for (const it of sec.items) for (const s of it.shots) if (!langs.some((l) => l.lang === s.lang)) langs.push(s);
+  for (const l of langs) {
+    const b = el('button', null, l.short); b.type = 'button'; b.title = l.label;
+    b.addEventListener('click', () => viewers.forEach((v) => v.go(l.lang)));
+    langbar.append(b);
+  }
+  for (const it of sec.items) cards.append(card(it));
+  window.scrollTo(0, 0);
+}
+
+function card(it) {
+  const s = st(it.id);
+  const c = el('article', 'card'); c.dataset.done = s.done ? '1' : '0'; c.id = it.id;
+  const head = el('div', 'card-head');
+  head.append(el('h2', null, it.title));
+  const box = el('label', 'done-box');
+  const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done;
+  const txt = el('span', null, s.done ? '완료' : '점검 완료');
+  cb.addEventListener('change', () => {
+    s.done = cb.checked; s.at = cb.checked ? new Date().toISOString().slice(0, 16).replace('T', ' ') : undefined; save();
+    c.dataset.done = cb.checked ? '1' : '0'; txt.textContent = cb.checked ? '완료' : '점검 완료'; refresh();
+  });
+  box.append(cb, txt); head.append(box);
+  c.append(head, el('p', 'path', it.path), el('p', 'focus', it.focus));
+
+  if (it.shots.length) {
+    const v = el('div', 'viewer');
+    const img = el('img'); img.loading = 'lazy';
+    const prev = el('button', 'nav prev', '◀'); prev.type = 'button'; prev.setAttribute('aria-label', '이전 언어');
+    const next = el('button', 'nav next', '▶'); next.type = 'button'; next.setAttribute('aria-label', '다음 언어');
+    const tag = el('span', 'lang');
+    v.append(img, prev, next, tag);
+    const dots = el('div', 'dots');
+    let i = Math.max(0, it.shots.findIndex((x) => x.lang === (s.lang ?? 'ko')));
+    const draw = () => {
+      const sh = it.shots[i];
+      img.src = sh.src; img.alt = `${it.title} — ${sh.label}`;
+      tag.textContent = `${sh.label} · ${i + 1}/${it.shots.length}`;
+      [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+    };
+    const step = (d) => { i = (i + d + it.shots.length) % it.shots.length; s.lang = it.shots[i].lang; save(); draw(); };
+    prev.addEventListener('click', () => step(-1));
+    next.addEventListener('click', () => step(1));
+    img.addEventListener('click', () => openZoom(it, i, (k) => { i = k; s.lang = it.shots[i].lang; save(); draw(); }));
+    it.shots.forEach((sh, k) => {
+      const d = el('button', null, sh.short); d.type = 'button'; d.title = sh.label;
+      d.addEventListener('click', () => { i = k; s.lang = sh.lang; save(); draw(); });
+      dots.append(d);
+    });
+    draw();
+    viewers.push({ go: (lang) => { const k = it.shots.findIndex((x) => x.lang === lang); if (k >= 0) { i = k; s.lang = lang; save(); draw(); } } });
+    c.append(v, dots);
+  } else {
+    c.append(el('div', 'noshot', it.manual ? '순회가 못 여는 화면 — 직접 열어 본다' : '캡처 없음'));
+  }
+  const memo = el('textarea'); memo.placeholder = '고칠 것 · 메모'; memo.value = s.memo ?? '';
+  memo.addEventListener('input', () => { s.memo = memo.value || undefined; save(); });
+  c.append(memo);
+  return c;
+}
+
+// ── 크게 보기 ──
+const zoom = document.getElementById('zoom');
+let zoomCtx = null;
+function openZoom(it, i, onMove) { zoomCtx = { it, i, onMove }; drawZoom(); zoom.classList.add('on'); }
+function drawZoom() {
+  const { it, i } = zoomCtx; const sh = it.shots[i];
+  zoom.querySelector('img').src = sh.src;
+  zoom.querySelector('.lang').textContent = `${it.title} — ${sh.label} · ${i + 1}/${it.shots.length}`;
+}
+function zoomStep(d) { if (!zoomCtx) return; const n = zoomCtx.it.shots.length; zoomCtx.i = (zoomCtx.i + d + n) % n; zoomCtx.onMove(zoomCtx.i); drawZoom(); }
+zoom.querySelector('.prev').addEventListener('click', (e) => { e.stopPropagation(); zoomStep(-1); });
+zoom.querySelector('.next').addEventListener('click', (e) => { e.stopPropagation(); zoomStep(1); });
+zoom.addEventListener('click', () => { zoom.classList.remove('on'); zoomCtx = null; });
+document.addEventListener('keydown', (e) => {
+  if (!zoom.classList.contains('on')) return;
+  if (e.key === 'Escape') { zoom.classList.remove('on'); zoomCtx = null; }
+  if (e.key === 'ArrowLeft') zoomStep(-1);
+  if (e.key === 'ArrowRight') zoomStep(1);
+});
+
+function refresh() {
+  const done = ALL.filter((i) => state[i.id]?.done).length;
+  document.getElementById('all-count').textContent = `${done} / ${ALL.length} 화면`;
+  document.getElementById('all-bar').style.width = `${(done / ALL.length) * 100}%`;
+  for (const sec of DATA.sections) {
+    const d = sec.items.filter((i) => state[i.id]?.done).length;
+    const b = secBtns.get(sec.id);
+    b.querySelector('.count').textContent = `${d}/${sec.items.length}`;
+    b.dataset.all = d === sec.items.length ? '1' : '0';
+  }
+}
+
+const hideBtn = document.getElementById('hide-done');
+let hide = pref('hide') === '1';
+const applyHide = () => { document.body.classList.toggle('hide-done', hide); hideBtn.classList.toggle('on', hide); };
+hideBtn.addEventListener('click', () => { hide = !hide; pref('hide', hide ? '1' : '0'); applyHide(); });
+applyHide();
+
+document.getElementById('export').addEventListener('click', async () => {
+  const text = JSON.stringify(state);
+  try { await navigator.clipboard.writeText(text); alert('진도를 복사했습니다.'); } catch { prompt('아래 글을 복사하세요', text); }
+});
+document.getElementById('import').addEventListener('click', () => {
+  const text = prompt('복사해 둔 진도를 붙여넣으세요');
+  if (!text) return;
+  try { state = JSON.parse(text); save(); location.reload(); } catch { alert('진도 글이 올바르지 않습니다.'); }
+});
+
+refresh();
+const start = location.hash.slice(1) || pref('section') || '';
+showSection(DATA.sections.some((s) => s.id === start) ? start : DATA.sections[0].id);
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (DATA.sections.some((s) => s.id === h)) showSection(h); });
+</script>
+</body>
+</html>
