@@ -148,7 +148,7 @@
 :root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :last-child:not(:first-child) {
   grid-column: 2; grid-row: auto; align-self: end;
 }
-:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
+:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sql-pair, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
   grid-column: 1; grid-row: 1 / -1; min-height: 0; overflow: auto; align-self: stretch;
 }
 /* 명령 판이 큰 판 하나뿐인 화면(새 부대 · 방어 기록 …)은 가운데 한 단 */
@@ -187,7 +187,7 @@
 :root[data-orient="landscape"] .scr-market .place-body:has(> .mkt-banners) { grid-template-rows: min-content min-content; align-content: center; }
 
 /* 큰 판은 내용만큼(넘치면 그 안에서 굴린다), 명령 판은 오른쪽 단 맨 아래 칸(1fr)에 붙는다 */
-:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
+:root[data-orient="landscape"] .place-body > :is(.ofc-table, .cty-blds, .sqd-list, .sql-pair, .sqv-panel, .srt-list, .clx-list, .rk-top, .bld-list, .grow):not(:last-child) {
   align-self: start; max-height: 100%;
 }
 :root[data-orient="landscape"] .scr-bg:not(:has(> .place-panel)) > .place-body > :last-child:not(:first-child) {

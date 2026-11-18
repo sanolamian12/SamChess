@@ -3,11 +3,15 @@
  *
  * ```
  * [← 병영으로]          부대 관리
- * ┌ 판 ────────────────────────────────────────┐
+ * ┌ 위 판 ──────────────────────────────────────┐
+ * │ 클릭해서 세부정보를 봅니다.                    │
  * │ ⚔ 돌격대                                   │
  * │ [3인] ♚꼬마 ♜꼬마 ♟꼬마              [✔]     │  ← 3v3 공격대 — King · Rock · Bishop · Knight · Queen · Pawn 차례로 붙여 선다,
  * │                                            │     오른쪽 벽에 완성 표지(파란 도장) · 덜 찼으면 경고 표지
  * │ [5인] ━━ 미편성 ━━                          │  ← 빈 칸은 주홍 붓 획(병영 현황판 · 농지와 같은 `.frm-stroke`)
+ * └────────────────────────────────────────────┘
+ *   (나무 테 하나만큼 띄움 — 2026-11-18 기획자)
+ * ┌ 가운데 판 ───────────────────────────────────┐
  * │ 🪖 수성군                                   │
  * │ [3인] …                                    │
  * │ [5인] …                                    │
@@ -71,29 +75,35 @@ export function SquadListScreen({ profile, onBack, onOpen, onFill }: {
       </div>
 
       <div className="place-body">
-        <section className="place-panel sqd-list">
-          {/* 안내 — 판 맨 윗줄, 단 머리와 같은 글꼴 · 왼쪽 정렬 (2026-11-17 기획자) */}
-          <p className="bar-ttl sql-hint" data-field="hint">{t('squads.hint')}</p>
-          <div className="sql-rows">
-            {/* 위 단 돌격대(공격대) · 아래 단 수성군(수비대), 단마다 머리 → 3v3 → 5v5 */}
-            {(['attack', 'defense'] as const).map((role) => (
-              <div key={role} className="sql-group" data-role={role}>
-                <SquadHead role={role} />
-                {MODES.map((mode) => {
-                  const squad = squadAt(profile, mode, role);
-                  const slot = squadSlot(mode, role);
-                  return (
-                    <SquadLine
-                      key={mode} profile={profile} mode={mode} role={role} squad={squad ?? null}
-                      cue={cue && slot === 'atk-3v3'}
-                      onPress={() => (squad ? onOpen(squad.id) : onFill(mode, role))}
-                    />
-                  );
-                })}
+        {/*
+          * 판 둘 — 위 판은 안내 + 돌격대(공격대), 가운데 판은 수성군(수비대). 사이는 판때기 나무 테 하나만큼 (2026-11-18 기획자).
+          * 감싸개(`.sql-pair`)가 가로 화면에서 둘을 왼쪽 단 한 덩이로 세운다(`landscape.css`)
+          */}
+        <div className="sql-pair">
+          {(['attack', 'defense'] as const).map((role) => (
+            <section key={role} className="place-panel sqd-list" data-field={`squads-${role}`}>
+              {/* 안내 — 위 판 맨 윗줄, 단 머리와 같은 글꼴 · 왼쪽 정렬 (2026-11-17 기획자) */}
+              {role === 'attack' && <p className="bar-ttl sql-hint" data-field="hint">{t('squads.hint')}</p>}
+              <div className="sql-rows">
+                {/* 단 머리 → 3v3 → 5v5 */}
+                <div className="sql-group" data-role={role}>
+                  <SquadHead role={role} />
+                  {MODES.map((mode) => {
+                    const squad = squadAt(profile, mode, role);
+                    const slot = squadSlot(mode, role);
+                    return (
+                      <SquadLine
+                        key={mode} profile={profile} mode={mode} role={role} squad={squad ?? null}
+                        cue={cue && slot === 'atk-3v3'}
+                        onPress={() => (squad ? onOpen(squad.id) : onFill(mode, role))}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
+          ))}
+        </div>
 
         {/* 명령 패널 — [뒤로 가기] 하나 (2026-11-17 기획자 — [공격대 편성] · [수비대 편성]은 줄 누르기로 갈음) */}
         <section className="place-panel sqd-acts">

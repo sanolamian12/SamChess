@@ -190,6 +190,37 @@ try {
   await page.waitForSelector('[data-screen="squadEdit"][data-new="0"]');
   await page.waitForTimeout(600);
   await shot('04-edit');
+  // 명령 판 글자 — 부대 관리 [뒤로 가기]와 같은 크기(.9rem), 한 줄에 안 드는 언어만 그 단추를 줄인다 · 상태 아이콘 1.3배 (2026-11-18 기획자)
+  const fitByLang = await page.evaluate(async () => {
+    const i18n = await import('/src/i18n/index.ts' as string);
+    const before = i18n.currentLang();
+    const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const out: { lang: string; px: number[]; cut: string[]; base: number }[] = [];
+    for (const { id } of i18n.LANGS) {
+      i18n.setLang(id);
+      await new Promise((r) => setTimeout(r, 250));
+      const lbls = [...document.querySelectorAll<HTMLElement>('.sqe-grid .lbl')];
+      out.push({
+        lang: id, base: Math.round(root * 0.9 * 10) / 10,
+        px: lbls.map((l) => Math.round(parseFloat(getComputedStyle(l).fontSize) * 10) / 10),
+        cut: lbls.filter((l) => l.scrollWidth > l.clientWidth + 1).map((l) => l.textContent ?? ''),
+      });
+    }
+    i18n.setLang(before);
+    await new Promise((r) => setTimeout(r, 250));
+    return out;
+  });
+  for (const f of fitByLang) {
+    if (f.cut.length) fail(`부대 편집 명령 글자가 ${f.lang}에서 잘린다: ${f.cut.join(' / ')}`);
+    if (f.px.some((px) => px > f.base + 0.1)) fail(`부대 편집 명령 글자가 ${f.lang}에서 [뒤로 가기](${f.base}px)보다 크다: ${f.px.join(', ')}`);
+  }
+  ok(`명령 글자 — 기준 ${fitByLang[0]!.base}px · ${fitByLang.map((f) => `${f.lang} ${f.px.join('/')}`).join(' · ')}`);
+  const stH = await page.evaluate(() => {
+    const img = document.querySelector<HTMLElement>('.sqe-row .st .gic img');
+    const st = img?.closest('.st') as HTMLElement | null;
+    return img && st ? img.getBoundingClientRect().height / parseFloat(getComputedStyle(st).fontSize) : 0;
+  });
+  if (Math.abs(stH - 2.45) > 0.05) fail(`부대 편집 상태 아이콘이 ${stH.toFixed(2)}em이다(2.45em)`);
   const ed = await page.evaluate(() => ({
     head: document.querySelector('.sqe-top [data-field="squadHead"]')?.textContent?.trim(),
     line: (document.querySelector('.sqe-top .sql-row') as HTMLElement | null)?.dataset.state,

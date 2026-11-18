@@ -66,6 +66,7 @@ import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
+import { useFitText } from './useFitText.ts';
 import { pickEquipName, pickEquipText, pickMarketItemName, pickMarketItemText, pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
 
 /** 새 부대의 처음 포지션 (2026-09-17 기획자 확정) */
@@ -378,14 +379,14 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
             {/* [부대 배치] · [AI 수비 방침]은 미색 판(부대 관리의 [뒤로 가기]와 같은 그림), [저장 및 뒤로가기]만 옥색 — 이 화면의 한 수 (2026-11-17 기획자) */}
             <button className="btn" data-action="toDeploy" disabled={!complete}
               data-guide-cue={mission && cueRow === null && complete && !deployed ? '' : undefined} onClick={() => setView('deploy')}>
-              <span className="lbl">{t('squad.cmd.deploy')}</span>
+              <FitLabel text={t('squad.cmd.deploy')} />
             </button>
             <button className="btn" data-action="garrisonPolicy" disabled={squad.role !== 'defense' || !complete}
               data-guide-cue={policyMission && complete ? '' : undefined} onClick={() => setView('policy')}>
-              <span className="lbl">{t('squad.cmd.policy')}</span>
+              <FitLabel text={t('squad.cmd.policy')} />
             </button>
             <button className="btn primary" data-action="saveSquad" data-guide-cue={mission && deployed ? '' : undefined} onClick={save}>
-              <span className="lbl">{t('squad.cmd.save')}</span>
+              <FitLabel text={t('squad.cmd.save')} />
             </button>
           </div>
         </section>
@@ -685,4 +686,14 @@ function HeldPicker({ profile, officer, onPick, onClose }: {
       )}
     </div>
   );
+}
+
+/**
+ * 명령 판 단추의 글자 — 부대 관리의 [뒤로 가기]와 같은 크기로 서되, 한 줄에 안 드는 언어는 그 단추만 들 만큼 줄인다
+ * (2026-11-18 기획자 — 「크기를 언어마다 통일할 필요는 없다」). 언어 · 글자가 바뀌면 다시 잰다
+ */
+function FitLabel({ text }: { text: string }): React.JSX.Element {
+  const lang = useLang();
+  const ref = useFitText<HTMLSpanElement>(`${lang}|${text}`);
+  return <span className="lbl" ref={ref}>{text}</span>;
 }
