@@ -120,6 +120,9 @@ const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem(
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const st = (id) => state[id] ?? (state[id] = {});
 const ALL = DATA.sections.flatMap((s) => s.items);
+// 점검이 끝나 캡처를 지운 화면은 「완료」로 굳는다
+for (const it of ALL) if (it.closed) st(it.id).done = true;
+save();
 st('_submits');
 document.getElementById('made').textContent = `· 캡처 ${DATA.made}`;
 
@@ -186,7 +189,7 @@ function card(it) {
   const head = el('div', 'card-head');
   head.append(el('h2', null, it.title));
   const box = el('label', 'done-box');
-  const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done;
+  const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!s.done; cb.disabled = !!it.closed;
   const txt = el('span', null, s.done ? '완료' : '점검 완료');
   cb.addEventListener('change', () => {
     s.done = cb.checked; s.at = cb.checked ? new Date().toISOString().slice(0, 16).replace('T', ' ') : undefined; save();
@@ -223,7 +226,7 @@ function card(it) {
     viewers.push({ go: (lang) => { const k = it.shots.findIndex((x) => x.lang === lang); if (k >= 0) { i = k; s.lang = lang; save(); draw(); } } });
     c.append(v, dots);
   } else {
-    c.append(el('div', 'noshot', it.manual ? '순회가 못 여는 화면 — 직접 열어 본다' : '캡처 없음'));
+    c.append(el('div', 'noshot', it.closed ? '점검 끝 — 캡처는 지웠다' : it.manual ? '순회가 못 여는 화면 — 게임에서 직접 열어 본다' : '캡처 없음'));
   }
   const memo = el('textarea'); memo.placeholder = '고칠 것 · 메모'; memo.value = s.memo ?? '';
   memo.addEventListener('input', () => { s.memo = memo.value || undefined; save(); });

@@ -27,6 +27,9 @@ LANGS = [("ko", "한국어"), ("en", "English"), ("es_419", "Español"), ("it", 
          ("mn", "Монгол"), ("pt_BR", "Português (BR)"), ("pt_PT", "Português (PT)"), ("zh_Hans", "简体中文"), ("zh_Hant", "繁體中文")]
 SHORT = {"ko": "KR", "en": "EN", "es_419": "ES", "it": "IT", "ja": "JA", "mn": "MN", "pt_BR": "BR", "pt_PT": "PT", "zh_Hans": "CN", "zh_Hant": "TW"}
 
+# 점검이 끝난 화면 — 캡처를 지우고 다시 만들지 않는다. 판에서는 「완료」로 굳는다 (2026-11-19 기획자, 1단원)
+CLOSED = {"main", "main-ext", "settings", "mail", "info", "logout", "title", "newgame"}
+
 # 로드맵 — (id, 화면, 가는 길, 볼 것, 순회 장면 이름들). 장면이 없으면 순회가 못 연 화면이다(손으로만 본다).
 ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
     ("main", "1. 메인 · 공용 팝업", [
@@ -38,7 +41,14 @@ ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
         ("logout", "로그아웃 확인", "설정 → [로그아웃]", "확인 문구", ["15-main-logout"]),
         ("title", "간판 · 로그인", "로그아웃 상태", "간판 · 로그인 팝업", ["00-title", "01-login"]),
         ("newgame", "새 계정 — 도시 이름 · 오프닝", "새 계정 가입", "이름 입력 · 오프닝 대사", ["02-newgame", "03-opening-a", "03-opening-b"]),
-        ("raid", "도적떼 알림 · 방어전 결과", "도적떼가 왔을 때 메인", "알림 · 결과 글자 — 순회가 못 여는 화면", []),
+        # ↓ 순회가 못 여는 것 — 손으로 본다 (2026-11-19, 1단원의 나머지는 기획자가 점검을 끝냈다)
+        ("raid-alert", "도적떼 출몰 알림 팝업", "도적떼가 처음 나타난 순간의 메인 · 남은 1분(어느 화면에서든) · 마감이 지나 항복 정산된 뒤",
+         "갈래 셋(출몰 · 곧 마감 · 항복 정산)의 제목 · 본문 · 단추 [항복] [전투 준비] [지금 전투] / [확인]", []),
+        ("raid-button", "메인 — 도적떼 단추", "도적떼가 있는 동안 메인(성 안)", "[토벌] · [이어 싸우기] 단추와 그 밑 남은 시간", []),
+        ("raid-result", "도적떼 방어전 결과", "도적떼 방어전을 끝낸 뒤", "결과 제목 · 보상 · 잃은 것 글자", []),
+        ("steward", "내관 안내 말풍선", "새 계정의 첫 입장 · 건물에 처음 들어갈 때", "내관 대사 · [다음] 단추 — 순회는 안내를 꺼 두고 돈다", []),
+        ("mail-list", "우편함 — 우편이 여러 통 있을 때", "머리의 우편 아이콘(우편 · 선물이 와 있을 때)",
+         "목록 · 선물 칸 · 받기 결과 — 판 디자인을 다시 이야기하기로 함", []),
     ]),
     ("palace", "2. 궁궐", [
         ("palace-status", "궁궐 현황", "메인 → 궁궐", "도시 · 궁궐 레벨 · 황제 · 등용 장수 네 칸", ["20-palace"]),
@@ -145,10 +155,13 @@ def main() -> int:
     sections = []
     for sid, title, items in ROADMAP:
         sections.append({"id": sid, "title": title, "items": [
-            {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes,
-             "shots": shots_of(dirs, iid, scenes) if scenes else []}
+            {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes, "closed": iid in CLOSED,
+             "shots": shots_of(dirs, iid, scenes) if scenes and iid not in CLOSED else []}
             for iid, name, path, focus, scenes in items
         ]})
+    for iid in CLOSED:
+        for f in SHOTS_DIR.glob(f"*/{iid}.jpg"):
+            f.unlink()
     data = {"made": date.today().isoformat(), "sections": sections}
     html = TEMPLATE.replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
     OUT.parent.mkdir(parents=True, exist_ok=True)
