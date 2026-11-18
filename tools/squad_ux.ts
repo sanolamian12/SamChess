@@ -118,6 +118,23 @@ try {
   await page.waitForSelector('.scr-place-barracks');
   await page.waitForTimeout(800);
   await shot('01-barracks');
+  // 전적 줄 칸 사이 간격(rem) — 승 · 무 · 패 · 적격파 네 칸, 오른쪽 벽에 붙는가 (2026-11-18 기획자)
+  const recGaps = await page.evaluate(() => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return [...document.querySelectorAll('[data-field="recordMode"]')].map((row) => {
+      const cells = [...row.querySelectorAll('.bar-rec:not([data-k="held"])')].map((c) => c.getBoundingClientRect());
+      const vals = row.querySelector('.bar-vals')!.getBoundingClientRect();
+      const hd = row.querySelector('.bar-hd img')!.getBoundingClientRect();
+      const mid = (r: DOMRect) => (r.top + r.bottom) / 2;
+      return {
+        gaps: cells.slice(1).map((r, i) => +((r.left - cells[i]!.right) / rem).toFixed(3)), right: +((vals.right - cells.at(-1)!.right) / rem).toFixed(3),
+        // 모드 아이콘과 첫 줄 배지의 가운데 높이 차(rem) — 같은 줄로 보여야 한다
+        lift: +((mid(hd) - mid(row.querySelector('.bar-rec[data-k="w"] .gic img')!.getBoundingClientRect())) / rem).toFixed(3),
+      };
+    });
+  });
+  if (recGaps.some((r) => Math.abs(r.lift) > 0.06 || r.right > 0.05 || r.gaps.some((g) => Math.abs(g - 1.77) > 0.05))) fail(`전적 줄 간격이 1.77rem · 오른쪽 붙임이 아니다: ${JSON.stringify(recGaps)}`);
+  ok(`전적 줄 간격(rem) ${JSON.stringify(recGaps)}`);
   const rec = await page.$eval('[data-field="record"]', (el) => ['plays', 'w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
   // 심은 전적은 3v3 공격대의 9전 3승 2무 4패 12격파 — 수비대 · 5v5 수비대는 안 센다
   if (rec !== '9 / 3 / 2 / 4 / 12') fail(`병영 전적이 공격대 합이 아니다 — "${rec}"`);

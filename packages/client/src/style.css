@@ -6430,6 +6430,15 @@ button.sql-row:hover { background: #3a2c1e14; }
 .bar-sub { gap: .8rem; }   /* 들여 쓰지 않는다 — 모드 아이콘은 왼쪽 벽에 (2026-11-16 기획자) */
 /* 다섯 칸은 아이콘 뒤 남은 폭에 고르게 — 모드 아이콘은 안 눌린다 */
 .bar-sub .bar-vals { flex: 1; justify-content: space-between; gap: .25rem; }
+/* 막은 판(수성 성공)은 한 줄 아래 오른쪽 벽으로 — 다섯 칸이 한 줄에 갑갑했다(2026-11-18 기획자). 위 줄은 네 칸이 폭에 고르게 편다 */
+.bar-sub .bar-vals { flex-wrap: wrap; row-gap: .1rem; }
+/* 칸 사이는 고르게 펴던 간격(2.21rem)의 0.8배로 고정하고 오른쪽 벽에 붙인다 (2026-11-18 기획자) */
+.bar-sub .bar-vals { justify-content: flex-end; column-gap: 1.77rem; }
+/* 모드 아이콘은 첫 줄(승 · 무 · 패 · 적격파) 배지와 같은 높이 — 두 줄 전체의 가운데가 아니라 (2026-11-18 기획자).
+   위에 붙이고, 아이콘(2.08rem)과 배지 줄(1.3rem)의 가운데가 맞도록 그 차이의 반만큼 올린다 */
+.bar-sub { align-items: flex-start; }
+.bar-sub .bar-hd { margin-top: calc((1.3rem - 2.08rem) / 2); }
+.bar-sub .bar-rec[data-k="held"] { flex: 0 0 100%; justify-content: flex-end; }
 /* 숫자 칸은 네 자리(9999)까지 미리 잡는다 — 전적이 늘어도 아이콘 줄이 밀리지 않게 (2026-11-16 기획자) */
 .bar-sub .bar-rec .v { font-size: .76rem; text-align: right; white-space: nowrap; }   /* 돌격대 · 수성군 이름(`.bar-ttl`)과 같은 크기 */
 .bar-sub .bar-rec .v .pad { color: #3a2c1e40; }   /* 안 찬 앞자리 0 — 옅은 회색 */
