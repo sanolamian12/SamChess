@@ -355,7 +355,7 @@ const RECORD_DIGITS = 4;
 
 /**
  * 전적 한 칸 — 아이콘 + 오른쪽 정렬 숫자. 안 찬 앞자리는 옅은 회색 0(`.pad`)이라 「0012」로 읽히되 12가 도드라진다.
- * 값을 모르면(방어 기록에 못 닿음) 「—」. 낱말은 `title`로
+ * 값을 모르면(방어 기록에 못 닿음) 「—」 하나만(앞자리 0 없이). 낱말은 `title`로
  */
 function RecordCell({ icon, label, n, k }: { icon: GameIconName; label: string; n: number | null; k: string }): React.JSX.Element {
   const text = n === null ? '—' : String(n);
@@ -363,7 +363,8 @@ function RecordCell({ icon, label, n, k }: { icon: GameIconName; label: string; 
     <span className="bar-rec" data-k={k}>
       <GameIcon name={icon} label={label} />
       <b className="v" data-n={n ?? ''}>
-        <span className="pad">{'0'.repeat(Math.max(0, RECORD_DIGITS - text.length))}</span>{text}
+        {/* 값을 모르면 「—」 하나만 — 옅은 0을 앞에 붙이면 「000—」로 읽혔다 (2026-11-18 기획자) */}
+        {n !== null && <span className="pad">{'0'.repeat(Math.max(0, RECORD_DIGITS - text.length))}</span>}{text}
       </b>
     </span>
   );

@@ -135,6 +135,23 @@ try {
   });
   if (recGaps.some((r) => Math.abs(r.lift) > 0.06 || r.right > 0.05 || r.gaps.some((g) => Math.abs(g - 1.77) > 0.05))) fail(`전적 줄 간격이 1.77rem · 오른쪽 붙임이 아니다: ${JSON.stringify(recGaps)}`);
   ok(`전적 줄 간격(rem) ${JSON.stringify(recGaps)}`);
+  // 전적 칸 글자 — 값이 있으면 네 자리(앞자리 옅은 0), 모르면 「—」 하나만 (2026-11-18 기획자 — 「000—」였다)
+  const recTexts = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-field="recordMode"] .bar-rec .v')]
+    .map((v) => ({ n: v.dataset.n ?? '', text: v.textContent ?? '' })));
+  const badRec = recTexts.filter((r) => (r.n === '' ? r.text !== '—' : r.text.length !== 4 && r.text.length !== r.n.length));
+  if (badRec.length) fail(`전적 칸 글자가 틀렸다: ${JSON.stringify(badRec)}`);
+  ok(`전적 칸 글자 [${recTexts.map((r) => r.text).join(' ')}]`);
+  // 「모름」 갈래 — 방어 기록 요청을 막고 병영에 다시 들어가면 막은 판 칸은 「—」 하나만이다(앞자리 0 없이)
+  await page.route('**/defense', (r) => r.fulfill({ status: 503, body: '' }));
+  await page.click('.place-bar [data-action="back"]');
+  await page.waitForSelector('.scr-main');
+  await page.click('.scr-main [data-place="barracks"]', { force: true });
+  await page.waitForSelector('.scr-place-barracks');
+  await page.waitForTimeout(800);
+  const unknown = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('[data-field="recordMode"] .bar-rec[data-k="held"] .v')].map((v) => v.textContent));
+  await page.unroute('**/defense');
+  if (unknown.length !== 2 || unknown.some((x) => x !== '—')) fail(`방어 기록에 못 닿았을 때 막은 판 칸이 [${unknown.join(' ')}]다(「—」)`);
+  ok('방어 기록에 못 닿으면 막은 판 칸은 「—」 하나만');
   const rec = await page.$eval('[data-field="record"]', (el) => ['plays', 'w', 'd', 'l', 'k'].map((k) => (el as HTMLElement).dataset[k]).join(' / '));
   // 심은 전적은 3v3 공격대의 9전 3승 2무 4패 12격파 — 수비대 · 5v5 수비대는 안 센다
   if (rec !== '9 / 3 / 2 / 4 / 12') fail(`병영 전적이 공격대 합이 아니다 — "${rec}"`);
