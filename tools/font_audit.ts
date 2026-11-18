@@ -227,7 +227,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['12-main-settings', { name: 'main' }, async (p) => { await click(p, '.scr-main [data-action="settings"]'); }],
     ['13-main-mail', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="mail"]'); }],
     ['14-main-info', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="info"]'); }],
-    ['15-main-logout', { name: 'main' }, async (p) => { await jsClick(p, '[data-action="logout"]'); }],
+    ['15-main-logout', { name: 'main' }, async (p) => { await click(p, '.scr-main [data-action="settings"]'); await settle(p, 600); await jsClick(p, '[data-modal="settings"] [data-action="logout"]'); }],
     ['20-palace', { name: 'place', place: 'palace' }],
     ['20b-palace-rename', { name: 'place', place: 'palace' }, async (p) => { await click(p, '[data-action="rename"]'); }],
     ['21-officers', { name: 'officers' }],

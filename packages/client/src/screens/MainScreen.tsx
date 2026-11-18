@@ -111,6 +111,20 @@ const GATE_RATIO = 288 / 293;
  * 둘러보기의 다음 곳 → 그 자리의 핫스팟 열쇠 (2026-10-23 기획자 — 「타겟팅할 수 있는 아이콘」).
  * 대자보는 핫스팟 열쇠가 옛 이름(`ranking`) 그대로다.
  */
+/** 건물 이름을 두 줄로 쓰는 언어 — 한 줄이면 그림 밖(왼쪽 벽)으로 잘렸다(2026-11-18 기획자, 글자 크기 점검). 자리 key → 언어 */
+const TWO_LINE_NAMES: Partial<Record<string, readonly string[]>> = { ranking: ['mn', 'pt_BR', 'pt_PT'] };
+/** 두 줄 이름의 줄 간격(그림 좌표 — 이름 글자 36) */
+const NAME_LINE_H = 38;
+
+/** 이름을 줄로 — 두 줄 언어면 가운데에 가장 가까운 띄어쓰기에서 나눈다 */
+function nameLines(key: string, name: string): string[] {
+  if (!TWO_LINE_NAMES[key]?.includes(currentLang())) return [name];
+  const spaces = [...name.matchAll(/ /g)].map((m) => m.index ?? 0);
+  if (spaces.length === 0) return [name];
+  const cut = spaces.reduce((a, b) => (Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a));
+  return [name.slice(0, cut), name.slice(cut + 1)];
+}
+
 const TOUR_HOT: Record<TourStop, string> = { palace: 'palace', market: 'market', board: 'ranking', barracks: 'barracks' };
 
 /**
@@ -320,6 +334,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
       backdrop={backdrop}
       className="scr-main"
       account={currentSession()?.email ?? null}
+      onLogout={() => setAskLogout(true)}
       artOverlay={
         <svg
           className="city-hots"
@@ -363,6 +378,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
                 <title>{t(spot.nameKey)}</title>
               </rect>
               {/* 호버 여부와 상관없이 늘 뜬다 — 모바일엔 호버가 없다(2026-08-25). */}
+              {/* 이름이 길어 옆으로 넘치는 언어는 두 줄 — 위로 자라고 밑의 소개는 제자리(2026-11-18 기획자, `TWO_LINE_NAMES`) */}
               <text
                 className="city-lbl"
                 x={spot.label.x}
@@ -370,7 +386,11 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
                 fontSize={36}
                 textAnchor="middle"
                 pointerEvents="none"
-              >{t(spot.nameKey)}</text>
+              >
+                {nameLines(spot.key, t(spot.nameKey)).map((line, i, all) => (
+                  <tspan key={i} x={spot.label.x} dy={i === 0 ? -(all.length - 1) * NAME_LINE_H : NAME_LINE_H}>{line}</tspan>
+                ))}
+              </text>
               {(spot.badge ?? 0) > 0 && (
                 <g className="city-badge" data-field="badge" data-place-badge={spot.key} data-count={spot.badge} pointerEvents="none">
                   <circle cx={spot.label.x + 96} cy={spot.label.y - 34} r={22} />
@@ -474,11 +494,12 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           )}
         </div>
         <div className="stats">
-          {/* 좁은 이름표는 아이콘이 대신한다(이름은 올리면) — 도시 · 군량 · 장수 · 등급 점수 */}
-          <span className="stat"><i><GameIcon name="tab-city" label={t('main.cityLevel')} /></i><b>Lv{profile.cityLevel}</b></span>
-          <span className="stat"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
-          <span className="stat"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
-          <span className="stat"><i><GameIcon name="grade-score" label={t('main.gradeScore')} /></i><b>{gradeScore(profile)}</b></span>
+          {/* 좁은 이름표는 아이콘이 대신한다(이름은 올리면). 2 × 2 — 위 줄 도시 Lv · 도시(등급) 점수, 아래 줄 장수 · 군량.
+              장수는 도시 Lv 밑, 군량은 점수 밑으로 열을 맞춘다(2026-11-18 기획자) */}
+          <span className="stat" data-field="cityLevel"><i><GameIcon name="tab-city" label={t('main.cityLevel')} /></i><b>Lv{profile.cityLevel}</b></span>
+          <span className="stat" data-field="gradeScore"><i><GameIcon name="grade-score" label={t('main.gradeScore')} /></i><b>{gradeScore(profile)}</b></span>
+          <span className="stat" data-field="officers"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
+          <span className="stat" data-field="grain"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
         </div>
       </div>
 
@@ -487,9 +508,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
       <div className="city-map" />
 
       <footer className="foot">
-        <button className="btn ghost sm" data-action="logout" onClick={() => setAskLogout(true)}>
-          <GameIcon name="mk-logout" label={t('main.logout')} text />
-        </button>
+        {/* [로그아웃]은 환경설정으로 옮겼다(2026-11-18 기획자) — 확인 팝업은 그대로 여기서 띄운다 */}
         {/* 시험용 — 배포 화면에는 안 그린다 (2026-10-16 기획자 확정). 서버 쪽 삭제 경로는 그대로다 */}
         {import.meta.env.DEV && (
           <button
@@ -506,7 +525,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           다른 확인 팝업과 같은 먹빛 나무판이다 (2026-10-16 기획자 지정) */}
       {askLogout && (
         <div className="modal-back" data-modal="logout" onClick={() => setAskLogout(false)}>
-          <div className="modal mod-plank cty-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal mod-plank cty-modal logout-modal" onClick={(e) => e.stopPropagation()}>
             <p className="modal-ttl">{t('main.logout')}</p>
             <p className="row" data-field="warn">{t('main.logoutConfirm')}</p>
             <div className="cty-acts">

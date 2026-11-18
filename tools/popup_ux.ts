@@ -72,7 +72,8 @@ try {
   ok(`메인 바닥 단추 ${foot.length}개 — 참나무 목판`);
 
   // ①-2 [로그아웃] 확인 — 브라우저 `confirm()`이 아니라 나무판 팝업이 **화면 가운데**에 뜨고, [그만둔다]는 메인에 남는다
-  await page.click('[data-action="logout"]');
+  await page.click('.scr-main [data-action="settings"]');   // [로그아웃]은 환경설정 안이다(2026-11-18)
+  await page.click('[data-modal="settings"] [data-action="logout"]');
   await page.waitForSelector('[data-modal="logout"] .modal', { timeout: 3_000 })
     .catch(() => fail('[로그아웃]을 눌렀는데 확인 팝업이 안 뜬다'));
   const lo = await page.evaluate(() => {
@@ -153,7 +154,8 @@ try {
   // ④ [로그아웃] → 확인 — 실제로 간판으로 돌아가는가 (맨 끝에 둔다 — 세션이 끊긴다)
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  await page.click('[data-action="logout"]');
+  await page.click('.scr-main [data-action="settings"]');   // [로그아웃]은 환경설정 안이다(2026-11-18)
+  await page.click('[data-modal="settings"] [data-action="logout"]');
   await page.click('[data-action="logoutConfirm"]');
   await page.waitForSelector('.scr-title', { timeout: 10_000 })
     .catch(() => fail('로그아웃을 확인했는데 간판으로 안 돌아간다'));

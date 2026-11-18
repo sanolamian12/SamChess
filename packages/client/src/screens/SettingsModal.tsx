@@ -38,6 +38,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useFitText } from './useFitText.ts';
 import { VolumeRange } from './VolumeRange.tsx';
+import { GameIcon } from './GameIcon.tsx';
 import { DUB_LANGS, LANGS, inLang, setLang, t } from '../i18n/index.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useDubLang } from '../i18n/useDubLang.ts';
@@ -113,9 +114,11 @@ function useSteadyBoxes(): React.RefObject<HTMLDivElement | null> {
   return ref;
 }
 
-export function SettingsModal({ signedIn, onClose }: {
+export function SettingsModal({ signedIn, onClose, onLogout }: {
   signedIn: string | null;
   onClose: () => void;
+  /** [로그아웃] — 메인에서 연 설정에만 있다(2026-11-18 기획자 — 메인 바닥의 단추를 옮겨 왔다). 확인 팝업은 메인이 띄운다 */
+  onLogout?: (() => void) | undefined;
 }): React.JSX.Element {
   const lang = useLang();
   const dub = useDubLang();
@@ -141,10 +144,23 @@ export function SettingsModal({ signedIn, onClose }: {
         {/* 로그인 안 한 계정도 한 줄이다(2026-08-25 피드백) — 예전엔 「ID ⟨값⟩」줄과
             「로그인 됨/안 함」줄을 따로 뒀는데, 값이 없을 때 대괄호로 그 자리를
             대신하면 한 줄로 충분하다. */}
+        {/* 다섯 구역(2026-11-18 기획자) — ① ID + 로그아웃 ② Language + 음성 더빙 + 언어 칩 ③ 배경음악 ④ 효과음 ⑤ 화면 모드 + 닫기.
+            판 높이를 화면의 70%로 키우고 구역 사이를 고르게 벌려 갈라 보이게 한다(`.set-grp`) */}
+        <div className="set-grps">
+        <section className="set-grp" data-group="account">
         <div className="opt-row" data-field="account">
           <span className="k" data-steady="account" data-steady-keys="settings.account">{t('settings.account')}</span>
           <span className="v dim fit" ref={idRef}>{idValue}</span>
         </div>
+        {/* [로그아웃] — 노란(금빛) 두루마리, [닫기]와 같은 크기 */}
+        {onLogout && (
+          <button className="btn wide set-logout" data-action="logout" onClick={onLogout}>
+            <GameIcon name="mk-logout" label={t('main.logout')} text />
+          </button>
+        )}
+        </section>
+
+        <section className="set-grp" data-group="language">
 
         {/* 지금 언어 이름은 「Language」와 같은 줄, 칩 열 개는 그 아래로
             (2026-08-25 피드백) — 예전엔 이름이 칩 아래(`.hint`)에 따로 떨어져
@@ -174,9 +190,13 @@ export function SettingsModal({ signedIn, onClose }: {
           ))}
         </div>
 
+        </section>
+
         {/* 소리 — 배경 음악 · 효과음(음성) 두 갈래, 과녁 다섯 칸(2026-10-23 기획자 — 옛 끔 · 켬을 갈았다) */}
-        <VolumeRange channel="bgm" label={t('settings.bgm')} steadyKey="settings.bgm" />
-        <VolumeRange channel="fx" label={t('settings.fx')} steadyKey="settings.fx" />
+        <section className="set-grp" data-group="bgm"><VolumeRange channel="bgm" label={t('settings.bgm')} steadyKey="settings.bgm" /></section>
+        <section className="set-grp" data-group="fx"><VolumeRange channel="fx" label={t('settings.fx')} steadyKey="settings.fx" /></section>
+
+        <section className="set-grp" data-group="screen">
 
         {/* 화면 모드 — 화살표 목판 둘을 대칭으로(2026-11-17 기획자): 고른 쪽은 초록 판(`to_end`) + 빛나는 글자, 안 고른 쪽은
             갈색 판(`to_next`) + 빛 없는 글자(`style.css`의 `.set-side`). 프레임이 1:2 고정이라 가로는 고를 게 없다(pptx 20쪽) — 그래서 잠가 두되, 「눌리는데 아무 일도 없는
@@ -208,6 +228,8 @@ export function SettingsModal({ signedIn, onClose }: {
         {/* **`data-action`으로 건다** — 스모크가 `.btn.ghost`로 잡고 있다가 단추
             모양이 바뀌자 조용히 못 찾았다(「검사는 글자가 아니라 `data-*`로 건다」) */}
         <button className="btn primary wide" data-action="settingsClose" onClick={onClose}>{t('settings.close')}</button>
+        </section>
+        </div>
       </div>
     </div>
   );

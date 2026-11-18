@@ -50,7 +50,8 @@ async function login(page: Page): Promise<void> {
 }
 
 async function logout(page: Page): Promise<void> {
-  await page.click('[data-action="logout"]');
+  await page.click('.scr-main [data-action="settings"]');   // [로그아웃]은 환경설정 안이다(2026-11-18)
+  await page.click('[data-modal="settings"] [data-action="logout"]');
   await page.click('[data-action="logoutConfirm"]');
   await page.waitForSelector('.scr-title', { timeout: 10_000 });
 }
