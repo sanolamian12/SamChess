@@ -80,6 +80,7 @@ import { TacticIcon } from './TacticIcon.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
 import { TacticModal } from './TacticModal.tsx';
 import { GameIcon } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
 
 /** HP · MP · AT 칸의 아이콘 — 글자(`HP`)는 올리면 보인다 */
@@ -149,9 +150,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
           <GradeBadge grade={data.grade} />
           {' '}{pickOfficerName(data)}{' '}
           {/* 고르는 중에는 **올라갈 레벨**을 보여준다 */}
-          <span className="lv" data-level={inst.level + (picking ? 1 : 0)}>
-            Lv{inst.level + (picking ? 1 : 0)}
-          </span>
+          <LevelBadge level={inst.level + (picking ? 1 : 0)} className="lv" />
         </h3>
 
         {picking ? (

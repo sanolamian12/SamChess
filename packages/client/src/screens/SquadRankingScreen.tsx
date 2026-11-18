@@ -40,6 +40,7 @@ import { pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 import { GameIcon, WdlHead } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 
 export function SquadRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -133,17 +134,15 @@ function SquadBlock({ rank, row, open, onToggle }: {
         <div className="rk-squad-detail">
           <div className="rk-row rk-thead">
             <span className="rk-nm">{t('ranking.col.officer')}</span>
-            <span className="rk-n">{t('ranking.col.level')}</span>
             <span className="rk-n"><GameIcon name="stat-hp" label={t('ranking.col.hp')} /></span>
             <span className="rk-n"><GameIcon name="stat-mp" label={t('ranking.col.mp')} /></span>
             <span className="rk-n"><GameIcon name="stat-at" label={t('ranking.col.at')} /></span>
           </div>
           {row.members.map((m) => (
             <div className="rk-row" key={m.officer}>
-              <span className="rk-nm">
-                <GradeBadge grade={m.grade} /> {pickOfficerNameById(m.officer, m.name)}
+              <span className="rk-nm rk-nm-lv">
+                <GradeBadge grade={m.grade} /> <span className="rk-nm-t">{pickOfficerNameById(m.officer, m.name)}</span><LevelBadge level={m.level} />
               </span>
-              <span className="rk-n">Lv{m.level}</span>
               <span className="rk-n">{m.stats.hp}</span>
               <span className="rk-n">{m.stats.mp}</span>
               <span className="rk-n">{m.stats.at}</span>

@@ -315,6 +315,11 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   `min-height`로 박는다 — 판 안의 쪽 줄은 판 바닥에 붙는다(`[data-steady] > .pager`). 화면은 목록을 자를 때 **훅이 돌려준 쪽**을 쓴다
   (재는 동안 훅이 쪽을 돌린다 — 화면의 `setPage`는 안 부른다). `deps`에는 **원시값**만(렌더마다 새 배열이면 재기가 끝없이 돈다).
   새 목록에 쪽 넘김을 붙이면 이것도 함께 붙인다 — 빈 줄로 채우거나 「꽉 찬 쪽 하나」를 재는 옛 방식은 글이 접히는 언어에서 흔들렸다.
+- **화면 글자는 0.8rem 밑으로 두지 않는다** (2026-11-18 기획자 — 휴대폰 폭 390px에서 1rem ≈ 15px이라 0.8rem ≈ 12px, 모바일 가독성 하한).
+  그림 안의 글자만 예외. 상수는 `screens/fontFloor.ts`이고 **글자를 재서 줄이는 코드도 그 밑으로 안 간다**(`useFitText` · `useFitNames` 등 — 그래도 안 들면 접는다).
+  좁아서 안 들면 글자를 줄이지 말고 칸을 다시 짠다. 확인은 `tools/font_audit.ts`(보이는 글자의 실제 크기 · 잘림을 화면마다 잰다) →
+  `tools/build_font_board.py`(점검판 `Design/글자크기점검/점검판.html`). **장수 레벨은 목록에서 열로 두지 않고 이름 오른쪽 배지**(`LevelBadge` ·
+  `ui/levelBadge.ts`, 그림 `public/icons/level/lv-{1..10}.png` ← `npm run ui`) — 장수 상세 · 전투 장수 팝업도 같은 배지다.
 - **전역 CSS에 흔한 이름을 새로 쓰지 않는다.** `.panel`은 전투 화면의 플로팅 커맨드
   패널이 이미 쓰고 있고 `position: absolute`에 폭이 `--board`의 배수다 — 메타 화면의
   판때기에 같은 이름을 붙였더니 오른쪽 아래에 좁게 붙었다. CSS는 이름이 겹쳐도 오류가

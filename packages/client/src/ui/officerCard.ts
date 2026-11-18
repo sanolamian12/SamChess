@@ -38,6 +38,7 @@ import { currentLang, t } from '../i18n/index.ts';
 import { pickOfficerName, pickSkillName } from '../i18n/story.ts';
 import { spIcon } from './spIcon.ts';
 import { gameIconEl, type GameIconName } from './gameIcon.ts';
+import { levelBadgeImg } from './levelBadge.ts';
 
 /** 엠블럼 자리 수 — 넘치면 1 · 6번 자리가 화살표가 되고 가운데 넷이 한 쪽이다 (105쪽) */
 const SLOTS = 6;
@@ -125,7 +126,8 @@ export function renderOfficerCard(state: BattleState, unit: UnitState, tip: Stat
   piece.alt = unit.piece;
   piece.title = unit.piece;
   piece.src = pieceArtUrl(unit.piece, viewer === null ? unit.side === 'P1' : unit.side === viewer);
-  head.append(piece, gradeBadge(officer.grade), text('span', 'oc-lv', `Lv${unit.level}`));
+  // 레벨은 배지 그림(2026-11-18 기획자) — 메타 화면의 장수 상세와 같은 그림
+  head.append(piece, gradeBadge(officer.grade), levelBadgeImg(unit.level, 'oc-lv'));
   id.append(text('div', 'oc-name', pickOfficerName(officer)), head);
   top.append(frame, id);
 

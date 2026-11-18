@@ -11,6 +11,7 @@
  */
 
 import { useLayoutEffect, useRef } from 'react';
+import { fontFloorPx } from './fontFloor.ts';
 
 export function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject<T | null> {
   const ref = useRef<T>(null);
@@ -20,6 +21,7 @@ export function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject
     if (!el) return;
     const fit = (): void => {
       el.style.fontSize = '';
+      el.style.whiteSpace = '';
       const base = parseFloat(getComputedStyle(el).fontSize) || 16;
       // `.fit`(CSS)가 이미 `white-space: nowrap; overflow: hidden`이라, 줄바꿈
       // 없이 쟀을 때의 실제 폭(`scrollWidth`)과 눈에 보이는 자리(`clientWidth`)를
@@ -29,7 +31,11 @@ export function useFitText<T extends HTMLElement>(dep: unknown): React.RefObject
       // 2% 여유 — `scrollWidth`는 정수로 반올림돼 53.4px 글자도 53으로 잰다. 딱 맞춰 줄이면
       // 말줄임(…)이 그대로 남았다(2026-10-15, 컬렉션 등록 칸 「Чжан Ф…」).
       if (natural > avail && avail > 0) {
-        el.style.fontSize = `${base * (avail / natural) * 0.98}px`;
+        const want = base * (avail / natural) * 0.98;
+        // 하한(0.8rem) 밑으로는 안 줄인다 — 그래도 안 들면 접는다(2026-11-18)
+        const floor = Math.min(base, fontFloorPx());
+        el.style.fontSize = `${Math.max(want, floor)}px`;
+        if (want < floor) el.style.whiteSpace = 'normal';
       }
     };
     fit();

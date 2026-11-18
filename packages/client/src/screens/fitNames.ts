@@ -4,6 +4,7 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import type { RefObject } from 'react';
+import { fontFloorPx } from './fontFloor.ts';
 
 /**
  * 건물 이름을 **두 줄 안에** 넣는다 — 못 넣으면 이름 글씨를 한 단계씩 줄인다 (2026-11-12 지정).
@@ -24,7 +25,11 @@ export function useFitNames(lang: string): RefObject<HTMLElement | null> {
         const lh = parseFloat(getComputedStyle(el).lineHeight) || el.getBoundingClientRect().height;
         return el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().height > lh * 2 + 1;
       });
-      while (over() && scale > 0.6) {
+      // 하한(0.8rem, 2026-11-18) — 이름 글자의 기준 크기에서 배율 하한을 낸다
+      const first = box.querySelector<HTMLElement>('.cty-bld .nm .gic-t');
+      const base = first ? parseFloat(getComputedStyle(first).fontSize) || 16 : 16;
+      const minScale = Math.min(1, Math.max(0.6, fontFloorPx() / base));
+      while (over() && scale - 0.05 >= minScale - 1e-6) {
         scale = Math.round((scale - 0.05) * 100) / 100;
         box.style.setProperty('--nm-scale', String(scale));
       }

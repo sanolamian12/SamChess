@@ -54,6 +54,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import type { PieceType } from '@samchess/data';
 
@@ -166,7 +167,6 @@ export function SquadRoster({ profile, squad }: {
         <span className="pc">{t('squad.col.piece')}</span>
         <span className="who">{t('officers.col.name')}</span>
         <span className="gr-cell">{t('officers.col.grade')}</span>
-        <span className="lv">{t('officers.col.level')}</span>
         <span className="st">{t('squad.col.status')}</span>
         <span className="eq">{t('squad.col.equip')}</span>
       </div>
@@ -190,9 +190,9 @@ export function SquadRoster({ profile, squad }: {
               <span className="who">
                 <OfficerArt officer={data.id} className="thumb" />
                 <span className="nm">{pickOfficerName(data)}</span>
+                <LevelBadge level={inst.level} />
               </span>
               <span className="gr-cell"><GradeBadge grade={data.grade} /></span>
-              <span className="lv" data-field="level">Lv{inst.level}</span>
               <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
                 <HealthIcon hurt={hurt} label={hurt ? t('squad.status.injured') : t('squad.status.ok')} />
               </span>

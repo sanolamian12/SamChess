@@ -50,6 +50,7 @@ import { pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 import { GameIcon } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 
 export function OfficerRankingScreen({ profile, onBack }: {
   profile: PlayerProfile;
@@ -125,7 +126,6 @@ function OfficerHead({ noteOpen, onToggleNote }: {
       <span className="rk-rk">{t('ranking.col.rank')}</span>
       <span className="rk-nm">{t('ranking.col.city')}</span>
       <span className="rk-nm">{t('ranking.col.officer')}</span>
-      <span className="rk-n">{t('ranking.col.level')}</span>
       <span className="rk-n"><GameIcon name="rec-sorties" label={t('ranking.col.participation')} /></span>
       <span className="rk-n"><GameIcon name="rec-kills" label={t('ranking.col.kills')} /></span>
       <InfoHeadCell className="rk-n" label={t('ranking.col.total')} open={noteOpen} onToggle={onToggleNote} />
@@ -141,8 +141,8 @@ function OfficerRow({ rank, row, onView }: {
     <button className="rk-row rk-clickable" data-rank={rank} onClick={onView}>
       <span className="rk-rk">{rank}</span>
       <span className="rk-nm">{row.cityName}</span>
-      <span className="rk-nm"><GradeBadge grade={row.grade} /> {pickOfficerNameById(row.officer, row.name)}</span>
-      <span className="rk-n">Lv{row.level}</span>
+      {/* 레벨은 열이 아니라 이름 오른쪽 배지(2026-11-18 기획자) */}
+      <span className="rk-nm rk-nm-lv"><GradeBadge grade={row.grade} /> <span className="rk-nm-t">{pickOfficerNameById(row.officer, row.name)}</span><LevelBadge level={row.level} /></span>
       <span className="rk-n">{row.tally.plays}</span>
       <span className="rk-n">{row.tally.kills}</span>
       <span className="rk-n">{row.total}</span>

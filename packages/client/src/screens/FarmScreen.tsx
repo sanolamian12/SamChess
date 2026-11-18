@@ -52,6 +52,7 @@ import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { GameIcon, HealthIcon } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
 import type { RaidTone } from './raidText.ts';
 
@@ -235,11 +236,10 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
               <GameIcon name="guard" label={t('farm.info.guardsLabel')} text />{' '}
               <span className="frm-gl-count">{t('farm.info.guardsCount', { n: guards.length, max: slotCount })}</span>
             </h2>
-            {/* 열 — 기물 · 명단 · 레벨 · 상태 · 병기구 (2026-11-16 기획자) */}
+            {/* 열 — 기물 · 명단 · 상태 · 병기구 (2026-11-16 기획자). 레벨은 열이 아니라 이름 오른쪽 배지(2026-11-18) */}
             <div className="frm-grow frm-thead" aria-hidden="true">
               <span className="pc">{t('squad.col.piece')}</span>
               <span className="nm">{t('squads.col.members')}</span>
-              <span className="lv">{t('officers.col.level')}</span>
               <span className="st">{t('squad.col.status')}</span>
               <span className="eq">{t('squad.col.equip')}</span>
             </div>
@@ -307,8 +307,8 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
                         <OfficerStand officer={officer} title={pickOfficerName(data)} />
                       </span>
                       <span className="nm-text">{pickOfficerName(data)}</span>
+                      <LevelBadge level={inst.level} />
                     </span>
-                    <span className="lv">Lv{inst.level}</span>
                     <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
                       <HealthIcon hurt={hurt} label={hurt ? t('squad.status.injured') : t('squad.status.ok')} />
                     </span>

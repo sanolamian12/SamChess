@@ -1693,7 +1693,7 @@ const readPopup = () => page.evaluate(() => {
     // 기물은 그림이다(105쪽) — 글자가 아니라 속성으로 본다
     piece: (p.querySelector('.oc-piece') as HTMLElement | null)?.dataset.piece ?? '',
     name: p.querySelector('.oc-name')?.textContent ?? '',
-    level: p.querySelector('.oc-lv')?.textContent ?? '',
+    level: `Lv${p.querySelector('.oc-lv')?.getAttribute('data-level') ?? ''}`,   // 레벨은 배지 그림(2026-11-18) — 속성으로 본다
     // 등급은 그림이다(2026-09-22) — 글자가 아니라 속성으로 본다
     grade: (p.querySelector('.oc-head .gr') as HTMLElement | null)?.dataset.grade ?? '',
     at: p.querySelector('.oc-stat.at b')?.textContent ?? '',

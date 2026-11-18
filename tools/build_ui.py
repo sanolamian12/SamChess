@@ -457,6 +457,14 @@ TUTORIAL_ICONS: dict[str, str] = {
 }
 """`assets/icons/new/`에 온 튜토리얼 아이콘 — 원본 이름(한글) → 출력 이름. 나머지는 이미 굽는 그림을 그대로 쓴다(`gameIcon.ts`의 `tut-*`)."""
 
+# 장수 레벨 배지 (2026-11-18 기획자) — 한 장에 5 × 2, Lv1 ~ Lv10. 검은 바탕 RGB로 왔다(가장자리에 이어진 순흑만 걷는다).
+# 배지마다 떨어진 덩어리라 등분하지 않고 **알파의 덩어리**로 자른다 — 위 줄 · 아래 줄의 배지 높이가 조금씩 달라
+# 등분하면 옆 배지의 장식이 딸려 온다(「띠로 이어 그린 그림은 등분해 자르지 않는다」). 제 비율 그대로(세로가 길다) 높이 `LEVEL_BADGE_H`로.
+# → `public/icons/level/lv-{1..10}.png`, 화면은 `screens/LevelBadge.tsx`
+LEVEL_BADGE_SRC = TUTORIAL_ICON_SRC / "장수 레벨.png"
+LEVEL_BADGE_COUNT = 10
+LEVEL_BADGE_H = 120
+
 ICONS: dict[str, str] = {
     "button_settings": "settings",
     "button_backarrow": "back",
@@ -929,6 +937,29 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
     return {i: square_cells([crops[i]], side_of[i])[0] for i in ids}
 
 
+def build_level_badges(path: Path) -> list[Image.Image]:
+    """`LEVEL_BADGE_SRC` 참조 — 바탕을 걷고, 큰 알파 덩어리 열 개를 줄(위→아래) · 칸(왼→오른) 차례로 잘라 높이를 맞춘다."""
+    from scipy import ndimage
+
+    rgba = knock_out_black_icon(load(path))
+    solid = ndimage.binary_fill_holes(rgba[:, :, 3] > 0)
+    labels, n = ndimage.label(solid)
+    sizes = ndimage.sum(solid, labels, range(1, n + 1))
+    keep = (np.argsort(sizes)[::-1][:LEVEL_BADGE_COUNT] + 1).tolist()
+    boxes = ndimage.find_objects(labels)
+    found = [(boxes[i - 1], i) for i in keep]
+    row_h = rgba.shape[0] / 2
+    found.sort(key=lambda b: (int(((b[0][0].start + b[0][0].stop) / 2) // row_h), b[0][1].start))
+    out: list[Image.Image] = []
+    for (ys, xs), i in found:
+        piece = rgba[ys, xs].copy()
+        piece[labels[ys, xs] != i, 3] = 0        # 상자에 걸친 옆 배지 조각은 지운다
+        im = Image.fromarray(piece)
+        w = round(im.width * LEVEL_BADGE_H / im.height)
+        out.append(resize_alpha(im, (w, LEVEL_BADGE_H)))
+    return out
+
+
 def find_background() -> Path | None:
     for name in BACKGROUND_CANDIDATES:
         p = SRC / name
@@ -1046,6 +1077,17 @@ def main() -> int:
         im = build_icon(src)
         im.save(dst)
         made_icons.append((f"tutorial/{name}", im))
+
+    # ── 장수 레벨 배지 — 알파 덩어리로 열 장 ──
+    if not LEVEL_BADGE_SRC.exists():
+        missing.append(f"new/{LEVEL_BADGE_SRC.name}")
+    elif not all(up_to_date(OUT_ICONS / "level" / f"lv-{k}.png", LEVEL_BADGE_SRC) for k in range(1, LEVEL_BADGE_COUNT + 1)):
+        for k, im in enumerate(build_level_badges(LEVEL_BADGE_SRC), start=1):
+            (OUT_ICONS / "level").mkdir(parents=True, exist_ok=True)
+            im.save(OUT_ICONS / "level" / f"lv-{k}.png")
+            made_icons.append((f"level/lv-{k}", im))
+    else:
+        skipped += LEVEL_BADGE_COUNT
 
     # ── 소리 과녁 — 제 비율 그대로 ──
     (OUT_UI / "volume").mkdir(parents=True, exist_ok=True)

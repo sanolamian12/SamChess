@@ -814,7 +814,7 @@ await page.waitForTimeout(300);
         const officer = (el as HTMLElement).dataset.officer ?? '';
         return {
           piece: (el as HTMLElement).dataset.piece ?? '',
-          shown: el.querySelector('.lv')?.textContent ?? '',
+          shown: `Lv${el.querySelector('.lv-badge')?.getAttribute('data-level') ?? ''}`,
           owned: roster[officer]?.level ?? -1,
           status: el.querySelector('[data-field="status"]')?.getAttribute('data-injured') ?? '',
         };

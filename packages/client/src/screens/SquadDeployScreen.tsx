@@ -106,6 +106,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { gameIconUrl } from '../ui/gameIcon.ts';
 import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
+import { fontFloorPx } from './fontFloor.ts';
 
 /** 가상의 상대가 서는 차례 (69쪽 기획자 지정) */
 const ENEMY_ORDER: Record<Squad['mode'], PieceType[]> = {
@@ -633,6 +634,9 @@ function useSteadyMsg(texts: string[]): { box: React.RefObject<HTMLParagraphElem
     if (!el || !pr || !room) return;
     const fit = (): void => {
       let scale = 1;
+      // 하한(0.8rem) — 배율이 그 밑으로 안 간다(2026-11-18). 기준 글자가 이미 하한이면 줄이지 않는다
+      el.style.setProperty('--msg-scale', '1');
+      const minScale = Math.min(1, fontFloorPx() / (parseFloat(getComputedStyle(el).fontSize) || 16));
       for (let i = 0; i < 8; i++) {
         el.style.setProperty('--msg-scale', String(scale));
         const limit = room.clientHeight;
@@ -641,7 +645,8 @@ function useSteadyMsg(texts: string[]): { box: React.RefObject<HTMLParagraphElem
         for (const s of texts) { pr.textContent = s; tall = Math.max(tall, pr.scrollHeight); }
         pr.textContent = '';
         if (tall <= limit + 0.5) break;
-        scale *= Math.max(0.6, (limit / tall) * 0.97);
+        if (scale <= minScale) break;
+        scale = Math.max(minScale, scale * Math.max(0.6, (limit / tall) * 0.97));
       }
     };
     fit();
@@ -672,11 +677,15 @@ function ChipLabel({ label }: { label: string }): React.JSX.Element {
     if (!el || !box) return;
     const fit = (): void => {
       el.style.fontSize = '';
+      el.style.whiteSpace = '';
+      // 하한(0.8rem) — 백분율로도 그 밑으로는 안 간다. 닿으면 접는다(2026-11-18)
+      const minPct = Math.min(100, (fontFloorPx() / (parseFloat(getComputedStyle(el).fontSize) || 16)) * 100);
       let pct = 100;
-      for (let i = 0; i < 4 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth; i++) {
-        pct *= (el.clientWidth / el.scrollWidth) * 0.98;
+      for (let i = 0; i < 4 && el.clientWidth > 0 && el.scrollWidth > el.clientWidth && pct > minPct; i++) {
+        pct = Math.max(minPct, pct * (el.clientWidth / el.scrollWidth) * 0.98);
         el.style.fontSize = `${pct}%`;
       }
+      if (pct <= minPct && el.scrollWidth > el.clientWidth) el.style.whiteSpace = 'normal';
     };
     fit();
     document.fonts?.ready.then(fit).catch(() => { /* 못 재도 첫 값으로 돈다 */ });

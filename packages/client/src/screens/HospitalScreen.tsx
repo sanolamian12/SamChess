@@ -43,6 +43,7 @@ import { formatHealLeft } from './healTime.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { GameIcon, IconCount } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
@@ -229,8 +230,8 @@ export function HospitalScreen({ profile, onBack, onChange }: {
                   {/* 이름 · 부상 · 남은 시간을 **한 칸에 세 줄**로 — 옆 칸에 두었더니 긴 번역(몽골어)의
                       「자연 회복까지」가 폭을 다 가져가 이름이 0폭으로 사라졌다 */}
                   <span className="hsp-row-nm">
-                    <b>{nameOf(o.id)}</b>
-                    <span className="hsp-row-sub">Lv{o.level} · {t('hospital.penalty', { n: INJURY_PENALTY })}</span>
+                    <b>{nameOf(o.id)} <LevelBadge level={o.level} /></b>
+                    <span className="hsp-row-sub">{t('hospital.penalty', { n: INJURY_PENALTY })}</span>
                     <span className="hsp-row-left" data-field="left">
                       {o.healing
                         ? <GameIcon name="st-healing" label={t('hospital.ward.healing.short', { time: formatLeft(o.left) })} text />

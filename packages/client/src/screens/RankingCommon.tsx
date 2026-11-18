@@ -30,6 +30,7 @@ import { GradeBadge } from './GradeBadge.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { TacticIcon } from './TacticIcon.tsx';
 import { GameIcon, TallyIcons } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 
 /**
  * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
@@ -619,7 +620,8 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
 
           {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
           <div className="ofcard-bar ofcard-bar-lv">
-            <Stat k="Lv" v={row.level} />
+            {/* 레벨은 배지 그림(2026-11-18 기획자) — 「Lv」와 숫자가 그림에 있다 */}
+            <span className="ofcard-stat ofcard-stat-lv" data-field="level"><LevelBadge level={row.level} /></span>
             <Stat k={<GameIcon name="stat-hp" label="HP" />} v={row.stats.hp} />
             <Stat k={<GameIcon name="stat-mp" label="MP" />} v={row.stats.mp} />
             <Stat k={<GameIcon name="stat-at" label="AT" />} v={`${row.at.min}-${row.at.max}`} />

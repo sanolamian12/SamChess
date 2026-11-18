@@ -126,6 +126,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 import { useFitText } from './useFitText.ts';
 
 /* 등급·레벨은 표 머리와 같은 문구를 그대로 쓴다(`officers.col.*`) — 무력·지력·
@@ -417,14 +418,10 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
             </>
           )}
           {/* 표 머리는 목록과 같은 그리드를 쓴다 — 열 폭이 갈리면 숫자가 어긋나 보인다.
-              열 순서는 등급 · 레벨 · 보유 카드 · 이름 · 무력 · 지력 · 통솔이다
-              (2026-09-02 재배치 — 등급 다음에 레벨이 오도록, 레벨과 이름 사이에
-              보유 카드 수를 더했다). 레벨은 **왼쪽 정렬**로 등급에 붙인다 —
-              오른쪽 정렬(`.c-st`와 같은 결)이면 좁은 등급 칸과 넓은 레벨 칸
-              사이가 비어 두 열이 멀어 보인다(스크린샷으로 확인). */}
+              열 순서는 등급 · 보유 카드 · 이름 · 무력 · 지력 · 통솔이다. 레벨은 열이 아니라
+              **이름 오른쪽 배지**(2026-11-18 기획자 — 좁은 레벨 열과 그 머리가 글자를 작게 만들던 자리). */}
           <div className={`ofc-row ofc-thead${rowMod}`}>
             <FitHead className="c-gr" label={t('officers.col.grade')} />
-            <FitHead className="c-lv" label={t('officers.col.level')} />
             <FitHead className="c-cd" label={t('officers.col.cards')} />
             <FitHead className="c-nm" label={t('officers.col.name')} />
             {/* ★ **삼능력 머리는 글자가 아니라 아이콘이다** (2026-09-18). 칸이 1.8~2.3rem인데
@@ -484,7 +481,6 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                 }}
               >
                 <span className="c-gr"><GradeBadge grade={r.grade} /></span>
-                <span className="c-lv">Lv{r.level}</span>
                 {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서
                     이미 계산해 낸다(화면은 다시 세지 않는다) */}
                 <span className="c-cd">{r.cards}</span>
@@ -496,6 +492,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                     액자는 2026-09-02에 다시 걷어냈다(style.css 참조). */}
                 <span className="c-nm">
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
+                  {/* 레벨은 열이 아니라 이름 오른쪽 배지(2026-11-18 기획자) */}
+                  <LevelBadge level={r.level} />
                   {r.canLevelUp && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
                 </span>
                 {health ? (() => {

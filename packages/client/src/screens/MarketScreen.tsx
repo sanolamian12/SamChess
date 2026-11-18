@@ -341,7 +341,7 @@ function DevGrants({ busy, run }: { busy: boolean; run: ReturnType<typeof useSer
         <div style={{ maxHeight: '12rem', overflowY: 'auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '.2rem' }}>
           {[...officerById.values()].map((o) => (
             <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}>
-              <span style={{ flex: 1, fontSize: '.7rem' }}><GradeBadge grade={o.grade} /> {pickOfficerName(o)}</span>
+              <span style={{ flex: 1, fontSize: '.8rem' }}><GradeBadge grade={o.grade} /> {pickOfficerName(o)}</span>
               <button className="btn ghost sm" data-dev="cards" data-officer={o.id} disabled={busy} onClick={() => grant({ officer: o.id as OfficerId, cards: 5 })}>+5</button>
             </div>
           ))}

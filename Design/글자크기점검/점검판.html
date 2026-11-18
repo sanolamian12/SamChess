@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>글자 크기 점검판</title>
+<!-- 만드는 도구: tools/build_font_board.py — 이 파일을 손으로 고치지 않는다(다시 만들면 덮인다). 틱 · 메모는 localStorage에 남는다 -->
+<style>
+:root {
+  --bg: #f6f3ec; --panel: #fffdf8; --ink: #2a241c; --mute: #7a6f60; --line: #e2d9c8;
+  --accent: #8a3b1f; --accent-ink: #fff; --chip: #efe6d4; --done: #2f7a46; --done-bg: #e3f1e6;
+  --small: #a3401f; --clip: #8a6a12;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+    --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
+    --small: #f08a63; --clip: #e3c15a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17140f; --panel: #211c16; --ink: #ece4d6; --mute: #a39784; --line: #3a3229;
+  --accent: #d0774f; --accent-ink: #1a120c; --chip: #2e271f; --done: #7fcf95; --done-bg: #1f3325;
+  --small: #f08a63; --clip: #e3c15a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+h1 { margin: 0 0 6px; font-size: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar { flex: 1 1 200px; height: 10px; background: var(--chip); border-radius: 999px; overflow: hidden; min-width: 120px; }
+.bar > i { display: block; height: 100%; background: var(--done); width: 0; transition: width .2s; }
+.count { color: var(--mute); font-variant-numeric: tabular-nums; }
+button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 5px 11px; border-radius: 8px; cursor: pointer; }
+button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+details.how { margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+details.how summary { cursor: pointer; font-weight: 600; }
+details.how ul { margin: 6px 0 2px; padding-left: 20px; }
+code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; word-break: break-all; }
+main { max-width: 980px; margin: 0 auto; padding: 16px; }
+section { margin: 0 0 22px; }
+section > h2 { display: flex; gap: 10px; align-items: baseline; margin: 0 0 8px; font-size: 17px; }
+section > h2 .count { font-size: 14px; font-weight: 400; }
+.item { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin: 0 0 8px; }
+.item[data-done="1"] { background: var(--done-bg); border-color: var(--done); }
+.item-head { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; padding: 10px 12px; }
+.item-head input[type="checkbox"] { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--done); cursor: pointer; }
+.item-title { font-weight: 700; }
+.item-path { color: var(--mute); font-size: 14px; }
+.item-focus { font-size: 14px; margin-top: 2px; }
+.tag { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--chip); color: var(--mute); white-space: nowrap; }
+.tag.small { color: var(--small); }
+.tag.clip { color: var(--clip); }
+.item-body { padding: 0 12px 10px 44px; }
+.item-body summary { cursor: pointer; color: var(--mute); font-size: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+th, td { text-align: left; padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--mute); font-weight: 600; }
+td.k-small { color: var(--small); white-space: nowrap; }
+td.k-clip { color: var(--clip); white-space: nowrap; }
+td code { font-size: 12px; }
+textarea { width: 100%; min-height: 2.6em; margin-top: 8px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; }
+.hide-done .item[data-done="1"] { display: none; }
+.none { color: var(--mute); font-size: 14px; }
+@media (max-width: 560px) { .item-body { padding-left: 12px; } header { padding: 10px 12px; } main { padding: 12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>글자 크기 점검판 <span class="count" id="made"></span></h1>
+  <div class="row">
+    <div class="bar"><i id="all-bar"></i></div>
+    <span class="count" id="all-count"></span>
+    <button id="hide-done" type="button">끝난 것 숨기기</button>
+    <button id="export" type="button">진도 복사</button>
+    <button id="import" type="button">진도 붙여넣기</button>
+  </div>
+  <details class="how">
+    <summary>보는 법</summary>
+    <ul>
+      <li><b>기준</b> — 화면 글자는 <b>0.8rem 이상</b>(휴대폰 폭 390px에서 약 12px). 그림 안의 글자는 제외. 스타일시트는 일괄로 올려 두었다.</li>
+      <li><b>볼 것</b> — 잘리거나 말줄임(…)된 글 · 두 줄로 접혀 칸이 커진 곳 · 겹친 글 · 장수 레벨 배지 자리(레벨 열을 없애고 이름 오른쪽에).</li>
+      <li><b>자동 검사</b> — <code>tools/font_audit.ts</code>가 화면을 돌며 잰 것. <span class="tag small">작음</span> 0.8rem 미만 · <span class="tag clip">잘림</span> 칸보다 넓은 글(넘친 px). 순회가 못 여는 화면은 손으로만 본다.</li>
+      <li><b>열기</b> — 개발 서버 <code>http://localhost:5173</code>. 전투 데모는 주소 뒤에 <code>?demo=1…</code>. 가로 화면은 <code>?orient=landscape</code>, 언어는 설정에서.</li>
+      <li><b>틱 · 메모</b>는 이 브라우저에 남는다(파일을 다시 만들어도 그대로). 다른 기기로 옮길 때는 [진도 복사] → [진도 붙여넣기].</li>
+    </ul>
+  </details>
+</header>
+<main id="board"></main>
+<script>
+const DATA = {"made": "2026-11-18", "langs": ["en", "ko"], "sections": [{"id": "main", "title": "1. 메인 · 공용 팝업", "items": [{"id": "common", "title": "공통 — 여러 화면에 함께 뜨는 것", "path": "어느 화면이든", "focus": "머리 제목 · [뒤로] 단추 · 쪽 넘김처럼 5개 화면 이상에서 잡힌 것. 한 번 고치면 전부 고쳐진다", "scenes": [], "auto": [{"kind": "clip", "sel": "header.scr-head > h1.brand", "text": "만인의 삼국지", "rem": 1.047, "px": 77, "where": ["49개 화면", "en·세로", "ko·가로", "ko·세로"], "screen": "메인 (성 안)"}, {"kind": "clip", "sel": "div.place-bar > span.place-nm", "text": "궁궐", "rem": 1.149, "px": 77, "where": ["43개 화면", "en·세로", "ko·가로", "ko·세로"], "screen": "궁궐 현황"}, {"kind": "clip", "sel": "div.place-bar > button.btn.ghost.sm", "text": "도시로", "rem": 0.797, "px": 77, "where": ["42개 화면", "en·세로", "ko·가로", "ko·세로"], "screen": "궁궐 현황"}, {"kind": "clip", "sel": "div.ofc-row.ofc-thead > span.c-gr", "text": "Grade", "rem": 0.802, "px": 6, "where": ["6개 화면", "en·세로"], "screen": "장수 목록"}], "covered": true}, {"id": "main", "title": "메인 (성 안)", "path": "로그인 뒤 첫 화면", "focus": "건물 밑 설명 글자 · 머리 통계", "scenes": ["10-main"], "auto": [{"kind": "small", "sel": "div.scr-art > tspan", "text": "장수와 정사를 살핀다", "rem": 0.618, "px": 22, "where": ["ko·가로"]}, {"kind": "clip", "sel": "footer.foot > button.btn.ghost.sm", "text": "[테스트] 도시 삭제", "rem": 0.799, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}, {"id": "main-ext", "title": "산 너머 전경", "path": "메인 → 산 너머", "focus": "건물 밑 설명 글자(그림 위에 얹은 글)", "scenes": ["11-main-ext"], "auto": [{"kind": "small", "sel": "div.scr-art > tspan", "text": "장수와 정사를 살핀다", "rem": 0.62, "px": 22, "where": ["ko·가로"]}, {"kind": "clip", "sel": "footer.foot > button.btn.ghost.sm", "text": "[테스트] 도시 삭제", "rem": 0.799, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}, {"id": "settings", "title": "설정 팝업", "path": "메인 → 설정", "focus": "계정 ID · 「음성 더빙」 · 음량 숫자", "scenes": ["12-main-settings"], "auto": [{"kind": "small", "sel": "div.scr-art > tspan", "text": "장수와 정사를 살핀다", "rem": 0.623, "px": 22, "where": ["ko·가로"]}, {"kind": "clip", "sel": "footer.foot > button.btn.ghost.sm", "text": "[테스트] 도시 삭제", "rem": 0.799, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}, {"id": "mail", "title": "우편함", "path": "머리의 우편 아이콘", "focus": "보관함 칸 이름(0.45 → 0.8rem) · 받은 시각 · 선물 목록 · 오류 — 우편이 있어야 보인다", "scenes": ["13-main-mail"], "auto": [], "covered": false}, {"id": "info", "title": "사용 안내", "path": "머리의 안내 아이콘", "focus": "안내 줄 · 쪽 표시(0.55 → 0.8rem)", "scenes": ["14-main-info"], "auto": [], "covered": false}, {"id": "logout", "title": "로그아웃 확인", "path": "설정 → [로그아웃]", "focus": "확인 문구", "scenes": ["15-main-logout"], "auto": [], "covered": false}, {"id": "title", "title": "간판 · 로그인", "path": "로그아웃 상태", "focus": "간판 · 로그인 팝업", "scenes": ["00-title", "01-login"], "auto": [{"kind": "clip", "sel": "div.title-hero > span.ln1", "text": "만인의", "rem": 3.432, "px": 77, "where": ["ko·가로", "ko·세로"]}, {"kind": "clip", "sel": "div.title-hero > span.ln2", "text": "삼국지", "rem": 3.432, "px": 77, "where": ["ko·가로", "ko·세로"]}, {"kind": "clip", "sel": "div.title-form > button.btn.wide", "text": "언어 (Language)", "rem": 0.899, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}, {"kind": "clip", "sel": "div.title-form > button.btn.primary.wide", "text": "입장", "rem": 0.899, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}, {"kind": "clip", "sel": "div.title-hero > span.solo", "text": "Everyone's Three Kingdoms", "rem": 1.924, "px": 21, "where": ["en·세로"]}], "covered": true}, {"id": "newgame", "title": "새 계정 — 도시 이름 · 오프닝", "path": "새 계정 가입", "focus": "이름 입력 · 오프닝 대사", "scenes": ["02-newgame", "03-opening-a", "03-opening-b"], "auto": [{"kind": "clip", "sel": "div.newgame-guide > p.lede", "text": "체스 기물의 이동 규칙을 빌린 삼국지 장수 260명의 전술 대전입니다.먼", "rem": 0.849, "px": 21, "where": ["en·세로", "ko·세로"]}, {"kind": "clip", "sel": "div.newgame-guide > p.hint", "text": "도시 이름은 나중에 바꿀 수 있습니다. ※ 금화가 들고, 한 번 바꾸면 ", "rem": 0.799, "px": 21, "where": ["en·세로", "ko·세로"]}, {"kind": "clip", "sel": "div.newgame-form > button.btn.primary", "text": "시작하기", "rem": 0.899, "px": 21, "where": ["en·세로", "ko·세로"]}, {"kind": "clip", "sel": "div.newgame-form > button.btn", "text": "뒤로 가기", "rem": 0.899, "px": 21, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "raid", "title": "도적떼 알림 · 방어전 결과", "path": "도적떼가 왔을 때 메인", "focus": "알림 · 결과 글자 — 순회가 못 여는 화면", "scenes": [], "auto": [], "covered": false}]}, {"id": "palace", "title": "2. 궁궐", "items": [{"id": "palace-status", "title": "궁궐 현황", "path": "메인 → 궁궐", "focus": "도시 · 궁궐 레벨 · 황제 · 등용 장수 네 칸", "scenes": ["20-palace"], "auto": [], "covered": true}, {"id": "palace-rename", "title": "도시 이름 변경 팝업", "path": "궁궐 → [이름 변경]", "focus": "안내문 · 입력칸", "scenes": ["20b-palace-rename"], "auto": [], "covered": true}, {"id": "officers", "title": "장수 목록", "path": "궁궐 → [장수 관리]", "focus": "레벨 열이 없어지고 이름 오른쪽에 레벨 배지 · 표 머리 · 쪽 넘김 [처음]/[끝]", "scenes": ["21-officers"], "auto": [], "covered": true}, {"id": "officers-sort", "title": "장수 목록 — 정렬 팝업", "path": "장수 목록 → 정렬 단추", "focus": "정렬 기준 글자", "scenes": ["22e-officer-sort"], "auto": [], "covered": true}, {"id": "officer-card", "title": "장수 상세", "path": "장수 목록 → 아무 장수", "focus": "레벨 배지(능력치 줄 맨 앞) · 열전(0.7 → 0.8rem) · 책략 줄 · 병기 효과 · 부상 이유", "scenes": ["22-officer-detail"], "auto": [], "covered": true}, {"id": "officer-levelup", "title": "장수 상세 — 레벨/스킬 관리", "path": "장수 상세 → [레벨/스킬]", "focus": "제목의 레벨 배지 · 책략 조건문 · 능력 선택 줄", "scenes": ["22b-officer-levels"], "auto": [], "covered": true}, {"id": "officer-skill", "title": "장수 상세 — 고유기술 팝업", "path": "장수 상세 → 고유기술 배너", "focus": "기술 설명 · SP", "scenes": ["22c-officer-skill"], "auto": [], "covered": true}, {"id": "officer-records", "title": "장수 상세 — 전적", "path": "장수 상세 → [전적]", "focus": "제목의 레벨 배지 · 전적 표 머리 · 판 기록 줄", "scenes": ["22d-officer-records"], "auto": [], "covered": true}, {"id": "officer-injured", "title": "장수 상세 — 부상 장수", "path": "장수 목록 → 부상 표시가 있는 장수 → [부상]", "focus": "부상 · 남은 시간 · 막힌 이유(.64 → .8rem)", "scenes": [], "auto": [], "covered": false}, {"id": "city", "title": "도시 관리", "path": "궁궐 → [도시 관리]", "focus": "자재 줄 · 건물 이름(자동 축소 하한) · 막힌 이유", "scenes": ["23-city"], "auto": [], "covered": true}, {"id": "buildings", "title": "건물 관리", "path": "도시 관리 → [건물 관리]", "focus": "건물 줄 · [증축] 단추(영어 Upgrade가 0.56rem까지 줄던 자리)", "scenes": ["24-buildings"], "auto": [], "covered": true}, {"id": "buildings-confirm", "title": "건물 관리 — 짓기 확인 · 완료 팝업", "path": "건물 관리 → [짓기]/[증축]", "focus": "확인 · 완료 팝업 글자", "scenes": ["24b-buildings-build"], "auto": [], "covered": false}]}, {"id": "barracks", "title": "3. 병영", "items": [{"id": "barracks", "title": "병영", "path": "메인 → 병영", "focus": "명령 단추 · 안내문", "scenes": ["30-barracks"], "auto": [], "covered": true}, {"id": "squads", "title": "부대 관리", "path": "병영 → [부대 관리]", "focus": "돌격대 · 수성군 줄 · 전적 칸", "scenes": ["32-squads"], "auto": [], "covered": true}, {"id": "squad-edit-def", "title": "부대 편집 (수비대)", "path": "부대 관리 → 수비대 칸", "focus": "레벨 열이 없어지고 이름 옆 배지 · 표 머리 · 「자리 없음」 획", "scenes": ["35-squad-edit"], "auto": [], "covered": true}, {"id": "squad-edit-atk", "title": "부대 편집 (공격대)", "path": "부대 관리 → 공격대 칸", "focus": "위와 같음", "scenes": ["35b-squad-edit-atk"], "auto": [], "covered": true}, {"id": "squad-pick", "title": "부대 편집 — 장수 고르기", "path": "부대 편집 → 빈 줄/장수 바꾸기", "focus": "고르기 표(레벨 배지)", "scenes": ["35e-squad-pick"], "auto": [], "covered": false}, {"id": "squad-swap", "title": "부대 편집 — 기물 바꾸기", "path": "부대 편집 → 기물 아이콘", "focus": "기물 이름 단추", "scenes": ["35d-squad-swap"], "auto": [], "covered": true}, {"id": "squad-deploy", "title": "부대 배치 편집", "path": "부대 편집 → [배치]", "focus": "판 좌표 눈금(0.54 → 0.8rem) · 장수 카드 띠 · 두루마리 안내(자동 축소 하한)", "scenes": ["35c-squad-deploy"], "auto": [], "covered": true}, {"id": "garrison-policy", "title": "수비군 설정", "path": "부대 편집(수비대) → [수비군 설정]", "focus": "방침 설명문(0.6 → 0.8rem) · 탭 · 선택지 보조문", "scenes": ["36-garrison-policy"], "auto": [], "covered": true}, {"id": "sortie", "title": "출정", "path": "병영 → [출정하기]", "focus": "표 머리 · 부대원 이름 · 군량 · 쪽 넘김", "scenes": ["37-sortie"], "auto": [{"kind": "clip", "sel": "div.srt-open > span.srt-nm", "text": "3vs3 Attack Squad", "rem": 0.801, "px": 41, "where": ["en·세로"]}, {"kind": "clip", "sel": "div.srt-open > span.srt-who", "text": "Zhou Yu, Li Dian, Liao Hua", "rem": 0.8, "px": 15, "where": ["en·세로"]}], "covered": true}, {"id": "sortie-peek", "title": "출정 — 부대 보기 팝업", "path": "출정 → 부대 줄의 보기", "focus": "레벨 열이 없어지고 이름 옆 배지 · 표 머리", "scenes": ["37b-sortie-peek"], "auto": [{"kind": "clip", "sel": "div.srt-open > span.srt-nm", "text": "3vs3 Attack Squad", "rem": 0.801, "px": 41, "where": ["en·세로"]}, {"kind": "clip", "sel": "div.srt-open > span.srt-who", "text": "Zhou Yu, Li Dian, Liao Hua", "rem": 0.8, "px": 15, "where": ["en·세로"]}], "covered": true}, {"id": "siege", "title": "공성전 — 칠 도시 고르기", "path": "출정 → 공성전", "focus": "도시 줄 · 자동 매칭 안내", "scenes": ["38-siege"], "auto": [{"kind": "clip", "sel": "div.srt-open > span.srt-who", "text": "Cao Zhi, Zhang He, Geng Wu", "rem": 0.798, "px": 67, "where": ["en·세로"]}, {"kind": "clip", "sel": "div.srt-open > span.srt-nm", "text": "글자-75b6", "rem": 0.798, "px": 2, "where": ["en·세로", "ko·세로"]}, {"kind": "clip", "sel": "span.srt-nm > small", "text": "Lv6", "rem": 0.8, "px": 2, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "match", "title": "매칭", "path": "출정 → 야전/자동 매칭", "focus": "상대 표 머리 · 안내문", "scenes": ["39-match"], "auto": [], "covered": true}, {"id": "tutorials", "title": "튜토리얼 목록", "path": "병영 → [튜토리얼]", "focus": "목록 · 소개", "scenes": ["31-tutorials"], "auto": [], "covered": true}]}, {"id": "market", "title": "4. 장터", "items": [{"id": "market", "title": "장터 첫 화면", "path": "메인 → 장터", "focus": "명령 단추", "scenes": ["40-market"], "auto": [], "covered": true}, {"id": "market-shop", "title": "상점", "path": "장터 → [상점]", "focus": "상품 카드 글자", "scenes": ["41-market-openShop"], "auto": [], "covered": true}, {"id": "market-merc", "title": "상점 — 용병(가챠)", "path": "상점 → [용병]", "focus": "뽑기 안내 · 결과 카드", "scenes": ["42-market-openMerc"], "auto": [], "covered": true}, {"id": "market-items", "title": "상점 — 아이템", "path": "상점 → [아이템]", "focus": "효과 설명(0.64 → 0.8rem) · 표 머리 · 종류 · 쪽 넘김", "scenes": ["42-market-openItems"], "auto": [], "covered": true}, {"id": "market-goods", "title": "상점 — 물자", "path": "상점 → [물자]", "focus": "효과 · 「되돌릴 연구가 없다」 · 제조/보유 칸", "scenes": ["42-market-openGoods"], "auto": [], "covered": true}, {"id": "market-gold", "title": "금화", "path": "장터 → [금화]", "focus": "묶음 가격 · 안내문", "scenes": ["41-market-openGold"], "auto": [{"kind": "clip", "sel": "div.place-body.mkt-body.mkt-body-flow > p.mkt-charge-have", "text": "보유 : 480", "rem": 0.848, "px": 21, "where": ["en·세로", "ko·세로"]}], "covered": true}]}, {"id": "ext", "title": "5. 산 너머 (확장 도시)", "items": [{"id": "academy", "title": "태학", "path": "산 너머 → 태학", "focus": "연구 줄 · 레벨 표기", "scenes": ["60-academy"], "auto": [], "covered": true}, {"id": "academy-pick", "title": "태학 — 연구 고르기", "path": "태학 → [연구]", "focus": "책략 엠블럼 「+」 · 개량 설명", "scenes": ["60b-academy-pick"], "auto": [{"kind": "small", "sel": "span.tac-icon.acd-emblem > b.tac-icon-plus", "text": "+", "rem": 0.564, "px": 14.9, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}, {"id": "farm", "title": "농지", "path": "산 너머 → 농지", "focus": "보초병 표(레벨 열 → 이름 옆 배지) · 잠긴 줄 획", "scenes": ["61-farm"], "auto": [{"kind": "clip", "sel": "div.place-panel.frm-status > p.hint", "text": "농지가 아직 없다 — 도시 관리에서 지으면 보초병 자리가 열리고, 그날부", "rem": 0.8, "px": 77, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}, {"id": "hospital", "title": "병원", "path": "산 너머 → 병원", "focus": "부상 장수 줄(이름 옆 배지 · 페널티 줄)", "scenes": ["62-hospital"], "auto": [], "covered": true}, {"id": "hospital-admit", "title": "병원 — 입원시킬 장수 고르기", "path": "병원 → [입원]", "focus": "고르기 표", "scenes": ["62b-hospital-admit"], "auto": [], "covered": true}, {"id": "forge", "title": "대장간", "path": "산 너머 → 대장간", "focus": "병기 표 머리 · 제조/보유 칸 · 해설", "scenes": ["63-forge"], "auto": [], "covered": true}, {"id": "forge-craft", "title": "대장간 — 제조", "path": "대장간 → [제조]", "focus": "제조 팝업", "scenes": ["63b-forge-craft"], "auto": [], "covered": true}]}, {"id": "board", "title": "6. 대자보", "items": [{"id": "board", "title": "대자보", "path": "메인 → 대자보", "focus": "명령 단추", "scenes": ["50-board"], "auto": [{"kind": "clip", "sel": "footer.foot > button.btn.ghost.sm", "text": "[테스트] 도시 삭제", "rem": 0.801, "px": 21, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "ranking", "title": "랭킹 메뉴", "path": "대자보 → [랭킹]", "focus": "요약 판", "scenes": ["51-ranking"], "auto": [], "covered": true}, {"id": "ranking-city", "title": "도시 랭킹", "path": "랭킹 → 도시", "focus": "표 머리 · 줄", "scenes": ["52-ranking-city"], "auto": [], "covered": true}, {"id": "ranking-squad", "title": "부대 랭킹", "path": "랭킹 → 부대 → 줄 펼치기", "focus": "[구성 보기](0.56 → 0.8rem) · 구성 표(레벨 열 → 이름 옆 배지)", "scenes": ["53-ranking-squad"], "auto": [{"kind": "clip", "sel": "button.rk-row.rk-clickable > span.rk-nm", "text": "3vs3 Attack Squad", "rem": 0.811, "px": 79, "where": ["en·세로"]}], "covered": true}, {"id": "ranking-officer", "title": "장수 랭킹", "path": "랭킹 → 장수", "focus": "레벨 열 → 이름 옆 배지 · [구성 보기]", "scenes": ["54-ranking-officer"], "auto": [{"kind": "clip", "sel": "span.rk-nm.rk-nm-lv > span.rk-nm-t", "text": "하후돈", "rem": 0.803, "px": 61, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "collection", "title": "컬렉션", "path": "대자보 → [컬렉션]", "focus": "시대 띠(0.6 → 0.8rem) · 줄 설명 · [랭킹 보기] · 쪽 넘김", "scenes": ["55-collection"], "auto": [], "covered": true}, {"id": "collection-ranking", "title": "컬렉션 랭킹 팝업", "path": "컬렉션 → [랭킹 보기]", "focus": "순위 줄", "scenes": ["55b-collection-ranking"], "auto": [], "covered": true}, {"id": "defense", "title": "방어 기록", "path": "대자보 → [방어 기록]", "focus": "안내문 · 기록 줄(새 기록 · 낡음 표시)", "scenes": ["56-defense"], "auto": [{"kind": "clip", "sel": "button.btn.pg-btn > span.pg-lbl", "text": "처음", "rem": 0.791, "px": 5, "where": ["en·세로", "ko·가로", "ko·세로"]}], "covered": true}]}, {"id": "battle", "title": "7. 전투", "items": [{"id": "battle-deploy", "title": "배치", "path": "출정 → 매칭 → 전투 (데모: ?demo=1&deploy=1)", "focus": "「자동 포커싱」(0.6 → 0.8rem) · 배치 판 · 고유기술 목록", "scenes": ["80-battle-deploy"], "auto": [], "covered": true}, {"id": "battle-3v3", "title": "전투 3v3", "path": "데모: ?demo=1&sp=25", "focus": "게임 정보 · 대화창 [...] · 순서 판 · 명령 판", "scenes": ["81-battle-3v3"], "auto": [{"kind": "small", "sel": "span.oc-bar > b", "text": "50/50", "rem": 0.717, "px": 19.5, "where": ["en·세로", "ko·세로"]}, {"kind": "small", "sel": "div.oc-in > div.oc-skill.oc-noskill", "text": "—", "rem": 0.793, "px": 21.3, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "battle-5v5", "title": "전투 5v5", "path": "데모: ?demo=1&mode=5v5&sp=25", "focus": "SP MAX 안내 · 맥락 판", "scenes": ["82-battle-5v5"], "auto": [{"kind": "small", "sel": "span.oc-bar > b", "text": "50/50", "rem": 0.717, "px": 19.5, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "battle-popup", "title": "전투 — 장수 팝업", "path": "판의 장수를 누름", "focus": "레벨 배지(등급 배지 옆) · 능력치 · 책략 칩 — 순회가 못 여는 화면", "scenes": [], "auto": [], "covered": false}, {"id": "battle-tip", "title": "전투 — 툴팁 · 정찰 · 책략 확인", "path": "아이콘에 손가락 · [책략 확인]", "focus": "툴팁 본문 · 정찰 표 — 순회가 못 여는 화면", "scenes": [], "auto": [], "covered": false}, {"id": "battle-siege", "title": "수성전", "path": "데모: ?demo=1&siege=1&mode=3v3", "focus": "성채 · 게임 정보", "scenes": ["83-battle-siege"], "auto": [], "covered": true}, {"id": "battle-duel", "title": "일기토 · 설전", "path": "데모: ?demo=1&duel=1", "focus": "물음 · 합 · 받는 팝업", "scenes": ["84-battle-duel"], "auto": [{"kind": "small", "sel": "span.oc-bar > b", "text": "50/50", "rem": 0.717, "px": 19.5, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "battle-tutorial", "title": "튜토리얼 전투", "path": "?tutorial=basic-1", "focus": "대사 판 · 목표 표", "scenes": ["85-tutorial"], "auto": [{"kind": "small", "sel": "span.oc-bar > b", "text": "10/10", "rem": 0.717, "px": 19.5, "where": ["en·세로", "ko·세로"]}], "covered": true}, {"id": "result", "title": "결과 (승 · 패)", "path": "전투가 끝나면", "focus": "보상 칸 · 전적", "scenes": ["70-result-win", "71-result-lose"], "auto": [], "covered": true}, {"id": "replay", "title": "방어 기록 리플레이", "path": "방어 기록 → [다시 보기]", "focus": "관전 화면 — 순회가 못 여는 화면", "scenes": [], "auto": [], "covered": false}]}]};
+const KEY = 'samchess.fontcheck.v1';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* 저장이 막혀도 화면은 돈다 */ } };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+document.getElementById('made').textContent = `· 자동 검사 ${DATA.made} (${DATA.langs.join(', ') || '없음'})`;
+const board = document.getElementById('board');
+const counters = [];
+
+for (const sec of DATA.sections) {
+  const s = el('section'); s.id = sec.id;
+  const h = el('h2'); h.append(el('span', null, sec.title));
+  const c = el('span', 'count'); h.append(c);
+  s.append(h);
+  counters.push(() => { const d = sec.items.filter((i) => state[i.id]?.done).length; c.textContent = `${d} / ${sec.items.length}`; });
+  for (const it of sec.items) {
+    const st = state[it.id] ?? (state[it.id] = {});
+    const box = el('div', 'item'); box.dataset.done = st.done ? '1' : '0';
+    const head = el('div', 'item-head');
+    const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!st.done; cb.setAttribute('aria-label', `${it.title} 완료`);
+    cb.addEventListener('change', () => { st.done = cb.checked; st.at = cb.checked ? new Date().toISOString().slice(0, 16).replace('T', ' ') : undefined; box.dataset.done = cb.checked ? '1' : '0'; save(); refresh(); });
+    const mid = el('div');
+    mid.append(el('div', 'item-title', it.title), el('div', 'item-path', it.path), el('div', 'item-focus', it.focus));
+    const tags = el('div', 'row');
+    const nSmall = it.auto.filter((a) => a.kind === 'small').length;
+    const nClip = it.auto.filter((a) => a.kind === 'clip').length;
+    if (!it.covered) tags.append(el('span', 'tag', '손으로만'));
+    if (nSmall) tags.append(el('span', 'tag small', `작음 ${nSmall}`));
+    if (nClip) tags.append(el('span', 'tag clip', `잘림 ${nClip}`));
+    head.append(cb, mid, tags);
+    box.append(head);
+    const body = el('div', 'item-body');
+    if (it.auto.length) {
+      const det = el('details'); det.append(el('summary', null, `자동 검사가 잡은 것 ${it.auto.length}곳`));
+      const tb = el('table'); const tr0 = el('tr');
+      for (const t of ['종류', '글', '요소', '어디서']) tr0.append(el('th', null, t));
+      tb.append(tr0);
+      for (const a of it.auto) {
+        const tr = el('tr');
+        tr.append(el('td', a.kind === 'small' ? 'k-small' : 'k-clip', a.kind === 'small' ? `작음 ${a.rem}rem` : `잘림 +${a.px}px`));
+        tr.append(el('td', null, a.text));
+        const td = el('td'); td.append(el('code', null, a.sel)); tr.append(td);
+        tr.append(el('td', null, a.where.join(' ')));
+        tb.append(tr);
+      }
+      det.append(tb); body.append(det);
+    } else if (it.covered) {
+      body.append(el('div', 'none', '자동 검사가 잡은 것 없음'));
+    }
+    const memo = el('textarea'); memo.placeholder = '고칠 것 · 메모'; memo.value = st.memo ?? '';
+    memo.addEventListener('input', () => { st.memo = memo.value || undefined; save(); });
+    body.append(memo);
+    box.append(body);
+    s.append(box);
+  }
+  board.append(s);
+}
+
+function refresh() {
+  const all = DATA.sections.flatMap((s) => s.items);
+  const done = all.filter((i) => state[i.id]?.done).length;
+  document.getElementById('all-count').textContent = `${done} / ${all.length} 화면`;
+  document.getElementById('all-bar').style.width = `${(done / all.length) * 100}%`;
+  counters.forEach((f) => f());
+}
+refresh();
+
+const hideBtn = document.getElementById('hide-done');
+let hide = false;
+try { hide = localStorage.getItem(KEY + '.hide') === '1'; } catch { /* */ }
+const applyHide = () => { document.body.classList.toggle('hide-done', hide); hideBtn.classList.toggle('on', hide); };
+applyHide();
+hideBtn.addEventListener('click', () => { hide = !hide; try { localStorage.setItem(KEY + '.hide', hide ? '1' : '0'); } catch { /* */ } applyHide(); });
+
+document.getElementById('export').addEventListener('click', async () => {
+  const text = JSON.stringify(state);
+  try { await navigator.clipboard.writeText(text); alert('진도를 복사했습니다.'); } catch { prompt('아래 글을 복사하세요', text); }
+});
+document.getElementById('import').addEventListener('click', () => {
+  const text = prompt('복사해 둔 진도를 붙여넣으세요');
+  if (!text) return;
+  try { state = JSON.parse(text); save(); location.reload(); } catch { alert('진도 글이 올바르지 않습니다.'); }
+});
+</script>
+</body>
+</html>

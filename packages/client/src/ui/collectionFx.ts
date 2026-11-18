@@ -29,6 +29,7 @@ import {
   type Side,
 } from '@samchess/rules';
 import { t } from '../i18n/index.ts';
+import { fontFloorPx } from '../screens/fontFloor.ts';
 
 /** 장면 · 덱 목록의 한 장 — 글은 화면이 다국어로 조립해 넘긴다 */
 export interface DeckCard {
@@ -466,7 +467,8 @@ function fitLine(el: HTMLElement): void {
   range.selectNodeContents(el);
   const room = el.clientWidth * 0.98;
   let size = base;
-  while (range.getBoundingClientRect().width > room && size > base * 0.7) {
+  const floor = Math.min(base, Math.max(base * 0.7, fontFloorPx()));   // 하한 0.8rem(2026-11-18)
+  while (range.getBoundingClientRect().width > room && size - base * 0.04 >= floor) {
     size -= base * 0.04;
     el.style.fontSize = `${size}px`;
   }

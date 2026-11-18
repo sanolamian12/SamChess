@@ -59,6 +59,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { GameIcon, ModeIcon } from './GameIcon.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 
 export function RecordsPanel({ profile, officer, onClose }: {
   profile: PlayerProfile;
@@ -98,7 +99,7 @@ export function RecordsPanel({ profile, officer, onClose }: {
         <h3 className="lvp-title">
           <GradeBadge grade={data.grade} />
           {' '}{pickOfficerName(data)}{' '}
-          <span className="lv">Lv{inst.level}</span>
+          <LevelBadge level={inst.level} className="lv" />
         </h3>
 
         {/* 전체 / 온라인 / AI — 장수 일람의 [정렬 필터]와 같은 틀

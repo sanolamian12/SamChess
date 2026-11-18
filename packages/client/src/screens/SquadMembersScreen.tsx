@@ -63,6 +63,7 @@ import { SquadHead, SquadLine } from './SquadListScreen.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
 import { BlinkGlow, STAND_GLOW, equipBlink, itemBlink } from './BlinkGlow.tsx';
 import type { BlinkTone } from './BlinkGlow.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
 import { pieceArtUrl } from '../ui/pieceIcon.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
@@ -304,7 +305,6 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
           <div className="frm-grow frm-thead" aria-hidden="true">
             <span className="pc">{t('squad.col.piece')}</span>
             <span className="nm">{t('squads.col.members')}</span>
-            <span className="lv">{t('officers.col.level')}</span>
             <span className="st">{t('squad.col.status')}</span>
             <span className="eq">{t('squad.col.equip')}</span>
           </div>
@@ -358,8 +358,8 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
                       <OfficerStand officer={data.id} title={pickOfficerName(data)} />
                     </span>
                     <span className="nm-text">{pickOfficerName(data)}</span>
+                    <LevelBadge level={inst.level} />
                   </span>
-                  <span className="lv">Lv{inst.level}</span>
                   <span className="st" data-field="status" data-injured={hurt ? '1' : '0'}>
                     <HealthIcon hurt={hurt} label={hurt ? t('squad.status.injured') : t('squad.status.ok')} />
                   </span>

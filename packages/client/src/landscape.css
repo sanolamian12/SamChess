@@ -217,7 +217,7 @@
 /* 머리 판은 좁은 단이라 카드 다섯 칸을 작게 */
 :root[data-orient="landscape"] .scr-squad-deploy .sqb-roster { --sqb-stand: 2.3rem; --band: 1.2rem; gap: .2rem; }
 :root[data-orient="landscape"] .scr-squad-deploy .sqb-card { padding-left: .15rem; padding-right: .15rem; }
-:root[data-orient="landscape"] .scr-squad-deploy .sqb-card-at { left: .2rem; right: .2rem; font-size: .62rem; }
+:root[data-orient="landscape"] .scr-squad-deploy .sqb-card-at { left: .2rem; right: .2rem; font-size: .8rem; }
 /* 판 — 3 : 2를 지키며 높이에 맞춘다 */
 :root[data-orient="landscape"] .scr-squad-deploy .sqb-stage {
   height: calc(100% - 3.2rem); max-width: 100%; justify-self: center; align-self: center; display: flex;
