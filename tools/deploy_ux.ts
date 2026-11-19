@@ -17,11 +17,12 @@ import { newInstance } from '@samchess/meta';
 import type { RosterPick, Squad } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { shotDir } from './shotDir.ts';
 
 const BASE = process.env['BASE'] ?? 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
-const SHOTS = process.env['SHOTS'] ?? '.';
+const SHOTS = process.env['SHOTS'] ?? shotDir('deploy_ux');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 /** 무엇만 찍을지 — `atk-3v3,def-5v5`처럼. 없으면 넷 다 */
 const ONLY = (process.env['SLOTS'] ?? '').split(',').filter(Boolean);
 

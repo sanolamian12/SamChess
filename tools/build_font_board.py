@@ -30,17 +30,11 @@ SHORT = {"ko": "KR", "en": "EN", "es_419": "ES", "it": "IT", "ja": "JA", "mn": "
 # 점검이 끝난 화면 — 캡처를 지우고 다시 만들지 않는다. 판에서는 「완료」로 굳는다 (2026-11-19 기획자, 1단원)
 CLOSED = {"main", "main-ext", "settings", "mail", "info", "logout", "title", "newgame"}
 
-# 지난 캡처(2026-11-18) 뒤로 바뀐 화면 — 판에서 「바뀜」 표지와 함께 무엇이 바뀌었는지 보인다
-CHANGED: dict[str, str] = {
-    "palace-rename": "빨간 「지금과 같은 이름이다」 줄을 걷었다 — 같은 이름이면 [변경한다]만 꺼진다(쿨다운 · 금화 부족은 내관이 말한다)",
-    "officers": "새 배치 — 맨 위 총원 줄 · 검색 · 열 머리 정렬(네온) · 이름 칸에 등급 · 레벨 · 한 쪽 여덟 명 · 바닥 [뒤로 가기]",
-    "officer-card": "뒤에 깔린 장수 일람의 바닥이 총원 판에서 [뒤로 가기] 판으로",
-    "buildings": "[도시 증축] 밑의 막힌 이유 줄을 걷고 내관이 말한다",
-    "buildings-confirm": "[도시 증축] 밑의 막힌 이유 줄을 걷고 내관이 말한다",
-    "barracks": "출정 막힘 이유 줄을 걷고 무관이 말한다",
-    "match": "「AI 대전은 전적이 기록되지 않습니다」 줄을 걷고 무관이 말한다",
-    "squad-pick": "등급 · [정렬 필터] 단추를 걷고 검색칸을 판 맨 위로 · 열 머리를 눌러 정렬 · 이름 칸에 등급 · 레벨",
-}
+# 지난 캡처 뒤로 바뀐 화면 — 판에서 「바뀜」 표지와 함께 무엇이 바뀌었는지 보인다(새로 짠 판이라 지금은 비었다)
+CHANGED: dict[str, str] = {}
+
+# 판에 올리는 단원 — **메인 건물 하나씩** 만들고 · 보고 · 고치고 · 끝낸다 (2026-11-19 기획자, 판을 새로 짰다). 다음 건물은 여기에 더한다
+ACTIVE = ["palace"]
 
 # 로드맵 — (id, 화면, 가는 길, 볼 것, 순회 장면 이름들). 장면이 없으면 순회가 못 연 화면이다(손으로만 본다).
 ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
@@ -62,18 +56,20 @@ ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
         ("mail-list", "우편함 — 우편이 여러 통 있을 때", "머리의 우편 아이콘(우편 · 선물이 와 있을 때)",
          "목록 · 선물 칸 · 받기 결과 — 판 디자인을 다시 이야기하기로 함", []),
     ]),
-    ("palace", "2. 궁궐", [
-        ("palace-status", "궁궐 현황", "메인 → 궁궐", "도시 · 궁궐 레벨 · 황제 · 등용 장수 네 칸", ["20-palace"]),
-        ("palace-rename", "도시 이름 변경 팝업", "메인 → 도시 이름 오른쪽 붓 배지(2026-11-19 궁궐에서 옮겼다)", "안내문 · 입력칸", ["20b-palace-rename"]),
-        ("officers", "장수 목록", "궁궐 → [장수 관리]", "총원 줄 · 검색 · 열 머리(눌러 정렬, 네온) · 이름 칸(등급 · 레벨 배지) · 한 쪽 여덟 명 · 쪽 넘김 · [뒤로 가기]", ["21-officers"]),
-        ("officer-card", "장수 상세", "장수 목록 → 아무 장수", "레벨 배지(능력치 줄 맨 앞) · 열전(0.7 → 0.8rem) · 책략 줄 · 병기 효과 · 부상 이유", ["22-officer-detail"]),
-        ("officer-levelup", "장수 상세 — 레벨/스킬 관리", "장수 상세 → [레벨/스킬]", "제목의 레벨 배지 · 책략 조건문 · 능력 선택 줄", ["22b-officer-levels"]),
+    ("palace", "궁궐", [
+        ("palace-status", "궁궐 현황", "메인 → 궁궐", "붉은 옻칠 판 · 도시 / 궁궐 레벨 배지와 후광 · 장수 수 · 황제(E 마크 · 금빛 후광) · 아래 단추 둘", ["20-palace"]),
+        ("palace-rename", "도시 이름 변경 팝업", "메인 → 도시 이름 오른쪽 붓 배지(궁궐에서 옮겼다)", "제목 · 입력칸 · 금화 · 단추", ["20b-palace-rename"]),
+        ("officers", "장수 일람", "궁궐 → [장수 일람]", "총원 줄 · 검색 · 열 머리 정렬(네온) · 이름 칸(등급 · 레벨) · 한 쪽 여덟 명 · 쪽 넘김 · [뒤로 가기]", ["21-officers"]),
+        ("officer-card", "장수 상세", "장수 일람 → 아무 장수",
+         "이름 줄(금빛 획 · 등급 광택 · 레벨 · 자) · 능력치 판(장수 · 후광 · 여섯 값 · 밑줄) · 책략 두루마리 · 고유 기술 · 열전 · [아이템] · [레벨/스킬 관리] · [뒤로 가기]", ["22-officer-detail"]),
+        ("officer-noskill", "장수 상세 — 고유 기술 없는 장수", "장수 일람 → C · D급 장수", "「고유 기술 없음」 명패", ["22e-officer-noskill"]),
+        ("officer-levelup", "장수 상세 — 레벨/스킬 관리", "장수 상세 → [레벨/스킬 관리]", "제목의 레벨 배지 · 책략 조건문 · 능력 선택 줄", ["22b-officer-levels"]),
         ("officer-skill", "장수 상세 — 고유기술 팝업", "장수 상세 → 고유기술 배너", "기술 설명 · SP", ["22c-officer-skill"]),
-        ("officer-items", "장수 상세 — 아이템", "장수 상세 → [아이템]", "병기 · 아이템 고르기 팝업(병영 부대 편집과 같은 것)", ["22d-officer-items"]),
-        ("officer-injured", "장수 상세 — 부상 장수", "장수 목록 → 부상 표시가 있는 장수 → [부상]", "부상 · 남은 시간 · 막힌 이유(.64 → .8rem)", []),
-        ("city", "도시 관리", "궁궐 → [도시 관리]", "자재 줄 · 건물 이름(자동 축소 하한) · 막힌 이유", ["23-city"]),
-        ("buildings", "건물 관리", "도시 관리 → [건물 관리]", "건물 줄 · [증축] 단추(영어 Upgrade가 0.56rem까지 줄던 자리)", ["24-buildings"]),
-        ("buildings-confirm", "건물 관리 — 짓기 확인 · 완료 팝업", "건물 관리 → [짓기]/[증축]", "확인 · 완료 팝업 글자", ["24b-buildings-build"]),
+        ("officer-items", "장수 상세 — 아이템", "장수 상세 → [아이템]", "병기 · 아이템 고르기(병영 부대 편집과 같은 것)", ["22d-officer-items"]),
+        ("officer-injured", "장수 상세 — 부상 장수", "장수 일람 → 부상 표시가 있는 장수 → [부상]", "부상 · 남은 시간 · [입원]", []),
+        ("city", "도시 관리", "궁궐 → [도시 관리]", "자재 줄 · 건물 일곱 줄(레벨 배지) · 증축 조건", ["23-city"]),
+        ("buildings", "건물 관리", "도시 관리 → [건물 관리]", "건물 줄(레벨 배지 → 배지) · [증축] · [도시 증축]", ["24-buildings"]),
+        ("buildings-confirm", "건물 관리 — 짓기 확인 · 완료 팝업", "건물 관리 → [짓기]/[증축]", "확인 · 완료 팝업(이름 + 큰 레벨 배지)", ["24b-buildings-build"]),
     ]),
     ("barracks", "3. 병영", [
         ("barracks", "병영", "메인 → 병영", "명령 단추 · 안내문", ["30-barracks"]),
@@ -165,6 +161,8 @@ def main() -> int:
     dirs = {lang: Path(path) for lang, _, path in (a.partition("=") for a in args.shots)}
     sections = []
     for sid, title, items in ROADMAP:
+        if sid not in ACTIVE:
+            continue
         sections.append({"id": sid, "title": title, "items": [
             {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes, "closed": iid in CLOSED, "changed": CHANGED.get(iid, ""),
              "shots": shots_of(dirs, iid, scenes) if scenes and iid not in CLOSED else []}

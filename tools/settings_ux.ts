@@ -13,9 +13,10 @@
  *  - 활을 누르면 그 갈래만 음소거(활 오른쪽 아래 금지 표시) · 과녁을 쏘면 풀린다 · 칸 숫자는 이름과 같은 줄에서 안 겹친다
  */
 import { chromium } from 'playwright';
+import { shotDir } from './shotDir.ts';
 
 const BASE = process.env['BASE'] ?? 'http://localhost:5173';
-const SHOTS = process.env['SHOTS'] ?? '.';
+const SHOTS = process.env['SHOTS'] ?? shotDir('settings_ux');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 const fail = (m: string): never => { throw new Error(m); };
 const ok = (m: string): void => console.log(`  ✓ ${m}`);
 

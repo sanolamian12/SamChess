@@ -18,11 +18,12 @@ import { defaultSquadCells, newInstance } from '@samchess/meta';
 import type { RosterPick, Squad } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { shotDir } from './shotDir.ts';
 
 const BASE = 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
-const OUT = process.env['OUT'] ?? '.';
+const OUT = process.env['OUT'] ?? shotDir('font_audit');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 const ORIENT = process.env['ORIENT'] ?? 'portrait';
 // VIEW=635x1160 — 세로 화면 크기를 바꿔 찍는다(짧은 창에서 판이 넘치는지 볼 때)
 const [VIEW_W, VIEW_H] = (process.env['VIEW'] ?? '').split('x').map(Number).filter((n) => n > 0) as [number?, number?];
@@ -136,6 +137,8 @@ async function seed(): Promise<void> {
   for (const o of OFFICERS.slice(0, 24)) if (!roster[o.id]) roster[o.id] = newInstance(o.id as OfficerId);
   // OFFICER=<id> — 장수 상세를 그 장수로 연다(계정에 들인다)
   if (process.env['OFFICER'] && !roster[process.env['OFFICER']]) roster[process.env['OFFICER']] = newInstance(process.env['OFFICER'] as OfficerId);
+  // 고유기술이 없는 장수 하나(장면 22e)
+  if (!roster['gyeong-mu']) roster['gyeong-mu'] = newInstance('gyeong-mu' as OfficerId);
   for (const g of ['S', 'A', 'E']) {
     const o = OFFICERS.find((x) => x.grade === g && !roster[x.id]);
     if (o) roster[o.id] = newInstance(o.id as OfficerId);
@@ -238,6 +241,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22-officer-detail', { name: 'officers', officer: firstOfficer }],
     ['22b-officer-levels', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="levels"]'); }],
     ['22c-officer-skill', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="skill"]'); }],
+    ['22e-officer-noskill', { name: 'officers', officer: 'gyeong-mu' }],
     ['22d-officer-items', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="heldOpen"]'); }],
     ['23-city', { name: 'city' }],
     ['24-buildings', { name: 'buildings' }],

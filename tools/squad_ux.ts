@@ -16,11 +16,12 @@ import { defaultSquadCells, newInstance } from '@samchess/meta';
 import type { RosterPick, Squad } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { shotDir } from './shotDir.ts';
 
 const BASE = process.env['BASE'] ?? 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
-const SHOTS = process.env['SHOTS'] ?? '.';
+const SHOTS = process.env['SHOTS'] ?? shotDir('squad_ux');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 /** 화면 언어 — 가장 긴 번역(몽골어 `mn`)으로 넘침을 본다. 없으면 한국어 */
 const LANG = process.env['LANG_UI'] ?? '';
 

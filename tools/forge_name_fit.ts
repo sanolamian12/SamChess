@@ -14,11 +14,12 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
+import { shotDir } from './shotDir.ts';
 
 const BASE = 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
-const SHOTS = process.env['SHOTS'] ?? '.';
+const SHOTS = process.env['SHOTS'] ?? shotDir('forge_name_fit');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 const LANGS = (process.env['LANGS'] ?? 'ko,en,ja,zh_Hant,pt_BR,it,es_419,mn').split(',');
 
 const email = `forge-fit-${randomUUID()}@samchess.test`;
