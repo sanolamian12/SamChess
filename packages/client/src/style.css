@@ -1838,6 +1838,7 @@ img.no-art { visibility: hidden; }
 /* 고유기술 팝업 — 환경설정과 같은 껍데기 위에 배너만 얹는다 (38쪽 아래) */
 .ofc-skill-modal .row { font-size: .8rem; line-height: 1.6; }
 .ofc-skill-modal .row .k { color: #79808b; white-space: pre; }
+.ofc-skill-modal .row .row-body { display: block; }   /* 유래의 이야기 · 효과의 내용은 제목 줄 다음 줄부터 */
 .ofc-skill-modal .row b { color: #f0c674; }
 .ofc-skill-modal .reading { margin-left: .35rem; font-size: .8rem; color: #8b929c; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
@@ -10089,7 +10090,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   display: flex; flex-direction: column;
 }
 .ofcard-back > .ofcard-modal > .ofcard { flex: 1 1 auto; min-height: 0; }
-.ofcard-back .ofcard-story { flex: 1 1 auto; min-height: 3rem; overflow-y: auto; }
+.ofcard-back .ofcard-story { flex: 1 1 auto; min-height: 3rem; overflow: hidden; }   /* 스크롤은 막는다 — 다 드는데 몇 px 넘쳐 스크롤이 생기던 장수가 있었다(2026-11-19 기획자) */
 /* 단추 무리는 바닥에 — 열전이 없는 장수(42명)도 단추 자리가 같다 */
 .ofcard-back .ofcard > :not(.btn) + .btn { margin-top: auto; }
 .ofcard-courtesy { font-size: .85rem; color: #6b5a44; font-weight: 400; }

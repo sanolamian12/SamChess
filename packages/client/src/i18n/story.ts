@@ -59,6 +59,12 @@ export function pickSkillName(skill: Pick<UniqueSkillData, 'name' | 'nameI18n'>)
   return skill.nameI18n?.[currentLang()] ?? skill.name;
 }
 
+/** 기술 유래를 「[출처]」와 이야기로 가른다 — 출처 줄 다음 줄에 이야기를 띄운다(2026-11-19 기획자). 대괄호가 없으면 출처는 빈칸 */
+export function splitOrigin(origin: string): { source: string; story: string } {
+  const m = /^\s*(\[[^\]]*\])\s*/.exec(origin);
+  return m ? { source: m[1]!, story: origin.slice(m[0].length) } : { source: '', story: origin };
+}
+
 /**
  * 고유기술 효과 서술 — `pickOfficerName`과 같은 규약(물러날 곳이 「한국어
  * 그 자체」). `origin`(`pickStory`, 없으면 줄째로 사라짐)과 다르게 효과

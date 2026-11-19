@@ -15,7 +15,7 @@
 import { skillById } from '@samchess/data';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
-import { pickCastDelay, pickSkillName, pickSkillText, pickStory } from '../i18n/story.ts';
+import { pickCastDelay, pickSkillName, pickSkillText, pickStory, splitOrigin } from '../i18n/story.ts';
 import { skillArtUrl } from './art.ts';
 import { skillPanelGroup } from '../screens/SkillModal.tsx';
 
@@ -58,9 +58,18 @@ export class SkillPanel {
 
     const rows: HTMLElement[] = [name];
     const origin = pickStory(skill.origin);
-    if (origin) rows.push(field('origin', t('skill.origin'), origin));
+    if (origin) {
+      // 「[출처]」까지 제목 줄, 이야기는 다음 줄 — `SkillModal`과 같다
+      const { source, story } = splitOrigin(origin);
+      const row = field('origin', t('skill.origin'), source);
+      row.append(text('span', 'row-body', story));
+      rows.push(row);
+    }
+    const effect = el('p', 'row');
+    effect.dataset.field = 'effect';
+    effect.append(key(t('skill.effect')), text('span', 'row-body', pickSkillText(skill)));
     rows.push(
-      field('effect', t('skill.effect'), pickSkillText(skill)),
+      effect,
       field('sp', t('skill.sp'), String(skill.spCost)),
       field('castDelay', t('skill.castDelay'), pickCastDelay(skill)),
     );

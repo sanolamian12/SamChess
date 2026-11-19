@@ -34,7 +34,7 @@ import { holdBgm } from '../audio/bgm.ts';
 import { playSfx } from '../audio/sfx.ts';
 import { playSkillVoice, stopSkillVoice } from '../audio/skillVoice.ts';
 import { t } from '../i18n/index.ts';
-import { pickCastDelay, pickStory, pickSkillName, pickSkillText } from '../i18n/story.ts';
+import { pickCastDelay, pickStory, pickSkillName, pickSkillText, splitOrigin } from '../i18n/story.ts';
 
 /** 고유기술 판 그림의 갈래 — S·E는 한 장, A · B는 따로(2026-11-19 기획자) */
 export function skillPanelGroup(skill: UniqueSkillData): 's-e' | 'a' | 'b' {
@@ -45,7 +45,8 @@ export function SkillModal({ skill, onClose }: {
   skill: UniqueSkillData;
   onClose: () => void;
 }): React.JSX.Element {
-  const origin = pickStory(skill.origin);
+  const originText = pickStory(skill.origin);
+  const origin = originText ? splitOrigin(originText) : undefined;
   const name = pickSkillName(skill);
   const text = pickSkillText(skill);
   // 판 그림이 등급별로 세 장(S·E급 / A급 / B급, 2026-11-19) — `style.css`의
@@ -76,11 +77,14 @@ export function SkillModal({ skill, onClose }: {
         {/* S/E급 고사 유래만 채워져 있다 — 없으면(A/B급) 줄째로 빠진다 */}
         {origin && (
           <p className="row" data-field="origin">
-            <span className="k">{t('skill.origin')}</span> : {origin}
+            <span className="k">{t('skill.origin')}</span> : {origin.source}
+            <span className="row-body">{origin.story}</span>
           </p>
         )}
         <p className="row" data-field="effect">
-          <span className="k">{t('skill.effect')}</span> : {text}
+          {/* 제목 줄 한 줄 아래부터 내용(2026-11-19 기획자) */}
+          <span className="k">{t('skill.effect')}</span>
+          <span className="row-body">{text}</span>
         </p>
         <p className="row" data-field="sp">
           <span className="k">{t('skill.sp')}</span> : {skill.spCost}
