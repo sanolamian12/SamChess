@@ -36,6 +36,11 @@ import { playSkillVoice, stopSkillVoice } from '../audio/skillVoice.ts';
 import { t } from '../i18n/index.ts';
 import { pickCastDelay, pickStory, pickSkillName, pickSkillText } from '../i18n/story.ts';
 
+/** 고유기술 판 그림의 갈래 — S·E는 한 장, A · B는 따로(2026-11-19 기획자) */
+export function skillPanelGroup(skill: UniqueSkillData): 's-e' | 'a' | 'b' {
+  return skill.tier === 'S' || skill.tier === 'E' ? 's-e' : skill.tier === 'A' ? 'a' : 'b';
+}
+
 export function SkillModal({ skill, onClose }: {
   skill: UniqueSkillData;
   onClose: () => void;
@@ -43,9 +48,9 @@ export function SkillModal({ skill, onClose }: {
   const origin = pickStory(skill.origin);
   const name = pickSkillName(skill);
   const text = pickSkillText(skill);
-  // 배경 패널이 등급별로 두 장(S+E급 / A+B급)이다 — `style.css`의
-  // `.ofc-skill-modal[data-tier-group]` 참조.
-  const tierGroup = skill.tier === 'S' || skill.tier === 'E' ? 's-e' : 'a-b';
+  // 판 그림이 등급별로 세 장(S·E급 / A급 / B급, 2026-11-19) — `style.css`의
+  // `.ofc-skill-modal[data-tier-group]` 참조. 전투의 `ui/skillPanel.ts`도 같은 함수를 쓴다.
+  const tierGroup = skillPanelGroup(skill);
   const preview = useSkillPreview(skill.id);
   return (
     <div className="modal-back" data-modal="skill" onClick={onClose}>

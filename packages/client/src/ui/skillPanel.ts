@@ -17,6 +17,7 @@ import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { pickCastDelay, pickSkillName, pickSkillText, pickStory } from '../i18n/story.ts';
 import { skillArtUrl } from './art.ts';
+import { skillPanelGroup } from '../screens/SkillModal.tsx';
 
 export class SkillPanel {
   constructor(private readonly root: HTMLElement) {
@@ -41,8 +42,8 @@ export class SkillPanel {
     if (!skill) return;
     playSfx('paper');
     const modal = el('div', 'modal ofc-skill-modal');
-    // 배경 판때기가 등급별로 두 장(S+E급 / A+B급) — `SkillModal`과 같은 갈래
-    modal.dataset.tierGroup = skill.tier === 'S' || skill.tier === 'E' ? 's-e' : 'a-b';
+    // 판 그림이 등급별로 세 장(S·E / A / B) — `SkillModal`과 같은 갈래
+    modal.dataset.tierGroup = skillPanelGroup(skill);
 
     const banner = document.createElement('img');
     banner.className = 'ofc-banner';

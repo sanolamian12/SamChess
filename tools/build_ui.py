@@ -14,7 +14,7 @@
 | `button_alart.png` | `public/ui/btn-alert.png` | 농지 [도적단 퇴치] (2026-09-21) |
 | `button_settings.png` 등 6종 | `public/icons/{id}.png` 128² | 아이콘 버튼 — `settings`만 화면에 붙었다(아래 참조) |
 | `panel_settings.png`·`plate_settings.png`·`chip_*.png` | `public/ui/…` | 환경설정 팝업 (2026-08-25) |
-| `panel_skill_a_b.png`·`panel_skill_s_e.png` | `public/ui/panel-skill-{ab,se}.png` | 고유기술 팝업 배경 — 등급별 차등(2026-09-03) |
+| `../new/고유스킬_{S_E,A,B}.png` | `public/ui/panel-skill-{se,a,b}.jpg` | 고유기술 팝업 판 — 등급 셋, 비율 그대로 통째로(2026-11-19, 옛 `panel_skill_*` 둘을 갈음) |
 | `panel_ledger.png`·`plate_wide.png` | `public/ui/panel-ledger.png`·`plate-wide.png` | 랭킹 표·「내 정보」 패널 · 화면 제목 바 (2026-08-27) |
 | `frame_gold_1.png` | `public/ui/frame-gold-1.png` | 장터 뽑기 방식 칸의 금빛 밧줄 테두리 — `.mkt-pull` (2026-09-24) |
 | `frame_gold_2.png` | `public/ui/frame-gold-2.png` | 전투 아이템·보관함 줄의 아이템 그림 액자 — `.mkt-irow .c-art` (2026-09-24) |
@@ -118,13 +118,7 @@ FRAMES: dict[str, str] = {
     "plate_settings": "plate-settings.png",
     "chip_neutral": "chip-neutral.png",
     "chip_selected": "chip-selected.png",
-    # 고유기술 팝업 배경(2026-09-03, `docs/PROMPT.md`의 프롬프트로 사용자가
-    # 생성해 넣는다) — `panel_settings`와 같은 자리·같은 9분할 기법
-    # (`style.css`의 `.ofc-skill-modal[data-tier-group]` 절). 등급별로 두
-    # 장(S+E급 / A+B급)이라 스킬의 `tier`에 따라 갈라 쓴다 — 안 받았으면
-    # 여느 프레임과 같이 그냥 건너뛴다.
-    "panel_skill_a_b": "panel-skill-ab.png",
-    "panel_skill_s_e": "panel-skill-se.png",
+    # (고유기술 팝업 배경 `panel_skill_a_b` · `panel_skill_s_e`는 2026-11-19에 등급 셋의 새 판 `SKILL_PANELS`로 갈음했다.)
     # 랭킹 3화면·장수 카드 화풍 확장(2026-08-27) — `style.css`의 「랭킹 3화면 ·
     # 장수 카드 화풍 확장」절. `panel_ledger`가 그 절의 `panel_settings.png`
     # 임시 배선을 대체하고, `plate_wide`는 `place-nm`(화면 제목 바)에 새로 붙는다.
@@ -469,6 +463,15 @@ LEVEL_BADGE_H = 120
 # → `public/icons/level/bld-{1..5}.png`, 화면은 `screens/LevelBadge.tsx`의 `BuildingLevelBadge`
 BUILDING_LEVEL_SRC = TUTORIAL_ICON_SRC / "건물 레벨.png"
 BUILDING_LEVEL_COUNT = 5
+
+# 고유기술 팝업 판 (2026-11-19 기획자) — 등급마다 한 장(S·E 자주 금룡 · A 진홍 은룡 · B 남색 구리룡), 887×1774(1 : 2).
+# 화면이 **비율 그대로 통째로** 깐다(`style.css`의 `.modal.ofc-skill-modal`). 불투명 RGB라 JPG로, 크기는 그대로.
+# 예전 두 장(`ui/panel_skill_a_b` · `panel_skill_s_e` → `panel-skill-{ab,se}.png`, 9분할 · 960×1432)을 갈음했다.
+SKILL_PANELS: dict[str, str] = {
+    "고유스킬_S_E": "panel-skill-se.jpg",
+    "고유스킬_A": "panel-skill-a.jpg",
+    "고유스킬_B": "panel-skill-b.jpg",
+}
 
 ICONS: dict[str, str] = {
     "button_settings": "settings",
@@ -1133,6 +1136,17 @@ def main() -> int:
         made_frames.append("slot-card.png")
     else:
         skipped += 1
+
+    # ── 고유기술 팝업 판 — 등급 셋, 통째로 ──
+    for stem, name in SKILL_PANELS.items():
+        src = TUTORIAL_ICON_SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"new/{stem}.png")
+        elif not up_to_date(OUT_UI / name, src):
+            Image.open(src).convert("RGB").save(OUT_UI / name, quality=88, optimize=True)
+            made_frames.append(name)
+        else:
+            skipped += 1
 
     # ── 건물 레벨 배지 — 한 줄 다섯 장 ──
     if not BUILDING_LEVEL_SRC.exists():

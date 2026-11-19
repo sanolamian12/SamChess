@@ -1843,23 +1843,25 @@ img.no-art { visibility: hidden; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
 .ofc-banner.no-art { display: none; }
 
-/* 고유기술 팝업 배경 — 등급별 그림 두 장(S+E급 / A+B급, `panel_skill_s_e.png`·`panel_skill_a_b.png`, 2026-09-03).
- * `SkillModal.tsx` · `ui/skillPanel.ts`(전투)가 `data-tier-group="s-e" | "a-b"`를 붙인다. 글자색은 크림 · 금. */
-/* 2026-11-19 기획자 — **그림(960×1432)의 비율을 바꾸지 않고 화면에 들어가는 가장 큰 크기로** 깐다.
+/* 고유기술 팝업 판 — 등급별 그림 세 장(2026-11-19 기획자, `assets/icons/new/고유스킬_{S_E,A,B}.png` → `panel-skill-{se,a,b}.jpg`):
+ * S·E 자주 바탕 금룡 · A 진홍 바탕 은룡 · B 남색 바탕 구리룡. `SkillModal.tsx`의 `skillPanelGroup()`이
+ * `data-tier-group="s-e" | "a" | "b"`를 붙인다(전투의 `ui/skillPanel.ts`도 같은 함수). 글자색은 크림 · 금. */
+/* 2026-11-19 기획자 — **그림(887×1774, 1 : 2)의 비율을 바꾸지 않고 화면에 들어가는 가장 큰 크기로** 깐다.
    9분할로 늘이던 옛 방식은 용 테두리가 내용 높이만큼 찌그러졌다. 가리개(`.modal-back`)를 크기 그릇으로 삼아
-   폭 = min(그릇 폭, 그릇 높이 × 960/1432)이고 높이는 비율이 낸다. 글자는 그림 안쪽 판(가로 13.5~86.5% ·
-   세로 12.2~89.4%) 안에 — 귀퉁이 장식을 피해 조금 더 들인다. 넘치면 판 안에서 내린다. */
+   폭 = min(그릇 폭, 그릇 높이 × 887/1774)이고 높이는 비율이 낸다. 글자는 그림 안쪽 판(가로 12.4~88% ·
+   세로 5.4~95.2%) 안에 — 옆 구름 장식(가로 15%까지)과 아래 귀퉁이 용머리(세로 86%부터)를 피해 더 들인다. 넘치면 판 안에서 내린다. */
 .modal-back[data-modal="skill"], #skillpop { container-type: size; }
 .modal.ofc-skill-modal {
-  --skw: min(100cqw, 100cqh * 960 / 1432);
-  --skh: calc(var(--skw) * 1432 / 960);
+  --skw: min(100cqw, 100cqh * 887 / 1774);
+  --skh: calc(var(--skw) * 1774 / 887);
   width: var(--skw); height: var(--skh); max-width: none; max-height: none; flex: none;
   background: transparent no-repeat center / 100% 100%;
   border: 0; border-radius: 0; color: #e9dfca;
-  padding: calc(var(--skh) * .13) calc(var(--skw) * .155) calc(var(--skh) * .112);
+  padding: calc(var(--skh) * .095) calc(var(--skw) * .16) calc(var(--skh) * .145);
 }
-.ofc-skill-modal[data-tier-group="s-e"] { background-image: url(ui/panel-skill-se.png); }
-.ofc-skill-modal[data-tier-group="a-b"] { background-image: url(ui/panel-skill-ab.png); }
+.ofc-skill-modal[data-tier-group="s-e"] { background-image: url(ui/panel-skill-se.jpg); }
+.ofc-skill-modal[data-tier-group="a"] { background-image: url(ui/panel-skill-a.jpg); }
+.ofc-skill-modal[data-tier-group="b"] { background-image: url(ui/panel-skill-b.jpg); }
 /* 글은 판 안에서 내리고(몽골어 · 긴 유래) 단추 둘은 판 바닥에 */
 .modal.ofc-skill-modal { overflow: hidden; }
 .ofc-skill-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .35rem; scrollbar-width: thin; scrollbar-color: #8a6a2a transparent; }
