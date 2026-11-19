@@ -10148,17 +10148,23 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 
 /* ── 건물 레벨 배지 · 궁궐 현황판 (2026-11-19 기획자) ─────────────────────────
-   건물 레벨은 글자(「Lv3」) 대신 배지 그림(`icons/level/bld-{1..5}.png`). 현황판의 「궁궐 Lv2」는 [건물 아이콘][배지]. */
-.bld-badge { display: inline-block; flex: none; height: 1.6em; width: auto; vertical-align: middle; object-fit: contain; }
-/* 후광 — Lv5(최대)만 보라, Lv4 이하는 흰빛 (2026-11-19 기획자) */
-.bld-badge { filter: drop-shadow(0 0 .12rem #fff) drop-shadow(0 0 .3rem #ffffffb3); }
-.bld-badge[data-level="5"] { filter: drop-shadow(0 0 .12rem #e2b6ff) drop-shadow(0 0 .35rem #a64dffd0); }
+   건물 레벨은 글자(「Lv3」) 대신 배지 그림(`icons/level/bld-{1..5}.png`). 현황판의 「궁궐 Lv2」는 [건물 아이콘][배지].
+   배지는 그림을 감싼 칸(`span.bld-badge`)이고, 그 뒤에 **둥근 후광**(`::before`)을 띄운다 — 윤곽선에 붙는 그림자(drop-shadow)는
+   양피지 위에서 거의 안 보였다(기획자). Lv5(최대)만 보라, Lv4 이하는 흰빛. */
+.bld-badge { position: relative; display: inline-flex; flex: none; height: 1.6em; vertical-align: middle; isolation: isolate; }
+.bld-badge > img { position: relative; z-index: 1; height: 100%; width: auto; object-fit: contain; }
+.bld-badge::before {
+  content: ''; position: absolute; z-index: 0; left: 50%; top: 50%; width: 200%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #ffffffe6 0%, #ffffffa6 28%, #ffffff40 50%, #fff0 70%);
+}
+.bld-badge[data-level="5"]::before { background: radial-gradient(circle, #f1d4ffee 0%, #c27bffb8 28%, #9a3dff55 50%, #9a3dff00 70%); }
 .bld-lv { display: inline-flex; align-items: center; gap: .15rem; vertical-align: middle; white-space: nowrap; }
 .bld-lv .gic { display: inline-flex; }
 .bld-lv .gic img { height: 1.9em; width: auto; }
-.bld-lv .bld-badge { height: 1.9em; }
+.bld-lv .bld-badge, .bld-lv .lv-badge { height: 1.9em; }
 .bld-step { display: inline-flex; align-items: center; gap: .2rem; white-space: nowrap; }
-.bld-step .bld-arrow { opacity: .8; }
+.bld-step .bld-arrow { opacity: .8; position: relative; z-index: 1; }
 .cty-bld .lv .bld-badge { height: 1.9em; }
 .modal.cty-ask .row.cty-ask-step .bld-step { justify-content: center; }
 .modal.cty-ask .row.cty-ask-step .bld-badge { height: 2.6rem; }
@@ -10168,15 +10174,24 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .cty-done .cty-done-badge { height: 3.4rem; }
 /* 궁궐 — 단추는 이름만 가운데 */
 .plc-cmds .btn.wide { justify-content: center; }
-/* 황제 — E급 표지 + 「황제」. 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자 */
+/* 궁궐 현황판의 두 레벨 줄(도시 · 궁궐) — 아이콘과 배지 사이를 아이콘 너비의 절반만큼, 두 줄이 같은 꼴이라 세로로 맞는다 */
+.plc-grid .bld-lv { gap: .95em; }
+.plc-grid .bld-lv .gic img { width: 1.9em; height: 1.9em; object-fit: contain; }
+.plc-grid .bld-lv .bld-badge, .plc-grid .bld-lv .lv-badge { height: 1.9em; }
+/* 황제 — E급 표지 + 「황제」. 없으면 회색조 · 회색 글자, 있으면 제 색 + 뒤에 금빛 둥근 후광(숨쉬기) · 검은 글자 */
 .plc-emperor { display: inline-flex; align-items: center; gap: .3rem; }
-.plc-emperor-mark { height: 1.7em; width: auto; flex: none; }
-.plc-cell[data-emperor="0"] .plc-emperor-mark { filter: grayscale(1) brightness(.95); opacity: .75; }
+.plc-emperor-mark { position: relative; display: inline-flex; flex: none; height: 1.7em; isolation: isolate; }
+.plc-emperor-mark > img { position: relative; z-index: 1; height: 100%; width: auto; }
+.plc-cell[data-emperor="0"] .plc-emperor-mark > img { filter: grayscale(1) brightness(.95); opacity: .75; }
 .plc-cell[data-emperor="0"] .plc-emperor-name { color: #8a7d6c; }
 .plc-cell[data-emperor="1"] .plc-emperor-name { color: #000; }
-.plc-cell[data-emperor="1"] .plc-emperor-mark { animation: emperor-halo 2.4s ease-in-out infinite; }
-@keyframes emperor-halo {
-  0%, 100% { filter: drop-shadow(0 0 .3rem #ffd76a) drop-shadow(0 0 .7rem #f0b52d); }
-  50% { filter: drop-shadow(0 0 .6rem #ffe28a) drop-shadow(0 0 1.4rem #f0b52dcc); }
+.plc-cell[data-emperor="1"] .plc-emperor-mark::before {
+  content: ''; position: absolute; z-index: 0; left: 50%; top: 50%; width: 400%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #fff3b0f0 0%, #ffd34dc0 18%, #f0b52d70 38%, #f0b52d00 68%);
+  transform: translate(-50%, -50%); animation: emperor-halo 2.4s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) { .plc-cell[data-emperor="1"] .plc-emperor-mark { animation: none; filter: drop-shadow(0 0 .6rem #f0b52d); } }
+@keyframes emperor-halo {
+  0%, 100% { opacity: .8; transform: translate(-50%, -50%) scale(.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) { .plc-cell[data-emperor="1"] .plc-emperor-mark::before { animation: none; } }

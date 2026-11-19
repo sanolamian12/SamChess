@@ -88,7 +88,9 @@ try {
     const nm = document.querySelector('.plc-name-row [data-field="cityName"]')?.getBoundingClientRect();
     const panel = document.querySelector('[data-field="palaceStatus"]')?.getBoundingClientRect();
     return {
-      cells, city: txt('cityLevel'), palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
+      cells, city: (document.querySelector('[data-field="palaceStatus"] [data-field="cityLevel"]') as HTMLElement | null)?.dataset.level ?? '',
+      // 도시 · 궁궐 두 줄의 배지가 세로로 줄을 맞추는가(2026-11-19 기획자) — 왼쪽 끝 차이
+      badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .lv-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); return a && b ? Math.round(Math.abs(a.left - b.left)) : 999; })(), palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
       emperor: (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor,
       renameInRow: !!document.querySelector('.plc-name-row [data-action="rename"]'),
       // [이름 변경]이 판 오른쪽 벽에 붙었는가 — 판 안쪽 오른쪽 끝과 단추 오른쪽 끝의 차이
@@ -107,6 +109,7 @@ try {
   console.log('   ', JSON.stringify(got));
   if (got.cells.join(',') !== 'cityLevel,emperor,palaceLevel,pool') fail(`네 칸 차례가 다르다 — ${got.cells.join(',')}`);
   if (!/4/.test(got.city) || /2/.test(got.city)) fail(`첫 칸이 도시 Lv4가 아니다 — "${got.city}"`);
+  if (got.badgeAlign > 1) fail(`도시 · 궁궐 레벨 배지가 세로로 안 맞는다 — ${got.badgeAlign}px`);
   if (!/2/.test(got.palace)) fail(`아랫줄 첫 칸이 궁궐 Lv2가 아니다 — "${got.palace}"`);
   const [l0, l1, l2, l3] = got.leftEdges;
   if (l0 !== l2 || l1 !== l3) fail(`두 단이 왼쪽 끝을 맞추지 않는다 — ${got.leftEdges.join(',')}`);

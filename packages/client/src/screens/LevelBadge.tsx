@@ -22,8 +22,10 @@ export function LevelBadge({ level, className }: { level: number; className?: st
  */
 export function BuildingLevelBadge({ level, className }: { level: number; className?: string }): React.JSX.Element {
   return (
-    <img className={`bld-badge${className ? ` ${className}` : ''}`} src={buildingBadgeUrl(level)}
-      alt={`Lv${level}`} title={`Lv${level}`} data-level={level} draggable={false} />
+    // 그림 뒤에 둥근 후광(`::before`)을 띄우려고 그림을 한 겹 감싼다 — Lv5 보라, Lv4 이하 흰빛(2026-11-19 기획자)
+    <span className={`bld-badge${className ? ` ${className}` : ''}`} data-level={level} title={`Lv${level}`}>
+      <img src={buildingBadgeUrl(level)} alt={`Lv${level}`} draggable={false} />
+    </span>
   );
 }
 

@@ -67,7 +67,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 import { buildingNameText } from './buildingText.ts';
-import { BuildingLevel } from './LevelBadge.tsx';
+import { BuildingLevel, LevelBadge } from './LevelBadge.tsx';
 
 
 /** 그림 화살표(`::before`)를 입힌 자리 — 거기서만 문구의 「← 」를 뗀다.
@@ -199,11 +199,17 @@ function PalaceStatus({ profile, onChange }: {
         </button>
       </div>
       <div className="plc-grid">
-        <span className="plc-cell" data-field="cityLevel">{t('city.summary.level', { level: profile.cityLevel })}</span>
+        {/* 도시 레벨 — [도시 아이콘][장수 레벨과 같은 배지] (2026-11-19 기획자). 아랫줄 궁궐과 칸 · 간격이 같아 세로로 줄이 맞는다 */}
+        <span className="plc-cell" data-field="cityLevel" data-level={profile.cityLevel}>
+          <span className="bld-lv plc-city-lv" title={t('city.summary.level', { level: profile.cityLevel })}>
+            <GameIcon name="city-upgrade" label={t('city.summary.level', { level: profile.cityLevel })} />
+            <LevelBadge level={profile.cityLevel} />
+          </span>
+        </span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
           {/* 황제 — E급 표지 + 「황제」(2026-11-19 기획자): 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자. 옹립 여부는 올리면 */}
           <span className="plc-emperor" title={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}>
-            <img className="plc-emperor-mark" src="icons/grade-e.png" alt="" draggable={false} />
+            <span className="plc-emperor-mark"><img src="icons/grade-e.png" alt="" draggable={false} /></span>
             <span className="plc-emperor-name">{t('city.emperor')}</span>
           </span>
         </span>
