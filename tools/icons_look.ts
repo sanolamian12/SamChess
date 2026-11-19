@@ -130,7 +130,7 @@ try {
     await page.waitForTimeout(400);
     await shot('a3-levelup');
   } else console.log('  · 장수 카드에 [레벨/스킬 관리]가 없다');
-  // 전적 판 — 장수 카드의 [전적 보기]
+  // 장수 카드 — 맨 윗줄 전적(출전 · 승 · 무 · 패 · 격파). [전적 보기] 판은 2026-11-19에 걷었다
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
   await page.click('.scr-main [data-place="palace"]', { force: true });
@@ -139,8 +139,6 @@ try {
   await page.click('.ofc-rows [data-officer]');
   await page.waitForTimeout(500);
   await shot('a2b-officer-card-first');
-  const rec = await page.$('[data-action="records"]');
-  if (rec) { await rec.click(); await page.waitForTimeout(600); await shot('a4-records'); }
   ok('궁궐');
 
   step('대자보 — 랭킹 셋');

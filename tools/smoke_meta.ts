@@ -1748,6 +1748,8 @@ const detail = await page.evaluate(() => {
     skill: !!card.querySelector('[data-action="skill"]'),
     levels: !!card.querySelector('[data-action="levels"]'),
     records: !!card.querySelector('[data-action="records"]'),
+    items: !!card.querySelector('[data-action="heldOpen"]'),
+    back: !!card.querySelector('[data-action="cardBack"]'),
     story: !!card.querySelector('.ofcard-story'),
   };
 });
@@ -1755,7 +1757,8 @@ if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${det
 // 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2).
 // 2026-10-26부터 HP · MP · AT 이름은 아이콘이라 글자가 없다 — 줄이 「최소-최대」로 끝나는지만 본다(AT가 마지막 칸)
 if (!/\d+-\d+$/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
-if (!detail.levels || !detail.records) fail('내 장수 카드인데 [레벨/스킬 관리]·[전적 보기]가 없다');
+if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [레벨/스킬 관리] · [뒤로 가기]가 다 있지 않다: ${JSON.stringify(detail)}`);
+if (detail.records) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
 // 전적은 「승 / 무 / 패」 세 칸이다 (v3). 누구에게 붙었는지는 시드가 정해 숫자는 못 박지 않는다
 if (!/\d+\s*\/\s*\d+\s*\/\s*\d+/.test(detail.rec)) fail(`전적이 「승 / 무 / 패」 모양이 아니다: "${detail.rec}"`);
 // 인물 서사는 **데이터에 있을 때만** 줄이 있다 — 없으면 줄째로 물러난다 (G1이 218/260명을 채웠다)
@@ -2249,12 +2252,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → ${PROFILE_VERSION} · 옛 평평한 전적은 0에서 시작`);
 }
 
-// ── 전적 관리 화면 (pptx 40쪽) ★ C1이 연 자리 ────────────────────
+// ── 장수 전적 (2026-11-19 기획자 — 기물 · 모드별 전적 판을 걷고 카드 맨 윗줄 하나) ──────
 //
-// 전투를 끝까지 돌리려면 몇 분이 걸리므로, **저장분에 전적을 심어 놓고** 화면이
-// 그것을 옳게 펴는지만 본다. 여기서 보는 것은 규칙이 아니라 **화면의 산수**다 —
-// 「기물별 합 = 총합」은 `npm test`가 이미 보지만, 화면이 필터를 한쪽에만 걸어
-// 표와 요약이 어긋나는 것은 여기서만 잡힌다.
+// 전투를 끝까지 돌리려면 몇 분이 걸리므로, **저장분에 전적을 심어 놓고** 카드의 출전 · 승 · 무 · 패 · 격파가
+// 칸(`{상대}/{모드}/{기물}`)의 합인지 본다 — 공성전 · 야전 · 3v3 · 5v5 · 기물이 다른 칸이 한 줄로 더해져야 한다.
 {
   const seeded = await apiGet();
   (seeded['roster'] as Record<string, any>)[who!].record = {
@@ -2287,76 +2288,16 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await toPalace();
   await page.click('[data-action="officers"]');
   await page.waitForTimeout(300);
-  // **2026-09-03부터 전면 화면이 아니라 카드 위 판이다**(`RecordsPanel`) — 레벨/스킬 관리와 같은 사연
   await openCardOf(who!);
-  await page.click('.ofcard-modal [data-action="records"]');
-  await page.waitForSelector('[data-screen="records-panel"]', { timeout: 5_000 })
-    .catch(() => fail('[전적 보기]를 눌렀는데 40쪽 판이 안 뜬다'));
-
-  /** 판이 내보내는 표 — 기물 여섯 줄 · 요약 세 줄(출전 수) · 이력 줄들 */
-  const board = () => page.evaluate(() => {
-    const scr = document.querySelector('[data-screen="records-panel"]')!;
-    const num = (el: Element, n: number) => Number(el.querySelectorAll('.c-n')[n]!.textContent);
-    return {
-      filter: (scr as HTMLElement).dataset.filter,
-      pieces: [...scr.querySelectorAll('.rec-row[data-piece]')].map((el) => ({
-        piece: (el as HTMLElement).dataset.piece!,
-        plays: num(el, 0), wins: num(el, 1), kills: num(el, 2),
-      })),
-      // 요약은 문장이 아니라 표다(2026-09-03) — 칸 첫째가 출전 수
-      sums: Object.fromEntries([...scr.querySelectorAll('[data-sum]')].map((el) =>
-        [(el as HTMLElement).dataset.sum!, `${num(el, 0)}전`])),
-      // 표 머리(`.rec-loghead`)에는 `data-seq`가 없다 — 줄만 센다
-      log: [...scr.querySelectorAll('.rec-log-row[data-seq]')].map((el) => ({
-        seq: (el as HTMLElement).dataset.seq!,
-        opponent: (el as HTMLElement).dataset.opponent!,
-        vs: el.querySelector('.c-vs')!.textContent!.trim(),
-        text: el.textContent!.trim(),
-      })),
-    };
+  const rec = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>('.ofcard-modal .ofcard-bar-rec .gic-tally');
+    return el ? { p: el.dataset.p, w: el.dataset.w, d: el.dataset.d, l: el.dataset.l, k: el.dataset.k } : null;
   });
-
-  const all = await board();
-  if (all.pieces.length !== 6) fail(`기물 표가 여섯 줄이 아니다 — ${all.pieces.length}줄 (40쪽 목업 고정)`);
-  const king = all.pieces.find((r) => r.piece === 'King')!;
-  const queen = all.pieces.find((r) => r.piece === 'Queen')!;
-  if (king.plays !== 3 || king.wins !== 2 || king.kills !== 5) fail(`King 줄이 다르다: ${JSON.stringify(king)}`);
-  if (queen.plays !== 1) fail(`Queen 줄이 다르다: ${JSON.stringify(queen)}`);
-  // **기물별 합 = 총합** — 화면이 필터를 한쪽에만 걸면 여기서 갈린다
-  const sumPlays = all.pieces.reduce((n, r) => n + r.plays, 0);
-  if (!all.sums['total']!.includes(`${sumPlays}전`)) {
-    fail(`총합이 기물별 합(${sumPlays})과 다르다: "${all.sums['total']}"`);
-  }
-  if (!all.sums['3v3']!.includes('3전') || !all.sums['5v5']!.includes('1전')) {
-    fail(`모드별 요약이 다르다: ${JSON.stringify(all.sums)}`);
-  }
-  if (all.log.length !== 2) fail(`이력이 두 줄이 아니다 — ${all.log.length}줄`);
-  if (all.log[0]!.seq !== '2') fail('이력의 최근 것이 위가 아니다');
-  if (all.log[1]!.vs !== '공명') fail(`온라인 상대 id가 안 보인다: "${all.log[1]!.vs}"`);
-  if (all.log[0]!.vs !== '수비성') fail(`공성전 판의 상대(방어자)가 안 보인다: "${all.log[0]!.vs}"`);
-  if (!all.log[1]!.text.includes('5%')) fail(`예상 승률이 안 보인다: "${all.log[1]!.text}"`);
-  console.log(`✓ 전적 관리 — 기물 6줄(King ${king.plays}전 ${king.wins}승 ${king.kills}격파) · ${all.sums['total']}`);
-
-  // 필터 — 세지 않는 대신 갈라 본다 (2026-08-18 기획자 확정)
-  // 늘 펴 둔 칩이 아니라 [필터] 팝업이다(2026-09-03, 장수 일람의 [정렬 필터]와 같은 틀)
-  const pickFilter = async (value: string): Promise<void> => {
-    await page.click('[data-screen="records-panel"] [data-action="sortMenu"]');
-    await page.waitForSelector('.rk-pop', { timeout: 3_000 }).catch(() => fail('[필터]를 눌렀는데 팝업이 안 뜬다'));
-    await page.click(`.rk-pop [data-value="${value}"]`);
-    await page.waitForTimeout(200);
-  };
-  await pickFilter('siege');
-  const ai = await board();
-  if (ai.filter !== 'siege') fail('필터를 눌렀는데 화면이 안 바뀐다');
-  if (!ai.sums['total']!.includes('1전')) fail(`공성전만 걸렀는데 총합이 다르다: "${ai.sums['total']}"`);
-  if (ai.pieces.find((r) => r.piece === 'King')!.plays !== 0) fail('공성전 필터에 야전 판이 섞여 있다');
-  if (ai.log.length !== 1 || ai.log[0]!.opponent !== 'siege') fail('이력에 필터가 안 걸린다');
-
-  await pickFilter('field');
-  const online = await board();
-  if (!online.sums['total']!.includes('3전')) fail(`야전만 걸렀는데 총합이 다르다: "${online.sums['total']}"`);
-  if (online.log.length !== 1 || online.log[0]!.opponent !== 'field') fail('야전 필터가 공성전 판을 남긴다');
-  console.log(`✓ 전적 필터 — 전체 ${sumPlays}전 · 공성전 1전 · 야전 3전 (표·요약·이력이 함께 걸린다)`);
+  // King 3전 2승 1패 5격파 + Queen 1전 1무 1격파 → 4전 2승 1무 1패 6격파
+  if (JSON.stringify(rec) !== JSON.stringify({ p: '4', w: '2', d: '1', l: '1', k: '6' })) fail(`카드의 전적이 칸의 합이 아니다: ${JSON.stringify(rec)}`);
+  if (await page.$('.ofcard-modal [data-action="records"]')) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
+  console.log('✓ 장수 전적 — 카드 맨 윗줄이 칸의 합(4전 2승 1무 1패 6격파) · [전적 보기] 없음');
+  await closeCard();
 }
 
 // ── 도시 관리 (pptx 41쪽) ★ C2가 연 자리 ────────────────────────

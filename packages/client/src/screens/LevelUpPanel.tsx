@@ -44,8 +44,7 @@
  *
  * **판의 윗변은 카드 그림(`.ofcard-art`)이 끝나는 바로 그 지점이다**
  * (2026-09-02 두 번째 지정 — "캐릭터 이미지가 끝나는 바로 끝지점으로"). 재는
- * 자리는 `useOfficerCardOverlayPos()`(`RankingCommon.tsx`) 하나다 — 전적 보기
- * 판(`RecordsPanel.tsx`)도 같은 훅을 쓴다(그 파일 머리말 참조).
+ * 자리는 `useOfficerCardOverlayPos()`(`RankingCommon.tsx`) 하나다.
  *
  * ────────────────────────────────────────────────────────────────
  * 세 번째 지정 — 개발용은 상점으로, 글자 크기 통일, 버튼 화풍 통일
@@ -104,7 +103,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   /** 「보유 책략」에서 누른 엠블럼 — 그 책략의 두루마리를 띄운다 */
   const [peek, setPeek] = useState<string | null>(null);
   // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 —
-  // "장수정보 패널과 똑같이"). `RecordsPanel`이 이미 같은 이유로 쓰던 앵커다
+  // "장수정보 패널과 똑같이"). 옛 전적 보기 판(2026-11-19에 걷었다)이 먼저 쓰던 앵커다
   // (`RankingCommon.tsx`의 `useOfficerCardOverlayPos` 주석 참조) — 예전 기본값
   // `'art'`(그림 아래)보다 위쪽 여유가 커져, 「고르기」 걸음의 내용이 늘어도
   // 안 잘리고 판 안 스크롤이 잘 안 생긴다.

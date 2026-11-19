@@ -184,11 +184,7 @@ export function FilterRow({ children }: { children: React.ReactNode }): React.JS
 
 /**
  * [정렬 필터] 버튼 → 세 기준이 세로로 뜨는 팝업 (50~52쪽 오른쪽 다이어그램).
- * **정렬 전용이 아니다** — `RecordsPanel`(전적 보기 판)의 전체/온라인/AI
- * 필터도 같은 틀을 쓴다(2026-09-03, "필터 버튼과 필터 상태 표출 버튼과 같은
- * 구성으로"). 그 화면은 「정렬」이 아니라 「필터」라 버튼 글자가 다르다 —
- * `buttonLabel`을 안 주면 예전 그대로 `t('ranking.sortBtn')`("정렬 필터")다,
- * 기존 네 자리(랭킹 셋 + 장수 일람)는 안 건드린다.
+ * `buttonLabel`을 안 주면 `t('ranking.sortBtn')`("정렬 필터")다.
  */
 export function SortMenu<T extends string>({ options, value, onChange, label, buttonLabel }: {
   options: readonly T[]; value: T; onChange: (v: T) => void; label: (v: T) => string;
@@ -347,13 +343,10 @@ export function useRankingRows<Row>(
  * **기준점은 둘 중 하나다** — `'art'`(카드 그림(`.ofcard-art`)이 끝나는
  * 지점, `LevelUpPanel`의 기본값, 2026-09-02 지정 — "캐릭터 이미지가 끝나는
  * 바로 끝지점으로")와 `'top'`(카드(`.ofcard`) 자체가 시작하는 지점,
- * `RecordsPanel`이 쓴다, 2026-09-03 지정 — "시작점을 장수 정보 패널과
- * 똑같은 y 위치에서 표출해도 돼", 표가 여럿이라 더 긴 패널이 필요해서다).
+ * 레벨/스킬 관리 판이 쓴다, 2026-09-03 지정 — "시작점을 장수 정보 패널과
+ * 똑같은 y 위치에서 표출해도 돼").
  *
- * **패널마다 따로 재지 않는다** — 레벨/스킬 관리 판에서 처음 쓰던 것을
- * 전적 보기 판(`RecordsPanel.tsx`)도 그대로 쓴다. 각자 재게 두면 언젠가
- * 한쪽만 고쳐 어긋난다(CLAUDE.md의 "값을 두 번 적으면 한쪽만 낡는다"와 같은
- * 결). 카드가 먼저 그려진 뒤에만 잴 수 있으므로 **패널이 뜬 다음에** 재고,
+ * **패널마다 따로 재지 않는다** — 카드 위에 겹쳐 뜨는 판은 이 훅 하나로 잰다. 카드가 먼저 그려진 뒤에만 잴 수 있으므로 **패널이 뜬 다음에** 재고,
  * 못 찾으면(드문 경합) 예전처럼 화면 아래에 붙는 CSS 기본값으로 물러난다.
  */
 export function useOfficerCardOverlayPos(anchor: 'art' | 'top' = 'art'): {
@@ -399,11 +392,6 @@ export interface CardAction {
   onPress: () => void;
   /** 지금은 못 하는 이유 — 있으면 단추가 꺼지고 그 밑에 이유가 뜬다 */
   blocked?: string | null;
-  /**
-   * 맨 위에 서는 단추 하나 — 있으면 차례가 **[이것] · [뒤로 가기] · [그 일]**이 된다(그 일이 맨 아래).
-   * 부대 편집의 [아이템](오른쪽에 지닌 것 그림 · 비었으면 빈 칸 그림) → 해제하기가 맨 아래 (2026-11-17 기획자)
-   */
-  lead?: { label: string; icon?: React.ReactNode; onPress: () => void; action: string };
 }
 
 /**
@@ -413,16 +401,16 @@ export interface CardAction {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, action }: {
+export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsSub, levelsEligible, equip, injury, action }: {
   row: OfficerRankRow; onClose: () => void;
-  /** 있으면 카드 아래 단추가 [그 일] · [뒤로 가기]다 (2026-11-16 기획자, 농지 보초병) —
-      고르는 팝업에서는 옥색 [선택하기], 세운 보초병에서는 붉은 [해제하기]. [레벨/스킬 관리] · [전적 보기]보다 앞선다 */
+  /** 있으면 카드 맨 아래, [뒤로 가기] 밑에 그 자리의 한 수 (2026-11-16 기획자, 농지 보초병) —
+      고르는 팝업에서는 옥색 [선택하기], 세운 보초병 · 부대원에서는 붉은 [해제하기] */
   action?: CardAction;
-  /** 있으면 카드 안에 [레벨/스킬 관리]·[전적 보기] 단추가 뜬다 — 내 장수라 더
-      갈 곳이 있을 때만 준다(`OfficerListScreen`). 다른 계정의 장수(랭킹)는
-      안 준다 — 그 계정을 관리할 수 없으니까. 둘은 늘 같이 준다(둘 다 「내
-      장수」에서만 뜻이 있다), 그래서 하나만 주는 경우는 다루지 않는다. */
-  onLevels?: () => void; onRecords?: () => void;
+  /** 있으면 카드 안에 [레벨/스킬 관리] 단추가 뜬다 — 내 장수일 때만 준다(`OfficerDetailModal`).
+      다른 계정의 장수(랭킹)는 안 준다 — 그 계정을 관리할 수 없으니까. */
+  onLevels?: () => void;
+  /** 있으면 [레벨/스킬 관리] 위에 [아이템] — 병기 · 아이템 고르기(2026-11-19 기획자, 병영 부대 편집과 같은 단추). 내 장수일 때만 */
+  onItems?: () => void;
   /** [레벨/스킬 관리] 오른쪽에 붙는 보유 카드 수 — 「{have} / {need}장」 같은
       이미 만들어진 문구를 caller(`OfficerListScreen`)가 넘긴다. 여기서 다시
       계산하지 않는다 — 카드 수는 `profile.cards`에서 나오는데, 이 카드는
@@ -451,12 +439,12 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
   const [tacticOpen, setTacticOpen] = useState<string | null>(null);
   const tactic = tacticOpen ? tacticById.get(tacticOpen) : undefined;
   return (
-    <div className="modal-back" onClick={onClose}>
+    <div className="modal-back ofcard-back" onClick={onClose}>
       <div className="ofcard-modal" data-officer={row.officer} onClick={(e) => e.stopPropagation()}>
         <OfficerCard
           row={row} onClose={onClose}
           {...(onLevels ? { onLevels } : {})}
-          {...(onRecords ? { onRecords } : {})}
+          {...(onItems ? { onItems } : {})}
           {...(levelsSub !== undefined ? { levelsSub } : {})}
           {...(equip ? { equip } : {})}
           {...(injury ? { injury } : {})}
@@ -518,11 +506,11 @@ export function OfficerCardModal({ row, onClose, onLevels, onRecords, levelsSub,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligible, equip, injury, action, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligible, equip, injury, action, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   /** `OfficerCardModal`의 같은 이름 */
   action?: CardAction;
-  onLevels?: () => void; onRecords?: () => void; levelsSub?: string; levelsEligible?: boolean;
+  onLevels?: () => void; onItems?: () => void; levelsSub?: string; levelsEligible?: boolean;
   /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsSub`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
       알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
@@ -537,7 +525,6 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
   // 언어로 고른다 — 없으면 한국어로 물러난다(`pickStory()` 참조).
-  const courtesyName = pickStory(row.courtesyName);
   const story = pickStory(row.story);
   // [부상] 라벨을 눌러 펼친 설명 — 닫혀 있는 것이 기본이다(라벨이 이유를 이미 말한다)
   const [injuryOpen, setInjuryOpen] = useState(false);
@@ -555,10 +542,11 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
       {/* 이름 줄 — 「내 장수」 표의 등급 배지(`.gr`)·이름(`.rk-nm`)과 같은
           디자인을 그대로 가져와 글자만 키운다(2026-08-27 열세 번째 지정 —
           "폰트만 지금 크기로 키워서"). 새 색·모양을 안 만든다. */}
+      {/* 이름 줄 — 장수 일람과 같은 꼴: [등급][레벨 배지] 이름 (2026-11-19 기획자). 레벨은 그 밑 능력치 줄에서 이리로 올라왔다 */}
       <h2 className="ofcard-title">
         <GradeBadge grade={row.grade} />
+        <LevelBadge level={row.level} />
         <span className="ofcard-name">{pickOfficerNameById(row.officer, row.name)}</span>
-        {courtesyName && <span className="ofcard-courtesy">{courtesyName}</span>}
       </h2>
 
       <div className="ofcard-layout">
@@ -574,8 +562,9 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           <div className="ofcard-bar ofcard-bar-rec">
             {/* 승 · 무 · 패 · 격파 — 병영 최근 부대와 같은 아이콘 줄(2026-10-26) */}
             <span className="ofcard-stat" data-field="record">
-              <TallyIcons w={row.tally.wins} d={row.tally.draws} l={row.tally.losses} k={row.tally.kills} labels={{
-                w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
+              {/* 출전 · 승 · 무 · 패 · 격파 — 이것만 센다(2026-11-19 기획자: 기물 · 모드별 전적 보기 판을 걷었다) */}
+              <TallyIcons p={row.tally.plays} w={row.tally.wins} d={row.tally.draws} l={row.tally.losses} k={row.tally.kills} labels={{
+                p: t('records.col.plays'), w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
               }} />
             </span>
           </div>
@@ -621,8 +610,6 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
 
           {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
           <div className="ofcard-bar ofcard-bar-lv">
-            {/* 레벨은 배지 그림(2026-11-18 기획자) — 「Lv」와 숫자가 그림에 있다 */}
-            <span className="ofcard-stat ofcard-stat-lv" data-field="level"><LevelBadge level={row.level} /></span>
             <Stat k={<GameIcon name="stat-hp" label="HP" />} v={row.stats.hp} />
             <Stat k={<GameIcon name="stat-mp" label="MP" />} v={row.stats.mp} />
             <Stat k={<GameIcon name="stat-at" label="AT" />} v={`${row.at.min}-${row.at.max}`} />
@@ -664,6 +651,8 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
           예전에는 오른쪽 3:7 단 안에 있어(`.ofcard-bars`의 넷째 줄) 좁은 폭에
           두 개씩 접혀 쌓였다 — 레벨이 오를수록(최대 여덟) 오른쪽 단만 길어져
           왼쪽 그림과 높이가 어긋났다. 없어도 줄은 남는다(「습득한 책략이 없음」). */}
+      {/* 칸 이름 — 책략 · 고유 기술 · 장수 열전, 왼쪽 정렬 (2026-11-19 기획자) */}
+      <h3 className="ofcard-head" data-field="headTactics">{t('ranking.card.head.tactics')}</h3>
       <div className="ofcard-bar ofcard-bar-tactics">
         {row.tactics.length === 0
           ? <span className="empty">{t('ranking.card.noTactics')}</span>
@@ -687,6 +676,7 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
 
       {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal,
           `OfficerCardModal`이 연다) */}
+      {row.uniqueSkillId && skill && <h3 className="ofcard-head" data-field="headSkill">{t('ranking.card.head.skill')}</h3>}
       {row.uniqueSkillId && skill && (
         <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={onOpenSkill}>
           <img src={skillArtUrl(row.uniqueSkillId)} alt={skill.name} />
@@ -695,20 +685,27 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
 
       {/* 인물 소개 — 대나무 테두리(`btn-ghost.png`, 2026-08-27 열세 번째 지정).
           G1이 218/260명만 채웠다. 없으면 이 줄째로 사라진다(§data 머리말) */}
+      {story && <h3 className="ofcard-head" data-field="headStory">{t('ranking.card.head.story')}</h3>}
       {story && <p className="ofcard-story">{story}</p>}
 
-      {/* [레벨/스킬 관리]·[전적 보기] — 내 로스터일 때만(둘이 있을 때만) 뜬다.
-          랭킹의 다른 계정 장수는 갈 곳이 없다 — 그 계정을 관리할 수 없으니까.
-          예전엔 [장수 정보] 하나가 똑같은 정보를 다시 보여주는 화면(`OfficerDetailScreen`)
-          으로 갔다 — 이 카드가 이미 그 정보를 다 보여주므로 그 걸음은 없앴다. */}
-      {/* 카드의 한 수 — 옥색 [선택하기](고르기) · 붉은 [해제하기](보초병 풀기), 그 아래 [뒤로 가기] (2026-11-16) */}
-      {action && action.lead && (
-        <button className="btn wide ofcard-lead" data-action={action.lead.action} onClick={action.lead.onPress}>
-          <span className="lbl">{action.lead.label}</span>
-          {action.lead.icon && <span className="ofcard-lead-icon">{action.lead.icon}</span>}
+      {/* 아래 단추 — [아이템] · [레벨/스킬 관리] · [뒤로 가기], 그 밑에 그 자리의 한 수(옥색 [선택하기] · 붉은 [해제하기]) (2026-11-19 기획자).
+          [아이템] · [레벨/스킬 관리]는 내 장수일 때만 — 랭킹의 다른 계정 장수는 [X]만(그 계정을 관리할 수 없다).
+          예전의 [전적 보기](기물 · 모드별 전적 판)는 걷었다 — 전적은 맨 윗줄의 출전 · 승 · 무 · 패 · 격파뿐이다 */}
+      {onItems && (
+        <button className="btn wide ofcard-lead" data-action="heldOpen" onClick={onItems}>
+          <span className="lbl">{t('squad.cmd.items')}</span>
         </button>
       )}
-      {action && action.lead && (
+      {onLevels && (
+        /* 「레벨/스킬 관리」는 왼쪽 이름, 오른쪽에 보유 카드 수(`.sub`). 레벨업 가능하면(`levelsEligible`) 이름 옆에 인장 ·
+           카드 수 글자를 파란색으로(장수 일람 표의 같은 신호, 2026-09-02) */
+        <button className="btn wide" data-action="levels" onClick={onLevels}>
+          <span className="lbl">{t('officer.levels')}</span>
+          {levelsEligible && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
+          {levelsSub && <span className={`sub${levelsEligible ? ' levelup-ready' : ''}`}>{levelsSub}</span>}
+        </button>
+      )}
+      {(onItems || onLevels || action) && (
         <button className="btn wide" data-action="cardBack" onClick={onClose}>
           <span className="lbl">{stripBackArrow(t('match.back'))}</span>
         </button>
@@ -725,28 +722,6 @@ function OfficerCard({ row, onClose, onLevels, onRecords, levelsSub, levelsEligi
             <span className="lbl">{action.label}</span>
           </button>
           <Say text={action.blocked} name="cardActionNote" />
-          {!action.lead && (
-            <button className="btn wide" data-action="cardBack" onClick={onClose}>
-              <span className="lbl">{stripBackArrow(t('match.back'))}</span>
-            </button>
-          )}
-        </>
-      )}
-      {!action && onLevels && onRecords && (
-        <>
-          {/* 「레벨/스킬 관리」는 왼쪽 이름, 오른쪽에 보유 카드 수(`.sub`) —
-              37·38쪽 표의 레벨업 Flag와 같은 정보를 여기서도 미리 보여준다.
-              레벨업 가능하면(`levelsEligible`) 이름 옆에 인장(장수 일람 표의
-              같은 신호, `.ofc-levelup-seal`)을 붙이고 카드 수 글자를 파란색
-              (`.levelup-ready`)으로 바꾼다(2026-09-02 지정). */}
-          <button className="btn wide" data-action="levels" onClick={onLevels}>
-            <span className="lbl">{t('officer.levels')}</span>
-            {levelsEligible && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
-            {levelsSub && <span className={`sub${levelsEligible ? ' levelup-ready' : ''}`}>{levelsSub}</span>}
-          </button>
-          <button className="btn wide" data-action="records" onClick={onRecords}>
-            {t('officer.records')}
-          </button>
         </>
       )}
     </section>

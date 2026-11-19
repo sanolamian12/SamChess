@@ -17,7 +17,7 @@ import type { BattleMode, OfficerId } from '@samchess/rules';
 import {
   PROFILE_VERSION, CARD_WEIGHT, MATCH_BAND, REWARD_TABLE, ownedOfficers, rewardKey, rewardTier, winPoints,
   MATCH_LOG_CAP, accountTally, applyBattleResult,
-  createProfile, migrateProfile, modeRows, pieceRows, recentMatches, totalTally, winChance,
+  createProfile, migrateProfile, recentMatches, sumTally, totalTally, winChance,
 } from '../src/index.ts';
 import type {
   BattleOpponent, BattleOutcome, BattleResult, PlayerProfile, RewardKey, RosterPick,
@@ -234,15 +234,14 @@ describe('전적 (40쪽)', () => {
     assert.equal(total.plays, 4);
     assert.deepEqual(total, { plays: 4, wins: 2, draws: 1, losses: 1, kills: 1, points: 100 });
 
-    const byPiece = pieceRows(inst).reduce((n, r) => n + r.tally.plays, 0);
-    const byMode = modeRows(inst).reduce((n, r) => n + r.tally.plays, 0);
-    assert.equal(byPiece, total.plays, '기물별 합이 총합과 다르다');
+    // 칸은 교차로 한 번만 센다 — 기물별 · 모드별로 갈라 더해도 총합이다(장수 랭킹이 모드로 가른다)
+    const pieces = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'] as const;
+    const byPiece = Object.fromEntries(pieces.map((piece) => [piece, sumTally(inst.record, { piece }).plays]));
+    const byMode = (['3v3', '5v5'] as const).reduce((n, mode) => n + sumTally(inst.record, { mode }).plays, 0);
+    assert.equal(Object.values(byPiece).reduce((a, b) => a + b, 0), total.plays, '기물별 합이 총합과 다르다');
     assert.equal(byMode, total.plays, '모드별 합이 총합과 다르다');
-    assert.equal(pieceRows(inst).length, 6, '한 판도 안 뛴 기물도 0으로 나온다 (목업 6행)');
-
     // King 3판 + Queen 1판
-    const rows = Object.fromEntries(pieceRows(inst).map((r) => [r.piece, r.tally.plays]));
-    assert.deepEqual(rows, { King: 3, Rock: 0, Bishop: 0, Knight: 0, Queen: 1, Pawn: 0 });
+    assert.deepEqual(byPiece, { King: 3, Rock: 0, Bishop: 0, Knight: 0, Queen: 1, Pawn: 0 });
   });
 
   it('필터가 공성전과 야전을 가른다 · 순수 AI 대전은 어디에도 안 센다 (2026-10-28 기획자 확정)', () => {

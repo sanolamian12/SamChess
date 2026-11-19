@@ -78,6 +78,27 @@ try {
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  // [이름 변경]은 메인 머리의 도시 이름 바로 오른쪽 — 글자 없는 둥근 배지 (2026-11-19 기획자, 궁궐 현황판에서 옮겼다)
+  const mainRename = await page.evaluate(() => {
+    const nm = document.querySelector('.scr-main .city-head [data-field="cityName"]')?.getBoundingClientRect();
+    const b = document.querySelector<HTMLElement>('.scr-main .city-head [data-action="rename"]');
+    const r = b?.getBoundingClientRect();
+    return nm && b && r ? { gap: Math.round(r.left - nm.right), round: getComputedStyle(b).borderRadius, square: Math.round(r.width) === Math.round(r.height), text: b.innerText.trim() } : null;
+  });
+  if (!mainRename) fail('메인 머리에 도시 이름 · [이름 변경]이 없다');
+  if (mainRename!.gap < 0 || mainRename!.gap > 20) fail(`[이름 변경]이 도시 이름 바로 오른쪽이 아니다 — 틈 ${mainRename!.gap}px`);
+  if (mainRename!.round !== '50%' || !mainRename!.square || mainRename!.text) fail(`[이름 변경]이 글자 없는 둥근 배지가 아니다 — ${JSON.stringify(mainRename)}`);
+  // [이름 변경] 팝업이 **화면 가운데**에 뜨는가 — 판 안에 두면 판에 갇힌다(「있는가」와 「제자리인가」는 다른 검사)
+  await page.click('.scr-main [data-action="rename"]');
+  await page.waitForSelector('[data-modal="rename"] .modal');
+  const pos = await page.evaluate(() => {
+    const r = document.querySelector('[data-modal="rename"] .modal')!.getBoundingClientRect();
+    return { mid: Math.round(r.top + r.height / 2), vh: window.innerHeight };
+  });
+  await page.screenshot({ path: `${SHOTS}/palace-02-rename.png` });
+  if (Math.abs(pos.mid - pos.vh / 2) > pos.vh * 0.15) fail(`이름 변경 팝업이 화면 가운데가 아니다 — 중심 ${pos.mid} / 높이 ${pos.vh}`);
+  await page.click('[data-action="renameCancel"]');
+  ok(`메인 [이름 변경] — 도시 이름 바로 오른쪽(틈 ${mainRename!.gap}px) 둥근 배지 · 팝업은 화면 가운데`);
   await page.click('.scr-main [data-place="palace"]', { force: true });
   await page.waitForSelector('.scr-place-palace [data-field="palaceStatus"]');
   await page.screenshot({ path: `${SHOTS}/palace-01.png` });
@@ -85,27 +106,14 @@ try {
   const got = await page.evaluate(() => {
     const txt = (f: string) => document.querySelector(`[data-field="palaceStatus"] [data-field="${f}"]`)?.textContent ?? '';
     const cells = [...document.querySelectorAll('.plc-grid .plc-cell')].map((e) => (e as HTMLElement).dataset.field);
-    const nm = document.querySelector('.plc-name-row [data-field="cityName"]')?.getBoundingClientRect();
-    const panel = document.querySelector('[data-field="palaceStatus"]')?.getBoundingClientRect();
     return {
       cells, city: (document.querySelector('[data-field="palaceStatus"] [data-field="cityLevel"]') as HTMLElement | null)?.dataset.level ?? '',
       // 도시 · 궁궐 두 줄의 배지가 세로로 줄을 맞추는가(2026-11-19 기획자) — 왼쪽 끝 차이
       badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .city-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); const ia = document.querySelector('[data-field="cityLevel"] .gic')?.getBoundingClientRect(); const ib = document.querySelector('[data-field="palaceLevel"] .gic')?.getBoundingClientRect(); if (ia && ib && Math.abs((ia.left + ia.right) - (ib.left + ib.right)) > 2) return 998; return a && b ? Math.round(Math.abs((a.left + a.right) - (b.left + b.right)) / 2) : 999; })(),   // 가운데끼리
       palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
       emperor: (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor,
-      renameInRow: !!document.querySelector('.plc-name-row [data-action="rename"]'),
-      // [이름 변경]이 판 오른쪽 벽에 붙었는가 — 판 안쪽 오른쪽 끝과 단추 오른쪽 끝의 차이
-      renameGap: (() => {
-        const b = document.querySelector('.plc-name-row [data-action="rename"]')?.getBoundingClientRect();
-        const row = document.querySelector('.plc-name-row')?.getBoundingClientRect();
-        return b && row ? Math.round(row.right - b.right) : 999;
-      })(),
-      // 이름 변경은 글자 없는 둥근 배지(2026-11-19 기획자)
-      renameArt: (() => { const b = document.querySelector<HTMLElement>('.plc-name-row [data-action="rename"]')!; const r = b.getBoundingClientRect(); return `${getComputedStyle(b).borderRadius}|${Math.round(r.width)}x${Math.round(r.height)}|${b.innerText.trim()}`; })(),
       // 왼쪽 정렬 — 같은 단의 두 칸이 왼쪽 끝을 맞추는가
       leftEdges: [...document.querySelectorAll('.plc-grid .plc-cell')].map((e) => Math.round(e.getBoundingClientRect().left)),
-      // 이름이 **판의 한가운데**인가 — 단추가 옆에 있어도 이름을 밀면 안 된다
-      nameOffset: nm && panel ? Math.round((nm.left + nm.width / 2) - (panel.left + panel.width / 2)) : 999,
     };
   });
   console.log('   ', JSON.stringify(got));
@@ -115,26 +123,11 @@ try {
   if (!/2/.test(got.palace)) fail(`아랫줄 첫 칸이 궁궐 Lv2가 아니다 — "${got.palace}"`);
   const [l0, l1, l2, l3] = got.leftEdges;
   if (l0 !== l2 || l1 !== l3) fail(`두 단이 왼쪽 끝을 맞추지 않는다 — ${got.leftEdges.join(',')}`);
-  if (got.renameGap > 2) fail(`[이름 변경]이 오른쪽 벽에서 ${got.renameGap}px 떨어져 있다`);
-  { const [rad, size, text] = got.renameArt.split('|'); const [w, h] = size!.split('x').map(Number);
-    if (rad !== '50%' || w !== h || text) fail(`[이름 변경]이 글자 없는 둥근 배지가 아니다 — ${got.renameArt}`); }
   if (!got.pool.includes(`${poolUsed(seeded)} / ${poolCap(seeded)}`)) fail(`등용 장수 칸이 다르다 — "${got.pool}"`);
   if (got.emperor !== '1') fail('헌제를 심었는데 황제가 부재다');
-  if (!got.renameInRow) fail('[이름 변경]이 도시 이름 줄에 없다');
-  if (Math.abs(got.nameOffset) > 4) fail(`도시 이름이 가운데가 아니다 — ${got.nameOffset}px 어긋남`);
-  ok('이름(가운데)+[이름 변경] · 도시 Lv4 · 궁궐 Lv2 · 등용 장수 · 황제 옹립');
+  if (await page.$('[data-field="palaceStatus"] [data-field="cityName"], [data-field="palaceStatus"] [data-action="rename"]')) fail('궁궐 현황판에 도시 이름 · [이름 변경]이 남아 있다(2026-11-19 메인으로 옮겼다)');
+  ok('궁궐 현황판 — 도시 Lv4 · 궁궐 Lv2 · 장수 · 황제 옹립(이름 줄 없음)');
 
-  // [이름 변경] 팝업이 **화면 가운데**에 뜨는가 — 판 안에 두면 판에 갇힌다(「있는가」와 「제자리인가」는 다른 검사)
-  await page.click('[data-field="palaceStatus"] [data-action="rename"]');
-  await page.waitForSelector('[data-modal="rename"] .modal');
-  const pos = await page.evaluate(() => {
-    const r = document.querySelector('[data-modal="rename"] .modal')!.getBoundingClientRect();
-    return { mid: Math.round(r.top + r.height / 2), vh: window.innerHeight };
-  });
-  await page.screenshot({ path: `${SHOTS}/palace-02-rename.png` });
-  if (Math.abs(pos.mid - pos.vh / 2) > pos.vh * 0.15) fail(`이름 변경 팝업이 화면 가운데가 아니다 — 중심 ${pos.mid} / 높이 ${pos.vh}`);
-  await page.click('[data-action="renameCancel"]');
-  ok('이름 변경 팝업이 화면 가운데에 뜬다');
 
   // 도시 관리 — 이름·황제 줄이 없고, 레벨 줄 오른쪽에 다음 레벨 자재. [도시 증축]은 건물 관리로 옮겼다(2026-11-13 — 아래에서 본다)
   await page.click('[data-action="city"]');

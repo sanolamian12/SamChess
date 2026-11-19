@@ -328,7 +328,7 @@ try {
   if (await page.$('.ofcard [data-field="equip"]')) fail('장수 카드에 병기 줄이 남아 있다');
   // 카드 단추 차례 — [아이템] · [뒤로 가기] · [해제하기](맨 아래) (2026-11-17 기획자)
   const cardActs = await page.$$eval('.ofcard .btn[data-action]', (els) => els.map((e) => (e as HTMLElement).dataset.action).join(','));
-  if (!cardActs.endsWith('heldOpen,cardBack,cardRelease')) fail(`카드 단추 차례가 [${cardActs}]다`);
+  if (!cardActs.endsWith('heldOpen,levels,cardBack,cardRelease')) fail(`카드 단추 차례가 [${cardActs}]다 — [아이템] · [레벨/스킬 관리] · [뒤로 가기] · [해제하기] (2026-11-19 공용 장수 상세)`);
   // [아이템] 단추에는 그림이 없다 — 이름만 (2026-11-17 기획자)
   if (await page.$('.ofcard [data-action="heldOpen"] img, .ofcard [data-action="heldOpen"] .ofcard-lead-icon')) fail('[아이템] 단추에 그림이 남아 있다');
   await page.waitForTimeout(500);

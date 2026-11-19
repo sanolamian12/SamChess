@@ -93,10 +93,9 @@ try {
   if (!await page.$('.scr-main')) fail('[그만둔다] 뒤에 메인이 아니다');
   ok('로그아웃 확인 — 나무판 · 가운데 · [그만둔다]는 메인에 남는다');
 
-  // ② 궁궐 [이름 변경] — 판 · 명패 · 입력칸 셋이 그림이고, 막힌 이유 한 줄이 판 위에서 읽히는 색인가
-  await page.click('.scr-main [data-place="palace"]', { force: true });
-  await page.waitForSelector('[data-field="palaceStatus"] [data-action="rename"]');
-  await page.click('[data-field="palaceStatus"] [data-action="rename"]');
+  // ② [이름 변경](메인 머리의 도시 이름 오른쪽, 2026-11-19) — 판 · 명패 · 입력칸 셋이 그림인가
+  await page.waitForSelector('.scr-main [data-action="rename"]');
+  await page.click('.scr-main [data-action="rename"]');
   await page.waitForSelector('[data-modal="rename"] .modal');
   const rn = {
     plank: await art('[data-modal="rename"] .modal'),

@@ -86,38 +86,27 @@
  *
  * 카드(`OfficerCardModal`)의 [레벨/스킬 관리]가 예전엔 `onLevels(officer)`로
  * 전면 화면(`LevelUpScreen`)을 열었다 — 그 화면이 카드와 같은 정보(그림·능력치·
- * 책략)를 다시 보여줄 뿐이었다. 이제 `managing` 상태 하나로 카드 위에
- * `LevelUpPanel`을 겹쳐 띄운다 — 화면 전환이 없으니 `onLevels` prop 자체가
- * 필요 없어졌다(지웠다).
+ * 책략)를 다시 보여줄 뿐이었다. 이제 카드 위에 `LevelUpPanel`을 겹쳐 띄운다.
  *
- * **[전적 보기]도 같은 이유로 같은 결을 따른다** (2026-09-03) — 예전엔
- * `onRecords(officer)`로 전면 화면(`RecordsScreen`)을 열었는데, 그 화면도
- * 디자인이 궁궐 나머지와 달랐다. `LevelUpPanel`이 먼저 다졌던 「카드 위에
- * 겹쳐 뜨는 판」 틀(`RecordsPanel`, `.lvp-back`/`.lvp-modal`)을 그대로 재사용해
- * `viewingRecords` 상태 하나로 띄운다 — `onRecords` prop도 같이 지웠다(프로필을
- * 바꾸지 않는 읽기 전용 화면이라 `onChange`만으로 충분하다).
+ * **장수 상세는 `OfficerDetailModal`(`OfficerDetail.tsx`) 하나다** (2026-11-19 기획자) — 궁궐 · 병영 · 대장간이 같은 화면을 본다.
+ * [아이템] · [레벨/스킬 관리] · [뒤로 가기]. 예전의 [전적 보기](기물 · 모드별 전적 판 `RecordsPanel`)는 걷었다 —
+ * 장수 전적은 카드 맨 윗줄의 출전 · 승 · 무 · 패 · 격파뿐이다.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, guideSeen, hospitalRooms, pendingGuide, injuryHealsAt, isHealing,
-  isInjured, nextRoomFreeAt, officerRankRows, officerRows, poolCap, poolUsed,
+  canLevelUp, equippedBy, gradeTally, guideSeen, isInjured, officerRows, poolCap, poolUsed,
 } from '@samchess/meta';
-import type { OfficerRankRow, OfficerRow, PlayerProfile } from '@samchess/meta';
+import type { OfficerRow, PlayerProfile } from '@samchess/meta';
 import { SortHead, useColumnSort } from './SortHead.tsx';
 import { guidesEnabled } from './guideScript.ts';
-import { useGuide } from './useGuide.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { LevelUpPanel } from './LevelUpPanel.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
-import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
-import type { CardInjury } from './RankingCommon.tsx';
-import { formatHealLeft } from './healTime.ts';
-import { CityActionRejected, healOnServer } from '../meta/city.ts';
-import { RecordsPanel } from './RecordsPanel.tsx';
+import { stripBackArrow } from './RankingCommon.tsx';
+import { OfficerDetailModal } from './OfficerDetail.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { HealthIcon } from './GameIcon.tsx';
 import { playSfx } from '../audio/sfx.ts';
@@ -245,8 +234,6 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   // 열어야 맞는 값이 나오던 것이 그것이다(2026-09-03). id만 들고 `cardRows`에서
   // 매 렌더 다시 찾으면 프로필이 바뀔 때 카드도 함께 따라온다.
   const [cardOf, setCardOf] = useState<OfficerId | null>(openOfficer ?? null);
-  const [managing, setManaging] = useState(false);
-  const [viewingRecords, setViewingRecords] = useState(false);
   /**
    * 지급 모드에서 **체크한 장수 하나** (2026-09-11 다섯 번째 지정).
    *
@@ -268,76 +255,12 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   const checkPick = !!equipPick && !direct && !cardPick;
   // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다).
   // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
-  const [now, setNow] = useState(() => Date.now());
+  const [now] = useState(() => Date.now());
   const rows = useMemo(
     () => sortOfficers(searchOfficers(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort.key, sort.flip, lang),
     [profile, query, sort.key, sort.flip, only, lang],
   );
   const tally = useMemo(() => gradeTally(profile), [profile]);
-  // 「보기」 카드용 — 모드를 안 줘 3v3·5v5 통산이다(장수 일람은 모드를 안 가른다)
-  const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
-  // 계정에서 빠진 장수(있을 수 없지만)면 `null`이 되어 카드가 닫힌다
-  const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
-  /* 카드에 실을 「낀 병기」 — **카드는 프로필을 모른다**(`OfficerRankRow`만 받는다,
-     랭킹의 다른 계정 장수도 같은 카드로 뜨기 때문). `levelsSub`와 같은 이유로
-     여기서 찾아 넘기고, **없으면 아예 안 넘겨** 카드에서 그 줄이 사라지게 한다. */
-  const cardEquip = card ? (() => {
-    const eq = equippedBy(profile, card.officer);
-    return eq ? { equip: eq } : {};
-  })() : {};
-
-  /* 카드에 실을 「부상」 (GDD §8.2, 트랙 11g) — 병기와 같은 이유로 여기서 넘긴다.
-     **부상이 아니면 아예 안 넘긴다** — 카드에서 라벨·붉은 숫자가 함께 사라진다. */
-  const [healBusy, setHealBusy] = useState(false);
-  const [healError, setHealError] = useState<string | null>(null);
-  const cardInst = card ? profile.roster[card.officer] : undefined;
-  const cardHurt = !!cardInst && isInjured(cardInst, now);
-  useEffect(() => {
-    if (!cardHurt) return;
-    // 표기가 분 단위라 초마다 그릴 까닭이 없다 — 병원 화면과 같은 주기
-    const id = window.setInterval(() => setNow(Date.now()), 5_000);
-    return () => window.clearInterval(id);
-  }, [cardHurt]);
-  useEffect(() => { setHealError(null); }, [cardOf]);
-  const heal = (officer: OfficerId): void => {
-    setHealBusy(true);
-    setHealError(null);
-    void (async () => {
-      try {
-        const next = await healOnServer(officer);
-        if (next) onChange(next); else setHealError(t('server.offline'));
-      } catch (e) {
-        setHealError(e instanceof CityActionRejected ? e.message : String(e));
-      } finally {
-        setHealBusy(false);
-        setNow(Date.now());
-      }
-    })();
-  };
-  const cardInjury: { injury?: CardInjury } = card && cardInst && cardHurt ? {
-    injury: {
-      left: (injuryHealsAt(cardInst) ?? now) - now,
-      healing: isHealing(cardInst, now),
-      // 「병원이 있으면 [치료]」 — 없으면 단추째로 없다. 막히는 이유는 병원 화면과 같은 문구
-      ...(hospitalRooms(profile) > 0 ? {
-        heal: {
-          blocked: freeRooms(profile, now) > 0 ? null
-            : t('hospital.admit.full', { time: formatHealLeft((nextRoomFreeAt(profile, now) ?? now) - now) }),
-          busy: healBusy,
-          error: healError,
-          onHeal: () => heal(card.officer),
-        },
-      } : {}),
-    },
-  } : {};
-
-  /** 장수 상세를 처음 열었다 — 파트마다 한 마디 (2026-11-14 기획자). 레벨/스킬 관리 · 전적 보기를 연 동안은 미룬다 */
-  const cardGuide = useGuide(
-    profile, onChange,
-    card && !chrome && !equipPick && !managing && !viewingRecords ? pendingGuide(profile, 'officerCard') : null,
-    `card-${cardOf ?? ''}`,
-  );
-
   const pageSize = chrome ? chrome.pageSize ?? PICK_PAGE_SIZE : PAGE_SIZE;
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   // 카드를 연 채로 들어왔으면 그 장수가 있는 쪽부터 — 카드를 닫았을 때 뒤의 목록이 엉뚱한 쪽이면
@@ -375,17 +298,9 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   const pageRows = rows.slice(shown * pageSize, shown * pageSize + pageSize);
 
   const openCard = (officer: OfficerId): void => {
-    if (!cardRows.some((r) => r.officer === officer)) return;
+    if (!profile.roster[officer]) return;
     playSfx('paper');
-    setCardOf(officer); setManaging(false); setViewingRecords(false);
-  };
-
-  /** [레벨/스킬 관리] 오른쪽에 붙는 「{보유} / {필요}장」 — `OfficerDetailScreen`의
-      같은 자리와 같은 규칙(`cardsToLevelUp()`이 단일 출처)이다. */
-  const cardsLabel = (row: OfficerRankRow): string => {
-    const need = cardsToLevelUp(row.level);
-    if (need === null) return t('officer.cards.max');
-    return t('officer.cards.have', { have: profile.cards[row.officer] ?? 0, need });
+    setCardOf(officer);
   };
 
   const search = (
@@ -399,7 +314,6 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   );
   return (
     <>
-      {cardGuide.node}
       <div className="place-body">
         {/* 판 높이는 내용만큼 — 쪽 넘김 밑에 빈 양피지가 남지 않게(2026-11-19 기획자 — `grow`를 뗐다). 쪽 사이 높이는 `useSteadyPage`가 고정한다.
             남는 높이는 아래 명령 판과의 사이로 간다 */}
@@ -602,42 +516,21 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
         )}
       </div>
 
-      {card && (
-        <OfficerCardModal
-          row={card}
-          onClose={() => { setCardOf(null); setManaging(false); setViewingRecords(false); }}
-          onLevels={() => setManaging(true)}
-          onRecords={() => setViewingRecords(true)}
-          levelsSub={cardsLabel(card)}
-          levelsEligible={canLevelUp(profile, card.officer).ok}
-          {...cardEquip}
-          {...cardInjury}
-          {...(cardPick && !equipPick?.blocked?.(card.officer)
+      {/* 장수 상세 — 궁궐 · 병영 · 대장간이 함께 쓰는 한 화면(`OfficerDetailModal`, 2026-11-19 기획자).
+          카드에서 고르는 팝업(`cardPick`)이면 맨 아래 옥색 [선택하기] */}
+      {cardOf && (
+        <OfficerDetailModal
+          profile={profile}
+          officer={cardOf}
+          onChange={onChange}
+          onClose={() => setCardOf(null)}
+          guide={!chrome && !equipPick}
+          {...(cardPick && !equipPick?.blocked?.(cardOf)
             ? { action: {
               kind: 'select' as const, label: t('officers.equip.confirm'),
-              onPress: () => { const id = card.officer; setCardOf(null); equipPick!.onPick(id); },
+              onPress: () => { const id = cardOf; setCardOf(null); equipPick!.onPick(id); },
             } }
             : {})}
-        />
-      )}
-
-      {/* 카드 위에 겹쳐 뜨는 판 — 전면 화면 전환이 아니다(파일 머리말 참조).
-          닫으면 카드(`managing: false`)로 돌아온다, `card` 자체는 안 지운다. */}
-      {managing && card && (
-        <LevelUpPanel
-          profile={profile}
-          officer={card.officer}
-          onChange={onChange}
-          onClose={() => setManaging(false)}
-        />
-      )}
-
-      {/* 전적 보기 판도 같은 결 — 닫으면 카드(`viewingRecords: false`)로 돌아온다 */}
-      {viewingRecords && card && (
-        <RecordsPanel
-          profile={profile}
-          officer={card.officer}
-          onClose={() => setViewingRecords(false)}
         />
       )}
     </>

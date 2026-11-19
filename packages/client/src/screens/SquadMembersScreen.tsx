@@ -53,7 +53,8 @@ import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
-import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
+import { stripBackArrow } from './RankingCommon.tsx';
+import { OfficerDetailModal } from './OfficerDetail.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { GameIcon, HealthIcon } from './GameIcon.tsx';
 import { SquadDeployScreen } from './SquadDeployScreen.tsx';
@@ -112,7 +113,7 @@ function slotsOf(squad: Squad): Slot[] {
  * 지닌 것 바꾸기 — **고른 차례대로** 쌓는다(병기 한 자루가 이 장수에서 저 장수로 옮겨 가므로 차례가 뜻을 갖는다).
  * `none`은 회수(병기 · 아이템 둘 다), `weapon`은 자루 키(`forgeOwned`의 키), `item`은 장터 아이템 id
  */
-type HeldOp =
+export type HeldOp =
   | { officer: OfficerId; kind: 'none' }
   | { officer: OfficerId; kind: 'weapon'; key: string }
   | { officer: OfficerId; kind: 'item'; item: string };
@@ -135,7 +136,7 @@ const picksOf = (slots: readonly Slot[]): RosterPick[] =>
  * 부대 칸은 `saveSquadSlot`(덜 찬 부대도 · 부대원이 없으면 비운다). 지닌 것은 **한 장수에 하나**(GDD §6.5) — 병기를 주면 든 아이템은 보관함으로,
  * 아이템을 주면 낀 병기는 대장간으로(장터 보관함 · 대장간 지급과 같은 규칙). 병기는 그 자루를 쥔 다른 장수에게서 옮겨 온다(`equipOfficer`)
  */
-function applyHeld(profile: PlayerProfile, op: HeldOp): PlayerProfile {
+export function applyHeld(profile: PlayerProfile, op: HeldOp): PlayerProfile {
   const key = equippedKey(profile, op.officer);
   if (op.kind === 'none') return uncarryItem(key ? unequipOfficer(profile, key) : profile, op.officer);
   if (op.kind === 'weapon') return op.key in profile.forgeOwned ? equipOfficer(uncarryItem(profile, op.officer), op.key, op.officer) : profile;
@@ -191,7 +192,6 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
   /** 카드로 연 장수 — [아이템] · [해제하기] */
   const [cardOf, setCardOf] = useState<OfficerId | null>(null);
   /** 카드의 [아이템]으로 연 고르기 팝업 — 그 장수 */
-  const [heldOf, setHeldOf] = useState<OfficerId | null>(null);
   /** 바꾼 채 [← 목록으로]를 눌렀다 */
   const [leaving, setLeaving] = useState(false);
   /** 배치 편집에서 돌아왔다 — 첫 편성이면 [저장]이 빛난다 */
@@ -226,7 +226,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
   const filledN = lead < 0 ? draft.slots.length : lead;
   // 수비군 설정 미션(2026-11-13) — 3v3 수성군이 완성돼 있으면 [행동 방침]으로 (옛 부대 현황의 [수비군 설정] 자리)
   const policyMission = guidesOn && squad.id === 'def-3v3' && garrisonMissionPending(profile);
-  const quiet = view !== 'main' || picking !== null || swapRow !== null || cardOf !== null || heldOf !== null;
+  const quiet = view !== 'main' || picking !== null || swapRow !== null || cardOf !== null;
   const guide = useGuide(
     profile, onChange,
     quiet ? null
@@ -427,30 +427,19 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
         </div>
       )}
 
-      {/* 병기 줄(그림 아래 · 책략 위)은 안 넘긴다(`equip` 없음) — 지닌 것은 [아이템] 단추 오른쪽 한 곳에만(2026-11-17 기획자) */}
+      {/* 장수 상세 — 궁궐 · 대장간과 같은 한 화면(`OfficerDetailModal`, 2026-11-19 기획자). 아이템은 계정이 아니라 **초안**에 모은다
+          (고르기 팝업이 보는 계정도 초안을 얹은 것), 맨 아래 붉은 [해제하기]. 레벨업은 초안과 상관없이 곧장 계정에 */}
       {card && (
-        <OfficerCardModal
-          row={card}
+        <OfficerDetailModal
+          profile={profile}
+          officer={card.officer as OfficerId}
+          onChange={onChange}
           onClose={() => setCardOf(null)}
+          held={{ profile: work, onPick: (op) => setDraft((d) => ({ ...d, held: [...d.held, op] })) }}
           action={{
             kind: 'release', label: t('farm.guard.remove'),
             onPress: () => { release(card.officer as OfficerId); setCardOf(null); },
-            // 맨 위 [아이템] — 오른쪽에 지금 지닌 것(없으면 빈 칸), 누르면 병기 · 아이템 고르기. 해제하기는 맨 아래로 (2026-11-17 기획자)
-            // 이름만 — 지닌 것 그림은 안 얹는다(누르면 고르기 팝업이 보여 준다, 2026-11-17 기획자)
-            lead: {
-              label: t('squad.cmd.items'), action: 'heldOpen',
-              onPress: () => setHeldOf(card.officer as OfficerId),
-            },
           }}
-        />
-      )}
-
-      {heldOf && (
-        <HeldPicker
-          profile={work}
-          officer={heldOf}
-          onPick={(op) => setDraft((d) => ({ ...d, held: [...d.held, op] }))}
-          onClose={() => setHeldOf(null)}
         />
       )}
 
@@ -564,7 +553,7 @@ function HeldTile({ profile, officer }: { profile: PlayerProfile; officer: Offic
 /** 고르기 팝업 한 쪽의 칸 수 — 넷 × 두 줄 */
 const HELD_PAGE = 8;
 
-function HeldPicker({ profile, officer, onPick, onClose }: {
+export function HeldPicker({ profile, officer, onPick, onClose }: {
   /** 초안을 얹은 계정 */
   profile: PlayerProfile;
   officer: OfficerId;

@@ -43,15 +43,18 @@ export function HealthIcon({ hurt, label }: { hurt: boolean; label: string }): R
 }
 
 /** 승 · 무 · 패 · 격파 한 줄 — 「3 / 2 / 4 - 12 Kills」를 아이콘 + 숫자로. 칸은 `data-w` … 로 읽는다 */
-export function TallyIcons({ w, d, l, k, labels }: {
+export function TallyIcons({ p, w, d, l, k, labels }: {
+  /** 출전 수 — 주면 맨 앞에(장수 카드, 2026-11-19) */
+  p?: number;
   w: number; d: number; l: number; k?: number;
-  labels: { w: string; d: string; l: string; k?: string };
+  labels: { p?: string; w: string; d: string; l: string; k?: string };
 }): React.JSX.Element {
   const cell = (name: GameIconName, label: string, n: number, key: string) => (
     <span className="gic-n" data-k={key}><GameIcon name={name} label={label} />{n}</span>
   );
   return (
-    <span className="gic-tally" data-w={w} data-d={d} data-l={l} data-k={k ?? ''}>
+    <span className="gic-tally" data-p={p ?? ''} data-w={w} data-d={d} data-l={l} data-k={k ?? ''}>
+      {p !== undefined && cell('rec-sorties', labels.p ?? '', p, 'p')}
       {cell('rec-win', labels.w, w, 'w')}
       {cell('rec-draw', labels.d, d, 'd')}
       {cell('rec-lose', labels.l, l, 'l')}

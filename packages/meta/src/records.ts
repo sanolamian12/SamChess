@@ -26,7 +26,6 @@
 
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, PieceType } from '@samchess/rules';
-import { PIECE_TYPES } from './roster.ts';
 import type {
   BattleResult, MatchRow, OfficerInstance, OpponentKind, PlayerProfile, RecordTally,
 } from './types.ts';
@@ -108,25 +107,8 @@ export function sumTally(record: Record<string, RecordTally>, where: TallyWhere 
 export const whereOf = (filter: RecordFilter): TallyWhere =>
   (filter === 'all' ? {} : { opponent: filter });
 
-/** 40쪽의 기물 여섯 줄. **한 판도 안 뛴 기물도 0으로 나온다** — 목업이 여섯 줄 고정이다 */
-export function pieceRows(
-  inst: OfficerInstance,
-  filter: RecordFilter = 'all',
-): { piece: PieceType; tally: RecordTally }[] {
-  const where = whereOf(filter);
-  return PIECE_TYPES.map((piece) => ({ piece, tally: sumTally(inst.record, { ...where, piece }) }));
-}
-
-/** 40쪽 아래의 모드별 두 줄 */
-export function modeRows(
-  inst: OfficerInstance,
-  filter: RecordFilter = 'all',
-): { mode: BattleMode; tally: RecordTally }[] {
-  const where = whereOf(filter);
-  return BATTLE_MODES.map((mode) => ({ mode, tally: sumTally(inst.record, { ...where, mode }) }));
-}
-
-/** 40쪽의 「총 출전」. `pieceRows`의 합·`modeRows`의 합과 **언제나 같다** */
+/** 장수 카드 맨 윗줄의 출전 · 승 · 무 · 패 · 격파 — 칸(`{상대}/{모드}/{기물}`)의 합 (2026-11-19 기획자: 기물 · 모드별 전적 판을 걷고 이것만 보인다).
+ *  칸은 그대로 교차로 센다 — 장수 랭킹이 모드 · 공성/야전으로 가른다(`officerRankRows`) */
 export const totalTally = (inst: OfficerInstance, filter: RecordFilter = 'all'): RecordTally =>
   sumTally(inst.record, whereOf(filter));
 

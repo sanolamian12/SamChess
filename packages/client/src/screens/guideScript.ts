@@ -96,7 +96,6 @@ export const SPOT_SELECTOR = {
   cardTactics: '.ofcard .ofcard-bar-tactics',
   cardSkill: '.ofcard .ofcard-skillbanner',
   cardLevels: '.ofcard [data-action="levels"]',
-  cardRecords: '.ofcard [data-action="records"]',
 } as const;
 export type GuideSpot = keyof typeof SPOT_SELECTOR;
 
@@ -392,7 +391,6 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.officer.card.tactics'), spot: 'cardTactics' },
         { text: t('guide.officer.card.skill'), spot: 'cardSkill' },
         { text: t('guide.officer.card.levels'), spot: 'cardLevels' },
-        { text: t('guide.officer.card.records'), spot: 'cardRecords' },
       ];
     case 'market.items':
       return [

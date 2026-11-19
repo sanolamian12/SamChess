@@ -82,6 +82,7 @@ import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useEffect, useState } from 'react';
 import { GameIcon } from './GameIcon.tsx';
+import { CityRenameButton } from './CityRename.tsx';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -475,7 +476,9 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
         {/* 도시 이름과 [전투하기]가 **한 줄** — 단추는 이름 오른쪽 끝(2026-09-22 지정). 도적떼
             알림의 [전투 준비]와 같은 금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 같은 판의 [전투 재개]다 */}
         <div className="city-head">
-          <h1 className="title">{profile.cityName}</h1>
+          <h1 className="title" data-field="cityName">{profile.cityName}</h1>
+          {/* 이름 바로 오른쪽 — [이름 변경] 둥근 배지(2026-11-19 기획자, 궁궐 현황판에서 옮겼다) */}
+          <CityRenameButton profile={profile} onChange={onChange} />
           {raid && (
             <div className="city-raid" data-field="raid" data-raid={raid.status}>
               {raid.status === 'pending' ? (
