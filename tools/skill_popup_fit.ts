@@ -1,7 +1,7 @@
 /**
  * 고유기술 팝업이 판 안에 드는가 — 고유기술 40종 × 열 언어 × 세로 · 가로 (2026-11-19 기획자: 유래 · 효과를 제목 다음 줄로 내린 뒤)
  *
- *   node --env-file=.env tools/skill_popup_fit.ts [--langs ko,mn]
+ *   node --env-file=.env tools/skill_popup_fit.ts [--langs ko,mn] [--skills yeong-ung-ron,gan-noe-do-ji]
  *
  * 장수 상세에서 고유기술 배너를 눌러 팝업(`SkillModal`)을 열고, 글이 든 칸(`.ofc-skill-body`)이 판 안에서 넘치는지
  * (`scrollHeight − clientHeight`, px)를 잰다. 넘치면 스크롤이 생긴다. 판 그림은 비율을 지켜 화면에 드는 최대 크기라
@@ -20,10 +20,12 @@ const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
 const argv = process.argv.slice(2);
 const LANGS = (argv.includes('--langs') ? argv[argv.indexOf('--langs') + 1]! : 'ko,en,es_419,it,ja,mn,pt_BR,pt_PT,zh_Hans,zh_Hant').split(',');
+const SKILLS = argv.includes('--skills') ? argv[argv.indexOf('--skills') + 1]!.split(',') : null;
 const SIZES = [{ orient: '세로', w: 700, h: 1400 }, { orient: '가로', w: 1920, h: 1080 }];
 
 // 기술마다 그 기술을 가진 장수 하나
 const holders = UNIQUE_SKILLS.map((s) => ({ skill: s, officer: OFFICERS.find((o) => o.uniqueSkill === s.id) }))
+  .filter((x) => !SKILLS || SKILLS.includes(x.skill.id))
   .filter((x): x is { skill: typeof x.skill; officer: NonNullable<typeof x.officer> } => !!x.officer);
 
 const email = `skill-fit-${randomUUID()}@samchess.test`;

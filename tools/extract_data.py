@@ -1585,6 +1585,127 @@ def attach_skill_lore(skills: list[dict]) -> None:
              f"(id 변경으로 보인다 — 확인 필요): {', '.join(unmatched)}")
 
 
+# 고유기술 유래를 줄인 것 (2026-11-20 기획자) — 고유기술 팝업의 판 그림이 비율을 지켜 고정 크기라, 유래가 긴 몇 종이
+# 서양 언어 · 몽골어에서 판을 넘쳐 스크롤이 생겼다(`tools/skill_popup_fit.ts`가 잰다). **서양 언어 다섯 · 몽골어에서 넘친 기술만** 줄였다 —
+# 한국어 · 일본어 · 중국어는 다 들어가 원문 그대로다. 줄인 뜻은 언어마다 같고 `_ko`가 그 한국어다(원문에서 구절을 덜어 낸 것 — 화면에는 안 쓴다).
+# 원본(`sam_skills.csv` · 영웅론은 위 `SKILL_REDESIGNS`)은 읽기 전용이라 여기서 갈아 끼운다. 짝의 앞은 **원문의 첫머리**다 —
+# 원문이 바뀌면(그 첫머리로 시작하지 않으면) 스스로 알린다. 그때는 줄인 글도 새 원문에 맞춰 다시 본다.
+SKILL_ORIGIN_TRIMS: dict[str, dict[str, object]] = {
+    "yeong-ung-ron": {   # 조조 「영웅론」 — 머리의 출처를 줄이고(괄호 속 장면 이름), 「이름을 하나하나 깎아내린」 구절과 끝의 교훈 문장을 뺀다
+        "_ko": "[정사 + 연의 창작] 허도에 몸을 의탁한 유비는 채소밭이나 가꾸며 큰 뜻이 없는 사람처럼 지냈다. 조조는 그를 불러 푸른 매실에 술을 데우며 천하의 영웅이 누구냐고 묻고는 말했다. \"지금 천하의 영웅은 오직 그대와 이 조조뿐이오.\" 유비는 들고 있던 수저를 떨어뜨렸다.",
+        "en": ("[Official History (the talk of heroes",
+               "[Official History + Romance of the Three Kingdoms — literary invention] Sheltering under Cao Cao in Xuchang, Liu Bei tended a vegetable garden as if he had no ambitions at all. Cao Cao invited him over green plums and warmed wine, asked who the heroes of the realm were, and said: \"The only heroes under heaven today are you and I.\" Liu Bei dropped his chopsticks."),
+        "es_419": ("[Historia oficial (la charla sobre héroes",
+                   "[Historia oficial + Romance de los Tres Reinos — invención literaria] Refugiado bajo Cao Cao en Xuchang, Liu Bei cuidaba una huerta como si no tuviera ambición alguna. Cao Cao lo invitó a ciruelas verdes y vino tibio, le preguntó quiénes eran los héroes del reino y dijo: «Hoy los únicos héroes bajo el cielo son usted y yo.» A Liu Bei se le cayeron los palillos."),
+        "it": ("[Storia ufficiale (Sanguozhi) (il discorso sugli eroi",
+               "[Storia ufficiale + Romanzo dei Tre Regni — invenzione letteraria] Ospite di Cao Cao a Xuchang, Liu Bei coltivava un orto come se non avesse alcuna ambizione. Cao Cao lo invitò a prugne verdi e vino scaldato, gli chiese chi fossero gli eroi del regno e disse: «Oggi gli unici eroi sotto il cielo siete voi e io.» A Liu Bei caddero le bacchette."),
+        "mn": ("[Албан түүх(баатрын яриа",
+               "[Албан түүх + Романы зохиомол] Сюйчанд Цао Цаод хоргодсон Лю Бэй том зорилгогүй хүн мэт хүнсний ногоо тарьж суув. Цао Цао түүнийг урьж, ногоон чавгатай дарс халаан, тэнгэр доорх баатар хэн бэ гэж асуугаад хэлэв: \"Одоо тэнгэр доорх баатар гэвэл зөвхөн та бид хоёр л байна.\" Лю Бэй барьж байсан савхаа унагав."),
+        "pt_BR": ("[História oficial (a conversa sobre heróis e os hashis",
+                  "[História oficial + Romance dos Três Reinos — invenção literária] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição alguma. Cao Cao o convidou para ameixas verdes e vinho aquecido, perguntou quem eram os heróis do reino e disse: \"Hoje, os únicos heróis sob o céu são você e eu.\" Liu Bei deixou cair os hashis."),
+        "pt_PT": ("[História oficial (a conversa sobre heróis e os pauzinhos",
+                  "[História oficial + Romance dos Três Reinos — invenção literária] Abrigado sob Cao Cao em Xuchang, Liu Bei cuidava de uma horta como se não tivesse ambição nenhuma. Cao Cao convidou-o para ameixas verdes e vinho aquecido, perguntou-lhe quem eram os heróis do reino e disse: \"Hoje, os únicos heróis sob o céu sois vós e eu.\" Liu Bei deixou cair os pauzinhos."),
+    },
+    "on-ju-cham-hwa-ung": {   # 관우 「온주참화웅」 — 원소가 코웃음친 문장과 「아직 이름 없던」을 뺀다
+        "_ko": "[연의 창작, 정사에서는 손견의 공적] 동탁의 부장 화웅에게 제후들의 장수가 잇달아 목이 떨어지자 관우가 나서겠다 청했다. 조조는 뜨거운 술 한 잔을 따라 그를 배웅했다. 관우가 돌아왔을 때 술은 아직 식지 않았고, 화웅의 목은 이미 그의 손에 들려 있었다.",
+        "en": ("[Romance of the Three Kingdoms — literary invention; in the Official History the feat belongs to Sun Jian]",
+               "[Romance of the Three Kingdoms — literary invention; in the Official History the feat belongs to Sun Jian] One after another, the coalition's champions fell to Dong Zhuo's general Hua Xiong, until Guan Yu asked to go. Cao Cao poured him a cup of warm wine to see him off. By the time Guan Yu returned, the wine had not yet gone cold, and Hua Xiong's head was already in his hand."),
+        "es_419": ("[Romance de los Tres Reinos — invención literaria; en la Historia oficial la hazaña",
+                   "[Romance de los Tres Reinos — invención literaria; en la Historia oficial la hazaña pertenece a Sun Jian] Cuando el general de Dong Zhuo, Hua Xiong, ya había cobrado las cabezas de un general tras otro entre los señores aliados, Guan Yu pidió permiso para enfrentarlo. Cao Cao le sirvió una copa de vino caliente antes de despedirlo. Cuando Guan Yu regresó, el vino ni siquiera se había enfriado — y la cabeza de Hua Xiong ya pendía de su mano."),
+        "it": ("[Romanzo dei Tre Regni — invenzione letteraria; nella Storia ufficiale il merito",
+               "[Romanzo dei Tre Regni — invenzione letteraria; nella Storia ufficiale il merito è di Sun Jian] Quando i generali dei signori della guerra caddero uno dopo l'altro per mano di Hua Xiong, luogotenente di Dong Zhuo, Guan Yu si fece avanti. Cao Cao gli versò una coppa di vino caldo per congedarlo. Quando Guan Yu tornò, il vino era ancora caldo e la testa di Hua Xiong era già in mano sua."),
+        "mn": ("[Романы зохиомол, Албан түүхэнд энэ гавьяа",
+               "[Романы зохиомол, Албан түүхэнд энэ гавьяа Сунь Цзянийх] Дун Чжогийн жанжин Хуа Сюньд ноёдын цэргийн жанжид дараалан толгойгоо алдахад, Гуань Юй өөрийгөө гарах болтугай хэмээн хүсэв. Цао Цао дулаахан архины аяга барьж түүнийг үдэв. Гуань Юй буцаж ирэхэд архи ердөө хараахан хөрөөгүй байсан бөгөөд Хуа Сюньгийн толгой аль хэдийн түүний гарт байлаа."),
+        "pt_BR": ("[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general",
+                  "[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general dos senhores da guerra após outro caiu decapitado diante de Hua Xiong, oficial de Dong Zhuo, até que Guan Yu se ofereceu para enfrentá-lo. Cao Cao serviu-lhe uma taça de vinho quente para a despedida. Quando Guan Yu voltou, o vinho ainda não tinha esfriado — e a cabeça de Hua Xiong já pendia em sua mão."),
+        "pt_PT": ("[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general",
+                  "[Romance dos Três Reinos — invenção literária, na história oficial o feito é de Sun Jian] Um general dos senhores da guerra após outro caiu diante de Hua Xiong, oficial de Dong Zhuo, até que Guan Yu se ofereceu para o enfrentar. Cao Cao serviu-lhe uma taça de vinho quente. Quando Guan Yu regressou, o vinho ainda estava quente — e a cabeça de Hua Xiong já lhe pendia da mão."),
+    },
+    "gan-noe-do-ji": {   # 조운 「간뇌도지」 — 미부인과 우물 이야기를 빼고 「아두를 품에 안았다」만 남긴다
+        "_ko": "[연의, 장판파 활약 자체는 정사] 장판파에서 유비의 일행이 뿔뿔이 흩어지자, 조운은 홀로 말을 돌려 적진 한복판으로 뛰어들어 어린 아두를 품에 안았다. 조조군 수십 겹을 창 하나로 뚫고 나오며 되뇐 말은 하나였다 — \"이 몸이 간과 뇌를 땅에 쏟더라도.\"",
+        "en": ("[Romance of the Three Kingdoms — literary; the feat at Changban",
+               "[Romance of the Three Kingdoms — literary; the feat at Changban itself is Official History] When Liu Bei's column scattered at Changban, Zhao Yun alone wheeled his horse back into the heart of the enemy and gathered the infant Ah Dou into his arms. Cutting through dozens of ranks of Cao Cao's army with a single spear, he repeated one vow the whole way through — \"though my liver and brain be spilled upon this ground.\""),
+        "es_419": ("[Romance de los Tres Reinos — la hazaña en Changban",
+                   "[Romance de los Tres Reinos — la hazaña en Changban proviene de la Historia oficial] Cuando la comitiva de Liu Bei se dispersó en Changban, Zhao Yun dio media vuelta él solo, se lanzó al corazón de las líneas enemigas y tomó en brazos al pequeño Adou. Con una sola lanza atravesó decenas de filas de Cao Cao, repitiendo una sola frase: «aunque mi hígado y mi cerebro cubran esta tierra»."),
+        "it": ("[Romanzo dei Tre Regni — invenzione letteraria; le gesta a Changban",
+               "[Romanzo dei Tre Regni — invenzione letteraria; le gesta a Changban in sé sono storia ufficiale] Quando il seguito di Liu Bei si disperse a Changban, Zhao Yun fece voltare da solo il proprio cavallo, si gettò nel cuore delle linee nemiche e strinse al petto il piccolo Adou. Aprendosi la strada con una sola lancia attraverso decine di file di soldati di Cao Cao, ripeteva un solo pensiero: «Fosse anche per spargere al suolo fegato e cervello»."),
+        "mn": ("[Роман, Чанбаны тулаанд",
+               "[Роман, Чанбаны тулаанд гаргасан гавьяа нь Албан түүх] Чанбань дор Лю Бэйн бүлэг тарж бутрахад, Чжао Юнь ганцаараа морио эргүүлж дайсны голд дайрч ороод бяцхан А Доуг тэвэрч авав. Цао Цаогийн цэргийн хэдэн арван давхаргыг ганц жадаар цоолж гарахдаа зөвхөн нэг л зүйлийг давтав — \"Энэ бие элэг тархиа газарт асгасан ч гэсэн.\""),
+        "pt_BR": ("[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun sozinho",
+                  "[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun sozinho virou o cavalo, mergulhou no meio das tropas inimigas e abraçou contra o peito o pequeno A Dou. Rasgando dezenas de fileiras do exército de Cao Cao com uma única lança, repetia uma única frase — \"ainda que eu derrame fígado e cérebro pelo chão.\""),
+        "pt_PT": ("[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun, sozinho",
+                  "[Romance dos Três Reinos — mas a proeza em Changban é histórica] Quando a comitiva de Liu Bei se dispersou em Changban, Zhao Yun, sozinho, virou o cavalo, mergulhou no meio das tropas inimigas e abraçou contra o peito o pequeno A Dou. Rasgando dezenas de fileiras do exército de Cao Cao com uma única lança, repetia uma só frase — \"ainda que eu derrame fígado e cérebro pelo chão.\""),
+    },
+    "go-yuk-ji-chaek": {   # 주유 「고육지책」 — 「곤장 백 대」와 「등 뒤의 상처만큼 진한 신뢰」를 뺀다
+        "_ko": "[정사(항복 서신)+연의(태형 장면)] 화공을 앞두고 주유는 노장 황개와 짜고 군영회의에서 일부러 그를 매질했다. 살이 터진 몸으로 황개는 조조에게 항복 편지를 보냈다. 조조는 그것을 믿었고, 그 대가는 불타는 함대였다.",
+        "en": ("[Official History (the surrender letter) + Romance embellishment (the flogging scene)]",
+               "[Official History (the surrender letter) + Romance embellishment (the flogging scene)] Before the fire attack, Zhou Yu conspired with the veteran Huang Gai to have him flogged before the assembled officers. His flesh split open, Huang Gai then sent Cao Cao a letter of surrender. Cao Cao believed it. The price of that belief was his burning fleet."),
+        "es_419": ("[Historia oficial (la carta de rendición) + Romance de los Tres Reinos — la escena del castigo]",
+                   "[Historia oficial (la carta de rendición) + Romance de los Tres Reinos — la escena del castigo] Antes del ataque de fuego, Zhou Yu se confabuló con el veterano Huang Gai para azotarlo deliberadamente en pleno consejo de guerra. Con la espalda desgarrada, Huang Gai envió a Cao Cao una carta de rendición. Cao Cao la creyó — y el precio fue una flota entera envuelta en llamas."),
+        "it": ("[Storia ufficiale (la lettera di resa) + Romanzo dei Tre Regni (la scena della fustigazione)]",
+               "[Storia ufficiale (la lettera di resa) + Romanzo dei Tre Regni (la scena della fustigazione)] Prima dell'attacco col fuoco, Zhou Yu si accordò col vecchio generale Huang Gai per farlo frustare pubblicamente durante un consiglio di guerra. Con il corpo lacerato, Huang Gai inviò poi a Cao Cao una lettera di resa. Cao Cao ci credette — e ne pagò il prezzo con la sua intera flotta in fiamme."),
+        "mn": ("[Албан түүх(бууж өгөх бичиг)+Роман(ташуурдах үзэгдэл)]",
+               "[Албан түүх(бууж өгөх бичиг)+Роман(ташуурдах үзэгдэл)] Галт довтолгооны өмнө Чжоу Юй ахмад жанжин Хуан Гайтай далд хуйвалдаж, цэргийн зөвлөлдөх хурал дээр санаатайгаар түүнийг ташуурдав. Арьс нь хагарсан Хуан Гай Цао Цаод бууж өгөх захидал илгээв. Цао Цао үүнд итгэсэн бөгөөд түүний үнэ бол шатаж буй флот байв."),
+        "pt_BR": ("[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Cem golpes de bastão depois, com a carne aberta, a carta de rendição que Huang Gai enviou a Cao Cao carregava uma confiança tão densa quanto as feridas nas costas. Cao Cao acreditou —",
+                  "[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Com a carne aberta, Huang Gai enviou a Cao Cao uma carta de rendição. Cao Cao acreditou — e o preço foi a frota inteira em chamas."),
+        "pt_PT": ("[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Cem golpes de bastão depois, com a carne aberta, a carta de rendição que Huang Gai enviou a Cao Cao carregava uma confiança tão densa quanto as feridas nas costas. Cao Cao acreditou nela",
+                  "[História oficial (a carta de rendição) + Romance dos Três Reinos (a cena do castigo)] Antes do ataque de fogo, Zhou Yu combinou com o velho general Huang Gai e, em pleno conselho de guerra, mandou açoitá-lo de propósito. Com a carne aberta, Huang Gai enviou a Cao Cao uma carta de rendição. Cao Cao acreditou nela — e o preço foi a frota inteira em chamas."),
+    },
+    "baek-bo-cheon-yang": {   # 황충 「백보천양」 — 「목숨을 노렸다면 그 자리에서 끝났을 거리」를 뺀다
+        "_ko": "[연의, 원류는 양유기 고사] 장사성 아래서 관우와 마주친 황충은 짐짓 패주하다 조교 앞에서 몸을 돌려 활시위를 당겼다. 화살은 정확히 관우의 투구 끈만을 끊어놓았다. \"백 걸음 밖 버들잎을 꿰뚫는다\"던 명궁의 이름이, 이날 이후로 황충의 것이 되었다.",
+        "pt_BR": ("[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu; se quisesse",
+                  "[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu. O nome do arqueiro lendário que \"fura uma folha de salgueiro a cem passos\" passou, daquele dia em diante, a ser dele."),
+        "pt_PT": ("[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu; quisesse",
+                  "[Romance dos Três Reinos — origem na lenda de Yang Youji] Diante de Guan Yu, ao pé de Changsha, Huang Zhong fingiu a fuga — e, junto à ponte, girou o corpo e retesou o arco. A flecha cortou apenas a correia do elmo de Guan Yu. O nome do arqueiro lendário que \"fura uma folha de salgueiro a cem passos\" passou, a partir desse dia, a ser dele."),
+        "en": ("[Romance of the Three Kingdoms — literary; the idiom itself traces to the legend of Yang Youji]",
+               "[Romance of the Three Kingdoms — literary; the idiom itself traces to the legend of Yang Youji] Beneath Changsha, facing Guan Yu, Huang Zhong feigned defeat — then wheeled about before the bridge and drew his bow. The arrow sheared cleanly through the strap of Guan Yu's helmet, nothing more. The old marksman's title, \"he who pierces a willow leaf from a hundred paces,\" belonged to Huang Zhong from that day on."),
+        "es_419": ("[Romance de los Tres Reinos — invención literaria, origen en la leyenda de Yang Youji]",
+                   "[Romance de los Tres Reinos — invención literaria, origen en la leyenda de Yang Youji] Bajo los muros de Changsha, Huang Zhong se topó con Guan Yu. Fingió huir, pero justo frente al puente giró en su silla y tensó el arco. La flecha cortó únicamente la correa del yelmo de Guan Yu. Desde ese día, el título del arquero legendario que «atraviesa una hoja de sauce a cien pasos» pasó a ser suyo."),
+        "it": ("[Romanzo dei Tre Regni — invenzione letteraria; origine nella leggenda di Yang Youji]",
+               "[Romanzo dei Tre Regni — invenzione letteraria; origine nella leggenda di Yang Youji] Sotto le mura di Changsha, Huang Zhong si trovò faccia a faccia con Guan Yu. Finse una ritirata, ma davanti al ponte si voltò di scatto e tese l'arco. La freccia recise solo il laccio dell'elmo di Guan Yu. Da quel giorno, il nome del leggendario arciere capace di «trafiggere un salice a cento passi» divenne il suo."),
+        "mn": ("[Роман, эх сурвалж нь Ян Юйзигийн үлгэр]",
+               "[Роман, эх сурвалж нь Ян Юйзигийн үлгэр] Чанша хотын дор Гуань Юйтэй тулгарсан Хуан Чжун дүр эсгэн ухарч, гүүрний өмнө эргэж нумаа татав. Сум яг Гуань Юйгийн дуулгын уяаг л таслав. \"Зуун алхамын цаанаас улиасны навчийг цоолдог\" гэсэн авьяаслаг харваачийн нэр, энэ өдрөөс хойш Хуан Чжунгийнх болов."),
+    },
+    "yu-eon-gye-chaek": {   # 곽가 「유언계책」(이탈리아어만 넘쳤다) — 머리를 줄이고 「곽가는 눈을 감았다」를 뺀다
+        "_ko": "[정사(계책)+통설(유언 형태)] 병으로 쓰러지기 직전, 곽가는 마지막 진언을 남겼다 — \"급히 치면 저들이 뭉치고, 늦추면 스스로 죽인다.\" 조조가 군을 물리자, 정말로 얼마 지나지 않아 원씨 형제의 목이 스스로 배달되어 왔다.",
+        "es_419": ("[Historia oficial (la estratagema) + tradición popular (la forma de testamento)]",
+                   "[Historia oficial (la estratagema) + tradición popular (la forma de testamento)] Momentos antes de sucumbir a la enfermedad, Guo Jia dejó su último consejo: «atacadlos deprisa y se unirán; dadles tiempo y se destruirán entre ellos». Cao Cao retiró sus tropas, y no pasó mucho tiempo antes de que las cabezas de los hermanos Yuan llegaran por su propia mano."),
+        "it": ("[Storia ufficiale (Sanguozhi) (lo stratagemma)",
+               "[Storia ufficiale (lo stratagemma) + tradizione diffusa (le ultime parole)] Poco prima di soccombere alla malattia, Guo Jia lasciò il suo ultimo consiglio: «Attaccateli subito, e si uniranno; concedete loro tempo, e si distruggeranno da soli». Cao Cao ritirò le truppe, e non passò molto tempo prima che le teste dei fratelli Yuan arrivassero, recapitate da sole."),
+    },
+    "in-jung-yeo-po-ma-jung-jeok-to": {   # 여포 「인중여포 마중적토」(몽골어만 넘쳤다) — 끝의 「여러 주인을 전전하는 내내」 문장을 뺀다
+        "_ko": "[배송지주 인용] \"사람 중엔 여포요, 말 중엔 적토마라\" — 당대 사람들은 이 둘을 한데 묶어 불렀다. 무력으로는 누구도 그를 넘어서지 못했고, 그가 탄 준마 또한 마찬가지였다.",
+        "mn": ("[Пэй Сунчжигийн тайлбараас иш татсан]",
+               "[Пэй Сунчжигийн тайлбараас иш татсан] Тухайн үеийн хүмүүс \"Хүмүүсийн дунд Люй Бу, адуунуудын дунд Улаан Туулай\" гэж эдгээр хоёрыг хамтад нь дуудаж байв. Хүчний хувьд хэн ч түүнийг давж чадаагүй, түүний унасан хурдан морь ч мөн адил байлаа."),
+    },
+}
+
+
+def apply_skill_origin_trims(skills: list[dict]) -> None:
+    """위 표로 유래를 갈아 끼운다. `attach_skill_redesigns()` **뒤**에 부른다(영웅론의 유래가 그때 붙는다)."""
+    for skill_id, langs in SKILL_ORIGIN_TRIMS.items():
+        target = next((s for s in skills if s["id"] == skill_id), None)
+        if target is None:
+            fail(f"[스킬] SKILL_ORIGIN_TRIMS의 '{skill_id}'에 대응하는 스킬이 없다")
+            continue
+        origin = target.get("origin") or {}
+        hits = 0
+        for lang, pair in langs.items():
+            if lang.startswith("_"):
+                continue
+            head, new = pair  # type: ignore[misc]
+            cur = origin.get(lang)
+            if cur == new:
+                note(f"[스킬] '{skill_id}' {lang} 유래를 원본이 이미 줄였다 — SKILL_ORIGIN_TRIMS에서 지운다")
+            elif cur and cur.startswith(head):
+                origin[lang] = new
+                hits += 1
+            else:
+                note(f"[스킬] '{skill_id}' {lang} 유래의 원문이 바뀌었다 — 줄인 글(SKILL_ORIGIN_TRIMS)을 새 원문에 맞춰 다시 본다(지금은 원문 그대로)")
+        if hits:
+            note(f"[스킬] '{skill_id}' 유래를 {hits}개 언어에서 줄였다 — 고유기술 팝업에 들게(SKILL_ORIGIN_TRIMS)")
+
+
 TACTIC_LORE_CSV = LANGUAGES / "sam_tactics.csv"
 
 # 책략 설명 정정 — `SKILL_TEXT_FIXES`와 같은 규약(원본 엑셀 · CSV는 읽기 전용, 짝은 「옛 문장 → 새 문장」 통째로,
@@ -3707,6 +3828,7 @@ def main() -> int:
     attach_skill_redesigns(skills)
     apply_skill_text_fixes(skills)
     apply_skill_duration_text(skills)
+    apply_skill_origin_trims(skills)
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)
