@@ -8244,34 +8244,26 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frm-raid dd[data-tone="cleared"] { color: #1f4f8f; }
 .frm-raid dd[data-tone="none"] { color: #6b5a45; }
 
-/* 도적단 퇴치 — 화면 가운데 제 판(2026-09-21 지정). 위아래 `margin: auto`가 현황판과
-   바닥 명령 판(`.place-body`의 `margin-top: auto`) 사이의 빈 높이를 반씩 나눠 가진다.
-   단추는 금빛 두루마리(`assets/icons/ui/button_alart.png` → `ui/btn-alert.png`)를 **통째로**
-   깐다 — 양끝 두루마리 축이 늘어나면 안 되므로 상자를 그림 비율(960:270)에 맞춘다.
-   `.btn`을 안 붙인다 — 붙이면 농지 전체의 참나무 목판 규칙이 덮는다 */
-.scr-building-farm .place-panel.frm-alert {
-  margin: auto .75rem; align-self: center; width: min(19rem, calc(100% - 1.5rem));
-  display: flex; justify-content: center; padding: .4rem .5rem;
+/* 도적단 퇴치 — 바닥 명령 판 안, [마을로 가기] 위에 **같은 크기**로 선다 (2026-11-20 기획자 — 옛 자리는 현황과 바닥 판 사이 제 판).
+   그림은 금빛 두루마리(`ui/btn-alert.png`, 두루마리 단추 공용 자르기 `12% 11%`)이고 노란 네온이 부드럽게 숨 쉰다.
+   농지의 참나무 목판 규칙(`.scr-building-farm .btn:not(.ghost)…`)을 이기려고 두 칸 세게 적는다 */
+.scr-building-farm .frm-cmd .btn.frm-alert-btn {
+  border-width: .3rem 1.1rem; border-image: url(ui/btn-alert.png) 12% 11% fill;
+  font-weight: 800; color: #5a1a0e; letter-spacing: .04em; text-shadow: 0 1px 0 #fff3c080; white-space: nowrap;
+  animation: frm-alert-glow 2s ease-in-out infinite;
 }
-.frm-alert-btn {
-  width: 100%; max-width: 15rem; aspect-ratio: 960 / 270; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 14%; border: none; border-radius: 0;
-  background: url(ui/btn-alert.png) center / 100% 100% no-repeat;
-  font: inherit; font-size: 1rem; font-weight: 800; color: #5a1a0e; letter-spacing: .04em;
-  text-shadow: 0 1px 0 #fff3c080; white-space: nowrap;
-  animation: frm-alert-glow 1.6s ease-in-out infinite;
-}
-.frm-alert-btn:hover:not(:disabled) { filter: brightness(1.1); }
-.frm-alert-btn:disabled { cursor: default; opacity: .6; animation: none; }
+.scr-building-farm .frm-cmd .btn.frm-alert-btn:hover:not(:disabled) { filter: brightness(1.1) drop-shadow(0 0 .5rem #ffe066cc); }
+.scr-building-farm .frm-cmd .btn.frm-alert-btn:disabled { cursor: default; opacity: .6; animation: none; }
 @keyframes frm-alert-glow {
-  0%, 100% { filter: drop-shadow(0 0 .1rem #ffcf5a00); }
-  50% { filter: drop-shadow(0 0 .45rem #ffcf5acc); }
+  0%, 100% { filter: drop-shadow(0 0 .1rem #ffe06600); }
+  50% { filter: drop-shadow(0 0 .3rem #ffe066) drop-shadow(0 0 .6rem #ffd23a99); }
 }
-@media (prefers-reduced-motion: reduce) { .frm-alert-btn { animation: none; } }
-/* 보초병 현황이 늘 서게 된 뒤(2026-11-16) — 퇴치 판은 현황과 바닥 판 사이에 낮게 낀다. 원래 크기면 바닥 판이 화면 밖으로 밀렸다 */
-.scr-building-farm .frm-body-guards > .place-panel.frm-alert { margin: .15rem auto 0; padding: .1rem .5rem; width: min(15rem, calc(100% - 1.5rem)); }
-.scr-building-farm .frm-body-guards .frm-alert-btn { max-width: 11rem; font-size: .92rem; }
+@media (prefers-reduced-motion: reduce) { .scr-building-farm .frm-cmd .btn.frm-alert-btn { animation: none; } }
+/* 현황판 「출현 ((모래시계) 09:05)」 — 모래시계는 글자 높이 */
+.frm-raid-pending { display: inline-flex; align-items: center; }
+.frm-raid-clock { display: inline-flex; align-items: center; gap: .1em; }
+.frm-raid-pending .frm-raid-hourglass { width: 1.15em; height: 1.15em; object-fit: contain; vertical-align: middle; }
+.frm-raid-clock [data-field="raidLeft"] { font-variant-numeric: tabular-nums; }
 
 /* ── 대전 결과 (2026-10-12 화풍, `ResultScreen.tsx`) ─────────────
    결말마다 다른 배경(`resultBackdrop`) 위 가운데에 두루마리 하나가 펼쳐지고, 글자만 지웠다 다시 쓰며
@@ -8547,8 +8539,9 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
    두루마리 축이 안 눌린다. 이름이 길면 이름 쪽이 말줄임으로 줄어든다 */
 .scr-main .city-head { display: flex; align-items: center; gap: .5rem; }
 .scr-main .city-head .title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 도적떼 단추는 줄 오른쪽 끝 — 이름 · [이름 변경]은 왼쪽에 붙어 선다 */
-.scr-main .city-head .city-raid { margin-left: auto; }
+/* 도적떼 단추는 통계 줄의 오른쪽 끝 — 위 끝을 도시 Lv 줄(첫 줄)에 맞춘다 (2026-11-20 기획자, 옛 자리는 이름 오른쪽) */
+.scr-main .city-row { display: flex; align-items: flex-start; gap: .5rem; }
+.scr-main .city-row .city-raid { margin-left: auto; }
 .scr-main .city-raid { flex: none; }
 .city-raid-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
@@ -8571,40 +8564,88 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 
 /* 도적떼 알림 — 프레임 전체를 덮는다(`#frame.meta`가 기준) */
 #frame > .modal-back { z-index: 60; }
-.raid-left {
-  display: flex; align-items: center; justify-content: center; gap: .3rem;
-  margin: .2rem 0 .4rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #9b2c1f;
+/* ── 도적떼 알림 (2026-11-20 기획자 개편) ─────────────
+   대치 판 → 「승리 시 · 항복 시」 두 줄 → 말풍선 위 남은 시간 → 단추 셋([항복] · [지금 전투] · [닫기]).
+   판 폭은 열 언어에서 안 넘치게 넉넉히 — 줄은 낱말에서만 접는다 */
+.modal.frg-confirm.raid-alert-box { width: min(24rem, calc(100% - 1rem)); max-width: none; }
+
+/* 대치 판 — 고유기술 판(`ui/panel-battle-skill.png`, 9분할은 전투 배치 판과 같은 자르기)을 반으로 갈라
+   왼쪽 아군 · 오른쪽 도적. 가운데 쌍검 밑에 섬광(`duel/hit.png`)을 깐다 */
+.raid-vs {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  margin: .1rem 0 .45rem; min-height: 6.4rem; padding: .1rem .7rem .35rem;   /* 아래 귀퉁이의 창 · 방패를 글자가 비켜 선다 */
+  border-style: solid; border-color: transparent; border-width: .75rem .8rem .8rem;
+  border-image: url(ui/panel-battle-skill.png) 82 70 90 84 fill / 2.1rem 1.8rem 2.3rem 2.2rem;
 }
-/* 「남은 시간」 글자 자리의 모래시계 (2026-10-15 지정) */
-.raid-left-icon { width: 1.5rem; height: 1.5rem; object-fit: contain; }
-/* 「항복 시 : (군량) −6」 — 군량 그림은 장터 · 병영 현황의 그것 */
-.raid-info dd.loss { display: flex; align-items: center; gap: .2rem; }
-.raid-grain { width: 1.3rem; height: 1.3rem; object-fit: contain; }
-.raid-loss-n { font-variant-numeric: tabular-nums; }
-/* 약탈률은 「항복 시」 줄 끝의 괄호 — 제 줄을 걷었다 (2026-10-15 지정) */
-.raid-rate { margin-left: .15rem; font-size: .8rem; color: #d8ccb2; white-space: nowrap; }
-/* 알림 본문 — 「이름 : 값」 세 줄(규모 · 아군 · 항복 시 피해). 두 줄이 이름 칸을 같이 써서
-   콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
+.raid-vs-side { display: flex; flex-direction: column; align-items: center; gap: .15rem; min-width: 0; }
+/* 꼬마 줄 — 판 높이를 그대로 두고 앞줄 셋 · 뒷줄은 사이사이 (2026-11-20 기획자). 칸 폭 `--step`, 꼬마 `--sw`.
+   뒷줄은 `--lift`만큼 높이 서되 판 천장(위 테)에는 안 닿는다 — 칸 높이 3.2rem = 꼬마 2.6 + 들림 .5 + 여유 .1 */
+.raid-vs-stands {
+  --step: 1.95rem; --sw: 2.6rem; --lift: .5rem;
+  position: relative; height: 3.2rem; width: calc((var(--n, 1) - 1) * var(--step) + var(--sw)); max-width: 100%;
+}
+.raid-vs-slot { position: absolute; bottom: 0; left: calc(var(--x) * var(--step)); width: var(--sw); height: var(--sw); z-index: 2; }
+.raid-vs-slot[data-row="back"] { bottom: var(--lift); z-index: 1; }
+.raid-vs-stand.ofc-stand { display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #000a); }
+.raid-vs-slot[data-row="back"] .raid-vs-stand.ofc-stand { filter: drop-shadow(0 1px 1px #000a) brightness(.88); }
+/* 도적은 아군을 마주 본다 — 꼬마 그림은 전원 오른쪽을 보므로 감싼 칸을 뒤집는다(꼬마 자신의 `transform`은 크기 보정이 쓴다) */
+.raid-vs-flip { transform: scaleX(-1); }
+/* 아무도 안 세웠으면 꼬마 자리에 주홍 붓 획 「미편성」(농지 잠긴 줄 · 병영 빈 줄과 같은 획). 폭은 열 언어 중 가장 긴 말
+   (pt 「Sem sentinelas」)이 한 줄에 드는 값으로 못 박는다 — 언어마다 획 길이가 출렁이지 않게 */
+.raid-vs-stands.raid-vs-empty { width: auto; display: flex; align-items: center; justify-content: center; }
+.raid-vs-unassigned.frm-stroke { box-sizing: border-box; width: 9.4rem; min-width: 0; max-width: 100%; }
+.raid-vs-cap { margin: 0; font-size: .8rem; line-height: 1.25; text-align: center; color: #d8ccb2; word-break: keep-all; }
+.raid-vs-cap .who { font-weight: 800; color: #f4ecd8; }
+.raid-vs-mid { position: relative; width: 3.4rem; height: 3.4rem; display: grid; place-items: center; }
+.raid-vs-hit { position: absolute; inset: -.9rem; width: calc(100% + 1.8rem); height: calc(100% + 1.8rem); object-fit: contain; opacity: .9; pointer-events: none; }
+.raid-vs-swords { position: relative; width: 2.6rem; height: 2.6rem; object-fit: contain; filter: drop-shadow(0 1px 2px #000c); }
+
+/* 「이름 : 값」 두 줄 — 콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
 .raid-info {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .6rem;
-  margin: .2rem .2rem .3rem; font-size: .88rem; line-height: 1.35; text-align: left;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .6rem; align-items: center;
+  margin: .1rem .4rem .3rem; font-size: .88rem; line-height: 1.35; text-align: left;
 }
 .raid-info-line { display: contents; }
-/* 판이 좁아 「1부대 (도적 / 2명)」처럼 낱말 가운데서 접혔다 — 판을 조금 넓히고 낱말은 안 가른다 */
-.modal.frg-confirm.raid-alert-box { width: min(21rem, calc(100% - 1.5rem)); max-width: none; }
-.raid-info dd { word-break: keep-all; }
 .raid-info dt { font-weight: 700; color: #d8ccb2; white-space: nowrap; }
-.raid-info dd { margin: 0; min-width: 0; font-weight: 700; color: #f4ecd8; }
-.raid-info dd[data-none="1"] { color: #e39a86; font-weight: 600; }
-.raid-info dd.loss { color: #f0a08a; }
+.raid-info dd { margin: 0; min-width: 0; font-weight: 700; color: #f4ecd8; word-break: keep-all; }
+.raid-info dd.win { display: flex; align-items: center; flex-wrap: wrap; gap: .1rem .3rem; color: #b9e3a6; }
+.raid-win-part { display: inline-flex; align-items: center; gap: .2rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.raid-win-part .gic img { width: 1.3rem; height: 1.3rem; object-fit: contain; }
+.raid-win-sep { margin-left: -.25rem; }
+.raid-info dd.loss { display: flex; align-items: center; gap: .2rem; color: #f0a08a; }
+.raid-grain { width: 1.3rem; height: 1.3rem; object-fit: contain; }
+.raid-loss-n { font-variant-numeric: tabular-nums; }
+.raid-rate { display: inline-flex; align-items: center; margin-left: .15rem; }
+.raid-rate:empty { display: none; }
+
+/* 남은 시간 — 말풍선(`duel/bubble-tie.png`, 설전 비김 풍선) 위 「(모래시계) m:ss 후 약탈」.
+   풍선의 뾰족한 가장자리 안으로 글자가 들게 좌우 여백을 넉넉히 */
+.raid-left {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: .3rem;
+  width: min(15rem, 100%); min-height: 4.6rem; margin: .1rem auto .45rem; padding: .7rem 2.2rem;
+  background: url(duel/bubble-tie.png) center / 100% 100% no-repeat;
+  font-weight: 800; font-size: 1rem; line-height: 1.2; color: #5a1a0e; text-align: center; word-break: keep-all;
+}
+.raid-left-clock { display: inline-flex; align-items: center; gap: .2rem; }
+.raid-left-icon { width: 1.6rem; height: 1.6rem; object-fit: contain; transform-origin: 50% 50%; animation: raid-hourglass 1.4s ease-in-out infinite; }
+.raid-left-time { display: inline-block; font-size: 1.25rem; font-variant-numeric: tabular-nums; color: #9b2c1f; animation: raid-tick 1s ease-in-out infinite; }
+@keyframes raid-hourglass {
+  0%, 100% { transform: rotate(-9deg); }
+  50% { transform: rotate(9deg); }
+}
+@keyframes raid-tick {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) { .raid-left-icon, .raid-left-time { animation: none; } }
+
 /*
- * 단추 셋 (2026-09-22 지정) — [항복] 붉은 판 · [전투 준비] 금빛 두루마리 · [지금 전투] 옥색 판.
- * 셋 다 **9분할**이고 높이를 못 박아 한 벌로 보이게 한다. 붉은 판과 옥색 판은 같은 상자로
- * 구운 짝이라(`build_ui.py`의 `FRAME_CROP_LIKE`) 9분할 값도 같다. 팝업 기본 `.btn`의 바탕·
- * 테두리 색을 걷어야 그림만 남는다 — 세 칸 세게 적는다.
+ * 단추 셋 — [항복] 붉은 판 · [지금 전투] 옥색 판 · [닫기]는 팝업 공용 [뒤로 가기] 판 그대로(손대지 않는다).
+ * 앞의 둘은 **9분할**이고 높이를 못 박아 한 벌로 보이게 한다. 팝업 기본 `.btn`의 바탕·테두리 색을 걷어야
+ * 그림만 남는다 — 세 칸 세게 적는다.
  */
-.raid-alert-box .raid-acts .btn {
-  height: 2.9rem; min-height: 0; padding: 0 .4rem; justify-content: center;
+.raid-alert-box .raid-acts .btn:not(.raid-btn-close) {
+  height: 2.9rem; min-height: 0; justify-content: center;
   background: transparent; border-style: solid; border-color: transparent; border-radius: 0;
   font-weight: 700; font-size: .95rem;
 }
@@ -8612,34 +8653,34 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   border-width: .38rem 1.1rem; border-image: url(ui/btn-forcedcancel.png) 12% 11% fill;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
-.raid-alert-box .raid-acts .btn.raid-btn-prepare {
-  border-width: .45rem 1.3rem; border-image: url(ui/btn-alert.png) 12% 11% fill;
-  color: #5a1a0e; text-shadow: 0 1px 0 #fff3c080; font-weight: 800;
-}
 .raid-alert-box .raid-acts .btn.raid-btn-fight {
   border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 12% 11% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
-/* 단추 왼쪽 그림 — 세 단추에서 **한 세로줄**에 선다 (2026-10-15 지정). 절대 위치의 기준은 테 안쪽이라
-   판마다 다른 왼쪽 테 두께(1.1 · 1.3rem)를 빼서 바깥 기준 같은 자리(`--ico-x`)에 맞춘다.
-   글자는 가운데 그대로 — 좌우 안쪽 여백을 같게 두어 그림과 안 겹친다 */
-.raid-alert-box .raid-acts .btn { --ico-x: 1.75rem; --bw-l: 1.1rem; position: relative; padding: 0 2.1rem; }
-.raid-alert-box .raid-acts .btn.raid-btn-prepare { --bw-l: 1.3rem; }
+/* 단추 왼쪽 그림 — 두 단추에서 **한 세로줄**에 선다. 글자는 가운데 그대로 — 좌우 안쪽 여백을 같게 두어 그림과 안 겹친다 */
+.raid-alert-box .raid-acts .btn:not(.raid-btn-close) { --ico-x: 1.75rem; --bw-l: 1.1rem; position: relative; padding: 0 2.1rem; }
 .raid-btn-ico {
   position: absolute; top: 50%; left: calc(var(--ico-x) - var(--bw-l)); transform: translateY(-50%);
   width: 1.85rem; height: 1.85rem; object-fit: contain; pointer-events: none;
   filter: drop-shadow(0 1px 1px #0008);
 }
-/* 파수꾼이 없으면 [지금 전투]가 꺼진다 — 판 색을 빼서 「못 누른다」가 보이게 */
 .raid-alert-box .raid-acts .btn:disabled { opacity: 1; filter: grayscale(.9) brightness(.7); cursor: default; }
-/* …그리고 [전투 준비]가 농지로 이끈다 — 금빛이 숨 쉬듯 번진다 */
-.raid-alert-box .raid-acts .btn.raid-btn-prepare[data-lead="1"]:not(:disabled) { animation: raid-lead 1.6s ease-in-out infinite; }
+/* 파수꾼이 없으면 [지금 전투]가 농지로 이끈다 — 금빛이 숨 쉬듯 번진다 */
+.raid-alert-box .raid-acts .btn.raid-btn-fight[data-lead="1"]:not(:disabled) { animation: raid-lead 1.6s ease-in-out infinite; }
 @keyframes raid-lead {
   0%, 100% { filter: drop-shadow(0 0 0 #ffd76a00); }
   50% { filter: drop-shadow(0 0 .45rem #ffd76acc) brightness(1.08); }
 }
-@media (prefers-reduced-motion: reduce) { .raid-alert-box .raid-acts .btn.raid-btn-prepare[data-lead="1"] { animation: none; } }
-.raid-alert-box .raid-acts .btn:hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }
+@media (prefers-reduced-motion: reduce) { .raid-alert-box .raid-acts .btn.raid-btn-fight[data-lead="1"] { animation: none; } }
+.raid-alert-box .raid-acts .btn:not(.raid-btn-close):hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }
+/* [닫기] — 팝업 · 화면 공용 [뒤로 가기]의 참나무 목판(`ui/btn-secondary.png`, 자르기 `7% 15%`). 옛 [전투 준비]가 하던 「닫기」다 */
+.raid-alert-box .raid-acts .btn.raid-btn-close {
+  height: 2.9rem; min-height: 0; padding: 0 1rem; justify-content: center;
+  background: transparent; border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40; font-weight: 700; font-size: .95rem;
+}
+.raid-alert-box .raid-acts .btn.raid-btn-close:hover { background: transparent; border-color: transparent; filter: brightness(1.08); }
 
 /* ★ **판이 줄어들면 줄이 판 밖으로 밀려 다음 판에 가려진다** — 지참 판(2026-09-26에
    뺐다)이 끼어들자 `.srt-list`가 478 → 342로 눌렸고, 고른 부대 줄이 양피지 밖으로

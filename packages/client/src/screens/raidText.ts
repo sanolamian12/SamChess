@@ -25,13 +25,15 @@ export function formatCountdown(ms: number): string {
  */
 export type RaidTone = 'none' | 'alert' | 'looted' | 'cleared';
 
-export function raidStateText(profile: PlayerProfile, nowMs: number): { tone: RaidTone; text: string } {
+export function raidStateText(profile: PlayerProfile, nowMs: number): { tone: RaidTone; text: string; time?: string } {
   const raid = profile.raid;
   if (!raid) return { tone: 'none', text: t('farm.raid.none') };
   switch (raid.status) {
     case 'pending': {
       const [m = '0', s = '00'] = formatCountdown(raidRemainingMs(profile, raid, nowMs)).split(':');
-      return { tone: 'alert', text: t('farm.raid.pending', { time: `${m.padStart(2, '0')}:${s}` }) };
+      // 화면은 「출현 ((모래시계) 09:05)」로 그린다 — `time`을 따로 실어 모래시계를 끼울 자리를 준다 (2026-11-20 기획자)
+      const time = `${m.padStart(2, '0')}:${s}`;
+      return { tone: 'alert', text: t('farm.raid.pending', { time }), time };
     }
     case 'fighting': return { tone: 'alert', text: t('farm.raid.fighting') };
     case 'won': return { tone: 'cleared', text: t('farm.raid.won') };

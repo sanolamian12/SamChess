@@ -15,7 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { COLLECTIONS, OFFICERS } from '@samchess/data';
 import {
-  ACADEMY_RESEARCH_MS, HEAL_MS, RAID_LOOT_PCT, applyInjuries, craftDurationMs, forgeDurationMs, healMsFor, newInstance, raidDay,
+  ACADEMY_RESEARCH_MS, HEAL_MS, applyInjuries, craftDurationMs, forgeDurationMs, healMsFor, newInstance, raidDay,
   researchMs,
 } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -241,12 +241,13 @@ try {
   await page.waitForSelector('[data-modal="raidAlert"]', { timeout: 10_000 });
   await shot('cbx-06-raid-alert');
   if (!await page.$('[data-modal="raidAlert"] [data-field="rate"] [data-city-bonus="raidLoot"]')) fail('약탈률 줄에 인장이 없다');
-  await changed('[data-modal="raidAlert"] [data-field="rate"] [data-city-from]', RAID_LOOT_PCT, RAID_LOOT_PCT - 20, '약탈률');
+  // 약탈률 괄호는 2026-11-20에 걷었다 — 인장만 남는다
   if (!await page.$('[data-modal="raidAlert"] [data-field="left"] [data-city-bonus="raidResp"]')) fail('남은 시간 줄에 인장이 없다');
   const left = await page.textContent('[data-modal="raidAlert"] [data-field="left"]');
   if (!/1[01]:\d\d/.test(left ?? '')) fail(`응전 시간이 11분이 아니다 — ${left}`);
   ok(`알림 — 인장 둘 · ${left?.trim()}`);
-  await page.click('[data-action="raidPrepare"]');
+  // 보초병이 없으니 [지금 전투]가 농지로 이끈다 (2026-11-20 — 옛 [전투 준비])
+  await page.click('[data-action="raidFightNow"][data-lead="1"]');
   await page.waitForSelector('.frm-status [data-field="raid"]', { timeout: 10_000 });
   await shot('cbx-07-farm');
   if (!await page.$('[data-field="grainPerHour"] [data-city-bonus="grainRate"]')) fail('시간당 군량에 인장이 없다');

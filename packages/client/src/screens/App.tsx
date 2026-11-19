@@ -1104,7 +1104,6 @@ export function App(): React.JSX.Element {
           busy={raidBusy}
           error={raidError}
           onFight={fightRaid}
-          onPrepare={closeRaidAlert}
           onSurrender={surrenderRaid}
           onToFarm={() => { closeRaidAlert(); setScreen({ name: 'building', building: 'farm' }); }}
           onClose={closeRaidAlert}

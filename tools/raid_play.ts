@@ -165,18 +165,19 @@ try {
     .catch(() => fail('메인에 들어왔는데 첫 알림이 안 떴다'));
   const guardsShown = await page.getAttribute('[data-modal="raidAlert"] [data-field="guards"]', 'data-guards');
   if (guardsShown !== '0') await fail(`파수꾼 수 표시가 이상하다 — ${guardsShown}`);
-  // 파수꾼이 없으면 [지금 전투]가 꺼지고 [전투 준비]가 농지로 이끈다 (2026-10-15 지정)
-  if (!(await page.$('[data-action="raidFightNow"]:disabled'))) await fail('파수꾼이 없는데 [지금 전투]가 켜져 있다');
-  if (!(await page.$('[data-action="raidPrepare"][data-lead="1"]'))) await fail('파수꾼이 없는데 [전투 준비]가 이끌지 않는다');
+  // 파수꾼이 없으면 [지금 전투]가 빛나며 농지로 이끈다 (2026-11-20 — 옛 [전투 준비]는 [닫기]가 됐다)
+  if (!(await page.$('[data-action="raidFightNow"][data-lead="1"]'))) await fail('파수꾼이 없는데 [지금 전투]가 농지로 이끌지 않는다');
+  if (!(await page.$('[data-modal="raidAlert"] [data-field="bandits"] .raid-vs-stand'))) await fail('대치 판에 도적 꼬마가 없다');
+  if (!(await page.$('[data-action="raidClose"]'))) await fail('[닫기]가 없다');
   await shot('raid-01-alert-first');
-  ok('첫 알림 — 파수꾼이 없어 [지금 전투]는 꺼지고 [전투 준비]가 농지로 보낸다');
+  ok('첫 알림 — 파수꾼이 없어 [지금 전투]가 농지로 보낸다');
 
   // ── 농지 — 파수꾼 둘 ─────────────────────────────────────────
-  step('[전투 준비] → 농지의 보초병 배치 판에서 King · Rock을 세운다');
-  await page.click('[data-action="raidPrepare"]');
+  step('[지금 전투](파수꾼 없음) → 농지의 보초병 배치 판에서 King · Rock을 세운다');
+  await page.click('[data-action="raidFightNow"]');
   await page.waitForSelector('.scr-building-farm [data-field="raid"] dd[data-tone="alert"]', { timeout: 10_000 })
     .catch(() => fail('농지 현황판에 「출현」(붉음)이 없다'));
-  if (!(await page.$('.scr-building-farm .frm-alert [data-action="raidFight"]'))) await fail('도적떼가 와 있는데 [도적단 퇴치] 판이 없다');
+  if (!(await page.$('.scr-building-farm .frm-cmd [data-action="raidFight"]'))) await fail('도적떼가 와 있는데 [도적단 퇴치] 판이 없다');
   // 보초병 배치 판은 들어오자마자 보이고 여기서 다 한다 — 자리는 늘 다섯, 농지 Lv2라 셋은 잠김 (2026-11-16)
   const farm = await page.$eval('.scr-building-farm', (root) => {
     const el = root.querySelector('[data-field="guardList"]');
@@ -197,7 +198,8 @@ try {
   if (farm.pieces !== 'King,Rock,Bishop,Knight,Pawn') await fail(`기물 차례가 다르다 — [${farm.pieces}]`);
   if (farm.locked.length !== 3 || !/3/.test(farm.locked[0]!)) await fail(`잠긴 자리가 이상하다 — ${JSON.stringify(farm.locked)}`);
   if (!/2/.test(farm.raidLine) || farm.sizeLine) await fail(`「도적단 출현 (2 명)」 한 줄이 아니다 — 「${farm.raidLine}」 · 규모 줄 ${farm.sizeLine}`);
-  if (farm.cmdActs !== 'toTown') await fail(`바닥 판이 [마을로 가기] 하나가 아니다 — [${farm.cmdActs}]`);
+  // 바닥 판 — 도적떼가 와 있으면 [도적단 퇴치]가 [마을로 가기] 위에 선다 (2026-11-20 기획자)
+  if (farm.cmdActs !== 'raidFight,toTown') await fail(`바닥 판이 [도적단 퇴치] · [마을로 가기]가 아니다 — [${farm.cmdActs}]`);
   if (!farm.cmdInView) await fail('바닥 판이 화면 밖으로 밀렸다');
   await shot('raid-02a-farm-home');
   const empties = await page.$$eval('.frm-grow[data-empty="1"]', (els) => els.map((e) => (e as HTMLElement).dataset['piece']));

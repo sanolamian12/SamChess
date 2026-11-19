@@ -32,7 +32,8 @@ import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samche
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield, settleCarried } from './market.ts';
-import { grantBattleRewards } from './rewards.ts';
+import { REWARD_TABLE, grantBattleRewards } from './rewards.ts';
+import type { RewardKey, RewardSpec } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
 import type { MetaResult, PlayerProfile, RaidState, RosterPick } from './types.ts';
@@ -47,6 +48,9 @@ export const RAID_LAST_CALL_MS = RAID.lastCallMinutes * MS_PER_MIN;
 export const RAID_ABANDON_MS = RAID.abandonMinutes * MS_PER_MIN;
 /** 기본 약탈률(%) — 출몰 순간 군량에 한 번 건다. 도적 수와 무관하다 (2026-10-15) */
 export const RAID_LOOT_PCT = RAID.lootPct;
+/** 막아 내면 받는 보상의 줄 — 정산(`settleRaid`)과 알림의 「승리 시」 요약이 같은 줄을 본다 */
+export const RAID_WIN_REWARD: RewardKey = 'weakWin';
+export const raidWinReward = (): RewardSpec => REWARD_TABLE[RAID_WIN_REWARD];
 
 const DAY_OFFSET_MS = RAID.dayUtcOffsetHours * 3_600_000;
 
@@ -403,7 +407,7 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   let next = hurt.length ? applyInjuries(profile, hurt, at) : profile;
 
   if (end.winner === GUARD_SIDE) {
-    const { profile: rewarded, rewards } = grantBattleRewards(next, 'weakWin', raid.battle.seed);
+    const { profile: rewarded, rewards } = grantBattleRewards(next, RAID_WIN_REWARD, raid.battle.seed);
     return { ...rewarded, raid: { ...raid, status: 'won', loot: 0, rewards, settledAt: at } };
   }
   if (end.winner === null) {

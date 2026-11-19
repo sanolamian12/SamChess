@@ -473,12 +473,22 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
       }
     >
       <div className="city">
-        {/* 도시 이름과 [전투하기]가 **한 줄** — 단추는 이름 오른쪽 끝(2026-09-22 지정). 도적떼
-            알림의 [전투 준비]와 같은 금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 같은 판의 [전투 재개]다 */}
         <div className="city-head">
           <h1 className="title" data-field="cityName">{profile.cityName}</h1>
           {/* 이름 바로 오른쪽 — [이름 변경] 둥근 배지(2026-11-19 기획자, 궁궐 현황판에서 옮겼다) */}
           <CityRenameButton profile={profile} onChange={onChange} />
+        </div>
+        {/* 통계 2 × 2와 [토벌]이 한 줄 — 단추는 줄 오른쪽 끝, 도시 Lv 줄에 높이를 맞춘다 (2026-11-20 기획자 — 옛 자리는 이름 오른쪽).
+            금빛 두루마리이고, 전투가 걸려 있으면(`fighting`) 같은 판의 [전투 재개]다 */}
+        <div className="city-row">
+          <div className="stats">
+            {/* 좁은 이름표는 아이콘이 대신한다(이름은 올리면). 2 × 2 — 위 줄 도시 Lv · 도시(등급) 점수, 아래 줄 장수 · 군량.
+                장수는 도시 Lv 밑, 군량은 점수 밑으로 열을 맞춘다(2026-11-18 기획자) */}
+            <span className="stat" data-field="cityLevel"><i><GameIcon name="tab-city" label={t('main.cityLevel')} /></i><b>Lv{profile.cityLevel}</b></span>
+            <span className="stat" data-field="gradeScore"><i><GameIcon name="grade-score" label={t('main.gradeScore')} /></i><b>{gradeScore(profile)}</b></span>
+            <span className="stat" data-field="officers"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
+            <span className="stat" data-field="grain"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
+          </div>
           {raid && (
             <div className="city-raid" data-field="raid" data-raid={raid.status}>
               {raid.status === 'pending' ? (
@@ -495,14 +505,6 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
               )}
             </div>
           )}
-        </div>
-        <div className="stats">
-          {/* 좁은 이름표는 아이콘이 대신한다(이름은 올리면). 2 × 2 — 위 줄 도시 Lv · 도시(등급) 점수, 아래 줄 장수 · 군량.
-              장수는 도시 Lv 밑, 군량은 점수 밑으로 열을 맞춘다(2026-11-18 기획자) */}
-          <span className="stat" data-field="cityLevel"><i><GameIcon name="tab-city" label={t('main.cityLevel')} /></i><b>Lv{profile.cityLevel}</b></span>
-          <span className="stat" data-field="gradeScore"><i><GameIcon name="grade-score" label={t('main.gradeScore')} /></i><b>{gradeScore(profile)}</b></span>
-          <span className="stat" data-field="officers"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
-          <span className="stat" data-field="grain"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
         </div>
       </div>
 
