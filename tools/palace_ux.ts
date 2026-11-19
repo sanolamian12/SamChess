@@ -90,7 +90,8 @@ try {
     return {
       cells, city: (document.querySelector('[data-field="palaceStatus"] [data-field="cityLevel"]') as HTMLElement | null)?.dataset.level ?? '',
       // 도시 · 궁궐 두 줄의 배지가 세로로 줄을 맞추는가(2026-11-19 기획자) — 왼쪽 끝 차이
-      badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .lv-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); return a && b ? Math.round(Math.abs(a.left - b.left)) : 999; })(), palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
+      badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .lv-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); const ia = document.querySelector('[data-field="cityLevel"] .gic')?.getBoundingClientRect(); const ib = document.querySelector('[data-field="palaceLevel"] .gic')?.getBoundingClientRect(); if (ia && ib && Math.abs((ia.left + ia.right) - (ib.left + ib.right)) > 2) return 998; return a && b ? Math.round(Math.abs((a.left + a.right) - (b.left + b.right)) / 2) : 999; })(),   // 가운데끼리
+      palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
       emperor: (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor,
       renameInRow: !!document.querySelector('.plc-name-row [data-action="rename"]'),
       // [이름 변경]이 판 오른쪽 벽에 붙었는가 — 판 안쪽 오른쪽 끝과 단추 오른쪽 끝의 차이

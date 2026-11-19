@@ -5,7 +5,8 @@
  * 장수 상세 · 전투의 장수 팝업도 같은 배지다(경로는 `ui/levelBadge.ts` 하나). 원본은 `assets/icons/new/장수 레벨.png`(5 × 2).
  * 크기는 글줄을 따라간다(`em`) — 이름과 같은 줄에 서므로. 숫자는 `data-level`로 싣는다(검사는 그림이 아니라 속성으로 본다).
  */
-import { buildingBadgeUrl, levelBadgeUrl } from '../ui/levelBadge.ts';
+import { BUILDING_BADGE_MAX, buildingBadgeUrl, levelBadgeUrl } from '../ui/levelBadge.ts';
+import { BlinkGlow } from './BlinkGlow.tsx';
 import { BuildingIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 
@@ -22,8 +23,10 @@ export function LevelBadge({ level, className }: { level: number; className?: st
  */
 export function BuildingLevelBadge({ level, className }: { level: number; className?: string }): React.JSX.Element {
   return (
-    // 그림 뒤에 둥근 후광(`::before`)을 띄우려고 그림을 한 겹 감싼다 — Lv5 보라, Lv4 이하 흰빛(2026-11-19 기획자)
+    // 그림 뒤 후광은 병영 꼬마 뒤의 그 별빛(`BlinkGlow`) — Lv5 자주, Lv4 이하 흰 별빛(2026-11-19 기획자).
+    // 둥근 그라데이션은 「네온처럼 뿌옇다」였다
     <span className={`bld-badge${className ? ` ${className}` : ''}`} data-level={level} title={`Lv${level}`}>
+      <BlinkGlow tone={level >= BUILDING_BADGE_MAX ? 'purple' : 'plain'} className="bld-glow" />
       <img src={buildingBadgeUrl(level)} alt={`Lv${level}`} draggable={false} />
     </span>
   );

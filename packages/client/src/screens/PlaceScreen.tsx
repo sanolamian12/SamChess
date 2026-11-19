@@ -68,6 +68,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 import { buildingNameText } from './buildingText.ts';
 import { BuildingLevel, LevelBadge } from './LevelBadge.tsx';
+import { BlinkGlow } from './BlinkGlow.tsx';
 
 
 /** 그림 화살표(`::before`)를 입힌 자리 — 거기서만 문구의 「← 」를 뗀다.
@@ -209,7 +210,10 @@ function PalaceStatus({ profile, onChange }: {
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
           {/* 황제 — E급 표지 + 「황제」(2026-11-19 기획자): 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자. 옹립 여부는 올리면 */}
           <span className="plc-emperor" title={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}>
-            <span className="plc-emperor-mark"><img src="icons/grade-e.png" alt="" draggable={false} /></span>
+            <span className="plc-emperor-mark">
+              {emperor && <BlinkGlow tone="gold" className="bld-glow" />}
+              <img src="icons/grade-e.png" alt="" draggable={false} />
+            </span>
             <span className="plc-emperor-name">{t('city.emperor')}</span>
           </span>
         </span>

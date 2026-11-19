@@ -10149,16 +10149,12 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 
 /* ── 건물 레벨 배지 · 궁궐 현황판 (2026-11-19 기획자) ─────────────────────────
    건물 레벨은 글자(「Lv3」) 대신 배지 그림(`icons/level/bld-{1..5}.png`). 현황판의 「궁궐 Lv2」는 [건물 아이콘][배지].
-   배지는 그림을 감싼 칸(`span.bld-badge`)이고, 그 뒤에 **둥근 후광**(`::before`)을 띄운다 — 윤곽선에 붙는 그림자(drop-shadow)는
-   양피지 위에서 거의 안 보였다(기획자). Lv5(최대)만 보라, Lv4 이하는 흰빛. */
+   배지는 그림을 감싼 칸(`span.bld-badge`)이고, 그 뒤에 병영 꼬마와 같은 별빛 후광(`BlinkGlow`)이 돈다 — Lv5 자주, Lv4 이하 흰 별빛.
+   윤곽선 그림자(drop-shadow)는 안 보였고, 둥근 그라데이션은 「네온처럼 뿌옇다」였다(기획자). */
 .bld-badge { position: relative; display: inline-flex; flex: none; height: 1.6em; vertical-align: middle; isolation: isolate; }
 .bld-badge > img { position: relative; z-index: 1; height: 100%; width: auto; object-fit: contain; }
-.bld-badge::before {
-  content: ''; position: absolute; z-index: 0; left: 50%; top: 50%; width: 200%; aspect-ratio: 1; transform: translate(-50%, -50%);
-  border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, #ffffffe6 0%, #ffffffa6 28%, #ffffff40 50%, #fff0 70%);
-}
-.bld-badge[data-level="5"]::before { background: radial-gradient(circle, #f1d4ffee 0%, #c27bffb8 28%, #9a3dff55 50%, #9a3dff00 70%); }
+/* 후광 상자 — 배지 · E 마크와 같은 크기, 별빛 폭은 그 2.4배(꼬마 뒤 2.7보다 조금 작게 — 배지가 줄지어 선다) */
+.bld-glow { left: 0; top: 0; width: 100%; height: 100%; z-index: 0; --blink-w: 3.6; }
 .bld-lv { display: inline-flex; align-items: center; gap: .15rem; vertical-align: middle; white-space: nowrap; }
 .bld-lv .gic { display: inline-flex; }
 .bld-lv .gic img { height: 1.9em; width: auto; }
@@ -10177,7 +10173,9 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 /* 궁궐 현황판의 두 레벨 줄(도시 · 궁궐) — 아이콘과 배지 사이를 아이콘 너비의 절반만큼, 두 줄이 같은 꼴이라 세로로 맞는다 */
 .plc-grid .bld-lv { gap: .95em; }
 .plc-grid .bld-lv .gic img { width: 1.9em; height: 1.9em; object-fit: contain; }
-.plc-grid .bld-lv .bld-badge, .plc-grid .bld-lv .lv-badge { height: 1.9em; }
+/* 두 줄(도시 · 궁궐)은 칸 폭을 박아 아이콘끼리 · 배지끼리 **가운데**가 맞는다 — 배지 그림 폭이 서로 달라 왼쪽 맞춤이면 가운데가 어긋났다 */
+.plc-grid .bld-lv .gic { width: 1.9em; justify-content: center; }
+.plc-grid .bld-lv .bld-badge, .plc-grid .bld-lv .lv-badge { height: 1.9em; width: 2.2em; justify-content: center; object-fit: contain; }
 /* 황제 — E급 표지 + 「황제」. 없으면 회색조 · 회색 글자, 있으면 제 색 + 뒤에 금빛 둥근 후광(숨쉬기) · 검은 글자 */
 .plc-emperor { display: inline-flex; align-items: center; gap: .3rem; }
 .plc-emperor-mark { position: relative; display: inline-flex; flex: none; height: 1.7em; isolation: isolate; }
@@ -10185,13 +10183,3 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .plc-cell[data-emperor="0"] .plc-emperor-mark > img { filter: grayscale(1) brightness(.95); opacity: .75; }
 .plc-cell[data-emperor="0"] .plc-emperor-name { color: #8a7d6c; }
 .plc-cell[data-emperor="1"] .plc-emperor-name { color: #000; }
-.plc-cell[data-emperor="1"] .plc-emperor-mark::before {
-  content: ''; position: absolute; z-index: 0; left: 50%; top: 50%; width: 400%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, #fff3b0f0 0%, #ffd34dc0 18%, #f0b52d70 38%, #f0b52d00 68%);
-  transform: translate(-50%, -50%); animation: emperor-halo 2.4s ease-in-out infinite;
-}
-@keyframes emperor-halo {
-  0%, 100% { opacity: .8; transform: translate(-50%, -50%) scale(.9); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
-}
-@media (prefers-reduced-motion: reduce) { .plc-cell[data-emperor="1"] .plc-emperor-mark::before { animation: none; } }
