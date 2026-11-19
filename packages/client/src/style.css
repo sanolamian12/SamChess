@@ -10196,12 +10196,19 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   border-image-slice: 0 34% 0 12% fill; border-image-width: 0 1.2em 0 .8em; border-image-repeat: stretch;
   color: #f8ead0; text-shadow: 0 1px 1px #000a; white-space: nowrap;
 }
-/* ③ 여섯 값 밑 — 옥색 붓 획(`ui/era-stroke-b-5.png`)을 굵은 밑줄처럼. 숫자 높이의 아래 절반만 겹치고, 여섯 자리 모두 같은 길이 · 높이(숫자 칸 폭만큼, 칸 전체가 아니다).
+/* ③ 여섯 값 밑 — 붓 획을 굵은 밑줄처럼(칸마다 색, 아래). 숫자 밑으로 내려 깔고, 여섯 자리 모두 같은 길이 · 높이(숫자 칸 폭만큼, 칸 전체가 아니다).
    세 자리 오른쪽 맞춤 값은 오른쪽에, AT는 왼쪽에 붙는다 */
 .ofcard-layout .ofcard-stat .v { position: relative; isolation: isolate; }
 .ofcard-layout .ofcard-stat .v::before {
   content: ''; position: absolute; z-index: -1; pointer-events: none;
-  bottom: .02em; height: .58em; width: 3.4ch; right: -.2ch;
-  background: url(ui/era-stroke-b-5.png) center / 100% 100% no-repeat; opacity: .85;
+  bottom: -.36em; height: .42em; width: 3.4ch; right: -.2ch;   /* 숫자 밑으로 내려 아예 밑줄 (같은 날 기획자) */
+  background: var(--stat-stroke) center / 100% 100% no-repeat; opacity: .9;
 }
+/* 칸마다 다른 붓 획 (기획자 지정) — 무력 누런 황토 · 지력 주홍 · 통솔 짙은 자주 · HP 옥색 · MP 청회색 · AT 쪽빛 */
+.ofcard-layout [data-field="might"] { --stat-stroke: url(ui/era-stroke-b-1.png); }
+.ofcard-layout [data-field="intellect"] { --stat-stroke: url(ui/era-stroke-b-4.png); }
+.ofcard-layout [data-field="leadership"] { --stat-stroke: url(ui/era-stroke-b-6.png); }
+.ofcard-layout [data-field="hp"] { --stat-stroke: url(ui/era-stroke-b-5.png); }
+.ofcard-layout [data-field="mp"] { --stat-stroke: url(ui/era-stroke-b-3.png); }
+.ofcard-layout [data-field="at"] { --stat-stroke: url(ui/era-stroke-b-7.png); }
 .ofcard-layout .ofcard-bar-lv [data-field="at"] .v::before { right: auto; left: -.2ch; }
