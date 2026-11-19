@@ -18,3 +18,10 @@ export function levelBadgeImg(level: number, className = ''): HTMLImageElement {
   img.draggable = false;
   return img;
 }
+
+/** 건물 레벨 배지(2026-11-19 기획자) — `public/icons/level/bld-{1..5}.png`, 굽기는 `build_ui.py`의 `BUILDING_LEVEL_SRC` */
+export const BUILDING_BADGE_MAX = 5;
+
+export function buildingBadgeUrl(level: number): string {
+  return `icons/level/bld-${Math.max(1, Math.min(BUILDING_BADGE_MAX, Math.round(level)))}.png`;
+}

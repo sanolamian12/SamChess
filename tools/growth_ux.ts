@@ -147,7 +147,8 @@ try {
   await page.waitForSelector('[data-modal="buildDone"]', { timeout: 10_000 });
   // 건물 완료 팝업도 도시 증축 완료와 같은 꼴 — 큰 글씨 「장터 Lv2」 · 이름 줄 없음 · 제목 크기 같음 · 아래 줄은 할 수 있는 일 (2026-11-13)
   const bld = await page.evaluate(() => ({
-    lv: document.querySelector('[data-modal="buildDone"] [data-field="doneLevel"]')?.textContent,
+    // 레벨은 배지 그림이라 `data-level`로 읽는다(2026-11-19) — 「장터 Lv2」
+    lv: (() => { const el = document.querySelector<HTMLElement>('[data-modal="buildDone"] [data-field="doneLevel"]'); return el ? `${el.textContent} Lv${el.dataset.level}` : ''; })(),
     name: !!document.querySelector('[data-modal="buildDone"] [data-field="doneName"]'),
     can: document.querySelector('[data-modal="buildDone"] [data-field="doneCan"]')?.textContent,
     ttl: getComputedStyle(document.querySelector('[data-modal="buildDone"] .modal-ttl')!).fontSize,

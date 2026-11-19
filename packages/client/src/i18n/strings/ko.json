@@ -1340,7 +1340,7 @@
   "hospital.time.underMin": "1분 이내",
   "city.summary.level": "도시 Lv{level}",
   "palace.summary.level": "궁궐 Lv{level}",
-  "palace.pool": "등용 장수 : {have} / {max} 명",
+  "palace.pool": "장수 : {have} / {max}명",
   "palace.emperor": "황제 : {state}",
   "reason.city.capNoEmperor": "Lv{cap}이 상한이다 — Lv{max}은 황제를 옹립해야 갈 수 있다",
   "reason.city.maxLevel": "이미 최대 레벨이다 (Lv{lv})",

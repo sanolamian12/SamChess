@@ -48,6 +48,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { useFitNames } from './fitNames.ts';
 import { useAllLangLayout } from './useAllLangLayout.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
+import { BuildingLevelBadge } from './LevelBadge.tsx';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
@@ -170,7 +171,7 @@ export function BuildingsScreen({ profile, onBack, onChange }: {
             <div className="cty-bld" key={row.id} data-building={row.id} data-level={row.level}>
               <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
               {/* 「Lv1 → Lv2」 · 「없음 → Lv1」 — 무엇이 느는지는 [짓기]/[증축]을 누르면 확인 팝업이 말한다 */}
-              <span className="lv" data-field="step">{stepText(row)}</span>
+              <span className="lv" data-field="step"><StepLevels row={row} /></span>
               <button
                 className="btn ghost sm"
                 data-action="build"
@@ -254,7 +255,11 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
       <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
         <FitLine className="modal-ttl" field="doneTitle" text={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')} />
         {/* 큰 글씨 「장터 Lv2」 — 이름 줄(그림 + 이름)은 큰 글씨와 같은 말이라 뺐다. 도시 증축 완료와 같은 꼴 (2026-11-13 기획자) */}
-        <FitLine className="cty-done-lv" field="doneLevel" text={t('city.bld.done.level', { name: buildingNameText(id), lv: level })} />
+        {/* 이름 + 레벨 배지(2026-11-19 기획자 — 건물 레벨은 글자 대신 배지) */}
+        <div className="cty-done-bld" data-field="doneLevel" data-level={level}>
+          <FitLine className="cty-done-lv" field="doneBldName" text={buildingNameText(id)} />
+          <BuildingLevelBadge level={level} className="cty-done-badge" />
+        </div>
         {/* 그 레벨에서 할 수 있는 일 — 「Lv1 병기구 제작 가능」 (2026-11-13 기획자: 현황 대신 기능) */}
         {row && <p className="row dim" data-field="doneCan">{buildingCanText(row)}</p>}
         {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
@@ -266,10 +271,11 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
   );
 }
 
-/** 「Lv1 → Lv2」 · 「없음 → Lv1」, 만렙은 「Lv5」 하나 */
-function stepText(row: BuildingRow): string {
-  const from = row.level > 0 ? `Lv${row.level}` : t('city.bld.none');
-  return row.level >= row.maxLevel ? from : `${from} → Lv${row.level + 1}`;
+/** 「[Lv1] → [Lv2]」 · 「없음 → [Lv1]」, 만렙은 「[Lv5]」 하나 — 레벨은 배지 그림(2026-11-19 기획자) */
+function StepLevels({ row }: { row: BuildingRow }): React.JSX.Element {
+  const from = row.level > 0 ? <BuildingLevelBadge level={row.level} /> : <span className="bld-none">{t('city.bld.none')}</span>;
+  if (row.level >= row.maxLevel) return <span className="bld-step">{from}</span>;
+  return <span className="bld-step">{from}<span className="bld-arrow">→</span><BuildingLevelBadge level={row.level + 1} /></span>;
 }
 
 /**
@@ -285,7 +291,7 @@ function BuildAskModal({ row, line, credits, onConfirm, onClose }: {
     <div className="modal-back" data-modal="buildAsk" data-building={row.id} onClick={onClose}>
       <div className="modal mod-plank cty-modal cty-ask" onClick={(e) => e.stopPropagation()}>
         <p className="modal-ttl"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></p>
-        <p className="row cty-ask-step" data-field="askStep">{stepText(row)}</p>
+        <p className="row cty-ask-step" data-field="askStep"><StepLevels row={row} /></p>
         <p className="row" data-field="askWhat">{line}</p>
         {credits !== null && (
           <p className="row dim cty-ask-cost" data-field="askCost">

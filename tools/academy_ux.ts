@@ -111,7 +111,7 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await toAcademy();
   await shot('acd-01-home');
-  const lvText = await page.textContent('[data-field="level"]');
+  const lvText = await page.getAttribute('[data-field="level"] .bld-lv', 'data-level');   // 건물 레벨은 배지 그림(2026-11-19)
   if (!lvText?.includes('3')) fail(`태학 레벨이 안 보인다 — ${lvText}`);
   if (await current() !== 'idle') fail('연구 중이 아닌데 「없음」이 아니다');
   if (await page.$('[data-field="researched"] .acd-chip')) fail('연구한 적이 없는데 칩이 있다');

@@ -78,6 +78,7 @@ import { useGuide } from './useGuide.tsx';
 import { guidesEnabled } from './guideScript.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
+import { BuildingLevelBadge } from './LevelBadge.tsx';
 
 /** 증축 조건 칸의 그림 — 이름은 올리면(`condLabel`) */
 const COND_ICON = {
@@ -248,7 +249,7 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               data-building={row.id} data-level={row.level} data-field={row.id}
             >
               <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
-              <span className="lv">{row.level > 0 ? `Lv${row.level}` : t('city.bld.none')}</span>
+              <span className="lv">{row.level > 0 ? <BuildingLevelBadge level={row.level} /> : t('city.bld.none')}</span>
               {/* 말줄임은 글에만 — 인장까지 같은 칸에 두면 긴 번역(몽골어)에서 인장이 잘려 나간다 */}
               <span className="fx v">
                 <BuildingStatus profile={profile} row={row} />

@@ -45,6 +45,8 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { GameIcon, IconCount } from './GameIcon.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
@@ -150,7 +152,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
       {/* 운영 현황판 — 제목 바 바로 밑(대장간의 `.frg-status`와 같은 자리) */}
       <div className="place-panel hsp-status" data-field="status">
         <div className="hsp-summary">
-          <span data-field="level">{t('hospital.summary.level', { level: buildingLevel(profile, 'hospital') })}</span>
+          <span data-field="level"><BuildingLevel id="hospital" name={buildingNameText('hospital')} level={buildingLevel(profile, 'hospital')} /></span>
           {/* 「치료실 3개 · 부상 장수 2명」을 그림 + 수로(기획자 2026-10-26) — 이름은 올리면 */}
           <span data-field="rooms"><IconCount name="hosp-ward" label={t('hospital.summary.rooms', { n: rooms })} n={rooms} /></span>
           <span data-field="injured"><IconCount name="st-injured" label={t('hospital.summary.injured', { n: injured.length })} n={injured.length} /></span>

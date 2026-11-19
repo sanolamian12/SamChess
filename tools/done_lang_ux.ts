@@ -65,7 +65,9 @@ try {
         const lines = new Set(rects.map((q) => Math.round(q.top))).size;
         return { text: el.textContent ?? '', scale: el.dataset.fitScale ?? '?', ok: lines === 1 && tr.left >= box.left && tr.right <= box.right };
       };
-      return { ttl: one('doneTitle'), lv: one('doneLevel') };
+      // 건물 완료는 이름 + 레벨 배지(2026-11-19) — 한 줄 검사는 이름 글자에, 배지는 판 안에 있는가만
+      const bld = document.querySelector(`${sel} [data-field="doneBldName"]`);
+      return { ttl: one('doneTitle'), lv: one(bld ? 'doneBldName' : 'doneLevel'), ...(bld ? { badge: (() => { const b = document.querySelector(`${sel} .cty-done-badge`)!.getBoundingClientRect(); return { text: 'badge', scale: '-', ok: b.left >= box.left && b.right <= box.right && b.height > 0 }; })() } : {}) };
     }, modal);
     for (const [k, v] of Object.entries(r)) if (!v.ok) fail(`${where} — ${k} 「${v.text}」가 한 줄이 아니거나 판 밖이다 (배율 ${v.scale})`);
     return { ttl: r.ttl.text, lv: r.lv.text, ttlScale: r.ttl.scale, lvScale: r.lv.scale };

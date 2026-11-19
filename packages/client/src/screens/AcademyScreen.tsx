@@ -55,6 +55,8 @@ import { diffText } from './tacticDiff.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { SchoolIcon, TacticIcon } from './TacticIcon.tsx';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 /** 다시 그리는 주기 — 표기가 분 단위라 초마다 그릴 까닭이 없다. 판정엔 안 쓴다 */
 const REDRAW_MS = 5_000;
@@ -202,7 +204,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
       {/* 현황판 — 태학 레벨 · 연구된 책략 · 연구 중 (기획자 지정 세 줄) */}
       <div className="place-panel acd-status" data-field="status" ref={statusRef}>
         <div className="acd-summary">
-          <span data-field="level">{t('academy.summary.level', { level })}</span>
+          <span data-field="level"><BuildingLevel id="academy" name={buildingNameText('academy')} level={level} /></span>
           <span data-field="doneCount">{t('academy.summary.done', { done: done.length, max: ACADEMY_MAX_LEVEL })}</span>
         </div>
         {level <= 0 ? (

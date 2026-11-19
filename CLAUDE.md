@@ -319,7 +319,7 @@ TypeScript는 타입 검사와 `.d.ts` 생성에만 쓴다(`emitDeclarationOnly`
   그림 안의 글자만 예외. 상수는 `screens/fontFloor.ts`이고 **글자를 재서 줄이는 코드도 그 밑으로 안 간다**(`useFitText` · `useFitNames` 등 — 그래도 안 들면 접는다).
   좁아서 안 들면 글자를 줄이지 말고 칸을 다시 짠다. 확인은 `tools/font_audit.ts`(보이는 글자의 실제 크기 · 잘림을 화면마다 잰다) →
   `tools/build_font_board.py`(점검판 `Design/글자크기점검/점검판.html`). **장수 레벨은 목록에서 열로 두지 않고 이름 오른쪽 배지**(`LevelBadge` ·
-  `ui/levelBadge.ts`, 그림 `public/icons/level/lv-{1..10}.png` ← `npm run ui`) — 장수 상세 · 전투 장수 팝업도 같은 배지다.
+  `ui/levelBadge.ts`, 그림 `public/icons/level/lv-{1..10}.png` ← `npm run ui`) — 장수 상세 · 전투 장수 팝업도 같은 배지다. **건물 레벨도 글자 대신 배지**(2026-11-19 — `BuildingLevelBadge` · `BuildingLevel`, 그림 `lv-` 옆의 `bld-{1..5}.png`, 0은 「없음」). 문장 속 레벨 · 도시 레벨은 글자 그대로.
 - **판 안에 숨었다가 조작에 따라 나타나는 안내 · 오류 줄을 만들지 않는다** (2026-11-19 기획자 — 판 크기가 출렁인다).
   빤한 것(이름 변경 판의 「같은 이름」처럼 그 판에 들어온 까닭으로 알 수 있는 것)은 단추만 막고 말하지 않는다. 말이 필요하면 —
   막힌 이유든 서버 거절 · 실패든 — **`Say`**(`screens/Steward.tsx`)로 그 자리의 사람(내관 · 무관 · 학사 · 농부 · 의원 · 대장장이)이

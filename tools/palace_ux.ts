@@ -88,7 +88,7 @@ try {
     const nm = document.querySelector('.plc-name-row [data-field="cityName"]')?.getBoundingClientRect();
     const panel = document.querySelector('[data-field="palaceStatus"]')?.getBoundingClientRect();
     return {
-      cells, city: txt('cityLevel'), palace: txt('palaceLevel'), pool: txt('pool'),
+      cells, city: txt('cityLevel'), palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
       emperor: (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor,
       renameInRow: !!document.querySelector('.plc-name-row [data-action="rename"]'),
       // [이름 변경]이 판 오른쪽 벽에 붙었는가 — 판 안쪽 오른쪽 끝과 단추 오른쪽 끝의 차이
@@ -187,7 +187,8 @@ try {
   });
   // 줄은 「Lv1 → Lv2」 · 「없음 → Lv1」만 — 효과 문장은 확인 팝업이 말한다 (2026-11-12)
   const steps = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cty-bld')].map((el) =>
-    [(el as HTMLElement).dataset.building, el.querySelector('[data-field="step"]')?.textContent ?? ''])));
+    [(el as HTMLElement).dataset.building, [...el.querySelectorAll('[data-field="step"] .bld-step > *')]
+      .map((c) => (c.classList.contains('bld-badge') ? `Lv${(c as HTMLElement).dataset.level}` : c.textContent)).join(' ')])));   // 레벨은 배지 그림(2026-11-19)
   if (!/2/.test(steps.palace ?? '') || !(steps.palace ?? '').includes('→')) fail(`궁궐 줄이 「Lv2 → Lv3」이 아니다 — "${steps.palace}"`);
   if (!(steps.academy ?? '').includes('→ Lv1')) fail(`태학 줄이 「없음 → Lv1」이 아니다 — "${steps.academy}"`);
   if (await page.$('.cty-bld .fx')) fail('건물 관리 줄에 아직 효과 문장 칸이 있다');
@@ -196,7 +197,8 @@ try {
   await page.waitForTimeout(200);
   await page.screenshot({ path: `${SHOTS}/palace-05-buildAsk.png` });
   const ask = await page.evaluate(() => ({
-    step: document.querySelector('[data-field="askStep"]')?.textContent ?? '',
+    step: [...document.querySelectorAll('[data-field="askStep"] .bld-step > *')]
+      .map((c) => (c.classList.contains('bld-badge') ? `Lv${(c as HTMLElement).dataset.level}` : c.textContent)).join(' '),
     what: document.querySelector('[data-field="askWhat"]')?.textContent ?? '',
     cost: document.querySelector('[data-field="askCost"]')?.textContent ?? '',
   }));

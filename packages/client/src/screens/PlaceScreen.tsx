@@ -66,6 +66,8 @@ import { GameIcon, ModeIcon } from './GameIcon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 
 /** 그림 화살표(`::before`)를 입힌 자리 — 거기서만 문구의 「← 」를 뗀다.
@@ -118,17 +120,16 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
           /* 37쪽의 두 갈래. **[도시 관리]는 C2(41쪽)가 열었다** — 잠겨 있던 동안
              「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
              「고장인가」가 남는다」에 대한 처리였다. */
-          <section className="place-panel">
+          /* 단추는 이름만, 가운데 (2026-11-19 기획자 — 소개 글을 걷었다) */
+          <section className="place-panel plc-cmds">
             {/* 장수 일람으로 이끈다 — 상세를 한 번 열어 볼 때까지(`officer.card`), 증축 표지가 없을 때만 (2026-11-14 기획자) */}
             <button className="btn wide" data-action="officers" onClick={onOfficers}
               data-guide-cue={growthOn && !growthCue(profile) && !guideSeen(profile, 'officer.card') ? '' : undefined}>
               <span className="lbl">{t('palace.officers')}</span>
-              <span className="sub">{t('palace.officers.sub')}</span>
             </button>
             {/* 첫 증축의 길(2026-11-13) — 증축할 채비가 됐거나 첫 증축 뒤 아직 안 지었으면 [도시 관리]가 빛난다 */}
             <button className="btn wide" data-action="city" data-guide-cue={growthOn && growthCue(profile) ? '' : undefined} onClick={onCity}>
               <span className="lbl">{t('palace.city')}</span>
-              <span className="sub">{t('palace.city.sub')}</span>
             </button>
           </section>
         )}
@@ -200,9 +201,13 @@ function PalaceStatus({ profile, onChange }: {
       <div className="plc-grid">
         <span className="plc-cell" data-field="cityLevel">{t('city.summary.level', { level: profile.cityLevel })}</span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
-          <GameIcon name="emperor" label={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })} text />
+          {/* 황제 — E급 표지 + 「황제」(2026-11-19 기획자): 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자. 옹립 여부는 올리면 */}
+          <span className="plc-emperor" title={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}>
+            <img className="plc-emperor-mark" src="icons/grade-e.png" alt="" draggable={false} />
+            <span className="plc-emperor-name">{t('city.emperor')}</span>
+          </span>
         </span>
-        <span className="plc-cell" data-field="palaceLevel">{t('palace.summary.level', { level: buildingLevel(profile, 'palace') })}</span>
+        <span className="plc-cell" data-field="palaceLevel"><BuildingLevel id="palace" name={buildingNameText('palace')} level={buildingLevel(profile, 'palace')} /></span>
         <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
       </div>
     </section>
@@ -308,7 +313,7 @@ function BarracksStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elem
         {/* 건물 레벨을 맨 앞에 — 병원·대장간 현황판의 「{건물} Lv{n}」과 같은 꼴(2026-09-18 지정).
             군량 상한이 곧 병영 레벨에서 나오므로 바로 옆 숫자의 까닭이기도 하다 */}
         <span className="bar-stat bar-level" data-field="level">
-          {t('barracks.summary.level', { level: buildingLevel(profile, 'barracks') })}
+          <BuildingLevel id="barracks" name={buildingNameText('barracks')} level={buildingLevel(profile, 'barracks')} />
         </span>
         <span className="bar-stat" data-field="grain" data-low={low ? '1' : '0'}>
           <img className="bar-icon" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />

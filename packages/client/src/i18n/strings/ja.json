@@ -1035,7 +1035,7 @@
   "city.bld.blurb.academy": "策略改良を研究できる",
   "city.bld.blurb.hospital": "負傷武将の治療",
   "city.bld.grain": "現在 {have} / 最大 {max}",
-  "palace.pool": "登用武将：{have} / {max}人",
+  "palace.pool": "武将：{have} / {max}人",
   "palace.emperor": "皇帝：{state}",
   "reason.city.capNoEmperor": "Lv{cap}が上限だ — Lv{max}には皇帝の擁立が必要",
   "reason.city.maxLevel": "既に最大レベルだ（Lv{lv}）",

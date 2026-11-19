@@ -60,6 +60,8 @@ import { CityBonusMark, Sentence, Span } from './CityBonus.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { GameIcon } from './GameIcon.tsx';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 type View = 'home' | 'craft' | 'assign';
 
@@ -418,7 +420,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           줄이라 view별 분기 밖으로 뺐다. */}
       <div className="place-panel frg-status">
         <div className="frg-summary">
-          <span data-field="level">{t('forge.summary.level', { level: forgeLevel(debugProfile) })}</span>
+          <span data-field="level"><BuildingLevel id="forge" name={buildingNameText('forge')} level={forgeLevel(debugProfile)} /></span>
           <span data-field="total">{t('forge.summary.total', { n: summary.owned })}</span>
           <span data-field="stock">{t('forge.summary.stock', { n: summary.spare })}</span>
           <span data-field="assigned">{t('forge.summary.assigned', { n: summary.assigned })}</span>

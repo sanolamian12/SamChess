@@ -49,6 +49,8 @@ import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { useGuide } from './useGuide.tsx';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 type View = 'home' | 'shop' | 'gold' | 'merc' | 'items' | 'storage' | 'goods';
 
@@ -234,7 +236,7 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
   return (
     <section className="place-panel mkt-status" data-field="status">
       <div className="mkt-status-top">
-        <span className="mkt-lv" data-field="marketLevel">{t('market.status.level', { level: lv })}</span>
+        <span className="mkt-lv" data-field="marketLevel"><BuildingLevel id="market" name={buildingNameText('market')} level={lv} /></span>
       </div>
       {/* 3등분 격자 (2026-11-12 지정) — 칸마다 왼쪽 정렬. 1줄: 금화 / 군량 / 자재,
           2줄: 장수 카드(1~2칸에 걸침) / 보유 아이템(장터 간판, 자재와 같은 세로선) */}

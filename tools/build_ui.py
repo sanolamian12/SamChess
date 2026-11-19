@@ -465,6 +465,11 @@ LEVEL_BADGE_SRC = TUTORIAL_ICON_SRC / "장수 레벨.png"
 LEVEL_BADGE_COUNT = 10
 LEVEL_BADGE_H = 120
 
+# 건물 레벨 배지 (2026-11-19 기획자) — 한 장에 5 × 1, Lv1 ~ Lv5(건물 최대 레벨). 장수 레벨 배지와 같은 법으로 자른다
+# → `public/icons/level/bld-{1..5}.png`, 화면은 `screens/LevelBadge.tsx`의 `BuildingLevelBadge`
+BUILDING_LEVEL_SRC = TUTORIAL_ICON_SRC / "건물 레벨.png"
+BUILDING_LEVEL_COUNT = 5
+
 ICONS: dict[str, str] = {
     "button_settings": "settings",
     "button_backarrow": "back",
@@ -937,7 +942,7 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
     return {i: square_cells([crops[i]], side_of[i])[0] for i in ids}
 
 
-def build_level_badges(path: Path) -> list[Image.Image]:
+def build_level_badges(path: Path, count: int = LEVEL_BADGE_COUNT, rows: int = 2) -> list[Image.Image]:
     """`LEVEL_BADGE_SRC` 참조 — 바탕을 걷고, 큰 알파 덩어리 열 개를 줄(위→아래) · 칸(왼→오른) 차례로 잘라 높이를 맞춘다."""
     from scipy import ndimage
 
@@ -945,10 +950,10 @@ def build_level_badges(path: Path) -> list[Image.Image]:
     solid = ndimage.binary_fill_holes(rgba[:, :, 3] > 0)
     labels, n = ndimage.label(solid)
     sizes = ndimage.sum(solid, labels, range(1, n + 1))
-    keep = (np.argsort(sizes)[::-1][:LEVEL_BADGE_COUNT] + 1).tolist()
+    keep = (np.argsort(sizes)[::-1][:count] + 1).tolist()
     boxes = ndimage.find_objects(labels)
     found = [(boxes[i - 1], i) for i in keep]
-    row_h = rgba.shape[0] / 2
+    row_h = rgba.shape[0] / rows
     found.sort(key=lambda b: (int(((b[0][0].start + b[0][0].stop) / 2) // row_h), b[0][1].start))
     out: list[Image.Image] = []
     for (ys, xs), i in found:
@@ -1088,6 +1093,17 @@ def main() -> int:
             made_icons.append((f"level/lv-{k}", im))
     else:
         skipped += LEVEL_BADGE_COUNT
+
+    # ── 건물 레벨 배지 — 한 줄 다섯 장 ──
+    if not BUILDING_LEVEL_SRC.exists():
+        missing.append(f"new/{BUILDING_LEVEL_SRC.name}")
+    elif not all(up_to_date(OUT_ICONS / "level" / f"bld-{k}.png", BUILDING_LEVEL_SRC) for k in range(1, BUILDING_LEVEL_COUNT + 1)):
+        for k, im in enumerate(build_level_badges(BUILDING_LEVEL_SRC, BUILDING_LEVEL_COUNT, 1), start=1):
+            (OUT_ICONS / "level").mkdir(parents=True, exist_ok=True)
+            im.save(OUT_ICONS / "level" / f"bld-{k}.png")
+            made_icons.append((f"level/bld-{k}", im))
+    else:
+        skipped += BUILDING_LEVEL_COUNT
 
     # ── 소리 과녁 — 제 비율 그대로 ──
     (OUT_UI / "volume").mkdir(parents=True, exist_ok=True)

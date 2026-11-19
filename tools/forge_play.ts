@@ -148,7 +148,7 @@ try {
   await page.waitForSelector('[data-action="craft"]', { timeout: 10_000 });
   await shot('02-forge-home');
   const summary = await page.evaluate(() => ({
-    level: document.querySelector('[data-field="level"]')?.textContent,
+    level: (document.querySelector('[data-field="level"] .bld-lv') as HTMLElement | null)?.dataset.level,
     total: document.querySelector('[data-field="total"]')?.textContent,
     stock: document.querySelector('[data-field="stock"]')?.textContent,
     assigned: document.querySelector('[data-field="assigned"]')?.textContent,

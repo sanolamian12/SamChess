@@ -1035,7 +1035,7 @@
   "city.bld.blurb.academy": "可研究策略改良",
   "city.bld.blurb.hospital": "治療負傷武將",
   "city.bld.grain": "目前 {have} / 上限 {max}",
-  "palace.pool": "登用武將：{have} / {max}人",
+  "palace.pool": "武將：{have} / {max}人",
   "palace.emperor": "皇帝：{state}",
   "reason.city.capNoEmperor": "Lv{cap}為上限 — Lv{max}需要擁立皇帝",
   "reason.city.maxLevel": "已是最高等級（Lv{lv}）",

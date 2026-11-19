@@ -56,6 +56,8 @@ import { GameIcon, HealthIcon } from './GameIcon.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
 import type { RaidTone } from './raidText.ts';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingLevel } from './LevelBadge.tsx';
 
 /** 도적단 상태 — 글 앞의 그림(없음 · 출현 · 약탈 · 퇴치) */
 const RAID_TONE_ICON: Record<RaidTone, GameIconName> = { none: 'raid-none', alert: 'raid-alert', looted: 'raid-looted', cleared: 'rec-win' };   // 퇴치 완료 = 튜토리얼 클리어의 둥근 승리 인장(2026-11-16 기획자)
@@ -197,7 +199,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
       {/* 현황판 — 두 칸(레벨 | 🌾 +n/시간) 아래 「도적단 출현」, 그 아래 「파수꾼 배치」와 자리 다섯 */}
       <div className="place-panel frm-status" data-field="status">
         <div className="frm-top">
-          <span data-field="level">{t('farm.summary.level', { level })}</span>
+          <span data-field="level"><BuildingLevel id="farm" name={buildingNameText('farm')} level={level} /></span>
           {/* 군량 아이콘 — 장터·병영·출정하기와 같은 그림(`GrainCost`) */}
           <span className="frm-rate" data-field="grainPerHour" data-n={grainPerHour(profile)}>
             {/* 시간당 충전 = 군량 자루 + 「+」(`grain-rate`) */}
