@@ -113,7 +113,7 @@ import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
-import { GradeBadge } from './GradeBadge.tsx';
+import { GlowGrade } from './GlowGrade.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import { useFitText } from './useFitText.ts';
 
@@ -327,11 +327,11 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
             <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
             <span className="ofc-grades">
               <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
-                <GradeBadge grade="E" />
+                <GlowGrade grade="E" />
               </span>
               {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
                 <span key={g} className="ofc-grade-item">
-                  <GradeBadge grade={g} />
+                  <GlowGrade grade={g} />
                   <b>{tally[g]}</b>
                 </span>
               ))}
@@ -424,7 +424,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                     붙인다 — 언어 길이에 안 흔들린다. 줄 전체를 두르던 금색
                     액자는 2026-09-02에 다시 걷어냈다(style.css 참조). */}
                 <span className="c-nm">
-                  <GradeBadge grade={r.grade} />
+                  <GlowGrade grade={r.grade} />
                   <LevelBadge level={r.level} />
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
                   {r.canLevelUp && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}

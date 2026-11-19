@@ -1793,6 +1793,40 @@ img.no-art { visibility: hidden; }
 /* 황제(E)는 셀 수 있는 값이 아니라 있고 없음이라 — 배지를 흐리게 만드는 것으로
    「없다」를 말한다(옆에 숫자를 안 붙인다, 위 컴포넌트 머리말 참조). */
 .ofc-grade-item[data-have="0"] { opacity: .35; }
+/* 등급 보석의 섬광 · 광택 — 장수 일람(줄 · 맨 위 인원 줄, 2026-11-20 기획자). `GlowGrade`.
+   뒤 섬광은 꼬마 뒤 후광과 같은 색 규칙(S 자주 · A 흰 별빛 · E 금, B · C · D 없음), 보석 위에는 4.5초에 한 번 광택이 스친다
+   (장수 상세 이름 줄 `.ofcard-title .gr`과 같은 `gr-glint`, 보석 모양으로만). 줄마다 조금씩 늦춰 위에서 아래로 물결처럼 지나간다 */
+.glow-gr { position: relative; display: inline-flex; flex: none; --glint-delay: 0s; }
+.glow-gr-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 3.2; z-index: 0; }
+/* 밝은 양피지 위라 꼬마 뒤(.6)보다 진하게 — .6이면 흰 별빛이 종이에 묻혀 안 보였다 */
+.glow-gr-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
+@keyframes glow-gr-in { to { opacity: 1; } }
+/* 크기는 E급 금빛 기준 — S급 자주 90% · A급 흰 별빛 80%(2026-11-20 기획자) */
+.glow-gr-halo[data-blink="purple"] { --blink-w: calc(3.2 * .9); }
+.glow-gr-halo[data-blink="plain"] { --blink-w: calc(3.2 * .8); }
+.glow-gr .gr { position: relative; z-index: 1; }
+.glow-gr .gr::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, #fff0 30%, #fffd 47%, #fff 50%, #fffd 53%, #fff0 70%) no-repeat;
+  background-size: 300% 100%; background-position: 150% 0;
+  -webkit-mask: var(--gr-img) center / contain no-repeat; mask: var(--gr-img) center / contain no-repeat;
+  mix-blend-mode: screen; animation: gr-glint 4.5s ease-in-out var(--glint-delay) infinite;
+}
+.glow-gr .gr[data-grade="S"] { --gr-img: url(icons/grade-s.png); }
+.glow-gr .gr[data-grade="A"] { --gr-img: url(icons/grade-a.png); }
+.glow-gr .gr[data-grade="B"] { --gr-img: url(icons/grade-b.png); }
+.glow-gr .gr[data-grade="C"] { --gr-img: url(icons/grade-c.png); }
+.glow-gr .gr[data-grade="D"] { --gr-img: url(icons/grade-d.png); }
+.glow-gr .gr[data-grade="E"] { --gr-img: url(icons/grade-e.png); }
+.glow-gr .gr[data-fallback]::after { display: none; }
+.ofc-rows > :nth-child(2) .glow-gr, .ofc-grade-item:nth-child(2) .glow-gr { --glint-delay: .1s; }
+.ofc-rows > :nth-child(3) .glow-gr, .ofc-grade-item:nth-child(3) .glow-gr { --glint-delay: .2s; }
+.ofc-rows > :nth-child(4) .glow-gr, .ofc-grade-item:nth-child(4) .glow-gr { --glint-delay: .3s; }
+.ofc-rows > :nth-child(5) .glow-gr, .ofc-grade-item:nth-child(5) .glow-gr { --glint-delay: .4s; }
+.ofc-rows > :nth-child(6) .glow-gr, .ofc-grade-item:nth-child(6) .glow-gr { --glint-delay: .5s; }
+.ofc-rows > :nth-child(7) .glow-gr { --glint-delay: .6s; }
+.ofc-rows > :nth-child(8) .glow-gr { --glint-delay: .7s; }
+@media (prefers-reduced-motion: reduce) { .glow-gr .gr::after { animation: none; } }
 
 /* 상세 — 38쪽. 위 세 갈래 · 그림 + 능력 · 고유기술 · 소개 · 책략 */
 .ofc-nav { display: flex; gap: .3rem; }
