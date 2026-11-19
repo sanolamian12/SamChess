@@ -601,7 +601,7 @@ def render_frame(rgb: np.ndarray, alpha: np.ndarray, body: dict, size: int) -> I
 
 # 기획자가 원본에서 잔디판을 손으로 지운 장수(2026-11-15) — 옷단이 잔디와 색 · 높이가 같아
 # 잔디 지우기가 옷단을 깎았다. 원본이 이미 깨끗하므로 잔디 지우기를 건너뛴다.
-GRASS_FREE = {"간옹", "노숙", "관순", "뇌동"}
+GRASS_FREE = {"간옹", "노숙", "관순", "뇌동", "순상"}  # 순상: 원본에 잔디판이 없고 연녹색 바지를 잔디로 깎았다(2026-11-19)
 
 # 초록 옷단이 잔디판 바로 위까지 내려와 잔디로 함께 지워지는 장수(2026-11-16, 관우 책략 칸의 앞자락 — 기획자) — 발에서
 # 이만큼(원본 px) 위까지만 잔디를 찾는다. 관우: 잔디판 윗선은 발 위 18~27px, 앞자락 아래끝은 발 위 40px
@@ -614,6 +614,12 @@ HOLE_FILL = {"뇌동": {2: 600}}
 # 〃 투구처럼 매끈한 면에 난 구멍(2026-11-18, 비관 — 흰 반사광이 바탕으로 빠졌다): 아래를 끌어올리면 얼굴이 올라오므로
 # 가장 가까운 둘레 색으로 메운다. 그림 위쪽 절반의 구멍만 — 다리 사이 같은 아래쪽 틈은 안 건드린다
 HOLE_FILL_NEAR = {"비관": {0: 900, 2: 900, 3: 900, 4: 900}}
+# 〃 그림 아래쪽 절반에서(2026-11-20, 양회 — 회색 바지의 밝은 자리가 바탕으로 빠졌다. 공격 칸 두 다리 · 책략 칸 왼다리 — 기획자)
+HOLE_FILL_LOW = {"양회": {2: 900}}
+# 〃 바깥으로 트여 있어 「갇힌 구멍」으로 안 잡히는 자리(양회 책략 칸 왼다리 — 바짓가랑이 바깥 윤곽까지 빠졌다): 이 네모(원본 px,
+# x0 · y0 · x1 · y1 — 끝 포함) 안의 빈 픽셀을 둘레 색으로 메우고, 바깥 투명에 닿는 가장자리는 윤곽선 색으로 다시 긋는다
+HOLE_BOX = {"양회": {3: [(1066, 255, 1098, 275)]}}
+HOLE_OUTLINE = (38, 30, 36)   # 〃 다시 긋는 윤곽선 색(이 그림체의 검은 테)
 HOLE_RIM = 2   # 〃 구멍 둘레의 번진 테두리(px)
 HOLE_PINK = 20       # 〃 둘레 색으로 메울 때(`HOLE_FILL_NEAR`) min(R, B) − G 가 이만큼 넘는 분홍 기운도 메운다
 HOLE_SMOOTH = 40     # 〃 메운 자리를 고르게 펴는 횟수
@@ -667,14 +673,17 @@ def patch_boxes(rgb: np.ndarray, fg: np.ndarray, boxes: list[tuple[int, int, int
     return rgb, fg
 
 
-def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int, near: bool = False
-               ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int, near: bool = False,
+               low: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     holes = ndimage.binary_fill_holes(fg) & ~fg
     if near:
         # 반쯤 빠진 픽셀(반투명)도 구멍이다 — 짙은 판 위에서 투구에 회색 얼룩, 밝은 판 위에서 분홍 줄로 비친다
         solid_fg = fg & (alpha > 200)
         holes |= ndimage.binary_fill_holes(solid_fg) & ~solid_fg
-        holes[holes.shape[0] // 2:] = False
+        if low:
+            holes[:holes.shape[0] // 2] = False   # 다리 구멍(`HOLE_FILL_LOW`) — 아래쪽 절반만
+        else:
+            holes[holes.shape[0] // 2:] = False
     lab, n = ndimage.label(holes)
     if not n:
         return rgb, fg, alpha
@@ -706,6 +715,29 @@ def fill_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, max_area: int
     return rgb, fg | fill, np.where(fill, 255.0, alpha)
 
 
+def fill_box_holes(rgb: np.ndarray, fg: np.ndarray, alpha: np.ndarray, boxes
+                   ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """`HOLE_BOX` — 네모 안의 빈(반쯤 빈) 픽셀을 메운다. 색은 가장 가까운 불투명 몸 색에서 번져 들어오게 펴고,
+    네모 밖 투명에 닿는 가장자리는 윤곽선을 다시 긋는다(바짓가랑이 바깥 테까지 빠진 자리라서)."""
+    fill = np.zeros_like(fg)
+    for x0, y0, x1, y1 in boxes:
+        fill[y0:y1 + 1, x0:x1 + 1] = True
+    fill &= ~(fg & (alpha > 200))
+    if not fill.any():
+        return rgb, fg, alpha
+    solid = fg & (alpha > 200) & ~fill
+    _, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+    rgb = rgb.copy()
+    rgb[fill] = rgb[iy[fill], ix[fill]]
+    for _ in range(HOLE_SMOOTH):
+        blur = ndimage.uniform_filter(rgb.astype(np.float32), size=(3, 3, 1))
+        rgb[fill] = blur[fill]
+    body = solid | fill
+    edge = fill & ndimage.binary_dilation(~body, EIGHT)
+    rgb[edge] = HOLE_OUTLINE
+    return rgb, fg | fill, np.where(fill, 255.0, alpha)
+
+
 def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bool, str | None]:
     """칸 크기마다 한 장씩. 배경 제거·몸통 찾기·잔디 제거는 **한 번만** 한다 —
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
@@ -734,6 +766,10 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
             cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, alpha, HOLE_FILL[path.stem][k])
         if k in HOLE_FILL_NEAR.get(path.stem, {}):
             cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, cell_alpha, HOLE_FILL_NEAR[path.stem][k], near=True)
+        if k in HOLE_FILL_LOW.get(path.stem, {}):
+            cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, cell_alpha, HOLE_FILL_LOW[path.stem][k], near=True, low=True)
+        if k in HOLE_BOX.get(path.stem, {}):
+            cell_rgb, fg, cell_alpha = fill_box_holes(cell_rgb, fg, cell_alpha, HOLE_BOX[path.stem][k])
         # 잔디를 걷으면 거기 맞닿아 있던 몸 가장자리가 투명 곁이 된다 — 그 자리의 분홍 테두리를 한 번 더 고친다
         frame_rgb, _ = defringe(cell_rgb, np.where(fg, cell_alpha, 0.0))
 
