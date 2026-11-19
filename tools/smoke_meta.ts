@@ -1641,7 +1641,7 @@ if (!await page.$('[data-screen="officer-list"]')) fail('장수 일람이 뜨지
 const listRows = () => page.evaluate(() =>
   [...document.querySelectorAll('.ofc-rows .ofc-row')].map((el) => ({
     officer: (el as HTMLElement).dataset.officer!,
-    name: el.querySelector('.c-nm')?.textContent ?? '',
+    name: el.querySelector('.c-nm-text')?.textContent ?? '',
     stats: [...el.querySelectorAll('.c-st')].map((s) => Number(s.textContent)),
     flag: (el as HTMLElement).dataset.levelup === '1',
   })));
@@ -1677,12 +1677,15 @@ console.log(`✓ 장수 일람 — ${rows.length}줄, 요약 ${tally}, Flag 전�
 // 랭킹의 `SortMenu`를 재사용하도록 바뀌었는데 이 줄이 안 따라와, 그 뒤로
 // 스모크가 여기서 30초를 기다리다 죽고 **뒤따르는 검사가 한 번도 안 돌았다**
 // (2026-09-11에 발견). 「스모크는 첫 실패에서 멈춘다」의 재발이다.
+// **2026-11-19부터는 열 머리를 누른다**(`SortHead` — 초록 네온 = 큰 것이 위, 한 번 더 누르면 주홍 = 반대). 처음엔 이름에 초록
 const sortBy = async (key: string): Promise<void> => {
-  await page.click('.ofc-sortrow [data-action="sortMenu"]');
-  await page.click(`.ofc-sortrow .rk-pop .opt[data-value="${key}"]`);
+  await page.click(`.ofc-thead [data-sort="${key}"]`);
   await page.waitForTimeout(150);
 };
+if (await page.getAttribute('.ofc-thead [data-sort="name"]', 'data-neon') !== 'green') fail('처음 들어왔는데 이름 머리에 초록 네온이 없다');
+if (await page.$('.ofc-sortrow, [data-action="sortMenu"]')) fail('옛 정렬 단추 · 지금 기준 나무판이 남아 있다');
 await sortBy('might');
+if (await page.getAttribute('.ofc-thead [data-sort="might"]', 'data-neon') !== 'green') fail('무력 머리를 눌렀는데 초록 네온이 아니다');
 rows = await listRows();
 for (let n = 1; n < rows.length; n++) {
   if (rows[n - 1]!.stats[0]! < rows[n]!.stats[0]!) {
@@ -1690,6 +1693,13 @@ for (let n = 1; n < rows.length; n++) {
   }
 }
 console.log(`✓ 정렬(무력) — ${rows.map((r) => `${r.name} ${r.stats[0]}`).join(' · ')}`);
+await sortBy('might');
+if (await page.getAttribute('.ofc-thead [data-sort="might"]', 'data-neon') !== 'orange') fail('무력 머리를 한 번 더 눌렀는데 주홍 네온이 아니다');
+rows = await listRows();
+for (let n = 1; n < rows.length; n++) {
+  if (rows[n - 1]!.stats[0]! > rows[n]!.stats[0]!) fail(`주홍(반대) 무력 정렬이 어긋난다: ${rows.map((r) => r.stats[0]).join(' ')}`);
+}
+console.log('✓ 정렬(무력 주홍) — 작은 것이 위');
 
 // 검색 — 이름 부분일치. 어느 장수가 지급됐는지는 시드가 정하므로 **한 줄에서 뽑아** 쓴다
 await sortBy('name');

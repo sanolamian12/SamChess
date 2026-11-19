@@ -25,10 +25,8 @@
  * 검색·정렬·표도 랭킹과 같은 화풍이다 (2026-09-02)
  * ────────────────────────────────────────────────────────────────
  *
- * 정렬 넷(가나다·무력·지력·통솔)은 늘 펴 둔 칩 대신 **랭킹의 `SortMenu`를 그대로
- * 재사용**한다 — [정렬 필터] 버튼을 누르면 뜨는 팝업, 같은 목판·같은 장부 패널
- * 그림이다. 새 컴포넌트를 만들지 않고 `RankingCommon.tsx`의 것을 그대로 가져다
- * 쓴다 — 「같은 뜻이면 같은 그림」이 여기서는 「같은 뜻이면 같은 컴포넌트」다.
+ * 정렬은 **열 머리를 눌러** 한다(2026-11-19 기획자 — `SortHead`). 이름 · 카드 · 무력 · 지력 · 통솔 머리를 누르면
+ * 초록 네온(자연스러운 순서) → 주홍 네온(반대)으로 번갈아 든다. 옛 [정렬 필터] 팝업(`SortMenu`)과 지금 기준 나무판은 걷었다.
  *
  * **검색창은 랭킹의 `SearchBar`를 그대로 가져오지 않는다** — 랭킹은 검색이
  * 서버 왕복이라 [검색] 버튼(또는 Enter)을 눌러야 나가지만, 여기는 이미 받은
@@ -38,7 +36,7 @@
  *
  * 표(`.ofc-row`/`.ofc-thead`)는 **그리드 구조를 그대로 두고 색만** 장부 패널
  * 화풍으로 입힌다(`.scr-officers`로 좁힌 CSS, `style.css` 참조) — 랭킹의 `.rk-row`가
- * flex인 것과 다르지만, 열 폭이 이미 고정된 여섯 칸(등급·이름·삼능력·레벨)이라
+ * flex인 것과 다르지만, 열 폭이 이미 고정된 다섯 칸(이름 · 카드 · 삼능력)이라
  * flex로 다시 짤 이유가 없다.
  *
  * ────────────────────────────────────────────────────────────────
@@ -103,10 +101,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  OFFICER_SORTS, canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, guideSeen, hospitalRooms, pendingGuide, injuryHealsAt, isHealing,
-  isInjured, nextRoomFreeAt, officerRankRows, officerRows, poolCap, poolUsed, searchRows, sortRows,
+  canLevelUp, cardsToLevelUp, equippedBy, freeRooms, gradeTally, guideSeen, hospitalRooms, pendingGuide, injuryHealsAt, isHealing,
+  isInjured, nextRoomFreeAt, officerRankRows, officerRows, poolCap, poolUsed,
 } from '@samchess/meta';
-import type { OfficerRankRow, OfficerSort, PlayerProfile } from '@samchess/meta';
+import type { OfficerRankRow, OfficerRow, PlayerProfile } from '@samchess/meta';
+import { SortHead, useColumnSort } from './SortHead.tsx';
 import { guidesEnabled } from './guideScript.ts';
 import { useGuide } from './useGuide.tsx';
 import { currentSession } from '../meta/auth.ts';
@@ -114,7 +113,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
-import { OfficerCardModal, SortMenu, stripBackArrow } from './RankingCommon.tsx';
+import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
 import type { CardInjury } from './RankingCommon.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { CityActionRejected, healOnServer } from '../meta/city.ts';
@@ -129,17 +128,31 @@ import { GradeBadge } from './GradeBadge.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import { useFitText } from './useFitText.ts';
 
-/* 등급·레벨은 표 머리와 같은 문구를 그대로 쓴다(`officers.col.*`) — 무력·지력·
-   통솔이 이미 그렇게 하고 있다(표 머리·정렬 메뉴가 같은 키를 공유). 새 낱말을
-   보태지 않는다. */
-const SORT_KEY: Record<OfficerSort, 'officers.col.grade' | 'officers.col.level' | 'officers.sort.name' | 'officers.sort.might' | 'officers.sort.intellect' | 'officers.sort.leadership'> = {
-  grade: 'officers.col.grade',
-  level: 'officers.col.level',
-  name: 'officers.sort.name',
-  might: 'officers.sort.might',
-  intellect: 'officers.sort.intellect',
-  leadership: 'officers.sort.leadership',
-};
+/**
+ * 정렬하는 열 — 머리를 눌러 고른다(`SortHead`, 2026-11-19 기획자). 초록이 자연스러운 순서다: 이름은 가나다(알파벳)순,
+ * 카드 · 삼능력은 큰 것이 위. 같으면 이름순. 이름은 **화면에 보이는 이름**(지금 언어)으로 견준다
+ */
+type OfficerCol = 'name' | 'cards' | 'might' | 'intellect' | 'leadership';
+const STAT_COLS = [
+  ['might', 'officers.sort.might'],
+  ['intellect', 'officers.sort.intellect'],
+  ['leadership', 'officers.sort.leadership'],
+] as const;
+
+function sortOfficers(rows: readonly OfficerRow[], key: OfficerCol, flip: boolean, lang: string): OfficerRow[] {
+  const collator = new Intl.Collator(lang.replace('_', '-'));
+  const nameOf = (r: OfficerRow): string => pickOfficerNameById(r.officer, r.name);
+  const byName = (a: OfficerRow, b: OfficerRow): number => collator.compare(nameOf(a), nameOf(b));
+  const natural = key === 'name' ? byName : (a: OfficerRow, b: OfficerRow): number => b[key] - a[key] || byName(a, b);
+  return [...rows].sort(flip ? (a, b) => natural(b, a) : natural);
+}
+
+/** 이름 찾기 — 화면에 보이는 이름(지금 언어)과 한국어 이름 둘 다 본다 */
+function searchOfficers(rows: readonly OfficerRow[], query: string): OfficerRow[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...rows];
+  return rows.filter((r) => r.name.toLowerCase().includes(q) || pickOfficerNameById(r.officer, r.name).toLowerCase().includes(q));
+}
 
 /** 한 쪽에 열 명 (요청 지정). 대장간 지급 팝업은 판이 좁아 **여덟**이다
     (2026-09-11 지정) — 값을 화면마다 다시 적지 않고 여기서 갈라 둔다. */
@@ -217,16 +230,12 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
    */
   chrome?: {
     title: string; onClose: () => void; pageSize?: number;
-    /**
-     * 검색 : 정렬 단추 = **1 : 1**이고 정렬 상태 나무판이 없다 — 고른 기준이 단추 글자(「정렬 필터」 대신)가 된다
-     * (2026-11-13 지정, 장터 보유 카드 정리). 없으면 2 : 1 : 1 그대로
-     */
-    sortInButton?: boolean;
   };
 }): React.JSX.Element {
-  useLang();
+  const lang = useLang();
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<OfficerSort>('grade');
+  // 처음엔 이름순(초록) — 2026-11-19 기획자
+  const sort = useColumnSort<OfficerCol>('name');
   const [page, setPage] = useState(0);
   // 열려 있는 카드는 **장수 id**로만 들고 있는다 — 행(`OfficerRankRow`)째 담아
   // 두면 그 순간의 **스냅샷**이라, 카드 위에서 레벨을 올려도(`LevelUpPanel`이
@@ -259,8 +268,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
   // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
   const [now, setNow] = useState(() => Date.now());
   const rows = useMemo(
-    () => sortRows(searchRows(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort),
-    [profile, query, sort, only],
+    () => sortOfficers(searchOfficers(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort.key, sort.flip, lang),
+    [profile, query, sort.key, sort.flip, only, lang],
   );
   const tally = useMemo(() => gradeTally(profile), [profile]);
   // 「보기」 카드용 — 모드를 안 줘 3v3·5v5 통산이다(장수 일람은 모드를 안 가른다)
@@ -344,7 +353,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
       return;
     }
     setPage(0);
-  }, [query, sort]);
+  }, [query, sort.key, sort.flip]);
 
   /**
    * **판 높이는 가장 긴 쪽에 고정** (2026-09-11 여섯 번째 지정 → 2026-11-13 공용 `useSteadyPage`로).
@@ -379,19 +388,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
       onChange={(e) => setQuery(e.target.value)}
     />
   );
-  /* 지금 정렬 기준 — 팝업을 안 열어도 보이는 나무판. 누르는 자리가
-     아니라서 버튼이 아니다(위 파일 머리말 참조). */
-  const sortCurrent = <span className="ofc-sort-current">{t(SORT_KEY[sort])}</span>;
-  const sortMenu = <SortMenu options={OFFICER_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} />;
-
   return (
     <>
       {cardGuide.node}
       <div className="place-body">
-        {!chrome && search}
-        {!chrome && <div className="ofc-sortrow">{sortCurrent}{sortMenu}</div>}
-
         <section className="place-panel block grow ofc-table">
+          {/* 검색은 장부 판 맨 위에(2026-11-19 기획자 — 판 밖에 있던 것을 들였다). 정렬은 열 머리가 한다 */}
+          {!chrome && <div className="ofc-searchrow">{search}</div>}
           {chrome && (
             <>
               {/* 첫 줄 — 왼쪽 벽에 제목, 오른쪽 벽 맨 위에 [X](지정 그대로) */}
@@ -406,39 +409,26 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                   <img className="ofcard-close-icon" src="icons/close.png" alt="" />
                 </button>
               </div>
-              {/* 둘째 줄 — 검색 : 정렬 상태 : 정렬 필터 = 2 : 1 : 1 (지정). `sortInButton`이면 검색 : 정렬 단추 = 1 : 1 */}
-              {chrome.sortInButton
-                ? (
-                  <div className="ofcpick-controls ofcpick-controls-half">
-                    {search}
-                    <SortMenu options={OFFICER_SORTS} value={sort} onChange={setSort} label={(v) => t(SORT_KEY[v])} buttonLabel={t(SORT_KEY[sort])} />
-                  </div>
-                )
-                : <div className="ofcpick-controls">{search}{sortCurrent}{sortMenu}</div>}
+              {/* 둘째 줄 — 검색(정렬은 열 머리가 한다, 2026-11-19 기획자 — 정렬 단추 · 지금 기준 나무판을 걷었다) */}
+              <div className="ofc-searchrow">{search}</div>
             </>
           )}
           {/* 표 머리는 목록과 같은 그리드를 쓴다 — 열 폭이 갈리면 숫자가 어긋나 보인다.
               열 순서는 등급 · 보유 카드 · 이름 · 무력 · 지력 · 통솔이다. 레벨은 열이 아니라
               **이름 오른쪽 배지**(2026-11-18 기획자 — 좁은 레벨 열과 그 머리가 글자를 작게 만들던 자리). */}
           <div className={`ofc-row ofc-thead${rowMod}`}>
-            <FitHead className="c-gr" label={t('officers.col.grade')} />
-            <FitHead className="c-cd" label={t('officers.col.cards')} />
-            <FitHead className="c-nm" label={t('officers.col.name')} />
-            {/* ★ **삼능력 머리는 글자가 아니라 아이콘이다** (2026-09-18). 칸이 1.8~2.3rem인데
-                몽골어 「Манлай」·「Түвшин」은 그보다 훨씬 길어 **옆 칸 제목과 겹쳤다**(지급
-                팝업에서 잡았다 — 한국어로만 보던 동안에는 드러날 수 없었다). 편성 화면의
-                보유 장수 표가 2026-09-16에 **같은 이유로 이미 아이콘**이고, 장수 카드의
-                삼능력 줄도 그렇다 — 아이콘은 언어와 무관하게 폭이 고정이고 이름은
-                `alt`·`title`로 남는다. */}
+            {/* 열 다섯 — 이름(등급 · 레벨 · 이름) · 카드 수 · 무력 · 지력 · 통솔 (2026-11-19 기획자). 머리를 누르면 정렬한다(`SortHead`).
+                카드 · 삼능력 머리는 아이콘이다 — 언어와 무관하게 폭이 고정이고 이름은 `title`로 남는다(2026-09-18 몽골어가 옆 칸과 겹쳤다) */}
+            <SortHead col="name" sort={sort} label={t('officers.col.name')} className="c-nm">{t('officers.col.name')}</SortHead>
+            {/* 카드 수 — 고르기 팝업(병기 · 아이템)에서는 칸을 숨긴다(`.ofc-row-equip .c-cd`) */}
+            <SortHead col="cards" sort={sort} label={t('officers.col.cards')} className="c-cd ic">
+              <img src="market/market_card.png" alt="" />
+            </SortHead>
             {health && <span className="c-hs" title={t('officers.col.status')}>{t('officers.col.status')}</span>}
-            {!health && ([
-              ['might', 'officers.sort.might'],
-              ['intellect', 'officers.sort.intellect'],
-              ['leadership', 'officers.sort.leadership'],
-            ] as const).map(([key, label]) => (
-              <span className="c-st ic" key={key}>
-                <img src={`icons/stat-${key}.png`} alt={t(label)} title={t(label)} />
-              </span>
+            {!health && STAT_COLS.map(([key, label]) => (
+              <SortHead key={key} col={key} sort={sort} label={t(label)} className="c-st ic">
+                <img src={`icons/stat-${key}.png`} alt="" />
+              </SortHead>
             ))}
             {equipPick && <span className="c-eq" title={t('officers.col.equip')}>{t('officers.col.equip')}</span>}
             {/* 체크 칸의 제목 「선택」(2026-09-17 지정) — 부대 편집과 대장간 지급이 같은 팝업이라
@@ -480,10 +470,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                   openCard(r.officer);
                 }}
               >
-                <span className="c-gr"><GradeBadge grade={r.grade} /></span>
-                {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서
-                    이미 계산해 낸다(화면은 다시 세지 않는다) */}
-                <span className="c-cd">{r.cards}</span>
+                {/* 이름 칸 = 등급 · 레벨 · 이름 한 벌 (2026-11-19 기획자 — 등급 열을 걷었다) */}
                 {/* 레벨업 Flag — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었는데
                     번역이 길어지면(포르투갈어 "Subir de nível" 등) 카드 수·이름
                     칸을 가려 뷰가 깨졌다(2026-09-02 피드백 스크린샷으로 확인).
@@ -491,11 +478,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
                     붙인다 — 언어 길이에 안 흔들린다. 줄 전체를 두르던 금색
                     액자는 2026-09-02에 다시 걷어냈다(style.css 참조). */}
                 <span className="c-nm">
-                  <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
-                  {/* 레벨은 열이 아니라 이름 오른쪽 배지(2026-11-18 기획자) */}
+                  <GradeBadge grade={r.grade} />
                   <LevelBadge level={r.level} />
+                  <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
                   {r.canLevelUp && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
                 </span>
+                {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서 이미 계산해 낸다(화면은 다시 세지 않는다) */}
+                <span className="c-cd">{r.cards}</span>
                 {health ? (() => {
                   const inst = profile.roster[r.officer];
                   const hurt = !!inst && isInjured(inst, now);
@@ -551,7 +540,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               (`Pager`, 2026-09-14). 장수는 계속 늘어나는 목록이라 [처음]·[끝]을
               켠다 — [이전]·[다음] **바깥쪽**이다(안쪽에 두면 「한 칸」과
               「끝까지」가 섞여 잘못 누른다). */}
-          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends />}
+          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends spread />}
 
           {/* [선택하기] — **목록 맨 아래 한 곳**(2026-09-11 다섯 번째 지정).
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
@@ -677,7 +666,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, onClose, pageSize, className, sortInButton }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, onClose, pageSize, className }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -698,8 +687,6 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   pageSize?: number;
   /** 가리개에 덧붙일 클래스 — 판의 자리를 화면마다 달리 잡을 때(장터: 제목 바 바로 아래) */
   className?: string;
-  /** 검색 : 정렬 단추 = 1 : 1, 고른 기준이 단추 글자 — `OfficerListPanel`의 `chrome.sortInButton` */
-  sortInButton?: boolean;
 }): React.JSX.Element {
   useLang();
   return (
@@ -717,7 +704,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
           profile={profile}
           onChange={onChange}
           equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}) }}
-          chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}), ...(sortInButton ? { sortInButton } : {}) }}
+          chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
             (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를

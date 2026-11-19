@@ -417,7 +417,7 @@
   "officers.col.cards": "Carte",
   "officers.flag": "Sali di livello",
   "officers.flagFull": "Livello disponibile",
-  "officers.count": "Generali: {cur} / {max}",
+  "officers.count": "Totale {cur} / {max}",
   "officers.empty": "Nessun generale trovato per «{q}».",
   "officers.pager.first": "Prima",
   "officers.pager.last": "Ultima",

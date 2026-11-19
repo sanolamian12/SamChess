@@ -1696,7 +1696,8 @@ img.no-art { visibility: hidden; }
    말줄임(…)으로 잘리지 않도록). */
 .ofc-table { gap: .25rem; }
 .ofc-row {
-  display: grid; grid-template-columns: 1.9rem 2rem 1fr 2.3rem 2.3rem 2.3rem;
+  /* 이름(등급 · 레벨 · 이름) · 카드 · 무력 · 지력 · 통솔 (2026-11-19 기획자 — 등급 열을 이름 칸에 합쳤다) */
+  display: grid; grid-template-columns: minmax(0, 1fr) 2.3rem 2.3rem 2.3rem 2.3rem;
   align-items: center; gap: .3rem; width: 100%;
   font: inherit; font-size: .8rem; text-align: left;
   padding: .35rem .45rem; border-radius: .35rem;
@@ -1737,7 +1738,7 @@ img.no-art { visibility: hidden; }
    제 칸의 반대쪽 끝에 붙어 오히려 멀어 보인다(스크린샷으로 확인, 2026-09-02).
    등급 배지 → Lv1 → 카드 수가 한 방향으로 나란히 붙는 모양이다. */
 .ofc-row .c-cd {
-  display: flex; align-items: center; justify-content: flex-start; gap: .25rem;
+  display: flex; align-items: center; justify-content: flex-end; gap: .25rem;
   font-variant-numeric: tabular-nums;
 }
 .ofc-row .gr { --gr: 1.3rem; }
@@ -1745,8 +1746,12 @@ img.no-art { visibility: hidden; }
    「Зэрэглэл」)은 옆 칸 제목 위로 흘렀다(2026-09-18). 삼능력은 아이콘이라 여기 안 걸린다 */
 .ofc-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* 삼능력 머리 아이콘 — 숫자 칸과 같은 오른쪽 정렬(`.ofc-row .c-st`) */
-.ofc-thead .c-st.ic { display: flex; justify-content: flex-end; overflow: visible; }
-.ofc-thead .c-st.ic img { width: 1rem; height: 1rem; object-fit: contain; }
+.ofc-thead .c-st.ic, .ofc-thead .c-cd.ic { display: flex; justify-content: flex-end; overflow: visible; }
+/* 카드 · 무력 · 지력 · 통솔 머리 아이콘은 한 크기 — 옛 1rem의 1.2배(2026-11-19 기획자) */
+.ofc-thead .c-st.ic img, .ofc-thead .c-cd.ic img { width: 1.2rem; height: 1.2rem; object-fit: contain; }
+/* 장부 판 맨 위의 검색 줄(2026-11-19 기획자 — 판 밖에서 들였다) */
+.ofc-searchrow { display: flex; margin-bottom: .2rem; }
+.ofc-searchrow .rk-search { flex: 1; min-width: 0; width: 100%; }
 .ofc-thead {
   background: none; border-color: transparent; cursor: default;
   font-size: .8rem; color: #79808b; padding-bottom: 0;
@@ -2993,6 +2998,11 @@ button.lv-tactic-row {
 /* [처음]·[끝]까지 다섯이면 간격만 좁힌다 — 한 줄에 들어야 한다(스모크가 줄 수를
    잰다). 단추 크기는 건드리지 않는다: 셋짜리 줄과 판이 같아야 같은 모양이다. */
 .pager[data-ends="1"] { gap: .4rem; }
+/* 판 폭 전체를 다섯 칸으로 똑같이 — [처음] · [이전] · 쪽 · [다음] · [끝] (`Pager`의 `spread`, 2026-11-19 기획자).
+   목판은 칸을 다 채우고(비율은 그대로), 글자가 더 넓은 판을 받는다 */
+.pager[data-spread="1"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; width: 100%; justify-items: stretch; }
+.pager[data-spread="1"] .pg-btn { width: 100%; }
+.pager[data-spread="1"] .pager-label { min-width: 0; }
 /* 쪽 번호 — 숫자만(「쪽」「第…页」를 뗐다). 색은 장부 판 위의 미색을 **못박는다** —
    예전엔 판에서 물려받아, 판이 다른 화면에서는 다른 색이 됐다(장수 일람은
    먹색으로 따로 덮고 있었다). */
@@ -4876,19 +4886,19 @@ button.lv-tactic-row {
      지정)이 좌우 테두리만으로 폭을 먹어, 2.9rem에서는 글자가 「선/택」으로
      **세로로 접히고 그만큼 줄 전체가 두 배로 높아졌다**(스크린샷으로 잡았다).
      칸을 넓히고 아래에서 테두리를 좁힌다. */
-  grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem 2.4rem;
+  grid-template-columns: minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem 2.4rem;
   gap: .25rem;
 }
 .ofc-row-equip .c-cd { display: none; }
 /* 바로 고르기(`PickMode.direct`, 부대 편성 2026-10-22) — 체크 칸이 없어 마지막 칸을 덜고, 줄 전체가 단추다 */
-.ofc-row.ofc-row-equip.ofc-row-direct { grid-template-columns: 1.6rem minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem; }
+.ofc-row.ofc-row-equip.ofc-row-direct { grid-template-columns: minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem; }
 .ofc-row-direct:not(.ofc-thead) { cursor: pointer; }
 /* 장터 아이템 지급(`PickMode.health`, 2026-09-24 지정) — 삼능력 세 칸(1.8rem × 3)을 걷고 상태 한 칸을
    넣는다. 남는 폭은 [병기]가 받는다 — 이름과 병기가 **같이 늘어나는**(1fr : 1fr) 칸이라 긴 병기
    이름도 말줄임 없이 선다. 상태 칸 3.8rem은 가장 긴 번역(「Saudável」·「Шархтай」)이 드는 폭이다 —
    줄마다 제 그리드라 `max-content`로 두면 줄마다 폭이 달라져 병기 칸이 들쭉날쭉한다 */
 .ofc-row.ofc-row-equip.ofc-row-health {
-  grid-template-columns: 1.6rem minmax(0, 1fr) 3.8rem minmax(0, 1fr) 2.4rem;
+  grid-template-columns: minmax(0, 1fr) 3.8rem minmax(0, 1fr) 2.4rem;
 }
 .ofc-row-health .c-hs {
   font-size: .8rem; font-weight: 700; text-align: center; white-space: nowrap;
@@ -5027,31 +5037,6 @@ button.lv-tactic-row {
 }
 .ofcpick-title { font-size: .82rem; font-weight: 700; color: #221407; line-height: 1.2; }
 .ofcpick-titlerow .ofcard-close { right: 0; top: 0; width: 1.4rem; height: 1.4rem; }
-
-/* 둘째 줄 — 검색 : 정렬 상태 : 정렬 필터 = **2 : 1 : 1**(지정). 셋의 자연
-   폭(검색창 `flex`, 나무판 7.7rem, 단추 글자 폭)이 제각각이라 `fr`로 눌러
-   비율을 강제한다 — `min-width: 0`이 없으면 그리드 기본 `auto`가 그 자연
-   폭을 최소치로 요구해 비율이 안 선다(`.frg-tile`이 밟았던 그 지뢰다). */
-.ofcpick-controls {
-  display: grid; grid-template-columns: 2fr 1fr 1fr; gap: .3rem;
-  align-items: center; flex: none;
-}
-.ofcpick-controls > * { min-width: 0; }
-.ofcpick-controls .rk-search { width: 100%; }
-.ofcpick-controls .ofc-sort-current { width: 100%; height: 1.9rem; font-size: .8rem; }
-.ofcpick-controls .rk-sortmenu {
-  /* `.rk-sortmenu`는 전역에서 `grid-column: 2`로 못박혀 있다(랭킹의 2칸
-     그리드용) — 3칸짜리인 여기서는 정렬 상태와 **같은 칸**을 달라 해서
-     둘째 줄로 밀려났다(실제로 그랬다). 세 번째 칸으로 되짚는다. */
-  grid-column: 3; width: 100%;
-}
-.ofcpick-controls .rk-sortbtn { width: 100%; height: 1.9rem; font-size: .8rem; padding: 0 .2rem; }
-/* 검색 : 정렬 단추 = **1 : 1** (2026-11-13 지정, 장터 보유 카드 정리 — `chrome.sortInButton`). 정렬 상태 나무판이 없고 고른 기준이
-   단추 글자다. 단추가 둘째 칸이다(위 규칙의 `grid-column: 3`을 되짚는다) */
-.ofcpick-controls.ofcpick-controls-half { grid-template-columns: 1fr 1fr; }
-.ofcpick-controls-half .rk-sortmenu { grid-column: 2; }
-/* 단추가 넓어져 글자(「등급」 · 「무력」 …)가 왼쪽 벽에 붙었다 — 가운데로 (컬렉션 찾기 줄 `.clx-findbar`와 같은 결) */
-.ofcpick-controls-half .rk-sortbtn { justify-content: center; text-align: center; font-size: .8rem; }
 
 /* 알맹이는 궁궐에서와 똑같은 `.place-body`다 — `.scr-officers .place-body`가
    이미 `flex: 1; overflow-y: auto`를 준다(팝업 뿌리에 `scr-officers`를 함께
@@ -10116,3 +10101,18 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
    판 안에 든 쪽 줄은 판 바닥에 붙는다 — 짧은 쪽에서 쪽 줄이 위로 올라오면 「자리가 바뀌었다」로 보인다.
    줄과 쪽 줄 사이 간격은 판의 `gap`이 지킨다. 파일 맨 끝에 두어 같은 세기의 `.mkt-list .pager` 같은 규칙을 이긴다 */
 [data-steady] > .pager { margin-top: auto; }
+
+/*
+ * 열 머리 정렬(`SortHead.tsx`, 2026-11-19 기획자) — 머리가 단추다. 눌린 열에 초록(자연스러운 순서) · 주홍(반대) 네온.
+ * 아이콘은 그림 둘레에 빛(drop-shadow), 글자는 글자 둘레에 빛(text-shadow).
+ */
+.sort-head {
+  font: inherit; color: inherit; background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  display: flex; align-items: center; min-width: 0;
+}
+.sort-head.c-nm { justify-content: flex-start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sort-head:hover img { filter: brightness(1.12); }
+.sort-head[data-neon="green"] { color: #1d7a3c; text-shadow: 0 0 .25rem #4dff8f, 0 0 .55rem #4dff8fb3; }
+.sort-head[data-neon="orange"] { color: #b4471a; text-shadow: 0 0 .25rem #ff8a3d, 0 0 .55rem #ff8a3db3; }
+.sort-head[data-neon="green"] img { filter: drop-shadow(0 0 .12rem #4dff8f) drop-shadow(0 0 .3rem #4dff8f); }
+.sort-head[data-neon="orange"] img { filter: drop-shadow(0 0 .12rem #ff8a3d) drop-shadow(0 0 .3rem #ff8a3d); }

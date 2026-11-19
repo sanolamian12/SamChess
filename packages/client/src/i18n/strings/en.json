@@ -417,7 +417,7 @@
   "officers.col.cards": "Cards",
   "officers.flag": "Level Up",
   "officers.flagFull": "Level Up Available",
-  "officers.count": "Officers: {cur} / {max}",
+  "officers.count": "Total {cur} / {max}",
   "officers.empty": "No officers found for “{q}”.",
   "officers.pager.first": "First",
   "officers.pager.last": "Last",

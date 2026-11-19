@@ -802,7 +802,7 @@
   "officers.col.cards": "카드",
   "officers.flag": "레벨업",
   "officers.flagFull": "레벨업 가능",
-  "officers.count": "장수 : {cur} / {max} 명",
+  "officers.count": "총 {cur} / {max}명",
   "officers.empty": "「{q}」로 찾은 장수가 없다.",
   "officers.pager.first": "처음",
   "officers.pager.last": "끝",

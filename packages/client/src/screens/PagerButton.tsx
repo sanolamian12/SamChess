@@ -44,13 +44,18 @@ const LABEL: Record<PagerDir, 'officers.pager.first' | 'officers.pager.prev' | '
  * `actionPrefix` — 한 화면에 쪽 줄이 **둘** 겹칠 때 스모크가 집는 이름을 가른다
  * (대장간 지급 목록 위에 장수 고르기 팝업이 뜬다: `assignPrevPage` 대 `prevPage`).
  */
-export function Pager({ page, pageCount, onPage, ends = false, actionPrefix = '', field }: {
+export function Pager({ page, pageCount, onPage, ends = false, spread = false, actionPrefix = '', field }: {
   /** 0부터 센 지금 쪽 */
   page: number;
   pageCount: number;
   onPage: (page: number) => void;
   /** [처음]·[끝]을 그리는가 — 목록이 늘어날 수 있는 화면만 */
   ends?: boolean;
+  /**
+   * **판 폭 전체를 다섯 칸으로 똑같이 나눠** [처음] · [이전] · 쪽 · [다음] · [끝]이 한 칸씩 쓴다 (2026-11-19 기획자, 장수 일람 —
+   * 3.4rem 목판 위에서 긴 번역(몽골어 · 포르투갈어)이 판 밖으로 넘쳤다). `ends`와 함께 쓴다
+   */
+  spread?: boolean;
   actionPrefix?: string;
   /** 스모크가 줄을 집는 `data-field` */
   field?: string;
@@ -61,7 +66,7 @@ export function Pager({ page, pageCount, onPage, ends = false, actionPrefix = ''
   const atFirst = page <= 0;
   const atLast = page >= pageCount - 1;
   return (
-    <div className="pager" data-field={field} data-ends={ends ? '1' : '0'} data-page={page + 1} data-pages={pageCount}>
+    <div className="pager" data-field={field} data-ends={ends ? '1' : '0'} data-spread={spread ? '1' : undefined} data-page={page + 1} data-pages={pageCount}>
       {ends && <PagerButton dir="first" action={act('firstPage')} disabled={atFirst} onClick={() => onPage(0)} />}
       <PagerButton dir="prev" action={act('prevPage')} disabled={atFirst} onClick={() => onPage(Math.max(0, page - 1))} />
       <span className="pager-label">{t('pager.page', { cur: page + 1, max: pageCount })}</span>

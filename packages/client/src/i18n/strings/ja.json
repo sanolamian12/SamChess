@@ -417,7 +417,7 @@
   "officers.col.cards": "カード",
   "officers.flag": "レベルアップ",
   "officers.flagFull": "レベルアップ可能",
-  "officers.count": "武将：{cur} / {max}",
+  "officers.count": "合計 {cur} / {max}",
   "officers.empty": "「{q}」に一致する武将がいない。",
   "officers.pager.first": "最初",
   "officers.pager.last": "最後",

@@ -417,7 +417,7 @@
   "officers.col.cards": "Карт",
   "officers.flag": "Түвшин ахих",
   "officers.flagFull": "Түвшин ахих боломжтой",
-  "officers.count": "Жанжид: {cur} / {max}",
+  "officers.count": "Нийт {cur} / {max}",
   "officers.empty": "«{q}»-ээр олдсон жанж алга.",
   "officers.pager.first": "Эхэнд",
   "officers.pager.last": "Төгсгөлд",

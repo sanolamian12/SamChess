@@ -417,7 +417,7 @@
   "officers.col.cards": "卡片",
   "officers.flag": "升级",
   "officers.flagFull": "可升级",
-  "officers.count": "武将：{cur} / {max}",
+  "officers.count": "共 {cur} / {max}",
   "officers.empty": "没有找到「{q}」相关的武将。",
   "officers.pager.first": "首页",
   "officers.pager.last": "末页",
