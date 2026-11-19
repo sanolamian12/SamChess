@@ -392,7 +392,28 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
     <>
       {cardGuide.node}
       <div className="place-body">
-        <section className="place-panel block grow ofc-table">
+        {/* 요약 판 — **제목 바로 밑, 장부 판 위**(2026-11-19 기획자 — 바닥에서 올렸다). 표의 등급 배지(`.gr`)와 같은 그림.
+            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
+            **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
+            고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
+        {!chrome && (
+        <section className="place-panel ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
+          <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
+          <span className="ofc-grades">
+            <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
+              <GradeBadge grade="E" />
+            </span>
+            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
+              <span key={g} className="ofc-grade-item">
+                <GradeBadge grade={g} />
+                <b>{tally[g]}</b>
+              </span>
+            ))}
+          </span>
+        </section>
+        )}
+        {/* 판 높이는 내용만큼 — 쪽 넘김 밑에 빈 양피지가 남지 않게(2026-11-19 기획자 — `grow`를 뗐다). 쪽 사이 높이는 `useSteadyPage`가 고정한다 */}
+        <section className="place-panel block ofc-table">
           {/* 검색은 장부 판 맨 위에(2026-11-19 기획자 — 판 밖에 있던 것을 들였다). 정렬은 열 머리가 한다 */}
           {!chrome && <div className="ofc-searchrow">{search}</div>}
           {chrome && (
@@ -540,7 +561,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
               (`Pager`, 2026-09-14). 장수는 계속 늘어나는 목록이라 [처음]·[끝]을
               켠다 — [이전]·[다음] **바깥쪽**이다(안쪽에 두면 「한 칸」과
               「끝까지」가 섞여 잘못 누른다). */}
-          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends spread />}
+          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends />}
 
           {/* [선택하기] — **목록 맨 아래 한 곳**(2026-09-11 다섯 번째 지정).
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
@@ -560,26 +581,6 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           )}
         </section>
 
-        {/* 요약 줄 (38·39쪽 아래) — 표의 등급 배지(`.gr`)와 같은 그림.
-            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
-            **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
-            고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
-        {!chrome && (
-        <footer className="place-panel foot ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
-          <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
-          <span className="ofc-grades">
-            <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
-              <GradeBadge grade="E" />
-            </span>
-            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
-              <span key={g} className="ofc-grade-item">
-                <GradeBadge grade={g} />
-                <b>{tally[g]}</b>
-              </span>
-            ))}
-          </span>
-        </footer>
-        )}
       </div>
 
       {card && (

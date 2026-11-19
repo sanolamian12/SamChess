@@ -1747,8 +1747,8 @@ img.no-art { visibility: hidden; }
 .ofc-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* 삼능력 머리 아이콘 — 숫자 칸과 같은 오른쪽 정렬(`.ofc-row .c-st`) */
 .ofc-thead .c-st.ic, .ofc-thead .c-cd.ic { display: flex; justify-content: flex-end; overflow: visible; }
-/* 카드 · 무력 · 지력 · 통솔 머리 아이콘은 한 크기 — 옛 1rem의 1.2배(2026-11-19 기획자) */
-.ofc-thead .c-st.ic img, .ofc-thead .c-cd.ic img { width: 1.2rem; height: 1.2rem; object-fit: contain; }
+/* 카드 · 무력 · 지력 · 통솔 머리 아이콘은 한 크기 — 옛 1rem의 1.2배의 1.2배(2026-11-19 기획자 두 번) */
+.ofc-thead .c-st.ic img, .ofc-thead .c-cd.ic img { width: 1.44rem; height: 1.44rem; object-fit: contain; }
 /* 장부 판 맨 위의 검색 줄(2026-11-19 기획자 — 판 밖에서 들였다) */
 .ofc-searchrow { display: flex; margin-bottom: .2rem; }
 .ofc-searchrow .rk-search { flex: 1; min-width: 0; width: 100%; }
@@ -1771,7 +1771,7 @@ img.no-art { visibility: hidden; }
    「[E]: Y [S]: 1」 같은 대괄호 표기 대신 표의 등급 배지(`.gr`)를 그대로 쓴다).
    **`.scr .foot`보다 선택자가 세야 한다** — 한 클래스로는 `flex-direction: column`을
    못 이겨 세 줄로 쌓인다. CSS는 이래도 오류가 없어 화면을 봐야만 안다(실제로 그랬다). */
-.scr .foot.ofc-tally { flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .8rem; }
+.place-panel.ofc-tally { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .8rem; flex: none; }
 .ofc-tally .ofc-count { font-weight: 600; }
 .ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-left: auto; }
 /* 배지 자체는 표 줄의 `.ofc-row .gr`과 값 그대로 같다 — 등급 색은 단일
@@ -3001,8 +3001,11 @@ button.lv-tactic-row {
 /* 판 폭 전체를 다섯 칸으로 똑같이 — [처음] · [이전] · 쪽 · [다음] · [끝] (`Pager`의 `spread`, 2026-11-19 기획자).
    목판은 칸을 다 채우고(비율은 그대로), 글자가 더 넓은 판을 받는다 */
 .pager[data-spread="1"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; width: 100%; justify-items: stretch; }
-.pager[data-spread="1"] .pg-btn { width: 100%; }
+/* 폭만 칸을 채우고 높이는 옛 3.4rem 목판의 높이(539:300) 그대로 — 비율대로 키우면 판이 길어져 고르기 팝업에 스크롤이 생겼다(market_ux) */
+.pager[data-spread="1"] .pg-btn { width: 100%; aspect-ratio: auto; height: calc(3.4rem * 300 / 539); }
 .pager[data-spread="1"] .pager-label { min-width: 0; }
+/* [처음]·[끝]이 없는 쪽 넘김 — 같은 다섯 칸의 가운데 셋 */
+.pager[data-spread="1"][data-ends="0"] > :nth-child(1) { grid-column: 2; }
 /* 쪽 번호 — 숫자만(「쪽」「第…页」를 뗐다). 색은 장부 판 위의 미색을 **못박는다** —
    예전엔 판에서 물려받아, 판이 다른 화면에서는 다른 색이 됐다(장수 일람은
    먹색으로 따로 덮고 있었다). */
@@ -10112,7 +10115,24 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 .sort-head.c-nm { justify-content: flex-start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sort-head:hover img { filter: brightness(1.12); }
-.sort-head[data-neon="green"] { color: #1d7a3c; text-shadow: 0 0 .25rem #4dff8f, 0 0 .55rem #4dff8fb3; }
-.sort-head[data-neon="orange"] { color: #b4471a; text-shadow: 0 0 .25rem #ff8a3d, 0 0 .55rem #ff8a3db3; }
-.sort-head[data-neon="green"] img { filter: drop-shadow(0 0 .12rem #4dff8f) drop-shadow(0 0 .3rem #4dff8f); }
-.sort-head[data-neon="orange"] img { filter: drop-shadow(0 0 .12rem #ff8a3d) drop-shadow(0 0 .3rem #ff8a3d); }
+/* 네온은 천천히 들어왔다 빠지며 깜빡인다(2026-11-19 기획자) — 글자색은 그대로 두고 빛만 오르내린다 */
+.sort-head[data-neon="green"] { color: #1d7a3c; animation: neon-text-green 1.6s ease-in-out infinite; }
+.sort-head[data-neon="orange"] { color: #b4471a; animation: neon-text-orange 1.6s ease-in-out infinite; }
+.sort-head[data-neon="green"] img { animation: neon-img-green 1.6s ease-in-out infinite; }
+.sort-head[data-neon="orange"] img { animation: neon-img-orange 1.6s ease-in-out infinite; }
+@keyframes neon-text-green {
+  0%, 100% { text-shadow: 0 0 .25rem #4dff8f, 0 0 .55rem #4dff8fb3; }
+  50% { text-shadow: 0 0 .05rem #4dff8f33, 0 0 .1rem #4dff8f00; }
+}
+@keyframes neon-text-orange {
+  0%, 100% { text-shadow: 0 0 .25rem #ff8a3d, 0 0 .55rem #ff8a3db3; }
+  50% { text-shadow: 0 0 .05rem #ff8a3d33, 0 0 .1rem #ff8a3d00; }
+}
+@keyframes neon-img-green {
+  0%, 100% { filter: drop-shadow(0 0 .12rem #4dff8f) drop-shadow(0 0 .3rem #4dff8f); }
+  50% { filter: drop-shadow(0 0 .02rem #4dff8f33) drop-shadow(0 0 .05rem #4dff8f00); }
+}
+@keyframes neon-img-orange {
+  0%, 100% { filter: drop-shadow(0 0 .12rem #ff8a3d) drop-shadow(0 0 .3rem #ff8a3d); }
+  50% { filter: drop-shadow(0 0 .02rem #ff8a3d33) drop-shadow(0 0 .05rem #ff8a3d00); }
+}

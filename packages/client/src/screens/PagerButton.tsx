@@ -44,7 +44,7 @@ const LABEL: Record<PagerDir, 'officers.pager.first' | 'officers.pager.prev' | '
  * `actionPrefix` — 한 화면에 쪽 줄이 **둘** 겹칠 때 스모크가 집는 이름을 가른다
  * (대장간 지급 목록 위에 장수 고르기 팝업이 뜬다: `assignPrevPage` 대 `prevPage`).
  */
-export function Pager({ page, pageCount, onPage, ends = false, spread = false, actionPrefix = '', field }: {
+export function Pager({ page, pageCount, onPage, ends = false, spread = true, actionPrefix = '', field }: {
   /** 0부터 센 지금 쪽 */
   page: number;
   pageCount: number;
@@ -52,8 +52,9 @@ export function Pager({ page, pageCount, onPage, ends = false, spread = false, a
   /** [처음]·[끝]을 그리는가 — 목록이 늘어날 수 있는 화면만 */
   ends?: boolean;
   /**
-   * **판 폭 전체를 다섯 칸으로 똑같이 나눠** [처음] · [이전] · 쪽 · [다음] · [끝]이 한 칸씩 쓴다 (2026-11-19 기획자, 장수 일람 —
-   * 3.4rem 목판 위에서 긴 번역(몽골어 · 포르투갈어)이 판 밖으로 넘쳤다). `ends`와 함께 쓴다
+   * **판 폭 전체를 다섯 칸으로 똑같이 나눠** [처음] · [이전] · 쪽 · [다음] · [끝]이 한 칸씩 쓴다 (2026-11-19 기획자 — 장수 일람에서 시작해
+   * 모든 쪽 넘김으로. 3.4rem 목판 위에서 긴 번역(몽골어 · 포르투갈어)이 판 밖으로 넘쳤다). [처음]·[끝]이 없으면 가운데 셋 칸을 쓴다 —
+   * 단추 크기가 화면마다 같다. 끄는 것은 좁은 칸 안의 화살표만 쓰는 자리(안내 다시 듣기)뿐이다
    */
   spread?: boolean;
   actionPrefix?: string;

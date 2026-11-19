@@ -423,7 +423,7 @@ export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
                 ))}
               </div>
               {ids.length > GUIDE_REPLAY_PAGE && (
-                <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="guide" field="guidePager" />
+                <Pager page={page} pageCount={pageCount} onPage={setPage} actionPrefix="guide" field="guidePager" spread={false} />
               )}
             </div>
           </div>
