@@ -67,7 +67,10 @@ export class SkillPanel {
     const back = text('button', 'btn wide', t('skill.close'));
     back.dataset.action = 'close';
 
-    modal.append(banner, ...rows, back);
+    // 글은 그림 안쪽 판 안에서만 내린다 — 단추는 판 바닥에 선다(`.ofc-skill-body`, `SkillModal`과 같다)
+    const body = el('div', 'ofc-skill-body');
+    body.append(banner, ...rows);
+    modal.append(body, back);
     this.root.dataset.skill = skill.id;
     this.root.replaceChildren(modal);
     this.root.classList.remove('hidden');

@@ -56,6 +56,8 @@ export function SkillModal({ skill, onClose }: {
         onClick={(e) => { e.stopPropagation(); preview.stop(); }}
       />
       <div className="modal ofc-skill-modal" data-tier-group={tierGroup} onClick={(e) => e.stopPropagation()}>
+        {/* 글은 그림 안쪽 판 안에서만 내린다 — 단추는 판 바닥에 선다(`.ofc-skill-body`) */}
+        <div className="ofc-skill-body">
         <img
           className="ofc-banner"
           alt=""
@@ -88,6 +90,7 @@ export function SkillModal({ skill, onClose }: {
         <p className="row" data-field="castDelay">
           <span className="k">{t('skill.castDelay')}</span> : {pickCastDelay(skill)}
         </p>
+        </div>
         <button className="btn wide" data-action="preview" onClick={() => preview.play(name, text)}>
           {t('skill.preview')}
         </button>
