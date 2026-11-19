@@ -1678,6 +1678,70 @@ SKILL_ORIGIN_TRIMS: dict[str, dict[str, object]] = {
         "mn": ("[Пэй Сунчжигийн тайлбараас иш татсан]",
                "[Пэй Сунчжигийн тайлбараас иш татсан] Тухайн үеийн хүмүүс \"Хүмүүсийн дунд Люй Бу, адуунуудын дунд Улаан Туулай\" гэж эдгээр хоёрыг хамтад нь дуудаж байв. Хүчний хувьд хэн ч түүнийг давж чадаагүй, түүний унасан хурдан морь ч мөн адил байлаа."),
     },
+    # ── 아래 9종은 한 줄 이하로 넘치던 것 (2026-11-20 둘째 묶음) ──
+    "hwang-je-ong-rip": {   # 헌제 「황제옹립」 — 「병력도 영지도 없었지만 그 이름만은」 문장을 뺀다
+        "_ko": "[정사] 동탁이 소제를 폐하고 옹립한 순간부터, 헌제의 곁을 지킨 자는 계속 바뀌었다 — 동탁이 죽자 이각과 곽사가, 그들이 스러지자 조조가 그를 거두었다. \"천자를 끼고 제후에게 호령한다\"는 말이 세상에 떠돈 것도 이 때문이었다.",
+        "es_419": ("[Historia oficial (Sanguozhi)] Desde el momento en que Dong Zhuo depuso",
+                   "[Historia oficial (Sanguozhi)] Desde el momento en que Dong Zhuo depuso al joven emperador Shao y entronizó a Xian en su lugar, quienes rodeaban a este último no dejaron de cambiar — cuando Dong Zhuo cayó, fueron Li Jue y Guo Si; cuando ellos se desvanecieron, fue Cao Cao quien lo recogió. De ahí nació el dicho que recorrió el mundo entero: «sostener al Hijo del Cielo para dar órdenes a los señores feudales»."),
+        "it": ("[Storia ufficiale (Sanguozhi)] Dal momento in cui Dong Zhuo depose",
+               "[Storia ufficiale (Sanguozhi)] Dal momento in cui Dong Zhuo depose il giovane Shao Di e lo insediò sul trono, chi vegliava al fianco dell'Imperatore Xian continuò a cambiare — morto Dong Zhuo, furono Li Jue e Guo Si a raccoglierlo, e quando anche loro caddero fu Cao Cao a prenderlo sotto la sua ala. Fu così che nacque il detto: «Tenere l'Imperatore in pugno per comandare ai signori della guerra»."),
+    },
+    "baek-gi-geop-wi-yeong": {   # 감녕 「백기겁위영」 — 「배불리 먹인 뒤」 · 「목책을 뽑고」를 뺀다
+        "_ko": "[정사] 조조의 대군이 유수를 압박하자, 감녕은 정예 백여 명을 손수 뽑아 한밤중에 곧장 적진 한복판으로 쳐들어갔다. 수십 명을 베고는 유유히 돌아왔고, 조조군이 뒤늦게 북을 울렸을 땐 이미 아군 진영이었다.",
+        "es_419": ("[Historia oficial (Sanguozhi)] Cuando el gran ejército de Cao Cao presionaba Ruxu",
+                   "[Historia oficial (Sanguozhi)] Cuando el gran ejército de Cao Cao presionaba Ruxu, Gan Ning escogió con su propia mano a un centenar de soldados de élite y, en plena noche, cargó derecho contra el corazón del campamento enemigo. Degolló a decenas de hombres y regresó sin prisa — cuando las tropas de Cao Cao por fin hicieron sonar los tambores de alarma, él ya estaba de vuelta en su propio campamento."),
+    },
+    "byeong-gwi-sin-sok": {   # 서황 「병귀신속」 — 「그 말대로 움직인 군은 오환을 급습해 무너뜨렸다」를 뺀다
+        "_ko": "[정사, 발화자는 곽가] 오환 정벌을 앞두고 보급부대에 발이 묶이자, 곽가는 치중을 버리고 가볍게 무장한 채 치달으라 진언했다 — \"용병은 신속함을 귀하게 여긴다.\" 번성을 향해 밤낮없이 군을 몰아친 서황의 진군도, 이 한마디가 가리키는 그대로였다.",
+        "es_419": ("[Historia oficial (Sanguozhi), palabras originales de Guo Jia]",
+                   "[Historia oficial (Sanguozhi), palabras originales de Guo Jia] Con la campaña contra los Wuhuan estancada por los carros de suministros, Guo Jia aconsejó abandonar el bagaje y avanzar ligeros: «en la guerra, lo que vale es la velocidad». La marcha de Xu Huang hacia Fancheng, día y noche sin descanso, no fue sino esa misma máxima hecha carne."),
+        "it": ("[Storia ufficiale (Sanguozhi), le parole sono di Guo Jia]",
+               "[Storia ufficiale (Sanguozhi), le parole sono di Guo Jia] Con la campagna contro i Wuhuan bloccata dai carriaggi di rifornimento, Guo Jia consigliò di abbandonarli e avanzare a marce forzate, leggeri — «in guerra, la rapidità è la virtù suprema». Quando Xu Huang spinse i suoi uomini verso Fancheng senza sosta, notte e giorno, non fece che incarnare quella stessa parola."),
+        "pt_BR": ("[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem travando",
+                  "[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem travando o avanço, Guo Jia aconselhou abandonar o trem de suprimentos e cavalgar leve — \"na guerra, a rapidez é o que vale.\" A marcha implacável de Xu Huang rumo a Fancheng, dia e noite sem parar, foi exatamente o que essa frase apontava."),
+        "pt_PT": ("[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem a travar",
+                  "[História oficial (Sanguozhi) — a frase é de Guo Jia] Antes da campanha contra os Wuhuan, com a bagagem a travar o avanço, Guo Jia aconselhou abandonar o trem de suprimentos e cavalgar leve — \"na guerra, a rapidez é o que vale.\" A marcha implacável de Xu Huang rumo a Fancheng, dia e noite sem parar, foi exatamente aquilo que essa frase apontava."),
+    },
+    "hwa-so-yeon-yeong": {   # 육손 「화소연영」 — 「맞서 싸우는 대신」 · 「여름 무더위에 지친」을 뺀다
+        "_ko": "[정사] 관우와 장비의 원수를 갚겠다며 유비가 대군을 몰고 오자, 젊은 도독 육손은 물러서고 또 물러섰다. 촉한군이 산림 속에 백여 리 진영을 늘어세운 순간을 육손은 놓치지 않았다. 불길은 하룻밤 사이 그 긴 진영을 처음부터 끝까지 집어삼켰다.",
+        "es_419": ("[Historia oficial (Sanguozhi)] Cuando Liu Bei lanzó su gran ejército",
+                   "[Historia oficial (Sanguozhi)] Cuando Liu Bei lanzó su gran ejército jurando vengar a Guan Yu y Zhang Fei, el joven comandante Lu Xun retrocedió una y otra vez. No dejó pasar el instante en que las tropas de Shu extendieron sus campamentos a lo largo de cientos de li entre los bosques. Las llamas devoraron esa larga cadena de campamentos, de principio a fin, en una sola noche."),
+        "pt_BR": ("[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun, em vez de enfrentá-lo",
+                  "[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun recuou — e recuou de novo. O momento em que as tropas de Shu-Han se estenderam por mais de cem li em acampamentos entre a floresta, Lu Xun não deixou escapar. As chamas engoliram aquela longa linha de campos, do início ao fim, numa única noite."),
+        "pt_PT": ("[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun, em vez de o enfrentar",
+                  "[História oficial (Sanguozhi)] Quando Liu Bei lançou um grande exército jurando vingar Guan Yu e Zhang Fei, o jovem comandante Lu Xun recuou — e recuou de novo. O momento em que as tropas de Shu-Han se estenderam por mais de cem li em acampamentos entre a floresta, Lu Xun não o deixou escapar. As chamas engoliram aquela longa linha de campos, do princípio ao fim, numa única noite."),
+    },
+    "se-han-ji-song-baek": {   # 방덕 「세한지송백」 — 「항복을 권하는」을 뺀다(머리의 Sanguozhi도)
+        "_ko": "[정사(행적)+『논어』(성어)] 관우와 맞서야 했던 방덕은 관을 짊어지고 전장에 나섰다 — 살아 돌아오지 않겠다는 뜻이었다. 홍수에 휩쓸려 사로잡히고도 관우 앞에서 끝내 무릎 꿇지 않았다. \"추운 겨울이 와서야 소나무와 잣나무가 늦게 시듦을 안다\"던 옛말이, 이날 이후 그의 이름과 함께 불렸다.",
+        "es_419": ("[Historia oficial (los hechos) + las Analectas de Confucio (el proverbio)]",
+                   "[Historia oficial (los hechos) + las Analectas de Confucio (el proverbio)] Obligado a enfrentar a Guan Yu, Pang De marchó al campo de batalla cargando su propio ataúd — una promesa de no volver con vida. Arrastrado por la inundación y capturado, se negó hasta el final a doblar la rodilla ante Guan Yu. El viejo dicho — «solo cuando llega el frío del invierno se sabe que el pino y el ciprés son los últimos en marchitarse» — quedó desde ese día unido a su nombre."),
+        "pt_BR": ("[História oficial (Sanguozhi, os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha carregando",
+                  "[História oficial (os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha carregando seu próprio caixão — um sinal de que não voltaria com vida. Arrastado pela enchente e capturado, recusou-se a ajoelhar diante de Guan Yu até o fim. O velho dito — \"só no rigor do inverno se sabe que o pinheiro e o cipreste murcham por último\" — passou, desde esse dia, a ser pronunciado junto ao seu nome."),
+        "pt_PT": ("[História oficial (Sanguozhi, os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha a carregar",
+                  "[História oficial (os feitos) + os Analectos de Confúcio (a expressão)] Obrigado a enfrentar Guan Yu, Pang De partiu para a batalha a carregar o próprio caixão — sinal de que não voltaria com vida. Arrastado pela cheia e capturado, recusou-se a ajoelhar diante de Guan Yu até ao fim. O velho dito — \"só no rigor do inverno se sabe que o pinheiro e o cipreste murcham por último\" — passou, desde esse dia, a pronunciar-se junto ao seu nome."),
+    },
+    "baek-ui-do-gang": {   # 여몽 「백의도강」(이탈리아어만) — 「경보는 단 한 번도 울리지 않았고」를 뺀다
+        "_ko": "[정사] 관우가 번성을 노리고 북으로 올라간 사이, 여몽은 정예병을 배 밑창에 숨기고 노 젓는 병사들에게 흰옷을 입혀 장삿배로 위장시켰다. 강변 봉수대를 하나씩 소리 없이 덮쳐 나가는 그 배는, 관우 쪽에서 보기엔 그저 오가는 상선일 뿐이었다. 형주는 그렇게 통째로 넘어갔다.",
+        "it": ("[Storia ufficiale (Sanguozhi)] Mentre Guan Yu risaliva verso nord",
+               "[Storia ufficiale] Mentre Guan Yu risaliva verso nord per assediare Fancheng, Lu Meng nascose le sue truppe scelte nella stiva delle navi e vestì i rematori con abiti bianchi, travestendo tutto da flotta mercantile. Nave dopo nave, colpirono in silenzio le torri di segnalazione lungo il fiume — agli occhi degli uomini di Guan Yu sembravano solo battelli di passaggio. E Jingzhou cadde intera, così, senza rumore."),
+    },
+    "byeon-hwa-mu-ssang": {   # 장합 「변화무쌍」(몽골어만) — 「원소를 떠나 조조에게 온 뒤」를 뺀다
+        "_ko": "[정사, 인물 총평] 장합은 오자양장의 한 명으로 자리 잡았고, 제갈량의 북벌에서 촉군의 수를 가장 잘 읽어내는 위나라 쪽 유일한 대항마로 꼽혔다. 정형화된 틀에 갇히지 않고 상황 따라 바꾸는 그 용병술이, 그의 이름 앞에 항상 따라붙었다.",
+        "mn": ("[Албан түүх, хүний ерөнхий үнэлгээ] Чжан Хэ Юань Шаог",
+               "[Албан түүх, хүний ерөнхий үнэлгээ] Чжан Хэ Вэй улсын таван агуу жанжны нэг болж, Чжугэ Лянгийн хойд аян дайнд Шу улсын цэргийн байдлыг хамгийн сайн уншдаг Вэй талын цорын ганц өрсөлдөгч гэж тооцогддог байв. Тогтсон хэлбэрт баригдалгүй, нөхцөл байдлаас хамааран өөрчлөгддөг тэр цэргийн ур чадвар түүний нэрийн өмнө үргэлж дагаж явдаг байлаа."),
+    },
+    "gu-beol-jung-won": {   # 강유 「구벌중원」(몽골어만) — 「국력의 차이도, 조정의 견제도 그를 멈추진 못했다」를 뺀다
+        "_ko": "[정사(북벌)+후대 요약(숫자)] 제갈량이 남긴 뜻을 홀로 짊어진 강유는 위나라를 향해 몇 번이고 다시 칼을 뽑았다. 이기지 못해도 물러섰다가 또 나아갔다. 그렇게 거듭된 출정이 \"아홉 번 중원을 정벌했다\"는 이름으로 남았다.",
+        "mn": ("[Албан түүх(хойд аян дайн)+хожмын хураангуй(тоо)]",
+               "[Албан түүх(хойд аян дайн)+хожмын хураангуй(тоо)] Чжугэ Лянгийн үлдээсэн зорилгыг ганцаараа үүрсэн Цзян Вэй Вэй улс руу дахин дахин илд сугалав. Ялалгүй ухарсан ч дахин урагшилдаг байв. Ийнхүү давтагдсан аян дайн \"Төв Талыг есөн удаа дайлсан\" гэдэг нэрээр үлджээ."),
+    },
+    "yeon-hwan-gye": {   # 방통 「연환계」 — 「널판을 깔면」 · 「조조는 그 말을 그대로 따랐다」를 뺀다
+        "_ko": "[연의 창작] 조조 진영에 몸을 숨긴 방통은, 뱃멀미로 지친 북방 수군을 구실 삼아 계책 하나를 던졌다 — 배를 전부 쇠사슬로 엮으면 마치 평지처럼 안정될 것이라고. 훗날 황개의 불길이 닥쳤을 때, 사슬로 묶인 배들은 단 한 척도 달아나지 못했다.",
+        "pt_BR": ("[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes e estender tábuas por cima, e ficariam estáveis como terra firme. Cao Cao seguiu o conselho à risca.",
+                  "[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes, e ficariam estáveis como terra firme. Quando o fogo de Huang Gai enfim chegou, nenhum daqueles barcos acorrentados conseguiu fugir."),
+        "pt_PT": ("[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes e estender tábuas por cima, e ficariam estáveis como terra firme. Cao Cao seguiu o conselho à letra.",
+                  "[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes, e ficariam estáveis como terra firme. Quando o fogo de Huang Gai enfim chegou, nenhum daqueles barcos acorrentados conseguiu fugir."),
+    },
 }
 
 

@@ -72,7 +72,7 @@ td.b {{ background:var(--b); }} td.a {{ background:var(--a); }}
 td.ko {{ font-size:13px; }}
 </style></head><body>
 <h1>고유기술 유래 줄이기 — 전 · 뒤</h1>
-<p class="note">고유기술 팝업에서 넘치던 7종을, 넘치던 언어(영어 · 스페인어 · 이탈리아어 · 몽골어 · 포르투갈어 둘)에서만 줄였습니다. 한국어 · 일본어 · 중국어는 원문 그대로입니다.
+<p class="note">고유기술 팝업에서 넘치던 16종(길게 넘치던 7종 · 한 줄 이하로 넘치던 9종)을, 넘치던 언어(영어 · 스페인어 · 이탈리아어 · 몽골어 · 포르투갈어 둘)에서만 줄였습니다. 한국어 · 일본어 · 중국어는 원문 그대로입니다.
 한국어 칸 — <b>전</b>은 그 언어 글이 번역한 한국어 원문, <b>뒤</b>는 원문에서 같은 구절을 덜어 낸 한국어(언어 글이 그 뜻대로 줄었습니다).
 글자 수 합 {total_b:,} → {total_a:,}자.</p>
 <table><colgroup><col class="c-skill"><col class="c-lang"><col><col><col><col></colgroup>
