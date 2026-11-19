@@ -200,13 +200,16 @@ function PalaceStatus({ profile, onChange }: {
         </button>
       </div>
       <div className="plc-grid">
-        {/* 도시 레벨 — [도시 아이콘][장수 레벨과 같은 배지] (2026-11-19 기획자). 아랫줄 궁궐과 칸 · 간격이 같아 세로로 줄이 맞는다 */}
+        {/* 도시 레벨 — [도시 아이콘(메인 머리의 도시 Lv와 같은 `tab-city`)][장수 레벨과 같은 배지] (2026-11-19 기획자). 아랫줄 궁궐과 칸 · 간격이 같아 세로로 줄이 맞는다.
+            오른쪽 칸은 위 줄 장수 · 아래 줄 황제 — 메인 머리(위 도시 Lv, 그 밑 장수)와 같은 결로 */}
         <span className="plc-cell" data-field="cityLevel" data-level={profile.cityLevel}>
           <span className="bld-lv plc-city-lv" title={t('city.summary.level', { level: profile.cityLevel })}>
-            <GameIcon name="city-upgrade" label={t('city.summary.level', { level: profile.cityLevel })} />
+            <GameIcon name="tab-city" label={t('city.summary.level', { level: profile.cityLevel })} />
             <CityLevelBadge level={profile.cityLevel} />
           </span>
         </span>
+        <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
+        <span className="plc-cell" data-field="palaceLevel"><BuildingLevel id="palace" name={buildingNameText('palace')} level={buildingLevel(profile, 'palace')} /></span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
           {/* 황제 — E급 표지 + 「황제」(2026-11-19 기획자): 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자. 옹립 여부는 올리면 */}
           <span className="plc-emperor" title={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}>
@@ -217,8 +220,6 @@ function PalaceStatus({ profile, onChange }: {
             <span className="plc-emperor-name">{t('city.emperor')}</span>
           </span>
         </span>
-        <span className="plc-cell" data-field="palaceLevel"><BuildingLevel id="palace" name={buildingNameText('palace')} level={buildingLevel(profile, 'palace')} /></span>
-        <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
       </div>
     </section>
     <Say text={refused} level={profile.cityLevel} name="refused" />

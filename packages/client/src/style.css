@@ -10193,6 +10193,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   border-style: solid; border-color: transparent; border-width: 1.1rem;
   border-image: url(ui/slot-first.png) 75 / 1.1rem stretch;
   padding: .1rem .3rem .2rem; color: #f3e8c8;
+  /* 제목 바와의 틈 — 다른 화면은 판 그림(장부)의 위 여백까지 약 11px로 보이는데 붉은 판은 테가 상자 끝에서 바로 시작해 3px이었다 */
+  margin-top: .3rem;
 }
 .scr-place-palace .plc-status .plc-city { color: #f5cd5c; text-shadow: 0 1px 0 #5a1a0a, 0 2px 4px #000c, 0 0 .6rem #f0b52d55; }
 .scr-place-palace .plc-status .plc-cell { color: #f3e8c8; text-shadow: 0 1px 2px #000b; }
@@ -10211,3 +10213,12 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .plc-name-row .plc-rename img { width: 1.45rem; height: 1.45rem; object-fit: contain; filter: drop-shadow(0 1px 1px #000a); }
 .plc-name-row .plc-rename:hover { filter: brightness(1.15); }
 .plc-name-row .plc-rename:active { transform: scale(.95); }
+/* 도시 이름 — 조금 크게, 아이보리 */
+.scr-place-palace .plc-status .plc-city { font-size: 1.25rem; color: #fbf3dc; text-shadow: 0 1px 0 #5a1a0a, 0 2px 5px #000c; }
+/* 궁궐 현황판의 아이콘 넷(도시 · 궁궐 · 장수 · 황제) 1.3배 (2026-11-19 기획자). 도시 · 궁궐 줄의 아이콘-배지 틈은 아이콘 너비의 절반 그대로 */
+.plc-grid .bld-lv { gap: 1.235em; }
+.plc-grid .bld-lv .gic, .plc-grid .bld-lv .gic img { width: 2.47em; }
+.plc-grid .bld-lv .gic img { height: 2.47em; }
+.plc-grid .plc-cell[data-field="pool"] .gic img { height: 1.885em; }
+.plc-grid .plc-emperor-mark { height: 2.21em; }
+.scr-place-palace .place-panel.plc-status { margin-top: .45rem; }   /* 제목 바와의 틈 1.5배 */

@@ -109,7 +109,7 @@ try {
     };
   });
   console.log('   ', JSON.stringify(got));
-  if (got.cells.join(',') !== 'cityLevel,emperor,palaceLevel,pool') fail(`네 칸 차례가 다르다 — ${got.cells.join(',')}`);
+  if (got.cells.join(',') !== 'cityLevel,pool,palaceLevel,emperor') fail(`네 칸 차례가 다르다 — ${got.cells.join(',')}`);
   if (!/4/.test(got.city) || /2/.test(got.city)) fail(`첫 칸이 도시 Lv4가 아니다 — "${got.city}"`);
   if (got.badgeAlign > 1) fail(`도시 · 궁궐 레벨 배지가 세로로 안 맞는다 — ${got.badgeAlign}px`);
   if (!/2/.test(got.palace)) fail(`아랫줄 첫 칸이 궁궐 Lv2가 아니다 — "${got.palace}"`);
