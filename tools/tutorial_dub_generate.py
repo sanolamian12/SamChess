@@ -339,7 +339,7 @@ def quota_reason(err: Exception, delay: float) -> str:
 def generate(client, types, voice: str, prompt: str, retries: int = 3) -> bytes:
     for attempt in range(1, retries + 1):
         try:
-            r = client.models.generate_content(
+            r = hard_deadline(lambda: client.models.generate_content(
                 model=MODEL,
                 contents=prompt,
                 config=types.GenerateContentConfig(
@@ -348,7 +348,7 @@ def generate(client, types, voice: str, prompt: str, retries: int = 3) -> bytes:
                         voice_config=types.VoiceConfig(
                             prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice))),
                 ),
-            )
+            ), TTS_TIMEOUT_MS / 1000 + 30)
             return r.candidates[0].content.parts[0].inline_data.data
         except Exception as e:
             delay = retry_delay_seconds(e)
@@ -616,9 +616,31 @@ def wav_bytes(pcm: bytes) -> bytes:
 # 무료 등급은 모델마다 분당 5번이라 (키 × 모델)을 돌려 가며 쓰고, 앞에서부터 받아써 **대사 전체가 한 번 다 들리면 멈춘다**
 # (모델이 대본을 되풀이해 읽어도 첫 번째 읽기까지만 듣는다).
 ASR_MODELS = ("gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")   # 2.5-flash는 404(내려감)
+ASR_TIMEOUT_MS = 60_000      # 응답 없는 요청에서 영원히 멈추지 않게 (11-19: 받아쓰기 하나가 22분 멈춰 받기 전체가 섰다)
+TTS_TIMEOUT_MS = 300_000     # 긴 원본(3분 넘는 판)도 들어오는 시간
 ASR_GAP = 13.0                  # 같은 (키, 모델)을 다시 쓰기까지 — 분당 5번
 _asr_last: dict = {}            # (키 번호, 모델) → 마지막으로 쓴 시각
 _asr_dead: set = set()          # 하루 한도에 걸린 (키 번호, 모델)
+
+
+def hard_deadline(fn, seconds: float):
+    """fn을 딴 실에서 돌리고 seconds가 지나도 안 끝나면 TimeoutError — SDK의 timeout이 듣지 않고 연결이 열린 채 몇십 분 멈췄다(11-19).
+    멈춘 실은 버린다(데몬 실이라 프로세스가 끝나면 함께 사라진다)."""
+    import threading
+    box = {}
+    def run():
+        try:
+            box["v"] = fn()
+        except BaseException as e:   # noqa: BLE001 — 그대로 다시 던진다
+            box["e"] = e
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(seconds)
+    if t.is_alive():
+        raise TimeoutError(f"{seconds:.0f}초 안에 응답이 없다")
+    if "e" in box:
+        raise box["e"]
+    return box["v"]
 
 
 def transcribe_one(clip_wav: bytes, dub: str):
@@ -636,12 +658,12 @@ def transcribe_one(clip_wav: bytes, dub: str):
             time.sleep(wait)
         _asr_last[pair] = time.time()
         try:
-            client = genai.Client(api_key=keys[pair[0]], http_options=types.HttpOptions(api_version=API_VERSION))
-            r = client.models.generate_content(model=pair[1], contents=[types.Content(role="user", parts=[
+            client = genai.Client(api_key=keys[pair[0]], http_options=types.HttpOptions(api_version=API_VERSION, timeout=ASR_TIMEOUT_MS))
+            r = hard_deadline(lambda: client.models.generate_content(model=pair[1], contents=[types.Content(role="user", parts=[
                 types.Part.from_text(text=f"Transcribe this short {ASR_LANG[dub]} audio clip verbatim, in {ASR_LANG[dub]} script. "
                                           "Reply with only the spoken words. If there is no speech (noise, click, breath), reply with nothing."),
                 types.Part.from_bytes(data=clip_wav, mime_type="audio/wav")])],
-                config=types.GenerateContentConfig(temperature=0))
+                config=types.GenerateContentConfig(temperature=0)), ASR_TIMEOUT_MS / 1000 + 15)
             return (r.text or "").strip()
         except Exception as e:
             msg = str(e)
@@ -650,7 +672,7 @@ def transcribe_one(clip_wav: bytes, dub: str):
             elif "429" in msg or "RESOURCE_EXHAUSTED" in msg:
                 _asr_last[pair] = time.time() + 45   # 1분 쉬게
             else:
-                print(f"    받아쓰기 오류({pair[1]}): {msg[:100]}")
+                print(f"    받아쓰기 오류({pair[1]}): {msg[:100]}", flush=True)
     return None
 
 
@@ -665,6 +687,8 @@ def transcribe(pcm: bytes, spans: list, dub: str, lines: list):
         if h is None:
             return None
         heard.append(h)
+        if (n + 1) % 10 == 0:
+            print(f"    받아쓰기 {n + 1}/{len(spans)}덩어리", flush=True)
         if similar("".join(heard), whole) >= 0.92:
             return heard + [""] * (len(spans) - n - 1)
     return heard
@@ -1029,6 +1053,13 @@ def cmd_auto(args):
                 write_review(AUDIO / d, d, rep)
 
     log(f"시작 — 키 {len(keys)}개 · {AUTO_INTERVAL}초 간격 · 언어 {' '.join(dubs)}")
+    # 받아 놓고 못 자른 원본(자르는 도중 멈춘 실행)부터 자른다 — split은 이미 자른 원본을 건너뛰므로 싸다 (11-19: 화웅 EN이 받힌 채 안 잘려 옛 조각이 남았다)
+    for d in dubs:
+        if (NEW_DIR / f"New_{d}").is_dir():
+            try:
+                cmd_split([d])
+            except Exception as e:   # noqa: BLE001 — 자르기가 실패해도 받기는 이어 간다
+                log(f"{d} 못 자른 원본 자르기 실패 — {e}")
     while True:
         if STOP_FILE.exists():
             log("STOP 파일 — 멈춘다")
@@ -1057,7 +1088,7 @@ def cmd_auto(args):
         status("calling", f"{name} {dub}", len(queue))
         t0 = time.time()
         try:
-            client = genai.Client(api_key=keys[k], http_options=types.HttpOptions(api_version=API_VERSION))
+            client = genai.Client(api_key=keys[k], http_options=types.HttpOptions(api_version=API_VERSION, timeout=TTS_TIMEOUT_MS))
             pcm = generate(client, types, cast[sp]["voice"], build_prompt(sp, dub, lines, cast, notes), retries=1)
             if not pcm:
                 raise RuntimeError("소리 없이 돌아왔다")

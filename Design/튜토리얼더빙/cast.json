@@ -191,9 +191,9 @@
   "jang-hap": {
     "name": "장합",
     "lines": 2,
-    "voice": "Fenrir",
-    "profile": "Zhang He, a veteran Wei general in his forties. A higher-pitched, hearty, energetic voice; reads the battlefield with bold confidence.",
-    "ko": "위 명장 · 지침: 관우 · 장비보다 하이톤으로 호탕한 목소리"
+    "voice": "Orus",
+    "profile": "Zhang He, a veteran Wei general in his forties. A deep, heavy, low-pitched voice with weight in the chest; hearty and confident, reads the battlefield with bold assurance. Keep the brisk battlefield pace: lower only the pitch and add weight, do not slow down.",
+    "ko": "위 명장 · 지침: 관우 · 장비보다 하이톤으로 호탕한 목소리 · 11-18(EN): 더 무겁고 낮게 — 속도는 그대로(Fenrir → Orus)"
   },
   "jeong-bong": {
     "name": "정봉",
@@ -206,8 +206,8 @@
     "name": "채모",
     "lines": 2,
     "voice": "Charon",
-    "profile": "Cai Mao, a naval commander in his forties. A low, hushed, scheming male voice; whispering stealth, then puzzled surprise.",
-    "ko": "위 수군 장수 · 40대 · 낮게 속삭이는 은밀함 → 의아함"
+    "profile": "Cai Mao, a naval commander in his forties. A low, scheming male voice muttering to himself out loud — fully voiced, never a whisper or breathy hush; then puzzled surprise.",
+    "ko": "위 수군 장수 · 40대 · 낮게 중얼거리는 혼잣말(속삭임 아님, 육성) → 의아함"
   },
   "jang-gan": {
     "name": "장간",
@@ -254,9 +254,9 @@
   "hwa-ung": {
     "name": "화웅",
     "lines": 1,
-    "voice": "Fenrir",
-    "profile": "Hua Xiong, Dong Zhuo's fearsome champion in his thirties. A loud, excitable, arrogant male voice, mocking the coalition.",
-    "ko": "동탁군 맹장 · 30대 · 연합군을 비웃는 오만한 고함"
+    "voice": "Algenib",
+    "profile": "Hua Xiong, Dong Zhuo's fearsome champion in his thirties. A big, rough, gravelly bellow with weight in the chest: hearty, booming and arrogant, mocking the coalition with a laugh. Never light, thin or youthful.",
+    "ko": "동탁군 맹장 · 30대 · 연합군을 비웃는 오만한 고함 · 11-19(EN): 가벼움 → 호탕하고 걸걸하게(Fenrir → Algenib)"
   },
   "ma-dae": {
     "name": "마대",
