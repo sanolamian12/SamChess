@@ -237,7 +237,6 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22b-officer-levels', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="levels"]'); }],
     ['22c-officer-skill', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="skill"]'); }],
     ['22d-officer-records', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="records"]'); }],
-    ['22e-officer-sort', { name: 'officers' }, async (p) => { await click(p, '[data-action="sortMenu"]'); }],
     ['23-city', { name: 'city' }],
     ['24-buildings', { name: 'buildings' }],
     ['24b-buildings-build', { name: 'buildings' }, async (p) => { await jsClick(p, '[data-action="build"]'); }],

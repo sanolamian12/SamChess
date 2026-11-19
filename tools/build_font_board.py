@@ -30,6 +30,18 @@ SHORT = {"ko": "KR", "en": "EN", "es_419": "ES", "it": "IT", "ja": "JA", "mn": "
 # 점검이 끝난 화면 — 캡처를 지우고 다시 만들지 않는다. 판에서는 「완료」로 굳는다 (2026-11-19 기획자, 1단원)
 CLOSED = {"main", "main-ext", "settings", "mail", "info", "logout", "title", "newgame"}
 
+# 지난 캡처(2026-11-18) 뒤로 바뀐 화면 — 판에서 「바뀜」 표지와 함께 무엇이 바뀌었는지 보인다
+CHANGED: dict[str, str] = {
+    "palace-rename": "빨간 「지금과 같은 이름이다」 줄을 걷었다 — 같은 이름이면 [변경한다]만 꺼진다(쿨다운 · 금화 부족은 내관이 말한다)",
+    "officers": "새 배치 — 맨 위 총원 줄 · 검색 · 열 머리 정렬(네온) · 이름 칸에 등급 · 레벨 · 한 쪽 여덟 명 · 바닥 [뒤로 가기]",
+    "officer-card": "뒤에 깔린 장수 일람의 바닥이 총원 판에서 [뒤로 가기] 판으로",
+    "buildings": "[도시 증축] 밑의 막힌 이유 줄을 걷고 내관이 말한다",
+    "buildings-confirm": "[도시 증축] 밑의 막힌 이유 줄을 걷고 내관이 말한다",
+    "barracks": "출정 막힘 이유 줄을 걷고 무관이 말한다",
+    "match": "「AI 대전은 전적이 기록되지 않습니다」 줄을 걷고 무관이 말한다",
+    "squad-pick": "등급 · [정렬 필터] 단추를 걷고 검색칸을 판 맨 위로 · 열 머리를 눌러 정렬 · 이름 칸에 등급 · 레벨",
+}
+
 # 로드맵 — (id, 화면, 가는 길, 볼 것, 순회 장면 이름들). 장면이 없으면 순회가 못 연 화면이다(손으로만 본다).
 ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
     ("main", "1. 메인 · 공용 팝업", [
@@ -53,8 +65,7 @@ ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
     ("palace", "2. 궁궐", [
         ("palace-status", "궁궐 현황", "메인 → 궁궐", "도시 · 궁궐 레벨 · 황제 · 등용 장수 네 칸", ["20-palace"]),
         ("palace-rename", "도시 이름 변경 팝업", "궁궐 → [이름 변경]", "안내문 · 입력칸", ["20b-palace-rename"]),
-        ("officers", "장수 목록", "궁궐 → [장수 관리]", "레벨 열이 없어지고 이름 오른쪽에 레벨 배지 · 표 머리 · 쪽 넘김 [처음]/[끝]", ["21-officers"]),
-        ("officers-sort", "장수 목록 — 정렬 팝업", "장수 목록 → 정렬 단추", "정렬 기준 글자", ["22e-officer-sort"]),
+        ("officers", "장수 목록", "궁궐 → [장수 관리]", "총원 줄 · 검색 · 열 머리(눌러 정렬, 네온) · 이름 칸(등급 · 레벨 배지) · 한 쪽 여덟 명 · 쪽 넘김 · [뒤로 가기]", ["21-officers"]),
         ("officer-card", "장수 상세", "장수 목록 → 아무 장수", "레벨 배지(능력치 줄 맨 앞) · 열전(0.7 → 0.8rem) · 책략 줄 · 병기 효과 · 부상 이유", ["22-officer-detail"]),
         ("officer-levelup", "장수 상세 — 레벨/스킬 관리", "장수 상세 → [레벨/스킬]", "제목의 레벨 배지 · 책략 조건문 · 능력 선택 줄", ["22b-officer-levels"]),
         ("officer-skill", "장수 상세 — 고유기술 팝업", "장수 상세 → 고유기술 배너", "기술 설명 · SP", ["22c-officer-skill"]),
@@ -155,7 +166,7 @@ def main() -> int:
     sections = []
     for sid, title, items in ROADMAP:
         sections.append({"id": sid, "title": title, "items": [
-            {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes, "closed": iid in CLOSED,
+            {"id": iid, "title": name, "path": path, "focus": focus, "manual": not scenes, "closed": iid in CLOSED, "changed": CHANGED.get(iid, ""),
              "shots": shots_of(dirs, iid, scenes) if scenes and iid not in CLOSED else []}
             for iid, name, path, focus, scenes in items
         ]})

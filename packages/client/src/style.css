@@ -4902,7 +4902,7 @@ button.lv-tactic-row {
   grid-template-columns: minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem 2.4rem;
   gap: .25rem;
 }
-.ofc-row-equip .c-cd { display: none; }
+.ofc-row-equip .c-cd, .ofc-thead.ofc-row-equip .c-cd.ic { display: none; }
 /* 바로 고르기(`PickMode.direct`, 부대 편성 2026-10-22) — 체크 칸이 없어 마지막 칸을 덜고, 줄 전체가 단추다 */
 .ofc-row.ofc-row-equip.ofc-row-direct { grid-template-columns: minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem; }
 .ofc-row-direct:not(.ofc-thead) { cursor: pointer; }
