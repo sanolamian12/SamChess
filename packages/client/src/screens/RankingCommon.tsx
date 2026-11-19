@@ -665,13 +665,16 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
           ))}
       </div>
 
-      {/* 고유기술 연출 배너 — 있을 때만, 패널 폭 전체. 눌러서 설명 팝업(SkillModal,
-          `OfficerCardModal`이 연다) */}
-      {row.uniqueSkillId && skill && <h3 className="ofcard-head" data-field="headSkill">{t('ranking.card.head.skill')}</h3>}
-      {row.uniqueSkillId && skill && (
+      {/* 고유기술 연출 배너 — 패널 폭 전체. 눌러서 설명 팝업(SkillModal, `OfficerCardModal`이 연다). 없으면 명패 */}
+      <h3 className="ofcard-head" data-field="headSkill">{t('ranking.card.head.skill')}</h3>
+      {row.uniqueSkillId && skill ? (
         <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={onOpenSkill}>
           <img src={skillArtUrl(row.uniqueSkillId)} alt={skill.name} />
         </button>
+      ) : (
+        /* 고유기술이 없는 장수(C · D급 등) — 배너 자리에 명패(`ui/plate-settings.png`)를 같은 크기로 씌우고 「고유 기술 없음」(열 언어, 2026-11-19 기획자).
+           자리가 비지 않아 카드마다 칸 차례 · 높이가 같다 */
+        <div className="ofcard-noskill" data-field="noSkill">{t('ranking.card.noSkill')}</div>
       )}
 
       {/* 인물 소개 — 대나무 테두리(`btn-ghost.png`, 2026-08-27 열세 번째 지정).

@@ -10212,3 +10212,11 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .ofcard-layout [data-field="mp"] { --stat-stroke: url(ui/era-stroke-b-3.png); }
 .ofcard-layout [data-field="at"] { --stat-stroke: url(ui/era-stroke-b-7.png); }
 .ofcard-layout .ofcard-bar-lv [data-field="at"] .v::before { right: auto; left: -.2ch; }
+/* 고유기술 없음 — 배너와 같은 폭 · 같은 비율(720 : 137)의 명패(`ui/plate-settings.png` — 환경설정 · 팝업 제목과 같은 판) 위에 글자 (2026-11-19 기획자) */
+.ofcard-noskill {
+  box-sizing: border-box; width: 100%; aspect-ratio: 720 / 137;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  border: 0 solid transparent; border-width: 0 1.4rem;
+  border-image: url(ui/plate-settings.png) 0 7% fill / 0 1.4rem stretch;   /* 양끝 7%는 제 모양, 가운데만 가로로 */
+  color: #f3e8c8; font-size: .95rem; font-weight: 700; letter-spacing: .04em; text-shadow: 0 1px 2px #000c;
+}
