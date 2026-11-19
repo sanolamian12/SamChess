@@ -134,6 +134,8 @@ async function seed(): Promise<void> {
   const stored = (await getProfile(uid))!;
   const roster = { ...stored.roster } as Record<string, ReturnType<typeof newInstance>>;
   for (const o of OFFICERS.slice(0, 24)) if (!roster[o.id]) roster[o.id] = newInstance(o.id as OfficerId);
+  // OFFICER=<id> — 장수 상세를 그 장수로 연다(계정에 들인다)
+  if (process.env['OFFICER'] && !roster[process.env['OFFICER']]) roster[process.env['OFFICER']] = newInstance(process.env['OFFICER'] as OfficerId);
   for (const g of ['S', 'A', 'E']) {
     const o = OFFICERS.find((x) => x.grade === g && !roster[x.id]);
     if (o) roster[o.id] = newInstance(o.id as OfficerId);
@@ -221,7 +223,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
   const prof = await page.evaluate(() => (window as unknown as { __profile: { current: { squads: Squad[]; roster: Record<string, unknown> } } }).__profile.current);
   const sq3 = prof.squads.find((s) => s.id === 'def-3v3')!;
   const atk3 = prof.squads.find((s) => s.id === 'atk-3v3')!;
-  const firstOfficer = Object.keys(prof.roster)[0]!;
+  const firstOfficer = process.env['OFFICER'] ?? Object.keys(prof.roster)[0]!;
 
   const scenes: [string, Go, ((p: Page) => Promise<void>)?][] = [
     ['10-main', { name: 'main' }],

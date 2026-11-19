@@ -30,7 +30,8 @@ import {
 import { GradeBadge } from './GradeBadge.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { TacticIcon } from './TacticIcon.tsx';
-import { GameIcon, TallyIcons } from './GameIcon.tsx';
+import { GameIcon } from './GameIcon.tsx';
+import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 
 /**
@@ -552,33 +553,27 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
         {courtesyName && <span className="ofcard-courtesy" data-field="courtesy">{courtesyName}</span>}
       </h2>
 
-      <div className="ofcard-layout">
-        {/* 액자 없이 기물 그림만(2026-08-27 열네 번째 지정 — "카드 프레임을
-            없애자, 캐릭터만 보이도록"). `market/frame-{grade}.png`는 더 이상
-            안 두른다. */}
-        <OfficerActionArt officer={row.officer} className="art ofcard-art" />
-
+      {/* 그림 · 능력치 판 — 컬렉션 빈 칸을 돌려 4 : 6으로 편 판(`ui/slot-card.png`, 2026-11-19 기획자). 왼쪽 띠에 장수(줄이지 않고 판 위에 그대로 —
+          S급 자주 · A급 흰 별빛 · E급 금 후광은 병영 꼬마 뒤의 그 별빛), 오른쪽 종이에 여섯 값을 두 줄 셋씩 — 무력 · 지력 · 통솔 / HP · MP · AT.
+          장수 전적은 걷었다(같은 날 기획자 — 전적은 부대만). 레벨은 이름 줄의 배지 */}
+      <div className="ofcard-layout" data-field="statPanel">
+        <div className="ofcard-figure">
+          {STAND_GLOW[row.grade] && <BlinkGlow tone={STAND_GLOW[row.grade]!} className="ofcard-glow" />}
+          <OfficerActionArt officer={row.officer} className="art ofcard-art" />
+        </div>
         <div className="ofcard-bars">
-          {/* 1. 전적 — 「전적」 이름표를 앞에 단다(2026-08-27 열다섯 번째 지정 —
-              "0/0/0 앞에 전적 단어 추가, 적 격파와 같은 폰트로"). `Stat`의
-              `k`가 그 자리다 — 옆의 「적 격파」와 같은 `.k` 스타일을 그대로 쓴다. */}
-          <div className="ofcard-bar ofcard-bar-rec">
-            {/* 승 · 무 · 패 · 격파 — 병영 최근 부대와 같은 아이콘 줄(2026-10-26) */}
-            <span className="ofcard-stat" data-field="record">
-              {/* 출전 · 승 · 무 · 패 · 격파 — 이것만 센다(2026-11-19 기획자: 기물 · 모드별 전적 보기 판을 걷었다) */}
-              <TallyIcons p={row.tally.plays} w={row.tally.wins} d={row.tally.draws} l={row.tally.losses} k={row.tally.kills} labels={{
-                p: t('records.col.plays'), w: t('records.result.win'), d: t('records.result.draw'), l: t('records.result.lose'), k: t('ranking.col.kills'),
-              }} />
-            </span>
-          </div>
-
-          {/* 2. 삼능력 — 이름표 대신 아이콘(위 `Stat` 주석 참조) */}
+          {/* 판 이름 — 「능력치」(열 언어, 2026-11-19 기획자) */}
+          <h3 className="ofcard-stat-head" data-field="headStats">{t('ranking.card.head.stats')}</h3>
           <div className="ofcard-bar ofcard-bar-abl" data-injured={injury ? '1' : '0'}>
             <Stat icon={{ src: 'icons/stat-might.png', alt: t('ranking.card.might') }} v={shown(row.might)} field="might" />
             <Stat icon={{ src: 'icons/stat-intellect.png', alt: t('ranking.card.intellect') }} v={shown(row.intellect)} field="intellect" />
             <Stat icon={{ src: 'icons/stat-leadership.png', alt: t('ranking.card.leadership') }} v={shown(row.leadership)} field="leadership" />
           </div>
-
+          <div className="ofcard-bar ofcard-bar-lv">
+            <Stat k={<GameIcon name="stat-hp" label="HP" />} v={row.stats.hp} field="hp" />
+            <Stat k={<GameIcon name="stat-mp" label="MP" />} v={row.stats.mp} field="mp" />
+            <Stat k={<GameIcon name="stat-at" label="AT" />} v={`${row.at.min}-${row.at.max}`} field="at" />
+          </div>
           {/* 부상 (GDD §8.2, 트랙 11g) — 라벨 하나. 누르면 언제 낫는지 · 깎인 폭 · 병원이 있으면
               [입원시키기]. 능력치 바로 밑에 둔다 — 붉은 숫자의 **이유**를 바로 옆에서 말해야 한다. */}
           {injury && (
@@ -610,13 +605,6 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
               )}
             </div>
           )}
-
-          {/* 3. 레벨·능력치 (원래 4번 — 고유기술 줄을 뺀 자리를 당겼다) */}
-          <div className="ofcard-bar ofcard-bar-lv">
-            <Stat k={<GameIcon name="stat-hp" label="HP" />} v={row.stats.hp} />
-            <Stat k={<GameIcon name="stat-mp" label="MP" />} v={row.stats.mp} />
-            <Stat k={<GameIcon name="stat-at" label="AT" />} v={`${row.at.min}-${row.at.max}`} />
-          </div>
 
         </div>
       </div>

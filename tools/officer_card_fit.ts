@@ -59,11 +59,13 @@ try {
   await saveProfileTrusted(uid, { ...stored, roster, forgeOwned } as Parameters<typeof saveProfileTrusted>[1]);
 
   const worst: { lang: string; officer: string; rem: number }[] = [];
+  const titles: number[] = [];
   for (const lang of LANGS) {
     await page.evaluate((l) => localStorage.setItem('samchess.lang', l), lang);
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('#frame:not([data-sky]) .scr-main', { timeout: 30_000 });
-    let best = { officer: '', rem: 0, equip: false, injury: false };
+    let best = { officer: '', rem: 0, equip: false, injury: false, spill: 0, titleRem: 0, atSpill: 0 };
+    let spill = 0; let title = { officer: '', rem: 0 }; let atSpill = 0;
     for (const o of OFFICERS) {
       await go(page, { name: 'officers', officer: o.id });
       await page.waitForSelector(`.ofcard-modal[data-officer="${o.id}"]`, { timeout: 8_000 });
@@ -74,19 +76,51 @@ try {
         const story = card.querySelector<HTMLElement>('.ofcard-story');
         if (story) { story.style.flex = 'none'; story.style.overflow = 'visible'; }
         const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        // 그림 · 능력치 판(비율이 박힌 상자) 안의 여섯 값 · [부상]이 판을 넘치지 않는가
+        const bars = card.querySelector<HTMLElement>('.ofcard-layout .ofcard-bars');
+        const panel = card.querySelector<HTMLElement>('.ofcard-layout');
+        const spill = bars && panel ? Math.max(0, bars.scrollHeight - panel.clientHeight) : 0;
+        // 이름 줄 — 획 폭을 풀어 [등급][레벨] 이름 자가 차지하는 폭(rem)
+        const title = card.querySelector<HTMLElement>('.ofcard-title')!;
+        const keepW = title.style.width;
+        title.style.width = 'max-content'; title.style.maxWidth = 'none';
+        const titleRem = title.getBoundingClientRect().width / rootPx;
+        title.style.width = keepW; title.style.maxWidth = '';
+        // 여섯 값이 커져도 칸이 서로 안 겹치는가 — 무 · 지 · 통 · HP · MP는 세 자리(「100」), AT는 「10-20」으로 잠깐 바꿔 잰다
+        const keep: [HTMLElement, string | null][] = [];
+        for (const f of ['might', 'intellect', 'leadership', 'hp', 'mp', 'at']) {
+          const v = card.querySelector<HTMLElement>(`[data-field="${f}"] .v`);
+          if (v) { keep.push([v, v.textContent]); v.textContent = f === 'at' ? '10-20' : '100'; }
+        }
+        let atSpill = 0;
+        for (const row of card.querySelectorAll<HTMLElement>('.ofcard-layout .ofcard-bar-abl, .ofcard-layout .ofcard-bar-lv')) {
+          const cells = [...row.querySelectorAll<HTMLElement>(':scope > .ofcard-stat')].map((c) => c.getBoundingClientRect());
+          const end = row.getBoundingClientRect().right;
+          cells.forEach((r, k) => {
+            const next = k + 1 < cells.length ? cells[k + 1]!.left : end;
+            atSpill = Math.max(atSpill, Math.round(r.right - next));
+          });
+        }
+        for (const [v, t] of keep) v.textContent = t;
         return {
+          titleRem, atSpill,
+          spill,
           rem: card.getBoundingClientRect().height / rootPx,
           equip: !!card.querySelector('[data-field="equip"]'),
           injury: !!card.querySelector('[data-field="injury"]'),
         };
       });
+      spill = Math.max(spill, got.spill); atSpill = Math.max(atSpill, got.atSpill);
+      if (got.titleRem > title.rem) title = { officer: o.id, rem: got.titleRem };
       if (got.rem > best.rem) best = { officer: o.id, ...got };
       await go(page, { name: 'main' });
     }
-    console.log(`  ${lang.padEnd(8)} ${best.rem.toFixed(2)}rem — ${best.officer}${best.equip ? '' : ' (병기 줄 없음!)'}${best.injury ? '' : ' (부상 줄 없음!)'}`);
+    console.log(`  ${lang.padEnd(8)} ${best.rem.toFixed(2)}rem — ${best.officer}${best.equip ? '' : ' (병기 줄 없음!)'}${best.injury ? '' : ' (부상 줄 없음!)'}${spill ? ` · 그림 판을 ${spill}px 넘친다!` : ''} · 이름 줄 ${title.rem.toFixed(2)}rem(${title.officer})${atSpill ? ` · 능력치 칸이 ${atSpill}px 겹친다(세 자리 · 10-20)!` : ''}`);
+    titles.push(title.rem);
     worst.push({ lang, officer: best.officer, rem: best.rem });
   }
   const top = worst.reduce((a, b) => (b.rem > a.rem ? b : a));
+  console.log(`가장 긴 이름 줄 ${Math.max(...titles).toFixed(2)}rem — 금빛 획(--ofcard-title-w)은 이것보다 넓게`);
   console.log(`\n가장 긴 카드 ${top.rem.toFixed(2)}rem (${top.lang} · ${top.officer}) — 판(.ofcard-modal)은 이것보다 크게 잡는다`);
 } finally {
   await browser.close();

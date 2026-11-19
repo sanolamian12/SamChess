@@ -942,6 +942,37 @@ def build_cells(path: Path, rows: int, cols: int, ids: list[str], groups: list[l
     return {i: square_cells([crops[i]], side_of[i])[0] for i in ids}
 
 
+# 장수 상세의 그림 · 능력치 판 (2026-11-19 기획자) — 컬렉션 빈 칸(`slot-empty.jpg`, 세로 · 위 종이 · 아래 좁은 띠)을 **오른쪽으로 90도** 돌려
+# 왼쪽 띠 : 오른쪽 종이를 4 : 6으로 편다. 테 · 금 귀퉁이 · 가운데 칸막이는 제 폭 그대로 두고 **띠와 종이만 가로로 늘린다**(통째로 늘이면 귀퉁이가 찌그러진다).
+# 자르는 자리는 돌린 그림 폭의 비율(굽힌 `slot-empty.png` 492px 폭에서 잰 값 — 귀퉁이 끝 46 · 띠 끝 105 · 칸막이 끝 120 · 오른쪽 귀퉁이 시작 450).
+# → `public/ui/slot-card.png`(높이 `SLOT_CARD_H`, 비율 `SLOT_CARD_RATIO`), 화면은 `.ofcard-layout`
+SLOT_CARD_SRC = SRC / "slot-empty.jpg"
+SLOT_CARD_H = 720
+SLOT_CARD_RATIO = 2.75   # 2.2에서 높이 0.8배 (2026-11-19 기획자 — 몽골어 여포의 열전이 판 안에서 내렸다)
+SLOT_CARD_CUTS = (46 / 492, 105 / 492, 120 / 492, 450 / 492)
+
+
+def build_slot_card(path: Path) -> Image.Image:
+    base = build_frame(path, black_bg=True, max_width=4000).rotate(-90, expand=True)
+    base = resize_alpha(base, (round(base.width * SLOT_CARD_H / base.height), SLOT_CARD_H))
+    w = base.width
+    a, b, c, d = (round(w * f) for f in SLOT_CARD_CUTS)
+    target = round(SLOT_CARD_H * SLOT_CARD_RATIO)
+    fixed = a + (c - b) + (w - d)
+    divider_mid = target * 0.4                       # 칸막이 한가운데가 판의 40%
+    band = round(divider_mid - a - (c - b) / 2)
+    paper = target - fixed - band
+    out = Image.new("RGBA", (target, SLOT_CARD_H))
+    x = 0
+    for (x0, x1), width in (((0, a), a), ((a, b), band), ((b, c), c - b), ((c, d), paper), ((d, w), w - d)):
+        piece = base.crop((x0, 0, x1, SLOT_CARD_H))
+        if piece.width != width:
+            piece = piece.resize((width, SLOT_CARD_H), Image.LANCZOS)
+        out.paste(piece, (x, 0))
+        x += width
+    return out
+
+
 def build_level_badges(path: Path, count: int = LEVEL_BADGE_COUNT, rows: int = 2) -> list[Image.Image]:
     """`LEVEL_BADGE_SRC` 참조 — 바탕을 걷고, 큰 알파 덩어리 열 개를 줄(위→아래) · 칸(왼→오른) 차례로 잘라 높이를 맞춘다."""
     from scipy import ndimage
@@ -1093,6 +1124,15 @@ def main() -> int:
             made_icons.append((f"level/lv-{k}", im))
     else:
         skipped += LEVEL_BADGE_COUNT
+
+    # ── 장수 상세의 그림 · 능력치 판 — 등록 칸을 돌려 4 : 6 ──
+    if not SLOT_CARD_SRC.exists():
+        missing.append(SLOT_CARD_SRC.name)
+    elif not up_to_date(OUT_UI / "slot-card.png", SLOT_CARD_SRC):
+        build_slot_card(SLOT_CARD_SRC).save(OUT_UI / "slot-card.png")
+        made_frames.append("slot-card.png")
+    else:
+        skipped += 1
 
     # ── 건물 레벨 배지 — 한 줄 다섯 장 ──
     if not BUILDING_LEVEL_SRC.exists():

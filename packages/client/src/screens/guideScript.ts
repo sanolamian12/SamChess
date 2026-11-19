@@ -90,7 +90,6 @@ export const SPOT_SELECTOR = {
   giveItem: '[data-action="giveItem"]',
   officerRow: '.ofc-rows .ofc-row',
   cardTitle: '.ofcard .ofcard-title',
-  cardRecord: '.ofcard .ofcard-bar-rec',
   cardStats: '.ofcard .ofcard-bar-abl',
   cardLevel: '.ofcard .ofcard-bar-lv',
   cardTactics: '.ofcard .ofcard-bar-tactics',
@@ -385,7 +384,6 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
     case 'officer.card':
       return [
         { text: t('guide.officer.card.title'), spot: 'cardTitle' },
-        { text: t('guide.officer.card.record'), spot: 'cardRecord' },
         { text: t('guide.officer.card.stats'), spot: 'cardStats' },
         { text: t('guide.officer.card.level'), spot: 'cardLevel' },
         { text: t('guide.officer.card.tactics'), spot: 'cardTactics' },

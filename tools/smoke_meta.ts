@@ -1744,7 +1744,9 @@ const detail = await page.evaluate(() => {
     name: card.querySelector('.ofcard-name')?.textContent?.trim() ?? '',
     lv: card.querySelector('.ofcard-bar-lv')?.textContent?.trim() ?? '',
     // 전적은 승 · 무 · 패 · 격파 아이콘 + 숫자다(2026-10-26) — 칸의 값으로 「승 / 무 / 패」를 만든다
-    rec: ((el) => el ? ['w', 'd', 'l'].map((k) => el.dataset[k] ?? '').join(' / ') : '')(card.querySelector<HTMLElement>('.ofcard-bar-rec .gic-tally')),
+    // 장수 전적은 카드에 없다(2026-11-19 기획자 — 전적은 부대만). 여섯 값만: 무력 · 지력 · 통솔 / HP · MP · AT
+    rec: !!card.querySelector('.ofcard-bar-rec, .gic-tally'),
+    six: ['might', 'intellect', 'leadership', 'hp', 'mp', 'at'].filter((f) => card.querySelector(`.ofcard-layout [data-field="${f}"]`)).length,
     skill: !!card.querySelector('[data-action="skill"]'),
     levels: !!card.querySelector('[data-action="levels"]'),
     records: !!card.querySelector('[data-action="records"]'),
@@ -1759,14 +1761,14 @@ if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${det
 if (!/\d+-\d+$/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
 if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [레벨/스킬 관리] · [뒤로 가기]가 다 있지 않다: ${JSON.stringify(detail)}`);
 if (detail.records) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
-// 전적은 「승 / 무 / 패」 세 칸이다 (v3). 누구에게 붙었는지는 시드가 정해 숫자는 못 박지 않는다
-if (!/\d+\s*\/\s*\d+\s*\/\s*\d+/.test(detail.rec)) fail(`전적이 「승 / 무 / 패」 모양이 아니다: "${detail.rec}"`);
+if (detail.rec) fail('장수 카드에 전적 줄이 남아 있다(2026-11-19에 걷었다)');
+if (detail.six !== 6) fail(`장수 카드의 여섯 값이 다 있지 않다 — ${detail.six}칸`);
 // 인물 서사는 **데이터에 있을 때만** 줄이 있다 — 없으면 줄째로 물러난다 (G1이 218/260명을 채웠다)
 {
   const hasStory = !!OFFICERS.find((o) => o.id === target.officer)?.story?.['ko'];
   if (detail.story !== hasStory) fail(`인물 서사 줄이 데이터와 어긋난다 — 데이터 ${hasStory}, 화면 ${detail.story}`);
 }
-console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 전적 ${detail.rec}`);
+console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 여섯 값 · 전적 줄 없음`);
 
 // 고유기술 팝업 (38쪽 아래). 지급이 S·A·B급을 포함하므로 기술이 있는 장수가 반드시 있다
 {
@@ -2250,54 +2252,6 @@ console.log(`✓ 저장 유지 — ${kept}`);
   if (folded.cells !== 0) fail(`기물도 모드도 모르는 옛 전적이 칸에 들어갔다 (${folded.cells}칸)`);
   if (folded.matches !== 0 || folded.seq !== 1) fail(`이력 자리가 초기화되지 않았다: ${JSON.stringify(folded)}`);
   console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → ${PROFILE_VERSION} · 옛 평평한 전적은 0에서 시작`);
-}
-
-// ── 장수 전적 (2026-11-19 기획자 — 기물 · 모드별 전적 판을 걷고 카드 맨 윗줄 하나) ──────
-//
-// 전투를 끝까지 돌리려면 몇 분이 걸리므로, **저장분에 전적을 심어 놓고** 카드의 출전 · 승 · 무 · 패 · 격파가
-// 칸(`{상대}/{모드}/{기물}`)의 합인지 본다 — 공성전 · 야전 · 3v3 · 5v5 · 기물이 다른 칸이 한 줄로 더해져야 한다.
-{
-  const seeded = await apiGet();
-  (seeded['roster'] as Record<string, any>)[who!].record = {
-    'field/3v3/King': { plays: 3, wins: 2, draws: 0, losses: 1, kills: 5 },
-    'siege/5v5/Queen': { plays: 1, wins: 0, draws: 1, losses: 0, kills: 1 },
-  };
-  const pick = (piece: string) => [{ piece, officer: who!, kills: 1 }];
-  seeded['matches'] = [
-    {
-      seq: 1, at: 1, mode: '3v3', opponent: 'field', opponentId: '공명', mySquad: null,
-      theirSquad: null, myPower: 742, theirPower: 1043, chance: 0.0479, result: 'win',
-      picks: pick('King'),
-    },
-    {
-      seq: 2, at: 2, mode: '5v5', opponent: 'siege', opponentId: '수비성', mySquad: null,
-      theirSquad: null, myPower: 900, theirPower: 900, chance: 0.5, result: 'draw',
-      picks: pick('Queen'),
-    },
-  ];
-  seeded['matchSeq'] = 3;
-  /*
-   * **`PUT`으로는 못 심는다** (2026-09-14, A2) — 장수 전적은 `roster` 안에 있고 `roster`가
-   * 서버 소유가 되어 `PUT`이 조용히 버린다(그게 규칙이다 — 실제로 여기서 King 0전으로 잡혔다).
-   * `setGrain`·`reload`처럼 서버 함수로 직접 쓴다. 화면이 들고 있던 저장을 먼저 흘려보낸다
-   */
-  await page.evaluate(() => (window as any).__profile.flush());
-  await saveProfileTrusted(player.uid, seeded as Parameters<typeof saveProfileTrusted>[1]);
-
-  await reenter();
-  await toPalace();
-  await page.click('[data-action="officers"]');
-  await page.waitForTimeout(300);
-  await openCardOf(who!);
-  const rec = await page.evaluate(() => {
-    const el = document.querySelector<HTMLElement>('.ofcard-modal .ofcard-bar-rec .gic-tally');
-    return el ? { p: el.dataset.p, w: el.dataset.w, d: el.dataset.d, l: el.dataset.l, k: el.dataset.k } : null;
-  });
-  // King 3전 2승 1패 5격파 + Queen 1전 1무 1격파 → 4전 2승 1무 1패 6격파
-  if (JSON.stringify(rec) !== JSON.stringify({ p: '4', w: '2', d: '1', l: '1', k: '6' })) fail(`카드의 전적이 칸의 합이 아니다: ${JSON.stringify(rec)}`);
-  if (await page.$('.ofcard-modal [data-action="records"]')) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
-  console.log('✓ 장수 전적 — 카드 맨 윗줄이 칸의 합(4전 2승 1무 1패 6격파) · [전적 보기] 없음');
-  await closeCard();
 }
 
 // ── 도시 관리 (pptx 41쪽) ★ C2가 연 자리 ────────────────────────
