@@ -90,7 +90,7 @@ try {
     return {
       cells, city: (document.querySelector('[data-field="palaceStatus"] [data-field="cityLevel"]') as HTMLElement | null)?.dataset.level ?? '',
       // 도시 · 궁궐 두 줄의 배지가 세로로 줄을 맞추는가(2026-11-19 기획자) — 왼쪽 끝 차이
-      badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .lv-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); const ia = document.querySelector('[data-field="cityLevel"] .gic')?.getBoundingClientRect(); const ib = document.querySelector('[data-field="palaceLevel"] .gic')?.getBoundingClientRect(); if (ia && ib && Math.abs((ia.left + ia.right) - (ib.left + ib.right)) > 2) return 998; return a && b ? Math.round(Math.abs((a.left + a.right) - (b.left + b.right)) / 2) : 999; })(),   // 가운데끼리
+      badgeAlign: (() => { const a = document.querySelector('[data-field="cityLevel"] .city-badge')?.getBoundingClientRect(); const b = document.querySelector('[data-field="palaceLevel"] .bld-badge')?.getBoundingClientRect(); const ia = document.querySelector('[data-field="cityLevel"] .gic')?.getBoundingClientRect(); const ib = document.querySelector('[data-field="palaceLevel"] .gic')?.getBoundingClientRect(); if (ia && ib && Math.abs((ia.left + ia.right) - (ib.left + ib.right)) > 2) return 998; return a && b ? Math.round(Math.abs((a.left + a.right) - (b.left + b.right)) / 2) : 999; })(),   // 가운데끼리
       palace: (document.querySelector('[data-field="palaceStatus"] [data-field="palaceLevel"] .bld-lv') as HTMLElement | null)?.dataset.level ?? '', pool: txt('pool'),
       emperor: (document.querySelector('[data-field="palaceStatus"] [data-field="emperor"]') as HTMLElement | null)?.dataset.emperor,
       renameInRow: !!document.querySelector('.plc-name-row [data-action="rename"]'),
@@ -100,7 +100,8 @@ try {
         const row = document.querySelector('.plc-name-row')?.getBoundingClientRect();
         return b && row ? Math.round(row.right - b.right) : 999;
       })(),
-      renameArt: getComputedStyle(document.querySelector('.plc-name-row [data-action="rename"]')!).borderImageSource,
+      // 이름 변경은 글자 없는 둥근 배지(2026-11-19 기획자)
+      renameArt: (() => { const b = document.querySelector<HTMLElement>('.plc-name-row [data-action="rename"]')!; const r = b.getBoundingClientRect(); return `${getComputedStyle(b).borderRadius}|${Math.round(r.width)}x${Math.round(r.height)}|${b.innerText.trim()}`; })(),
       // 왼쪽 정렬 — 같은 단의 두 칸이 왼쪽 끝을 맞추는가
       leftEdges: [...document.querySelectorAll('.plc-grid .plc-cell')].map((e) => Math.round(e.getBoundingClientRect().left)),
       // 이름이 **판의 한가운데**인가 — 단추가 옆에 있어도 이름을 밀면 안 된다
@@ -115,7 +116,8 @@ try {
   const [l0, l1, l2, l3] = got.leftEdges;
   if (l0 !== l2 || l1 !== l3) fail(`두 단이 왼쪽 끝을 맞추지 않는다 — ${got.leftEdges.join(',')}`);
   if (got.renameGap > 2) fail(`[이름 변경]이 오른쪽 벽에서 ${got.renameGap}px 떨어져 있다`);
-  if (!got.renameArt.includes('btn-forcedcancel')) fail(`[이름 변경]이 붉은 목판이 아니다 — ${got.renameArt}`);
+  { const [rad, size, text] = got.renameArt.split('|'); const [w, h] = size!.split('x').map(Number);
+    if (rad !== '50%' || w !== h || text) fail(`[이름 변경]이 글자 없는 둥근 배지가 아니다 — ${got.renameArt}`); }
   if (!got.pool.includes(`${poolUsed(seeded)} / ${poolCap(seeded)}`)) fail(`등용 장수 칸이 다르다 — "${got.pool}"`);
   if (got.emperor !== '1') fail('헌제를 심었는데 황제가 부재다');
   if (!got.renameInRow) fail('[이름 변경]이 도시 이름 줄에 없다');

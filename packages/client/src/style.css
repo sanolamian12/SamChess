@@ -10175,7 +10175,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .plc-grid .bld-lv .gic img { width: 1.9em; height: 1.9em; object-fit: contain; }
 /* 두 줄(도시 · 궁궐)은 칸 폭을 박아 아이콘끼리 · 배지끼리 **가운데**가 맞는다 — 배지 그림 폭이 서로 달라 왼쪽 맞춤이면 가운데가 어긋났다 */
 .plc-grid .bld-lv .gic { width: 1.9em; justify-content: center; }
-.plc-grid .bld-lv .bld-badge, .plc-grid .bld-lv .lv-badge { height: 1.9em; width: 2.2em; justify-content: center; object-fit: contain; }
+.plc-grid .bld-lv .bld-badge { height: 1.9em; width: 2.2em; justify-content: center; }
 /* 황제 — E급 표지 + 「황제」. 없으면 회색조 · 회색 글자, 있으면 제 색 + 뒤에 금빛 둥근 후광(숨쉬기) · 검은 글자 */
 .plc-emperor { display: inline-flex; align-items: center; gap: .3rem; }
 .plc-emperor-mark { position: relative; display: inline-flex; flex: none; height: 1.7em; isolation: isolate; }
@@ -10183,3 +10183,31 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .plc-cell[data-emperor="0"] .plc-emperor-mark > img { filter: grayscale(1) brightness(.95); opacity: .75; }
 .plc-cell[data-emperor="0"] .plc-emperor-name { color: #8a7d6c; }
 .plc-cell[data-emperor="1"] .plc-emperor-name { color: #000; }
+
+/* ── 궁궐 현황판 — 붉은 옻칠 판 (2026-11-19 기획자, 「이래야 궁궐답다」) ─────────────────
+   가입 오프닝의 첫 다섯 판과 같은 그림(`ui/slot-first.png`, 2:1). 판이 그보다 납작해(약 3.5:1) 통째로 펴면 구름이 눌리므로,
+   **테와 금 귀퉁이는 9분할**(border-image, 속은 안 채움)로 판 둘레에 두르고 **속은 같은 그림을 덮어(cover)** 깐다 — 구름은 제 비율 그대로 잘린다.
+   글자는 붉은 바탕 위라 밝게 — 도시 이름 금빛, 나머지 미색 */
+.scr-place-palace .place-panel.plc-status {
+  background: url(ui/slot-first.png) center / cover no-repeat border-box;
+  border-style: solid; border-color: transparent; border-width: 1.1rem;
+  border-image: url(ui/slot-first.png) 75 / 1.1rem stretch;
+  padding: .1rem .3rem .2rem; color: #f3e8c8;
+}
+.scr-place-palace .plc-status .plc-city { color: #f5cd5c; text-shadow: 0 1px 0 #5a1a0a, 0 2px 4px #000c, 0 0 .6rem #f0b52d55; }
+.scr-place-palace .plc-status .plc-cell { color: #f3e8c8; text-shadow: 0 1px 2px #000b; }
+.scr-place-palace .plc-status .plc-cell[data-emperor="0"] .plc-emperor-name { color: #b9a58a; }
+.scr-place-palace .plc-status .plc-cell[data-emperor="1"] .plc-emperor-name { color: #fff6dc; }
+.scr-place-palace .plc-status .note { color: #ffd6a0; }
+/* 이름 변경 — 둥근 배지(미색 · 금테) 안에 붓, 판 오른쪽 */
+.plc-name-row .plc-rename {
+  grid-column: 3; justify-self: end; flex: none;
+  width: 2.1rem; height: 2.1rem; padding: 0; border-radius: 50%; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 38%, #fff6df 0%, #f0dcae 55%, #c9a462 100%);   /* 미색 — 붉은 바탕 위에서 먹빛 붓이 보이게 */
+  border: .14rem solid #d9b25a; box-shadow: 0 0 0 .08rem #5a1a0a, 0 2px 4px #000a, inset 0 1px 2px #ffd88a55;
+}
+.plc-name-row .plc-rename .gic { display: inline-flex; }
+.plc-name-row .plc-rename img { width: 1.45rem; height: 1.45rem; object-fit: contain; filter: drop-shadow(0 1px 1px #000a); }
+.plc-name-row .plc-rename:hover { filter: brightness(1.15); }
+.plc-name-row .plc-rename:active { transform: scale(.95); }

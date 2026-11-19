@@ -41,3 +41,17 @@ export function BuildingLevel({ id, name, level }: { id: string; name: string; l
     </span>
   );
 }
+
+/**
+ * 도시 레벨 배지 — 장수 레벨과 같은 그림(`lv-n`)에 건물 배지와 같은 별빛 후광(2026-11-19 기획자, 궁궐 현황판).
+ * Lv10 금, Lv8 · 9 자주, 그 밑은 흰 별빛.
+ */
+export function CityLevelBadge({ level }: { level: number }): React.JSX.Element {
+  const tone = level >= 10 ? 'gold' : level >= 8 ? 'purple' : 'plain';
+  return (
+    <span className="bld-badge city-badge" data-level={level} title={`Lv${level}`}>
+      <BlinkGlow tone={tone} className="bld-glow" />
+      <img src={levelBadgeUrl(level)} alt={`Lv${level}`} draggable={false} />
+    </span>
+  );
+}

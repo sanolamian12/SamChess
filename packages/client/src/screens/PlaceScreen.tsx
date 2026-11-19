@@ -67,7 +67,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { guidesEnabled } from './guideScript.ts';
 import { buildingNameText } from './buildingText.ts';
-import { BuildingLevel, LevelBadge } from './LevelBadge.tsx';
+import { BuildingLevel, CityLevelBadge } from './LevelBadge.tsx';
 import { BlinkGlow } from './BlinkGlow.tsx';
 
 
@@ -194,9 +194,9 @@ function PalaceStatus({ profile, onChange }: {
     <section className="place-panel plc-status" data-field="palaceStatus">
       <div className="plc-name-row">
         <h2 className="cap plc-city" data-field="cityName">{profile.cityName}</h2>
-        {/* 붉은 목판(`assets/icons/ui/button_forcedcancel.png` → `ui/btn-forcedcancel.png`) */}
-        <button className="btn sm plc-rename" data-action="rename" onClick={() => setRenaming(true)}>
-          <GameIcon name="mk-edit" label={t('city.rename')} text />
+        {/* 이름 변경 — 붓 아이콘(`mk-edit`)을 둥근 배지로, 글자 없이 판 오른쪽 (2026-11-19 기획자). 이름은 올리면 · 낭독기에 */}
+        <button className="plc-rename" data-action="rename" title={t('city.rename')} aria-label={t('city.rename')} onClick={() => setRenaming(true)}>
+          <GameIcon name="mk-edit" label={t('city.rename')} />
         </button>
       </div>
       <div className="plc-grid">
@@ -204,7 +204,7 @@ function PalaceStatus({ profile, onChange }: {
         <span className="plc-cell" data-field="cityLevel" data-level={profile.cityLevel}>
           <span className="bld-lv plc-city-lv" title={t('city.summary.level', { level: profile.cityLevel })}>
             <GameIcon name="city-upgrade" label={t('city.summary.level', { level: profile.cityLevel })} />
-            <LevelBadge level={profile.cityLevel} />
+            <CityLevelBadge level={profile.cityLevel} />
           </span>
         </span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
