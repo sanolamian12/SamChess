@@ -525,6 +525,7 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
   // 언어로 고른다 — 없으면 한국어로 물러난다(`pickStory()` 참조).
+  const courtesyName = pickStory(row.courtesyName);
   const story = pickStory(row.story);
   // [부상] 라벨을 눌러 펼친 설명 — 닫혀 있는 것이 기본이다(라벨이 이유를 이미 말한다)
   const [injuryOpen, setInjuryOpen] = useState(false);
@@ -542,11 +543,13 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
       {/* 이름 줄 — 「내 장수」 표의 등급 배지(`.gr`)·이름(`.rk-nm`)과 같은
           디자인을 그대로 가져와 글자만 키운다(2026-08-27 열세 번째 지정 —
           "폰트만 지금 크기로 키워서"). 새 색·모양을 안 만든다. */}
-      {/* 이름 줄 — 장수 일람과 같은 꼴: [등급][레벨 배지] 이름 (2026-11-19 기획자). 레벨은 그 밑 능력치 줄에서 이리로 올라왔다 */}
+      {/* 이름 줄 — 장수 일람과 같은 꼴: [등급][레벨 배지] 이름 (2026-11-19 기획자). 레벨은 그 밑 능력치 줄에서 이리로 올라왔다.
+          상세에서는 이름 뒤에 자(字)까지 — 「조조 맹덕」(같은 날 기획자) */}
       <h2 className="ofcard-title">
         <GradeBadge grade={row.grade} />
         <LevelBadge level={row.level} />
         <span className="ofcard-name">{pickOfficerNameById(row.officer, row.name)}</span>
+        {courtesyName && <span className="ofcard-courtesy" data-field="courtesy">{courtesyName}</span>}
       </h2>
 
       <div className="ofcard-layout">
