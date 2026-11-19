@@ -1771,7 +1771,17 @@ img.no-art { visibility: hidden; }
    「[E]: Y [S]: 1」 같은 대괄호 표기 대신 표의 등급 배지(`.gr`)를 그대로 쓴다).
    **`.scr .foot`보다 선택자가 세야 한다** — 한 클래스로는 `flex-direction: column`을
    못 이겨 세 줄로 쌓인다. CSS는 이래도 오류가 없어 화면을 봐야만 안다(실제로 그랬다). */
-.place-panel.ofc-tally { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .8rem; flex: none; }
+/* 총원 · 등급별 인원 — 장부 판 맨 위 줄(2026-11-19 기획자). 양피지 위라 먹색 */
+.ofc-tally { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .8rem; flex: none; color: #221407; margin-bottom: .2rem; }
+/* 바닥 명령 판 — 도시 관리의 `.scr-city .place-panel.cty-acts`와 같은 자리(남는 높이를 위에 두고 바닥에 붙는다) */
+.scr-officers .place-panel.ofc-acts { margin-top: auto; }
+/* 전면 장수 일람 — 장부 판이 남는 높이를 채우고 줄 여덟이 그 높이를 똑같이 나눈다(2026-11-19 기획자). 덜 찬 쪽도 줄 높이가 같다 */
+.scr-officers .place-panel.ofc-table.ofc-fill { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+.ofc-fill .ofc-rows {
+  flex: 1 1 0; min-height: 0; overflow: hidden;
+  display: grid; grid-template-rows: repeat(var(--ofc-page), minmax(1.8rem, 1fr)); gap: .2rem;
+}
+.ofc-fill .pager { flex: none; }
 .ofc-tally .ofc-count { font-weight: 600; }
 .ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-left: auto; }
 /* 배지 자체는 표 줄의 `.ofc-row .gr`과 값 그대로 같다 — 등급 색은 단일

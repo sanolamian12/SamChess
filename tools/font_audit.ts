@@ -24,6 +24,8 @@ const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
 const OUT = process.env['OUT'] ?? '.';
 const ORIENT = process.env['ORIENT'] ?? 'portrait';
+// VIEW=635x1160 — 세로 화면 크기를 바꿔 찍는다(짧은 창에서 판이 넘치는지 볼 때)
+const [VIEW_W, VIEW_H] = (process.env['VIEW'] ?? '').split('x').map(Number).filter((n) => n > 0) as [number?, number?];
 const ONLY = (process.env['ONLY'] ?? '').split(',').filter(Boolean);
 const LANG = process.env['UI_LANG'] ?? '';
 /** 기준 — 장수 열전의 글자 크기(rem) */
@@ -32,7 +34,7 @@ const SHOTS = !!process.env['SHOTS'];
 
 interface Size { dir: string; orient: 'portrait' | 'landscape'; w: number; h: number }
 const SIZES: Size[] = [
-  ...(ORIENT !== 'landscape' ? [{ dir: 'portrait', orient: 'portrait' as const, w: 700, h: 1400 }] : []),
+  ...(ORIENT !== 'landscape' ? [{ dir: 'portrait', orient: 'portrait' as const, w: VIEW_W ?? 700, h: VIEW_H ?? 1400 }] : []),
   ...(ORIENT !== 'portrait' ? [{ dir: 'landscape', orient: 'landscape' as const, w: 1920, h: 1080 }] : []),
 ];
 const want = (name: string): boolean => ONLY.length === 0 || ONLY.some((o) => name.includes(o));

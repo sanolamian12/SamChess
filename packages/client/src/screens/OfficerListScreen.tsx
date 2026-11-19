@@ -156,7 +156,7 @@ function searchOfficers(rows: readonly OfficerRow[], query: string): OfficerRow[
 
 /** 한 쪽에 열 명 (요청 지정). 대장간 지급 팝업은 판이 좁아 **여덟**이다
     (2026-09-11 지정) — 값을 화면마다 다시 적지 않고 여기서 갈라 둔다. */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;   // 2026-11-19 기획자 — 열에서 여덟로(짧은 화면에서 바닥 명령 판이 스크롤 밖으로 밀렸다)
 const PICK_PAGE_SIZE = 8;
 
 /**
@@ -214,8 +214,10 @@ function FitHead({ className, label }: { className: string; label: string }) {
   return <span ref={ref} className={className} title={label}>{label}</span>;
 }
 
-function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }: {
+function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, onBack }: {
   profile: PlayerProfile;
+  /** 전면 화면의 바닥 [뒤로 가기] — 팝업 모드(`chrome`)는 [X]가 닫는다 */
+  onBack?: () => void;
   onChange: (p: PlayerProfile) => void;
   /** 들어오자마자 이 장수의 카드를 연다 — 그 장수가 있는 쪽에서 (2026-09-25, 장터 초심의 서) */
   openOfficer?: OfficerId;
@@ -362,7 +364,14 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
    * 쪽이 하나뿐이면 아무것도 안 건다 — 걸면 빈 양피지만 길게 남는다.
    */
   const rowsRef = useRef<HTMLDivElement | null>(null);
-  const shown = useSteadyPage(rowsRef, page, pageCount, [rows.map((r) => r.officer).join()]);
+  /**
+   * **전면 화면은 판이 남는 높이를 채우고, 줄 여덟이 그 높이를 똑같이 나눈다**(2026-11-19 기획자 — 줄 간격으로 판을 채운다).
+   * 칸이 쪽마다 같은 여덟 줄이라 높이가 저절로 고정된다 — 그래서 `useSteadyPage`를 안 건다(재서 박은 `min-height`는 창이 낮아져도 안 줄어
+   * 바닥 명령 판을 스크롤 밖으로 민다). 고르기 팝업은 그대로 잰다
+   */
+  const fill = !chrome;
+  const noSteady = useRef<HTMLDivElement | null>(null);
+  const shown = useSteadyPage(fill ? noSteady : rowsRef, page, pageCount, [rows.map((r) => r.officer).join()]);
   const pageRows = rows.slice(shown * pageSize, shown * pageSize + pageSize);
 
   const openCard = (officer: OfficerId): void => {
@@ -392,28 +401,29 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
     <>
       {cardGuide.node}
       <div className="place-body">
-        {/* 요약 판 — **제목 바로 밑, 장부 판 위**(2026-11-19 기획자 — 바닥에서 올렸다). 표의 등급 배지(`.gr`)와 같은 그림.
-            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
-            **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
-            고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
-        {!chrome && (
-        <section className="place-panel ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
-          <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
-          <span className="ofc-grades">
-            <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
-              <GradeBadge grade="E" />
-            </span>
-            {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
-              <span key={g} className="ofc-grade-item">
-                <GradeBadge grade={g} />
-                <b>{tally[g]}</b>
+        {/* 판 높이는 내용만큼 — 쪽 넘김 밑에 빈 양피지가 남지 않게(2026-11-19 기획자 — `grow`를 뗐다). 쪽 사이 높이는 `useSteadyPage`가 고정한다.
+            남는 높이는 아래 명령 판과의 사이로 간다 */}
+        <section className={`place-panel block ofc-table${fill ? ' ofc-fill' : ''}`}>
+          {/* 요약 줄 — **장부 판 맨 위, 검색 위**(2026-11-19 기획자 — 바닥 → 제목 밑 작은 판 → 장부 판 안으로). 표의 등급 배지(`.gr`)와 같은 그림.
+              황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
+              **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
+              고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
+          {!chrome && (
+          <div className="ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
+            <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
+            <span className="ofc-grades">
+              <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
+                <GradeBadge grade="E" />
               </span>
-            ))}
-          </span>
-        </section>
-        )}
-        {/* 판 높이는 내용만큼 — 쪽 넘김 밑에 빈 양피지가 남지 않게(2026-11-19 기획자 — `grow`를 뗐다). 쪽 사이 높이는 `useSteadyPage`가 고정한다 */}
-        <section className="place-panel block ofc-table">
+              {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
+                <span key={g} className="ofc-grade-item">
+                  <GradeBadge grade={g} />
+                  <b>{tally[g]}</b>
+                </span>
+              ))}
+            </span>
+          </div>
+          )}
           {/* 검색은 장부 판 맨 위에(2026-11-19 기획자 — 판 밖에 있던 것을 들였다). 정렬은 열 머리가 한다 */}
           {!chrome && <div className="ofc-searchrow">{search}</div>}
           {chrome && (
@@ -460,6 +470,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           <div
             className="ofc-rows"
             ref={rowsRef}
+            style={fill ? { '--ofc-page': pageSize } as React.CSSProperties : undefined}
           >
             {pageRows.map((r) => {
               // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다
@@ -581,6 +592,14 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer }:
           )}
         </section>
 
+        {/* 명령 판 — 화면 바닥, [뒤로 가기] 하나(2026-11-19 기획자 — 도시 관리의 명령 판과 같은 틀). 고르기 팝업에는 없다 */}
+        {!chrome && onBack && (
+          <section className="place-panel cty-acts ofc-acts">
+            <button className="btn wide" data-action="backBottom" onClick={onBack}>
+              {stripBackArrow(t('match.back'))}
+            </button>
+          </section>
+        )}
       </div>
 
       {card && (
@@ -644,7 +663,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('officers.back'))}</button>
         <span className="place-nm">{t('officers.title')}</span>
       </div>
-      <OfficerListPanel profile={profile} onChange={onChange} {...(openOfficer ? { openOfficer } : {})} />
+      <OfficerListPanel profile={profile} onChange={onChange} onBack={onBack} {...(openOfficer ? { openOfficer } : {})} />
     </ScreenChrome>
   );
 }

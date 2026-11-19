@@ -1649,13 +1649,13 @@ const listRows = () => page.evaluate(() =>
 let rows = await listRows();
 // 초기 지급은 S·A·B·C·D 각 1명 (GDD §8) — **여기에 패배 카드가 데려온 새 장수가 더해질 수 있다**(위 참조)
 const poolAfterLoss = rosterBeforeBattle.length + (lossCard?.isNew ? 1 : 0);
-// 일람은 한 쪽에 열 줄이다 — 출정 필수 튜토리얼이 다섯이 되며(2026-11-14) 보상 장수로 열을 넘을 수 있다. 첫 쪽은 열까지,
+// 일람은 한 쪽에 여덟 줄이다(2026-11-19 — 전엔 열) — 출정 필수 튜토리얼이 다섯이 되며(2026-11-14) 보상 장수로 넘을 수 있다. 첫 쪽은 여덟까지,
 // 나머지는 아래 등급 요약(`data-tally`)이 센다
-const firstPage = Math.min(poolAfterLoss, 10);
+const firstPage = Math.min(poolAfterLoss, 8);
 if (rows.length !== firstPage) {
   fail(`일람 첫 쪽에 ${firstPage}줄이 있어야 한다(판 전 ${rosterBeforeBattle.length} + 패배 카드의 새 장수 ${lossCard?.isNew ? 1 : 0}) — 지금 ${rows.length}줄`);
 }
-if (lossCard?.isNew && poolAfterLoss <= 10 && !rows.some((r) => r.officer === lossCard!.officer)) {
+if (lossCard?.isNew && poolAfterLoss <= 8 && !rows.some((r) => r.officer === lossCard!.officer)) {
   fail(`패배 카드로 들어온 ${lossCard.officer}가 일람에 없다`);
 }
 const tally = await page.getAttribute('.ofc-tally', 'data-tally');
