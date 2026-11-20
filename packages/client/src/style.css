@@ -8081,6 +8081,54 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .cel-back[data-leaving] .cel-flash { animation: cel-flash-out .36s ease-out both; }
 @keyframes cel-flash-out { 0% { opacity: 0; } 30% { opacity: .7; } 100% { opacity: 0; } }
 .cel-back[data-leaving] .cel-flakes { opacity: 0; transition: opacity .2s; }
+
+/* ── 모음(`Celebrate`의 첫 5초, 2026-11-20 기획자) — 한가운데 작은 삼각형의 세 꼭짓점에서 흰 · 보라 · 금 섬광이 나선으로 돌며 커져 화면이 하얘진다.
+   세 겹으로 나눠 움직인다: 판 전체가 돌고(`cel-swirl`, 점점 빠르게 일곱 바퀴 반) · 팔이 꼭짓점 쪽으로 뻗고(`cel-arm` — 반지름) · 섬광이 커진다(`cel-flare`).
+   돌면서 반지름이 자라니 길이 나선이 된다. 길이 5초는 `Celebrate.tsx`의 `CHARGE_MS`와 같다. */
+.cel-back[data-phase="charge"] { cursor: default; }
+.cel-charge { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cel-swirl {
+  position: absolute; left: 50%; top: 46%; width: 0; height: 0;
+  animation: cel-swirl 5s cubic-bezier(.5, 0, .85, .45) both;
+}
+@keyframes cel-swirl { to { transform: rotate(2700deg); } }
+.cel-swirl > i { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.cel-swirl > i > b { position: absolute; left: 0; top: 0; animation: cel-arm 5s cubic-bezier(.45, 0, .8, .55) both; }
+@keyframes cel-arm {
+  0% { transform: translateY(-1.1rem); }        /* 작은 삼각형 — 꼭짓점이 가운데서 1rem 남짓 */
+  100% { transform: translateY(-34vmin); }
+}
+.cel-swirl span {
+  position: absolute; left: -1.6rem; top: -1.6rem; width: 3.2rem; height: 3.2rem; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--fl) 26%, color-mix(in srgb, var(--fl) 45%, transparent) 46%, transparent 70%);
+  mix-blend-mode: screen; filter: blur(.5px);
+  animation: cel-flare 5s cubic-bezier(.7, 0, .9, .6) both;
+}
+.cel-swirl span[data-c="white"] { --fl: #f4f7ff; }
+.cel-swirl span[data-c="purple"] { --fl: #b66bff; }
+.cel-swirl span[data-c="gold"] { --fl: #ffc93c; }
+@keyframes cel-flare {
+  0% { transform: scale(.18); opacity: 0; }
+  6% { opacity: 1; }
+  45% { transform: scale(1); }
+  100% { transform: scale(22); opacity: 1; }
+}
+/* 끝 무렵 화면 전체가 하얘진다 — 섬광이 덮는 것을 마저 채운다 */
+.cel-whiteout {
+  position: absolute; inset: 0; background: #fff; opacity: 0;
+  animation: cel-whiteout 5s ease-in both;
+}
+@keyframes cel-whiteout { 0%, 74% { opacity: 0; } 100% { opacity: 1; } }   /* 일찍 깔면 섬광이 갈라져 있을 때 화면이 잿빛으로 뿌예진다 */
+/* 무대가 열리는 순간(「쾅」) — 흰빛이 걷힌다. 누름 칸(5) 밑 · 무대 위 */
+.cel-unwhite {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #fff; opacity: 0;
+  animation: cel-unwhite .7s ease-out both;
+}
+@keyframes cel-unwhite { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .cel-swirl, .cel-swirl > i > b, .cel-swirl span { animation: none; }
+  .cel-swirl span { opacity: .8; }
+}
 @media (prefers-reduced-motion: reduce) {
   .modal-back.cel-back, .cel-stage, .cel-art, .cel-badge, .cel-back .cel .cel-ttl, .cel-back .cel .cel-big,
   .cel-back .cel > p:not(.cel-tap), .cel-back[data-leaving] .modal.cel { animation: none; }

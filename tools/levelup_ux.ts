@@ -239,6 +239,13 @@ try {
     await page.click('.ofcard-modal [data-action="levels"]');
     await page.waitForSelector('[data-screen="levelup-panel"]');
     await page.click('[data-action="confirm"]');
+    // 모음(5초) — 섬광이 도는 동안은 눌러도 안 닫히고, 배경 음악은 멈춘다(`holdBgm`). 무대가 열려야 `data-modal`이 붙는다
+    await page.waitForSelector('.cel-back[data-phase="charge"]', { timeout: 8_000 });
+    if (await page.$('[data-modal="levelUpDone"]')) fail('모으는 중인데 무대가 벌써 떴다');
+    await page.mouse.click(195, 420);
+    await page.waitForTimeout(300);
+    if (!await page.$('.cel-back[data-phase="charge"]')) fail('모으는 중에 눌렀더니 닫혔다');
+    ok('모음 — 섬광이 도는 동안은 눌러도 안 닫힌다');
     await page.waitForSelector('[data-modal="levelUpDone"]', { timeout: 8_000 });
     await page.waitForTimeout(250);
     await shot('done-0-opening');
