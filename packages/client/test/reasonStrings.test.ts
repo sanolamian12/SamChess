@@ -47,6 +47,19 @@ test('수비군 · 부대 칸 문구(squad.garrison · squad.role.*)가 열 언�
   }
 });
 
+// 2026-11-20 — 내관 · 무관 안내(`guideScript.ts`)가 한국어에만 있어 아홉 언어 화면에서 한국어로 떴다
+test('안내 대본(guide.*)이 열 언어 전부에 있고 자리표시자가 한국어와 같다 (2026-11-20)', () => {
+  const keys = Object.keys(ko).filter((k) => k.startsWith('guide.'));
+  assert.ok(keys.length > 200);
+  const holes = (s: string) => [...new Set(s.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort().join(',');
+  for (const [lang, strings] of Object.entries(LANGS)) {
+    for (const k of keys) {
+      assert.ok(strings[k], `${lang}에 ${k}가 없다`);
+      assert.equal(holes(strings[k]), holes((ko as Record<string, string>)[k]), `${lang}의 ${k} 자리표시자가 한국어와 다르다`);
+    }
+  }
+});
+
 test('태학 연구 이유 코드마다 열 언어 문구가 있다 (2026-09-22)', () => {
   for (const code of ACADEMY_REASONS) {
     for (const [lang, strings] of Object.entries(LANGS)) {
