@@ -52,6 +52,7 @@ import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 const ONE_MINUTE_MS = 60 * 1000;
 
@@ -127,7 +128,7 @@ export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string):
   if (!item) return { ok: false, reason: `알 수 없는 장비입니다 — ${equipmentId}` };
   const lv = forgeLevel(profile);
   if (item.unlockLevel > lv) {
-    return { ok: false, reason: `대장간 Lv${item.unlockLevel}이 필요합니다 — 지금 Lv${lv}` };
+    return { ok: false, reason: `대장간 Lv${item.unlockLevel}이 필요합니다 — 지금 Lv${lv}`, code: 'forge.locked', params: { need: item.unlockLevel, have: lv } };
   }
   const allowed = forgeCopiesAllowed(lv, item.unlockLevel);
   if (forgeCopiesOwned(profile, equipmentId) >= allowed) {
@@ -137,10 +138,12 @@ export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string):
       reason: maxed
         ? `${item.name}은 ${allowed}자루까지만 만드실 수 있습니다`
         : `${item.name}은 대장간 Lv${lv}에서 ${allowed}자루까지입니다 — 대장간을 올리시면 더 만드실 수 있습니다`,
+      code: maxed ? 'forge.maxCopies' : 'forge.moreCopies',
+      params: { equipment: equipmentId, n: allowed, lv },
     };
   }
-  if (profile.forgeOrder) return { ok: false, reason: '이미 다른 병기를 제조 중입니다' };
-  if (profile.gold < item.gold) return { ok: false, reason: `금화가 모자랍니다 — ${profile.gold}/${item.gold}` };
+  if (profile.forgeOrder) return { ok: false, reason: '이미 다른 병기를 제조 중입니다', code: 'forge.busy' };
+  if (profile.gold < item.gold) return { ok: false, reason: `금화가 모자랍니다 — ${profile.gold}/${item.gold}`, code: 'market.notEnoughGold', params: { have: profile.gold, need: item.gold } };
   return { ok: true };
 }
 
@@ -156,7 +159,7 @@ export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string):
  */
 export function applyStartForgeOrder(profile: PlayerProfile, equipmentId: string, nowMs: number): PlayerProfile {
   const check = canStartForgeOrder(profile, equipmentId);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const item = equipmentById.get(equipmentId)!;
   return {
     ...profile,

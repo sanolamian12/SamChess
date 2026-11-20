@@ -181,7 +181,7 @@ test('편성 검증 — 인원수 · King 필수 · 기물/장수 중복 · 보�
 
   const notOwned = officersByGrade('D').find((o) => !p.roster[o.id as OfficerId])!.id as OfficerId;
   const unowned = [ok[0]!, ok[1]!, { ...ok[2]!, officer: notOwned }];
-  assert.match(orReason(validateRoster(p, '3v3', unowned)), /보유하지 않은/);
+  assert.match(orReason(validateRoster(p, '3v3', unowned)), /거느리지 않으신 장수/);
 });
 
 test('편성 검증을 통과하면 룰 엔진도 받아들인다 — 두 곳이 어긋나지 않는다', () => {

@@ -32,13 +32,13 @@ import { spendGrain, toRosterEntries } from './roster.ts';
 import { squadDeployment } from './squads.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
 import type { MatchOpponent } from './match.ts';
-import type { AiBattleState, BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, SiegeDefender } from './types.ts';
+import type { AiBattleState, BattleOutcome, BattleResult, BattleRewards, PlayerProfile, RosterPick, SiegeDefender, ReasonParams } from './types.ts';
 
 /** 끊긴 AI 대전이 패배로 정산되기까지 — 도적떼와 같은 60분(기획자 확정) */
 export const AI_ABANDON_MS = 60 * 60 * 1000;
 
-export type AiFail = { ok: false; reason: string; code: string; params?: Record<string, number> };
-const fail = (code: string, reason: string, params?: Record<string, number>): AiFail =>
+export type AiFail = { ok: false; reason: string; code: string; params?: ReasonParams };
+const fail = (code: string, reason: string, params?: ReasonParams): AiFail =>
   ({ ok: false, reason, code, ...(params ? { params } : {}) });
 
 /** 지금 싸우는 중인 AI 대전 — 없으면 `null` */

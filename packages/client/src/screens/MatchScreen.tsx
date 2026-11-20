@@ -68,6 +68,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { GameIcon } from './GameIcon.tsx';
+import { reasonText } from '../i18n/reason.ts';
 
 /** AI를 만드는 데 걸리는 것처럼 보여 주는 시간. 45쪽의 「생성중입니다..」가 지나가야 한다 */
 const CREATE_MS = 700;
@@ -348,7 +349,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
               )}
               {/* 왜 [다시 찾기]가 없는지 말해 준다 — 없는 단추는 「고장인가」로 읽힌다 */}
               {/* 판 안의 줄 대신 무관이 말한다(2026-11-19 기획자) */}
-              <Say text={opponent.kind === 'online' && !decline.ok ? decline.reason : null} who="army" level={profile.cityLevel} name="noDecline" />
+              <Say text={opponent.kind === 'online' && !decline.ok ? reasonText(decline) : null} who="army" level={profile.cityLevel} name="noDecline" />
               {/* ⚠ AI 상대일 때의 「다시 찾을 수 없다 — 거절당할 상대가 없다」
                   (`match.aiNoDecline`)는 **2026-09-18에 뺐다**(기획자 지정). 온라인의
                   「왜 없나」(`noDecline`)는 군량 규칙이라 남기고, AI 쪽은 단추가 없는

@@ -36,7 +36,8 @@ import { REWARD_TABLE, grantBattleRewards } from './rewards.ts';
 import type { RewardKey, RewardSpec } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
-import type { MetaResult, PlayerProfile, RaidState, RosterPick } from './types.ts';
+import type { MetaResult, PlayerProfile, RaidState, RosterPick, ReasonParams } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 const MS_PER_MIN = 60_000;
 
@@ -54,7 +55,7 @@ export const raidWinReward = (): RewardSpec => REWARD_TABLE[RAID_WIN_REWARD];
 
 const DAY_OFFSET_MS = RAID.dayUtcOffsetHours * 3_600_000;
 
-const no = (reason: string, code: string, params?: Record<string, number>): MetaResult =>
+const no = (reason: string, code: string, params?: ReasonParams): MetaResult =>
   ({ ok: false, reason, code, ...(params ? { params } : {}) });
 
 // ── 날짜 · 상태 ───────────────────────────────────────────────
@@ -206,7 +207,7 @@ export function validateGuards(profile: PlayerProfile, picks: readonly RosterPic
 
 export function setGuards(profile: PlayerProfile, picks: readonly RosterPick[]): PlayerProfile {
   const check = validateGuards(profile, picks);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   return { ...profile, farmGuards: picks.map((p) => ({ piece: p.piece, officer: p.officer })) };
 }
 
@@ -305,7 +306,7 @@ export function canStartRaid(profile: PlayerProfile, nowMs: number): MetaResult 
  */
 export function startRaid(profile: PlayerProfile, nowMs: number, seed: number): PlayerProfile {
   const check = canStartRaid(profile, nowMs);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const raid = profile.raid!;
   return {
     ...profile,
@@ -361,7 +362,7 @@ export function resumeRaidState(profile: PlayerProfile, intents: readonly Intent
  * 싸우는 동안 낸 의도를 덧붙인다 — **덧붙이기만 받는다**(규칙은 `intentLog.ts`, AI 대전과 같다).
  */
 export function appendRaidIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
-  { ok: true; profile: PlayerProfile } | { ok: false; reason: string; code: string; params?: Record<string, number> } {
+  { ok: true; profile: PlayerProfile } | { ok: false; reason: string; code: string; params?: ReasonParams } {
   const raid = profile.raid;
   if (raid?.status !== 'fighting' || !raid.battle) return { ok: false, reason: '진행 중인 도적떼 전투가 없습니다', code: 'raid.notFighting' };
   const r = appendIntentLog(raidIntentsOf(raid), from, intents, (next) => resumeRaidState(profile, next));

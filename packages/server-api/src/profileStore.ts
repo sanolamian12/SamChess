@@ -22,6 +22,8 @@ import {
   declineMatch, fitCarry, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
   settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
+import { RuleRejected, rejection } from '@samchess/meta';
+import type { Rejection } from '@samchess/meta';
 import type { BattleRewards, GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import { marketItemById } from '@samchess/data';
@@ -302,7 +304,7 @@ export type CityAction =
 /** 규칙이 거부하면 그 이유를 그대로 올린다 — 「왜 안 되는지 말한다」가 API에도 선다 */
 export type CityActionResult =
   | { ok: true; profile: PlayerProfile }
-  | { ok: false; status: number; reason: string };
+  | ({ ok: false; status: number } & Rejection);
 
 export async function applyCityAction(uid: string, action: CityAction): Promise<CityActionResult> {
   const now = Date.now();
@@ -316,7 +318,7 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
 }
@@ -339,7 +341,7 @@ export async function applyForgeAction(uid: string, action: ForgeAction): Promis
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canStartForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
 }
@@ -358,7 +360,7 @@ export async function applyCollectionAction(uid: string, action: { id: string; s
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canRegisterSlot`이 던진 사람 말이다(여분 없음 · 지급 중 · 들려 보낼 예정 …)
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
 }
@@ -388,14 +390,14 @@ export async function applyAcademyAction(uid: string, action: AcademyAction): Pr
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canStartResearch`·`canCancelResearch`·`canResetAcademy`가 던진 사람 말이다
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
 }
 
 export type TutorialCompleteResult =
   | { ok: true; profile: PlayerProfile; rewards: BattleRewards | null }
-  | { ok: false; status: number; reason: string };
+  | ({ ok: false; status: number } & Rejection);
 
 /**
  * **튜토리얼을 끝냈다고 적고, 처음이면 보상을 준다** (G3 2026-10-22 · 보상 2026-11-11, `meta/tutorial.ts`의 `completeTutorial`).
@@ -410,7 +412,7 @@ export async function completeTutorial(uid: string, id: TutorialId, seed: number
       // 이미 끝낸 판을 다시 끝내면 같은 값이 돌아온다 — 쓸 것이 없다
       return { next: next === profile ? null : next, value: { ok: true, profile: next, rewards } };
     } catch (e) {
-      return { next: null, value: { ok: false, status: 409, reason: e instanceof Error ? e.message : 'locked' } };
+      return { next: null, value: { ok: false, status: 409, ...rejection(e, 'locked') } };
     }
   });
 }
@@ -424,7 +426,7 @@ export async function completeTutorial(uid: string, id: TutorialId, seed: number
 
 export type GachaPullOutcome =
   | { ok: true; profile: PlayerProfile; drawn: OfficerId[]; exhausted: boolean }
-  | { ok: false; status: number; reason: string };
+  | ({ ok: false; status: number } & Rejection);
 
 /** `seed`는 라우트가 넣는다 — 이 계정의 **첫** 가챠에서만 쓰인다(`drawGacha()` 머리말) */
 export async function pullGacha(uid: string, kind: GachaPullKind, seed: number): Promise<GachaPullOutcome> {
@@ -434,7 +436,7 @@ export async function pullGacha(uid: string, kind: GachaPullKind, seed: number):
       const r = buyGacha(profile, kind, seed);
       return { next: r.profile, value: { ok: true, profile: r.profile, drawn: r.drawn, exhausted: r.exhausted } };
     } catch (e) {
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid pull' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid pull') } };
     }
   });
 }
@@ -490,18 +492,18 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
       else if (action.kind === 'recycle') next = applyRecycle(profile, action.target, action.inputs);
       else if (action.kind === 'buyGrain') {
         const can = canBuyGrain(profile, now);
-        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, ...rejection(new RuleRejected(can)) } };
         next = applyBuyGrain(profile, now);
       }
       else if (action.kind === 'buyItem') {
         const can = canBuyMarketItem(profile, action.item, now);
         // 규칙이 거부한 말을 그대로 올린다 — 서버가 이유를 다시 짓지 않는다
-        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, ...rejection(new RuleRejected(can)) } };
         next = applyBuyMarketItem(profile, action.item, now);
       }
       else if (action.kind === 'buyItems') {
         const can = canBuyMarketBasket(profile, action.basket, now);
-        if (!can.ok) return { next: null, value: { ok: false, status: 400, reason: can.reason } };
+        if (!can.ok) return { next: null, value: { ok: false, status: 400, ...rejection(new RuleRejected(can)) } };
         next = applyBuyMarketBasket(profile, action.basket, now);
       }
       else {
@@ -519,7 +521,7 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
       // `canRenameCity`·`canRespec`이 던진 사람 말이다. 400으로 그대로 돌린다
-      return { next: null, value: { ok: false, status: 400, reason: e instanceof Error ? e.message : 'invalid action' } };
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
 }

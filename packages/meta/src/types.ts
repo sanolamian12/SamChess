@@ -605,7 +605,14 @@ export interface MailboxEntry {
 
 export type MetaResult =
   | { ok: true }
-  | { ok: false; reason: string; code?: string; params?: Record<string, number> };
+  | { ok: false; reason: string; code?: string; params?: ReasonParams };
+
+/**
+ * 거절 문구에 끼우는 값 (2026-11-20 — 이름 · 등급이 들어가게 글자도 받는다).
+ * **이름은 글자로 싣지 않고 id로 싣는다** — 화면이 그 언어 이름으로 바꾼다(`client/src/i18n/reason.ts`):
+ * `officer`(장수 id) · `equipment`(병기 id) · `marketItem`(장터 아이템 id) → 문구의 `{name}`.
+ */
+export type ReasonParams = Record<string, number | string>;
 
 /**
  * 전투가 끝난 뒤 계정에 반영할 것.

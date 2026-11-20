@@ -9,7 +9,8 @@ import { ECONOMY, GROWTH, OFFICERS, officerById, officersByGrade, tacticById, ta
 import { buildingValue, initialBuildings, poolCap } from './city.ts';
 import { FORMULA, hash32 } from '@samchess/rules';
 import type { Grade, OfficerId, TacticId } from '@samchess/rules';
-import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, StatPick } from './types.ts';
+import type { GrowthStep, MetaResult, OfficerInstance, PlayerProfile, ReasonParams, StatPick } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 /**
  * 저장 형식 버전. 구조가 바뀌면 올리고 **`migrate.ts`가 되접는다.**
@@ -260,16 +261,16 @@ export const officerLevelCap = (profile: PlayerProfile): number =>
 
 export function canLevelUp(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
-  if (!inst) return no('거느리지 않으신 장수입니다');
+  if (!inst) return no('거느리지 않으신 장수입니다', 'officer.notOwned');
   const need = cardsToLevelUp(inst.level);
-  if (need === null) return no(`이미 최대 레벨입니다 (Lv${GROWTH.maxLevel})`);
+  if (need === null) return no(`이미 최대 레벨입니다 (Lv${GROWTH.maxLevel})`, 'levelup.maxLevel', { lv: GROWTH.maxLevel });
   // 카드보다 **먼저** 본다 — 카드를 모아 봐야 못 올린다는 것이 더 앞선 사실이다
   const cap = officerLevelCap(profile);
   if (inst.level >= cap) {
-    return no(`도시가 Lv${profile.cityLevel}이라 장수도 Lv${cap}까지입니다 — 도시를 증축하시면 더 올리실 수 있습니다`);
+    return no(`도시가 Lv${profile.cityLevel}이라 장수도 Lv${cap}까지입니다 — 도시를 증축하시면 더 올리실 수 있습니다`, 'levelup.cityCap', { city: profile.cityLevel, cap });
   }
   const have = profile.cards[officer] ?? 0;
-  if (have < need) return no(`카드가 모자랍니다 — ${have}/${need}장`);
+  if (have < need) return no(`카드가 모자랍니다 — ${have}/${need}장`, 'levelup.cards', { have, need });
   return { ok: true };
 }
 
@@ -288,7 +289,7 @@ export function applyLevelUp(
   school: 'support' | 'illusion',
 ): PlayerProfile {
   const check = canLevelUp(profile, officer);
-  if (!check.ok) throw new Error(`레벨업할 수 없다(${officer}): ${check.reason}`);
+  if (!check.ok) rejectWith(check);
 
   const next = clone(profile);
   const inst = next.roster[officer]!;
@@ -425,14 +426,17 @@ export const normalizeCityName = (name: string): string => name.normalize('NFC')
 /** 도시 이름을 바꿀 수 있는가. **다른 계정과 겹치는지는 여기서 모른다** — DB가 거절한다 */
 export function canRenameCity(profile: PlayerProfile, name: string, nowMs: number): MetaResult {
   const trimmed = normalizeCityName(name);
-  if (!trimmed) return no('도시 이름을 적어 주십시오');
-  if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 됩니다`);
-  if (trimmed === profile.cityName) return no('지금과 같은 이름입니다');
+  if (!trimmed) return no('도시 이름을 적어 주십시오', 'rename.empty');
+  if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 됩니다`, 'rename.tooLong', { max: CITY_NAME_MAX });
+  if (trimmed === profile.cityName) return no('지금과 같은 이름입니다', 'rename.same');
   if (profile.cityNameChangedAt !== undefined) {
     const nextOk = profile.cityNameChangedAt + RENAME_COOLDOWN_MS;
-    if (nowMs < nextOk) return no(`아직 바꾸실 수 없습니다 — ${Math.ceil((nextOk - nowMs) / 86_400_000)}일 남았습니다`);
+    if (nowMs < nextOk) {
+      const days = Math.ceil((nextOk - nowMs) / 86_400_000);
+      return no(`아직 바꾸실 수 없습니다 — ${days}일 남았습니다`, 'rename.cooldown', { days });
+    }
   }
-  if (profile.gold < CITY_RENAME_GOLD) return no(`금화가 부족합니다 — ${profile.gold}/${CITY_RENAME_GOLD}`);
+  if (profile.gold < CITY_RENAME_GOLD) return no(`금화가 부족합니다 — ${profile.gold}/${CITY_RENAME_GOLD}`, 'market.notEnoughGold', { have: profile.gold, need: CITY_RENAME_GOLD });
   return { ok: true };
 }
 
@@ -440,7 +444,7 @@ export function canRenameCity(profile: PlayerProfile, name: string, nowMs: numbe
 export function applyRenameCity(profile: PlayerProfile, name: string, nowMs: number): PlayerProfile {
   const trimmed = normalizeCityName(name);
   const check = canRenameCity(profile, trimmed, nowMs);
-  if (!check.ok) throw new Error(`도시 이름을 바꿀 수 없다: ${check.reason}`);
+  if (!check.ok) rejectWith(check);
 
   const next = clone(profile);
   next.cityName = trimmed;
@@ -452,9 +456,9 @@ export function applyRenameCity(profile: PlayerProfile, name: string, nowMs: num
 /** 재설계할 수 있는가. Lv1은 되감을 것이 없다 */
 export function canRespec(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
-  if (!inst) return no('거느리지 않으신 장수입니다');
-  if (inst.level < 2) return no('Lv1은 아직 올리신 적이 없습니다');
-  if (profile.gold < RESPEC_GOLD) return no(`둔갑천서가 필요합니다 — 금화 ${profile.gold}/${RESPEC_GOLD}`);
+  if (!inst) return no('거느리지 않으신 장수입니다', 'officer.notOwned');
+  if (inst.level < 2) return no('Lv1은 아직 올리신 적이 없습니다', 'respec.lv1');
+  if (profile.gold < RESPEC_GOLD) return no(`둔갑천서가 필요합니다 — 금화 ${profile.gold}/${RESPEC_GOLD}`, 'respec.gold', { have: profile.gold, need: RESPEC_GOLD });
   return { ok: true };
 }
 
@@ -472,7 +476,7 @@ export function canRespec(profile: PlayerProfile, officer: OfficerId): MetaResul
  */
 export function applyRespec(profile: PlayerProfile, officer: OfficerId): PlayerProfile {
   const check = canRespec(profile, officer);
-  if (!check.ok) throw new Error(`재설계할 수 없다(${officer}): ${check.reason}`);
+  if (!check.ok) rejectWith(check);
 
   const next = clone(profile);
   const inst = next.roster[officer]!;
@@ -522,7 +526,8 @@ export function gradeScore(profile: PlayerProfile): number {
 /** 전체 장수 목록 — 화면이 "아직 없는 장수"까지 보여줄 때 쓴다 */
 export const ALL_OFFICERS = OFFICERS;
 
-const no = (reason: string): MetaResult => ({ ok: false, reason });
+const no = (reason: string, code?: string, params?: ReasonParams): MetaResult =>
+  ({ ok: false, reason, ...(code ? { code } : {}), ...(params ? { params } : {}) });
 
 /**
  * 프로필 복사. `structuredClone`을 쓰는 이유는 룰 엔진의 `cloneState`와 같다 —

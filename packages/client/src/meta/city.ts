@@ -30,11 +30,12 @@
  */
 
 import { migrateProfile } from '@samchess/meta';
-import type { BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
+import type { BattleRewards, PlayerProfile, ReasonParams, TutorialId } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { authedFetch, pendingSave } from './storage.ts';
 import { t } from '../i18n/index.ts';
+import { reasonText } from '../i18n/reason.ts';
 
 /** 규칙이 거부했다 — 사람에게 보여 줄 말이 들어 있다. 물러나면 안 되는 실패다 */
 export class CityActionRejected extends Error {}
@@ -80,8 +81,11 @@ async function send(path: string, body: unknown): Promise<unknown | null> {
   }
   if (res.status === 400) {
     // 규칙이 거부했다. 로컬로 물러나 봐야 같은 이유로 거부되므로 그대로 알린다
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new CityActionRejected(body.error ?? '할 수 없는 일입니다');
+    // 코드가 오면 화면 언어로(2026-11-20 — 서버가 문장만 보내 열 언어 전부에서 한국어가 떴다)
+    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string; params?: ReasonParams };
+    throw new CityActionRejected(body.error
+      ? reasonText({ reason: body.error, code: body.code, params: body.params })
+      : t('reason.refused'));
   }
   /*
    * **404는 「못 닿음」이 아니다 ★** (2026-09-04). 서버는 살아 있는데 이 길을

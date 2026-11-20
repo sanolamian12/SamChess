@@ -35,8 +35,8 @@ import { shuffle } from '@samchess/rules';
 import type { OfficerId } from '@samchess/rules';
 import { addCard, cardsSpentOn } from './profile.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
+import { rejectWith } from './reject.ts';
 
-const no = (reason: string): MetaResult => ({ ok: false, reason });
 
 /** 장수 1명당 가챠 배열 슬롯 수 (지금 100 × 2 = 200) */
 export const gachaSlotsPerOfficer = (): number => cardsSpentOn(GROWTH.maxLevel) * ECONOMY.gachaSlotMultiplier;
@@ -102,7 +102,7 @@ export function gachaPullCost(kind: GachaPullKind): { gold: number; count: numbe
 /** 이 계정이 지금 이 뽑기를 살 수 있는가 — 화면은 이 판정을 다시 적지 않는다 */
 export function canAffordGacha(profile: PlayerProfile, kind: GachaPullKind): MetaResult {
   const { gold } = gachaPullCost(kind);
-  if (profile.gold < gold) return no(`금화가 부족합니다 — ${profile.gold}/${gold}`);
+  if (profile.gold < gold) return { ok: false, reason: `금화가 부족합니다 — ${profile.gold}/${gold}`, code: 'market.notEnoughGold', params: { have: profile.gold, need: gold } };
   return { ok: true };
 }
 
@@ -123,7 +123,7 @@ export interface GachaPullResult {
  */
 export function buyGacha(profile: PlayerProfile, kind: GachaPullKind, newSeed: number): GachaPullResult {
   const check = canAffordGacha(profile, kind);
-  if (!check.ok) throw new Error(`가챠를 뽑을 수 없다: ${check.reason}`);
+  if (!check.ok) rejectWith(check);
 
   const { gold, count } = gachaPullCost(kind);
   const { profile: pulled, drawn, exhausted } = drawGacha(profile, count, newSeed);

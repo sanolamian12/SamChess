@@ -48,9 +48,11 @@ import type { BattleMode, OfficerId, PieceType, RosterEntry, TacticId } from '@s
 import { unitPower } from './power.ts';
 import { statsFrom, tacticChoices } from './profile.ts';
 import { PIECE_TYPES, grainCost, teamSize } from './roster.ts';
-import type { MetaResult, PlayerProfile, RosterPick, StatPick } from './types.ts';
+import type { MetaResult, PlayerProfile, ReasonParams, RosterPick, StatPick } from './types.ts';
+import { rejectWith } from './reject.ts';
 
-const no = (reason: string): MetaResult => ({ ok: false, reason });
+const no = (reason: string, code?: string, params?: ReasonParams): MetaResult =>
+  ({ ok: false, reason, ...(code ? { code } : {}), ...(params ? { params } : {}) });
 
 // ═══════════════════════════════════════════════════════════════
 // 1. 군량 — 출전과 거절
@@ -76,7 +78,7 @@ export const ONLINE_SEARCH_MS = 30_000;
 /** 출전할 수 있는가 — 참가비만큼 있으면 된다. **AI도 온라인도 같다** */
 export function canStartMatch(profile: PlayerProfile, mode: BattleMode): MetaResult {
   const cost = grainCost(mode);
-  if (profile.grain < cost) return no(`군량이 모자랍니다 — ${profile.grain}/${cost}`);
+  if (profile.grain < cost) return no(`군량이 모자랍니다 — ${profile.grain}/${cost}`, 'match.grain', { have: profile.grain, need: cost });
   return { ok: true };
 }
 
@@ -89,7 +91,7 @@ export function canStartMatch(profile: PlayerProfile, mode: BattleMode): MetaRes
 export function canDeclineMatch(profile: PlayerProfile, mode: BattleMode): MetaResult {
   const cost = grainCost(mode);
   if (profile.grain - MATCH_DECLINE_GRAIN < cost) {
-    return no(`대전을 위한 최소군량만 있을 때는 상대 매칭 시 거절을 할 수 없습니다.`);
+    return no(`대전을 위한 최소군량만 있을 때는 상대 매칭 시 거절을 할 수 없습니다.`, 'match.declineGrain');
   }
   return { ok: true };
 }
@@ -102,7 +104,7 @@ export function canDeclineMatch(profile: PlayerProfile, mode: BattleMode): MetaR
  */
 export function declineMatch(profile: PlayerProfile, mode: BattleMode): PlayerProfile {
   const check = canDeclineMatch(profile, mode);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   return { ...profile, grain: profile.grain - MATCH_DECLINE_GRAIN };
 }
 

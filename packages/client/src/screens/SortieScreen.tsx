@@ -101,6 +101,7 @@ import { squadText } from './squadText.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { reasonText } from '../i18n/reason.ts';
 
 const MODES: BattleMode[] = ['3v3', '5v5'];
 
@@ -248,7 +249,7 @@ function modeLock(profile: PlayerProfile, m: BattleMode): string | null {
   const cost = grainCost(m);
   if (poolUsed(profile) < cost) return t('barracks.needOfficers', { n: cost });
   const grain = canStartMatch(profile, m);
-  return grain.ok ? null : (grain as { reason: string }).reason;
+  return grain.ok ? null : reasonText(grain);
 }
 
 /**

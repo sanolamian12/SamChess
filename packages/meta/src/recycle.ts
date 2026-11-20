@@ -31,7 +31,8 @@
 import { ECONOMY, officerById } from '@samchess/data';
 import type { Grade, OfficerId } from '@samchess/rules';
 import { cardsToLevelUp, ownedOfficers } from './profile.ts';
-import type { MetaResult, PlayerProfile } from './types.ts';
+import type { MetaResult, PlayerProfile, ReasonParams } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 /** 재료 장수 — 단일 출처는 `economy.json` ← 추출기의 `ECONOMY` */
 export const RECYCLE_CARDS_IN: number = ECONOMY.recycle.cardsIn;
@@ -40,7 +41,8 @@ export const RECYCLE_CARDS_OUT: number = ECONOMY.recycle.cardsOut;
 /** **보관함 장수**는 이만큼 가졌을 때만 재료를 뗀다 — minHeld − 1장은 남긴다. 풀 장수에게는 안 걸린다 */
 export const RECYCLE_MIN_HELD: number = ECONOMY.recycle.minHeld;
 
-const no = (reason: string): MetaResult => ({ ok: false, reason });
+const no = (reason: string, code?: string, params?: ReasonParams): MetaResult =>
+  ({ ok: false, reason, ...(code ? { code } : {}), ...(params ? { params } : {}) });
 
 /** 재료 — 장수마다 몇 장을 쓰는가. 0이나 빈 칸은 「안 쓴다」 */
 export type RecycleInputs = Partial<Record<OfficerId, number>>;
@@ -107,26 +109,27 @@ export const recycleOutput = (inputs: RecycleInputs): number =>
 export function canRecycle(profile: PlayerProfile, target: OfficerId, inputs: RecycleInputs): MetaResult {
   const data = officerById.get(target);
   if (!data) return no(`모르는 장수다 — ${target}`);
-  if (!ownedOfficers(profile).includes(target)) return no('거느리신 장수의 카드만 받으실 수 있습니다');
-  if (isMaxed(profile, target)) return no(`${data.name}은 이미 최대 레벨입니다`);
+  if (!ownedOfficers(profile).includes(target)) return no('거느리신 장수의 카드만 받으실 수 있습니다', 'recycle.notOwned');
+  if (isMaxed(profile, target)) return no(`${data.name}은 이미 최대 레벨입니다`, 'recycle.maxed', { officer: target });
 
   for (const [id, n] of Object.entries(inputs) as [OfficerId, number | undefined][]) {
     if (!n) continue;
     if (!Number.isInteger(n) || n < 0) return no(`재료 수가 이상하다 — ${n}`);
-    if (id === target) return no('받을 장수의 카드는 재료로 쓰실 수 없습니다');
+    if (id === target) return no('받을 장수의 카드는 재료로 쓰실 수 없습니다', 'recycle.selfInput');
     const from = officerById.get(id);
-    if (!from || from.grade !== data.grade) return no(`${data.grade}급 카드만 재료로 쓰실 수 있습니다`);
+    if (!from || from.grade !== data.grade) return no(`${data.grade}급 카드만 재료로 쓰실 수 있습니다`, 'recycle.grade', { grade: data.grade });
     const usable = recyclableCards(profile, id);
     if (n > usable) {
       return no(profile.roster[id]
         ? `${from.name}의 카드는 ${usable}장뿐입니다`
-        : `${from.name}의 카드는 ${usable}장까지 쓰실 수 있습니다 — 보관함 장수는 1장이 남습니다`);
+        : `${from.name}의 카드는 ${usable}장까지 쓰실 수 있습니다 — 보관함 장수는 1장이 남습니다`,
+        profile.roster[id] ? 'recycle.tooMany' : 'recycle.tooManyBoxed', { officer: id, n: usable });
     }
   }
   const total = recycleTotal(inputs);
-  if (total === 0) return no('재료를 고르지 않으셨습니다');
+  if (total === 0) return no('재료를 고르지 않으셨습니다', 'recycle.empty');
   if (total % RECYCLE_CARDS_IN !== 0) {
-    return no(`재료는 ${RECYCLE_CARDS_IN}장 단위다 — 지금 ${total}장`);
+    return no(`재료는 ${RECYCLE_CARDS_IN}장 단위입니다 — 지금 ${total}장`, 'recycle.unit', { unit: RECYCLE_CARDS_IN, total });
   }
   return { ok: true };
 }
@@ -134,7 +137,7 @@ export function canRecycle(profile: PlayerProfile, target: OfficerId, inputs: Re
 /** 바꾼다 — 재료 카드를 떼고 받을 장수에게 붙인다. 입력 프로필은 건드리지 않는다 */
 export function applyRecycle(profile: PlayerProfile, target: OfficerId, inputs: RecycleInputs): PlayerProfile {
   const check = canRecycle(profile, target, inputs);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const cards = { ...profile.cards };
   for (const [id, n] of Object.entries(inputs) as [OfficerId, number | undefined][]) {
     if (!n) continue;

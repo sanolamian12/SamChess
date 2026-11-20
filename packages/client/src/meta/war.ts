@@ -8,15 +8,15 @@
  * 선전포고는 서버 없이는 안 된다 — 못 닿으면 `code: 'net'`이고 화면이 「다시 시도」를 적는다(로컬로 물러나지 않는다).
  */
 import type { BattleMode } from '@samchess/rules';
-import type { WarView } from '@samchess/meta';
+import type { ReasonParams, WarView } from '@samchess/meta';
 import { authedFetch } from './storage.ts';
 
-export type WarReply = { ok: true; war: WarView } | { ok: false; code: string; params?: Record<string, number> };
+export type WarReply = { ok: true; war: WarView } | { ok: false; code: string; params?: ReasonParams };
 
 async function call(path: string, init?: RequestInit): Promise<WarReply> {
   try {
     const res = await authedFetch(path, init);
-    const body = (await res.json().catch(() => ({}))) as { war?: WarView; code?: string; params?: Record<string, number> };
+    const body = (await res.json().catch(() => ({}))) as { war?: WarView; code?: string; params?: ReasonParams };
     if (!res.ok || !body.war) return { ok: false, code: body.code ?? `http.${res.status}`, ...(body.params ? { params: body.params } : {}) };
     return { ok: true, war: body.war };
   } catch {

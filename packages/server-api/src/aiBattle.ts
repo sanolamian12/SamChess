@@ -18,18 +18,18 @@ import { createHmac, randomInt } from 'node:crypto';
 import {
   aiOpponentOf, appendAiIntents, matchAiBattle, revealAiDuel, settleAiBattleIntents, startAiBattle,
 } from '@samchess/meta';
-import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, SettledAi } from '@samchess/meta';
+import type { AiBattleState, BattleRewards, MatchOpponent, PlayerProfile, RosterPick, SettledAi, ReasonParams } from '@samchess/meta';
 import type { BattleMode, Intent } from '@samchess/rules';
 import { mutateProfile } from './profileStore.ts';
 import { logDefense } from './siege.ts';
 
 export type AiAction<T> =
   | ({ ok: true } & T)
-  | { ok: false; status: 400 | 404 | 409; reason: string; code?: string; params?: Record<string, number> };
+  | { ok: false; status: 400 | 404 | 409; reason: string; code?: string; params?: ReasonParams };
 
 const NO_PROFILE = { ok: false as const, status: 404 as const, reason: 'no profile' };
 /** 규칙이 거절한 것 — 「상태가 맞지 않는다」는 409, 모양이 틀린 것은 400 */
-const rejected = (r: { reason: string; code: string; params?: Record<string, number> }) => ({
+const rejected = (r: { reason: string; code: string; params?: ReasonParams }) => ({
   ok: false as const, status: (r.code === 'ai.badPicks' || r.code === 'ai.cannotStart' ? 400 : 409) as 400 | 409,
   reason: r.reason, code: r.code, ...(r.params ? { params: r.params } : {}),
 });

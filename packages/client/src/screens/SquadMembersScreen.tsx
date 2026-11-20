@@ -71,6 +71,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { useFitText } from './useFitText.ts';
 import { pickEquipName, pickEquipText, pickMarketItemName, pickMarketItemText, pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
+import { reasonText } from '../i18n/reason.ts';
 
 /** 새 부대의 처음 포지션 (2026-09-17 기획자 확정) */
 const START_PIECES: Record<BattleMode, PieceType[]> = {
@@ -376,7 +377,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
         <section className="place-panel sqd-acts sqe-acts">
           {/* 왜 배치가 안 되는지 — 다 채운 뒤에만 말한다. 채우는 중에 「3명이 필요하다」를 띄우면 방해만 된다 */}
           {/* 다 채운 뒤에만 무관이 말한다(2026-11-19 기획자 — 판 안의 줄을 걷었다) */}
-          <Say text={picks.length === size && !check.ok ? check.reason : null} who="army" level={profile.cityLevel} name="why" />
+          <Say text={picks.length === size && !check.ok ? reasonText(check) : null} who="army" level={profile.cityLevel} name="why" />
           <div className="sqe-grid">
             {/* [부대 배치] · [AI 수비 방침]은 미색 판(부대 관리의 [뒤로 가기]와 같은 그림), [저장 및 뒤로가기]만 옥색 — 이 화면의 한 수 (2026-11-17 기획자) */}
             <button className="btn" data-action="toDeploy" disabled={!complete}

@@ -33,6 +33,7 @@ import { syncCity } from './city.ts';
 import { equipmentIdOfKey } from './forge.ts';
 import { carriedCount, marketHeldCount } from './market.ts';
 import type { CollectionProgress, MetaResult, PlayerProfile } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 const EMPTY: CollectionProgress = { slots: {}, completedAt: {} };
 
@@ -260,7 +261,7 @@ export function canRegisterSlot(profile: PlayerProfile, id: string, index: numbe
     return { ok: false, reason: `「${c.title}」에 ${index}번 칸이 없습니다` };
   }
   const s = slotState(profile, c, index);
-  if (s.state === 'done') return { ok: false, reason: '이미 등록하신 칸입니다' };
+  if (s.state === 'done') return { ok: false, reason: '이미 등록하신 칸입니다', code: 'collection.done' };
   if (s.state === 'blocked') {
     const name = slotName(c.slots[index]!);
     const why: Record<SlotBlock, string> = {
@@ -269,7 +270,9 @@ export function canRegisterSlot(profile: PlayerProfile, id: string, index: numbe
       equipped: `${name}이(가) 모두 장수에게 지급되어 있습니다 — 대장간에서 해제해 주십시오`,
       carried: `${name}이(가) 이번 판에 들려 보낼 예정입니다`,
     };
-    return { ok: false, reason: why[s.reason!] };
+    const slot = c.slots[index]!;
+    const named = { [slot.kind === 'card' ? 'officer' : slot.kind === 'weapon' ? 'equipment' : 'marketItem']: slot.id };
+    return { ok: false, reason: why[s.reason!], code: `collection.${s.reason!}`, params: named };
   }
   return { ok: true };
 }
@@ -280,7 +283,7 @@ export function canRegisterSlot(profile: PlayerProfile, id: string, index: numbe
  */
 export function applyRegisterSlot(profile: PlayerProfile, id: string, index: number, nowMs: number): PlayerProfile {
   const ok = canRegisterSlot(profile, id, index);
-  if (!ok.ok) throw new Error(ok.reason);
+  if (!ok.ok) rejectWith(ok);
   const c = collectionById.get(id)!;
   const slot = c.slots[index]!;
   // ★ **이 칸으로 완성되면 먼저 정산한다** — 도시 효과(군량 충전 요율 · 상한)가 지금부터 바뀌기 때문이다.

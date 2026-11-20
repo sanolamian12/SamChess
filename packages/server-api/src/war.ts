@@ -16,7 +16,7 @@ import {
   declareGate, isPresent, isWarOpen, isWarRefused, migrateProfile, viewWar, warEndedAt, warEnlist, warReadyGate,
   squadSlot, warSquadView, warStatusAt,
 } from '@samchess/meta';
-import type { PlayerProfile, WarCity, WarRecord, WarSquadView, WarStatus, TutorialId, WarView } from '@samchess/meta';
+import type { PlayerProfile, WarCity, WarRecord, WarSquadView, WarStatus, TutorialId, WarView, ReasonParams } from '@samchess/meta';
 import type { BattleMode, RosterEntry, UnitId, Vec2 } from '@samchess/rules';
 import { withCheckout } from './checkout.ts';
 import { pool } from './db.ts';
@@ -24,7 +24,7 @@ import { getProfile } from './profileStore.ts';
 
 export type WarAction<T> =
   | ({ ok: true } & T)
-  | { ok: false; status: 400 | 404 | 409; reason: string; code?: string; params?: Record<string, number> };
+  | { ok: false; status: 400 | 404 | 409; reason: string; code?: string; params?: ReasonParams };
 
 interface WarRow {
   id: string;
@@ -49,7 +49,7 @@ const toRecord = (r: WarRow): WarRecord => ({
   acceptedAt: ms(r.accepted_at), endedAt: ms(r.ended_at),
 });
 
-const fail = (status: 400 | 404 | 409, code: string, reason: string, params?: Record<string, number>) =>
+const fail = (status: 400 | 404 | 409, code: string, reason: string, params?: ReasonParams) =>
   ({ ok: false as const, status, code, reason, ...(params ? { params } : {}) });
 
 /** 한 트랜잭션 — 잠근 두 사람의 열린 선전포고를 보고 쓰는 동안 남이 끼지 못한다 */

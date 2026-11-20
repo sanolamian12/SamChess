@@ -14,6 +14,7 @@ import { renameCityOnServer } from '../meta/city.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { Say } from './Steward.tsx';
+import { errorText, reasonText } from '../i18n/reason.ts';
 
 export function CityRenameButton({ profile, onChange }: {
   profile: PlayerProfile;
@@ -34,7 +35,7 @@ export function CityRenameButton({ profile, onChange }: {
         if (fromServer) onChange(fromServer);
         else setRefused(t('server.offline'));
       } catch (err) {
-        setRefused(err instanceof Error ? err.message : String(err));
+        setRefused(errorText(err));
       } finally {
         setBusy(false);
       }
@@ -67,7 +68,7 @@ function RenameModal({ profile, onClose, onConfirm }: {
   // 빈 이름 · 지금과 같은 이름은 말하지 않는다 — 이름을 바꾸러 들어온 판이라 [변경한다]가 막힌 까닭이 빤하다(2026-11-19 기획자).
   // 쿨다운 · 금화처럼 판만 봐서는 모를 것만 내관이 말한다
   const typed = normalizeCityName(name);
-  const why = !check.ok && typed && typed !== profile.cityName ? check.reason : null;
+  const why = !check.ok && typed && typed !== profile.cityName ? reasonText(check) : null;
 
   return (
     <div className="modal-back" data-modal="rename" onClick={onClose}>

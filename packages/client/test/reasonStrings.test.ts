@@ -6,6 +6,8 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { ACADEMY_REASONS, CITY_UPGRADE_REASONS, SORTIE_REASONS } from '@samchess/meta';
 import ko from '../src/i18n/strings/ko.json' with { type: 'json' };
 import en from '../src/i18n/strings/en.json' with { type: 'json' };
@@ -47,15 +49,45 @@ test('수비군 · 부대 칸 문구(squad.garrison · squad.role.*)가 열 언�
   }
 });
 
+const holesOf = (s: string) => [...new Set(s.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort().join(',');
+
+// 2026-11-20 — 서버가 거절을 코드째로 돌려주게 되면서 거절 문구(reason.*)가 크게 늘었다. 하나라도 빠지면 그 언어에서 한국어가 뜬다
+test('거절 문구(reason.*)가 열 언어 전부에 있고 자리표시자가 한국어와 같다 (2026-11-20)', () => {
+  const keys = Object.keys(ko).filter((k) => k.startsWith('reason.'));
+  for (const [lang, strings] of Object.entries(LANGS)) {
+    for (const k of keys) {
+      assert.ok(strings[k], `${lang}에 ${k}가 없다`);
+      assert.equal(holesOf(strings[k]), holesOf((ko as Record<string, string>)[k]), `${lang}의 ${k} 자리표시자가 한국어와 다르다`);
+    }
+  }
+});
+
+// 규칙이 싣는 코드마다 문구가 있는가 — 없으면 `t()`가 키 이름(`reason.raid.intentsGap`)을 그대로 띄운다(실제로 그랬다)
+test('meta가 거절에 싣는 코드마다 reason.{code} 문구가 있다 (2026-11-20)', () => {
+  const dir = fileURLToPath(new URL('../../meta/src/', import.meta.url));
+  // 제 문구 체계가 따로 있는 갈래 — 우편(mail.err.*) · 공성 · 선전포고(siege.err.* · war.err.*) · AI 대전(화면에 안 뜬다)
+  const OWN = ['mail.', 'siege.', 'war.', 'ai.'];
+  const codes = new Set<string>();
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.ts') && !n.startsWith('admin'))) {
+    for (const line of readFileSync(dir + f, 'utf8').split('\n')) {
+      if (!/code|no\(|fail\(/.test(line)) continue;
+      for (const m of line.matchAll(/'([a-z]+\.[a-zA-Z]+)'/g)) codes.add(m[1]!);
+    }
+  }
+  // 컬렉션은 막힌 까닭을 그대로 잇는다(`collection.${reason}`)
+  for (const b of ['noSpare', 'notOwned', 'equipped', 'carried']) codes.add(`collection.${b}`);
+  const missing = [...codes].filter((c) => !OWN.some((p) => c.startsWith(p)) && !(ko as Record<string, string>)[`reason.${c}`]);
+  assert.deepEqual(missing, []);
+});
+
 // 2026-11-20 — 내관 · 무관 안내(`guideScript.ts`)가 한국어에만 있어 아홉 언어 화면에서 한국어로 떴다
 test('안내 대본(guide.*)이 열 언어 전부에 있고 자리표시자가 한국어와 같다 (2026-11-20)', () => {
   const keys = Object.keys(ko).filter((k) => k.startsWith('guide.'));
   assert.ok(keys.length > 200);
-  const holes = (s: string) => [...new Set(s.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort().join(',');
   for (const [lang, strings] of Object.entries(LANGS)) {
     for (const k of keys) {
       assert.ok(strings[k], `${lang}에 ${k}가 없다`);
-      assert.equal(holes(strings[k]), holes((ko as Record<string, string>)[k]), `${lang}의 ${k} 자리표시자가 한국어와 다르다`);
+      assert.equal(holesOf(strings[k]), holesOf((ko as Record<string, string>)[k]), `${lang}의 ${k} 자리표시자가 한국어와 다르다`);
     }
   }
 });

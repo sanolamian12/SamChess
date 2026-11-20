@@ -305,7 +305,7 @@ describe('재설계(둔갑천서) — 쓴 카드를 돌려주고 Lv1로 (GDD §4
     assert.equal(canRespec(fresh, GWAN).ok, false, 'Lv1은 되감을 것이 없다');
     assert.equal(canRespec({ ...lv5(), gold: 0 }, GWAN).ok, false, '둔갑천서 없이는 못 한다');
     assert.equal(canRespec(lv5(), GWAN).ok, true);
-    assert.throws(() => applyRespec(fresh, GWAN), /재설계할 수 없다/);
+    assert.throws(() => applyRespec(fresh, GWAN), /Lv1은 아직 올리신 적이 없습니다/);
   });
 });
 

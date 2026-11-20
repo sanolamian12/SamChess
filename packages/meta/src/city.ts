@@ -43,6 +43,7 @@ import { collectResearch } from './academy.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
 import { admitFromBox, ownedOfficers } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 /** 한 시간. 생산량이 「시간당」이라 눈금의 단위가 이것이다 */
 export const MS_PER_HOUR = 3_600_000;
@@ -188,7 +189,7 @@ export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
  */
 export function applyBuild(profile: PlayerProfile, id: BuildingId, nowMs: number): PlayerProfile {
   const check = canBuild(profile, id);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const synced = syncCity(profile, nowMs);
   const left = buildCreditsLeft(synced);
   const built: PlayerProfile = {
@@ -400,12 +401,12 @@ export function hospitalWards(profile: PlayerProfile, nowMs: number): HospitalWa
 
 /** 치료할 수 있는가. **왜 안 되는지 글자로 말한다** */
 export function canHeal(profile: PlayerProfile, officer: OfficerId, nowMs: number): MetaResult {
-  if (hospitalRooms(profile) <= 0) return { ok: false, reason: '병원이 없습니다 — 먼저 지으셔야 합니다' };
+  if (hospitalRooms(profile) <= 0) return { ok: false, reason: '병원이 없습니다 — 먼저 지으셔야 합니다', code: 'heal.noHospital' };
   const inst = profile.roster[officer];
   if (!inst) return { ok: false, reason: '없는 장수입니다' };
-  if (!isInjured(inst, nowMs)) return { ok: false, reason: '다친 장수가 아닙니다' };
-  if (isHealing(inst, nowMs)) return { ok: false, reason: '이미 치료 중입니다' };
-  if (freeRooms(profile, nowMs) <= 0) return { ok: false, reason: '빈 치료실이 없습니다' };
+  if (!isInjured(inst, nowMs)) return { ok: false, reason: '다친 장수가 아닙니다', code: 'heal.notInjured' };
+  if (isHealing(inst, nowMs)) return { ok: false, reason: '이미 치료 중입니다', code: 'heal.healing' };
+  if (freeRooms(profile, nowMs) <= 0) return { ok: false, reason: '빈 치료실이 없습니다', code: 'heal.noRoom' };
   return { ok: true };
 }
 
@@ -418,7 +419,7 @@ export function canHeal(profile: PlayerProfile, officer: OfficerId, nowMs: numbe
  */
 export function applyHeal(profile: PlayerProfile, officer: OfficerId, nowMs: number): PlayerProfile {
   const check = canHeal(profile, officer, nowMs);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const inst = profile.roster[officer]!;
   // 컬렉션 감소율은 **지금** 굳힌다 — 치료 중에 완성한 컬렉션이 끝 시각을 바꾸지 않게 (`cityBonus.ts`)
   const cut = cityBonus(profile, 'heal', nowMs);
@@ -658,7 +659,7 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
  */
 export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const check = canUpgradeCity(profile);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const cost = upgradeCost(profile.cityLevel)!;
   const synced = syncCity(profile, nowMs);
   // 「증축할 채비가 끝났다」(`city.ready`)는 **증축마다** 다시 말한다 (2026-11-14 기획자 — 10-23의 「처음 한 번」을 뒤집음).
@@ -726,7 +727,7 @@ export function canBuyMaterials(profile: PlayerProfile): MetaResult {
  */
 export function applyBuyMaterials(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const check = canBuyMaterials(profile);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const synced = syncCity(profile, nowMs);
   return {
     ...synced,
@@ -789,7 +790,7 @@ export function canBuyGrain(profile: PlayerProfile, nowMs: number): MetaResult {
  */
 export function applyBuyGrain(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const check = canBuyGrain(profile, nowMs);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const synced = syncGrain(profile, nowMs);
   return {
     ...synced,

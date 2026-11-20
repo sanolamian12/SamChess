@@ -16,6 +16,7 @@ import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../../i18n/index.ts';
 import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
 import { GameIcon } from '../GameIcon.tsx';
+import { errorText } from '../../i18n/reason.ts';
 
 // ── 팝업 층 ────────────────────────────────────────────────────
 
@@ -260,7 +261,7 @@ export function useServerCall(onChange: (next: PlayerProfile) => void): {
         onChange(next);
         after?.(next);
       } catch (err) {
-        setNote(err instanceof Error ? err.message : String(err));
+        setNote(errorText(err));
       } finally {
         inFlight.current = false;
         setBusy(false);

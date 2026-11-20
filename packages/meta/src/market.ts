@@ -42,14 +42,14 @@ import { equippedBy } from './forge.ts';
 // 날짜 경계는 **계정 전체에 하나**다 — 도적떼와 같은 KST 자정이다. 둘로 두면
 // 서버가 날짜를 두 벌 계산해야 하고, 어느 쪽이 오늘인지가 화면마다 갈린다.
 import { raidDay as kstDay } from './raid.ts';
-import type { CarriedBattle, InPlayItem, MetaResult, PlayerProfile } from './types.ts';
+import type { CarriedBattle, InPlayItem, MetaResult, PlayerProfile, ReasonParams } from './types.ts';
 
 /** 아이템을 파는 최소 시장 레벨 — Lv1 시장은 아이템을 안 판다 (GDD §6.5) */
 export const MARKET_ITEM_MIN_LEVEL = 2;
 /** 보유 총량 한 칸 — `(시장 Lv − 1) × 20` */
 const CAPACITY_PER_LEVEL = 20;
 
-const fail = (reason: string, code: string, params?: Record<string, number>): MetaResult =>
+const fail = (reason: string, code: string, params?: ReasonParams): MetaResult =>
   ({ ok: false, reason, code, ...(params ? { params } : {}) });
 
 // ── 읽기 ───────────────────────────────────────────────────────

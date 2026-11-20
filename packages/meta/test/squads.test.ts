@@ -249,7 +249,7 @@ describe('저장된 부대는 언제나 룰 엔진을 통과한다', () => {
     };
     const row = squadRow(gone, made.squad);
     assert.equal(row.power, null, '성립하지 않는 부대는 전투력을 내지 않는다(던지지도 않는다)');
-    assert.match(row.problem ?? '', /보유하지 않은 장수/);
+    assert.match(row.problem ?? '', /거느리지 않으신 장수/);
   });
 });
 

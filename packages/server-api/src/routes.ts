@@ -7,7 +7,7 @@ import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
-import type { BattleRankMode, RankBoard } from '@samchess/meta';
+import type { BattleRankMode, RankBoard, ReasonParams } from '@samchess/meta';
 import { BATTLE_RANK_MODES, RANK_BOARDS } from '@samchess/meta';
 import { RECORD_FILTERS, SIEGE_TABS, isTutorialId } from '@samchess/meta';
 import type { RecordFilter, SiegeTab } from '@samchess/meta';
@@ -34,6 +34,13 @@ import { recordActive } from './activity.ts';
 import { recordReject } from './ledger.ts';
 import { defenseReplay, listDefense, markDefenseSeen, unseenDefense } from './defense.ts';
 import { acceptWarAction, declareWarAction, getWarAction, openWarRoomAction, pingAction, replyWarAction } from './war.ts';
+
+/**
+ * 규칙의 거절을 응답 몸으로 — **코드 · 값까지 싣는다** (2026-11-20). 예전에는 문장(`error`)만 실어, 번역 문구가 있어도
+ * 화면이 열 언어 전부에서 한국어를 띄웠다. 받는 쪽은 클라이언트 `meta/city.ts`의 `post()`.
+ */
+const refusal = (r: { reason: string; code?: string | undefined; params?: ReasonParams | undefined }) =>
+  ({ error: r.reason, ...(r.code ? { code: r.code } : {}), ...(r.params ? { params: r.params } : {}) });
 
 export function registerRoutes(app: FastifyInstance): void {
   // 정지된 계정 → 403 account_banned (`verifyToken`이 던진다, `ban.ts`)
@@ -309,7 +316,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyCityAction(user.uid, { kind: 'upgrade' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -321,7 +328,7 @@ export function registerRoutes(app: FastifyInstance): void {
     // **id가 진짜인지는 `canBuild()`가 본다** — 여기서 목록을 한 벌 더 적으면
     // 건물이 늘 때 한쪽만 낡는다
     const r = await applyCityAction(user.uid, { kind: 'build', building: b.building });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -331,7 +338,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ officer: OfficerId }>;
     if (!b.officer) return reply.code(400).send({ error: 'invalid body' });
     const r = await applyCityAction(user.uid, { kind: 'heal', officer: b.officer });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -350,7 +357,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyCityAction(user.uid, { kind: 'buyMaterials' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -366,7 +373,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ equipmentId: string }>;
     if (!b.equipmentId) return reply.code(400).send({ error: 'invalid body' });
     const r = await applyForgeAction(user.uid, { kind: 'start', equipmentId: b.equipmentId });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -383,7 +390,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ id: string; slot: number }>;
     if (typeof b.id !== 'string' || typeof b.slot !== 'number') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyCollectionAction(user.uid, { id: b.id, slot: b.slot });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -399,7 +406,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ tactic: string }>;
     if (typeof b.tactic !== 'string') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyAcademyAction(user.uid, { kind: 'research', tactic: b.tactic });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -408,7 +415,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyAcademyAction(user.uid, { kind: 'cancel' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -417,7 +424,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyAcademyAction(user.uid, { kind: 'ack' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -429,7 +436,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyAcademyAction(user.uid, { kind: 'reset' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -444,7 +451,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const id = (req.body as { id?: unknown } | null)?.id;
     if (!isTutorialId(id)) return reply.code(400).send({ error: 'unknown tutorial' });
     const r = await completeTutorial(user.uid, id, randomInt(1, 2 ** 31 - 1));
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return { profile: r.profile, rewards: r.rewards };
   });
 
@@ -464,7 +471,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ kind: GachaPullKind }>;
     if (b.kind !== 'single' && b.kind !== 'multi') return reply.code(400).send({ error: 'invalid body' });
     const r = await pullGacha(user.uid, b.kind, randomInt(1, 2 ** 31 - 1));
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return { profile: r.profile, drawn: r.drawn, exhausted: r.exhausted };
   });
 
@@ -477,7 +484,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     const r = await applyAccountAction(user.uid, { kind: 'buyGrain' });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -493,7 +500,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ item: string }>;
     if (typeof b.item !== 'string') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyAccountAction(user.uid, { kind: 'buyItem', item: b.item });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -514,7 +521,7 @@ export function registerRoutes(app: FastifyInstance): void {
       basket[id] = n as number;
     }
     const r = await applyAccountAction(user.uid, { kind: 'buyItems', basket });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -525,7 +532,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ name: string }>;
     if (typeof b.name !== 'string') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyAccountAction(user.uid, { kind: 'rename', name: b.name });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -536,7 +543,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const b = req.body as Partial<{ officer: OfficerId }>;
     if (typeof b.officer !== 'string') return reply.code(400).send({ error: 'invalid body' });
     const r = await applyAccountAction(user.uid, { kind: 'respec', officer: b.officer });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -557,7 +564,7 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.code(400).send({ error: 'invalid body' });
     }
     const r = await applyAccountAction(user.uid, { kind: 'levelUp', officer: b.officer, stat: b.stat, school: b.school });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -575,7 +582,7 @@ export function registerRoutes(app: FastifyInstance): void {
       inputs[id as OfficerId] = n as number;
     }
     const r = await applyAccountAction(user.uid, { kind: 'recycle', target: b.target, inputs });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
@@ -617,7 +624,7 @@ export function registerRoutes(app: FastifyInstance): void {
     const r = await applyAccountAction(user.uid, {
       kind: 'devGrant', gold, officer: b.officer ?? null, cards, injure, finishResearch: b.finishResearch === true,
     });
-    if (!r.ok) return reply.code(r.status).send({ error: r.reason });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 

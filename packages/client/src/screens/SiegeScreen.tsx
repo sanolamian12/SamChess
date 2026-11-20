@@ -65,6 +65,7 @@ import { t } from '../i18n/index.ts';
 import { squadText } from './squadText.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
+import { reasonText } from '../i18n/reason.ts';
 
 /** 선전포고를 서버가 거절한 까닭 → 문구. 모르는 코드는 「걸지 못했다」 */
 const WAR_ERRORS: Record<string, 'war.err.busy' | 'war.err.engaged' | 'war.err.pending' | 'war.err.cooldown' | 'war.err.noGrain' | 'war.err.lowerCity'> = {
@@ -125,7 +126,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
     // 「딱 최소 군량」 — 대기열에서 만난 상대를 거절할 수 없다. 들어가기 전에 알린다(규칙이 문구를 준다)
     const decline = canDeclineMatch(profile, mode);
     if (decline.ok) onAuto();
-    else setAsking(decline.reason);
+    else setAsking(reasonText(decline));
   };
 
   return (

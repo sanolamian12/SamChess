@@ -18,7 +18,7 @@ import { grainCap, isInjured } from './city.ts';
 import { upgradeTactics } from './academy.ts';
 import { heldFor } from './market.ts';
 import { collectionBonusesFor } from './collection.ts';
-import type { MetaResult, PlayerProfile, RosterPick } from './types.ts';
+import type { MetaResult, PlayerProfile, ReasonParams, RosterPick } from './types.ts';
 
 /** 편성에 쓸 수 있는 기물 6종. King은 반드시 들어간다 */
 export const PIECE_TYPES: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'];
@@ -44,21 +44,21 @@ export function validateRoster(
   if (picks.length !== need) return no(`${mode}은 ${need}명을 채워야 한다 — 지금 ${picks.length}명`);
 
   const pieces = new Set(picks.map((p) => p.piece));
-  if (pieces.size !== picks.length) return no('기물은 종류마다 하나만 고르실 수 있습니다');
-  if (!pieces.has('King')) return no('King(군주)은 반드시 넣으셔야 합니다');
+  if (pieces.size !== picks.length) return no('기물은 종류마다 하나만 고르실 수 있습니다', 'squad.dupPiece');
+  if (!pieces.has('King')) return no('King(군주)은 반드시 넣으셔야 합니다', 'squad.needKing');
 
   // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (GDD §12, 2026-07-31 확정)
   const officers = new Set(picks.map((p) => p.officer));
-  if (officers.size !== picks.length) return no('같은 장수를 두 번 넣으실 수 없습니다');
+  if (officers.size !== picks.length) return no('같은 장수를 두 번 넣으실 수 없습니다', 'squad.dupOfficer');
 
   for (const pick of picks) {
     if (!profile.roster[pick.officer]) {
       const name = officerById.get(pick.officer)?.name ?? pick.officer;
-      return no(`보유하지 않은 장수다 — ${name}`);
+      return no(`거느리지 않으신 장수입니다 — ${name}`, 'squad.notOwned', { officer: pick.officer });
     }
   }
   if (checkGrain && profile.grain < grainCost(mode)) {
-    return no(`군량이 모자랍니다 — ${profile.grain}/${grainCost(mode)}`);
+    return no(`군량이 모자랍니다 — ${profile.grain}/${grainCost(mode)}`, 'match.grain', { have: profile.grain, need: grainCost(mode) });
   }
   return { ok: true };
 }
@@ -171,4 +171,5 @@ export function refundGrain(profile: PlayerProfile, mode: BattleMode): PlayerPro
  * 기준으로 갈아 끼웠다. 이 파일은 **사람의 편성**만 본다.
  */
 
-const no = (reason: string): MetaResult => ({ ok: false, reason });
+const no = (reason: string, code?: string, params?: ReasonParams): MetaResult =>
+  ({ ok: false, reason, ...(code ? { code } : {}), ...(params ? { params } : {}) });

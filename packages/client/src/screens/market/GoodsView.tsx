@@ -306,7 +306,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
             <p className="mkt-confirm-lead">{t('market.respec.what', { name: nameOf(officer), level })}</p>
             <Portrait officer={officer} size="sm" />
             <p>{t('market.respec.refund', { n: refund })}</p>
-            <Say text={can.ok ? null : can.reason} level={profile.cityLevel} name="respecWhy" />
+            <Say text={can.ok ? null : reasonText(can)} level={profile.cityLevel} name="respecWhy" />
             <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
           </ConfirmModal>
         );

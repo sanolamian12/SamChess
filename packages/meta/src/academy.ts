@@ -48,7 +48,8 @@ import type { TacticId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
 import { tacticsOf } from './profile.ts';
-import type { AcademyState, MetaResult, PlayerProfile } from './types.ts';
+import type { AcademyState, MetaResult, PlayerProfile, ReasonParams } from './types.ts';
+import { rejectWith } from './reject.ts';
 
 /** 한 번 연구에 드는 실제 시간 — 데이터(`tacticUpgrades.json`)에서 온다 */
 export const ACADEMY_RESEARCH_MS: number = ACADEMY_RESEARCH_MINUTES * 60_000;
@@ -198,7 +199,7 @@ export function canStartResearch(profile: PlayerProfile, tactic: string): MetaRe
  */
 export function applyStartResearch(profile: PlayerProfile, tactic: string, nowMs: number): PlayerProfile {
   const check = canStartResearch(profile, tactic);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   const def = upgradeDef(tactic)!;
   const a = academyOf(profile);
   const level = def.academyLevel!;
@@ -233,8 +234,8 @@ export function canCancelResearch(profile: PlayerProfile): MetaResult {
  */
 export function applyCancelResearch(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const check = canCancelResearch(profile);
-  if (!check.ok) throw new Error(check.reason);
-  if (researchRemainingMs(profile, nowMs) <= 0) throw new Error('이미 끝난 연구는 취소하실 수 없습니다');
+  if (!check.ok) rejectWith(check);
+  if (researchRemainingMs(profile, nowMs) <= 0) rejectWith({ reason: '이미 끝난 연구는 취소하실 수 없습니다', code: 'academy.ended' });
   const { research: _drop, ...rest } = academyOf(profile);
   return { ...profile, academy: rest };
 }
@@ -289,7 +290,7 @@ export function canResetAcademy(profile: PlayerProfile): MetaResult {
  */
 export function applyResetAcademy(profile: PlayerProfile): PlayerProfile {
   const check = canResetAcademy(profile);
-  if (!check.ok) throw new Error(check.reason);
+  if (!check.ok) rejectWith(check);
   // **전에 끝냈던 레벨까지만** 다시 고를 때 기다리지 않는다(`isInstantResearch`, 2026-09-22 셋째 지정).
   // 연구는 Lv1부터 차례로라 끝낸 수가 곧 끝낸 가장 높은 레벨이다. 진행 중이던 것은 안 센다 —
   // 「태학 레벨까지」로 두면 안 해 본 레벨의 대기까지 10냥으로 건너뛸 수 있었다
@@ -343,5 +344,5 @@ export function officersUsingUpgrade(profile: PlayerProfile, upgradeId: string):
   return Object.values(profile.roster).filter((inst) => tacticsOf(inst).includes(base as TacticId)).length;
 }
 
-const no = (reason: string, code?: string, params?: Record<string, number>): MetaResult =>
+const no = (reason: string, code?: string, params?: ReasonParams): MetaResult =>
   ({ ok: false, reason, ...(code ? { code: `academy.${code}` } : {}), ...(params ? { params } : {}) });

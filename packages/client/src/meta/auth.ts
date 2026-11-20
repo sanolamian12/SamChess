@@ -16,6 +16,21 @@
  */
 
 import { AccountBannedError, reportBan } from './ban.ts';
+import { t } from '../i18n/index.ts';
+import type { StringKey } from '../i18n/index.ts';
+/** Supabase 인증 오류 갈래 → 화면 문구. 모르는 갈래는 「실패」 + 원문(영문)이다 */
+const AUTH_ERRORS: Record<string, StringKey> = {
+  invalid_credentials: 'reason.auth.invalid',
+  email_not_confirmed: 'reason.auth.unconfirmed',
+  weak_password: 'reason.auth.weakPassword',
+  over_request_rate_limit: 'reason.auth.rateLimit',
+  over_email_send_rate_limit: 'reason.auth.rateLimit',
+};
+function authErrorText(code: string | undefined, raw: string | undefined): string {
+  const key = code ? AUTH_ERRORS[code] : undefined;
+  if (key) return t(key);
+  return raw ? t('reason.auth.failedWith', { msg: raw }) : t('reason.auth.failed');
+}
 
 interface Session {
   uid: string;
@@ -85,13 +100,14 @@ async function rawAuthFetch(path: string, body: unknown): Promise<TokenResponse 
     reportBan(notice);
     throw new AccountBannedError(notice);
   }
-  if (!res.ok) throw Object.assign(new Error(data.error_description ?? data.msg ?? data.error ?? '로그인에 실패했다'), { code: data.error_code });
+  // 화면에 뜨는 말은 화면 언어로(2026-11-20) — Supabase의 영문 설명은 아는 갈래만 문구로 바꾸고, 모르는 것은 원문을 붙인다
+  if (!res.ok) throw Object.assign(new Error(authErrorText(data.error_code, data.error_description ?? data.msg ?? data.error)), { code: data.error_code });
   return data;
 }
 
 async function authFetch(path: string, body: unknown): Promise<TokenResponse> {
   const data = await rawAuthFetch(path, body);
-  if (!data.access_token || !data.user) throw new Error('로그인에 실패했다 — 서버 응답에 세션이 없다');
+  if (!data.access_token || !data.user) throw new Error(t('reason.auth.noSession'));
   return data;
 }
 
