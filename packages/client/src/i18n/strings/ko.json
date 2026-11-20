@@ -275,7 +275,7 @@
   "guide.officer.card.level": "HP · MP · AT입니다. HP가 0이 되면\n물러나고, MP로 책략을 쓰며, AT는\n한 번 칠 때의 피해입니다.",
   "guide.officer.card.tactics": "레벨업하며 배운 책략이 이 줄에 섭니다.\n누르시면 효과를 보실 수 있습니다.",
   "guide.officer.card.skill": "이 장수만의 고유기술입니다. 전투에서\nSP가 모이면 씁니다. 누르시면\n자세히 보실 수 있습니다.",
-  "guide.officer.card.levels": "[레벨/스킬 관리]에서 카드를 써 레벨을\n올리고 책략을 고릅니다. 숫자는 가진\n카드 / 다음 레벨에 드는 카드입니다.",
+  "guide.officer.card.levels": "[강화]에서 카드를 써 레벨을\n올리고 책략을 고릅니다. 숫자는 가진\n카드 / 다음 레벨에 드는 카드입니다.",
   "guide.title.city.intro": "도시 관리 — 증축 조건 채우기",
   "guide.title.palace.box": "궁궐이 가득 찼을 때",
   "guide.title.barracks.sortieReady": "출정 준비 끝",
@@ -808,7 +808,7 @@
   "officers.pager.prev": "이전",
   "officers.pager.next": "다음",
 
-  "officer.levels": "레벨/스킬 관리",
+  "officer.levels": "강화",
   "officer.cards.have": "{have} / {need}장",
   "officer.cards.max": "최대 레벨",
 

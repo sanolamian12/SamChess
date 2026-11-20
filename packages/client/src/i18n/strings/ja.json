@@ -419,7 +419,7 @@
   "officers.equip.none": "なし",
   "officers.equip.pick": "選択",
   "officers.equip.confirm": "決定",
-  "officer.levels": "レベル・スキル管理",
+  "officer.levels": "強化",
   "officer.cards.have": "{have} / {need}枚",
   "officer.cards.max": "最大レベル",
   "levelup.tactics": "習得済み策略",

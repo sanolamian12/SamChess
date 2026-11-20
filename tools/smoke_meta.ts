@@ -1759,7 +1759,7 @@ if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${det
 // 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2).
 // 2026-10-26부터 HP · MP · AT 이름은 아이콘이라 글자가 없다 — 줄이 「최소-최대」로 끝나는지만 본다(AT가 마지막 칸)
 if (!/\d+-\d+$/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
-if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [레벨/스킬 관리] · [뒤로 가기]가 다 있지 않다: ${JSON.stringify(detail)}`);
+if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [강화] · [뒤로 가기]가 다 있지 않다: ${JSON.stringify(detail)}`);
 if (detail.records) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
 if (detail.rec) fail('장수 카드에 전적 줄이 남아 있다(2026-11-19에 걷었다)');
 if (detail.six !== 6) fail(`장수 카드의 여섯 값이 다 있지 않다 — ${detail.six}칸`);
@@ -1860,41 +1860,49 @@ console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 여섯 값 ·
     + ` · ${popup!.castDelay}`);
 }
 
-// ── 레벨/스킬 관리 · 재설계 (pptx 39쪽 · GDD §4.2·§4.3) ──────────
+// ── 강화(레벨업) · 재설계 (pptx 39쪽 · GDD §4.2·§4.3) ──────────
 //
-// 39쪽부터 레벨업이 **두 걸음**이다 — [레벨 업]이 「고르기」를 열고 거기서 [확정]을
-// 눌러야 오른다. 화면 골격이 바뀌면 스모크의 경로도 함께 고친다(2026-08-15에
-// 간판 화면을 넣고 이 파일이 통째로 막혔던 자리다).
+// 카드의 [강화](옛 [레벨/스킬 관리], 2026-11-20 기획자)가 곧장 「고르기」를 열고, 거기서 [확정]을
+// 눌러야 오른다 — 오르면 판이 닫히고 카드로 돌아온다. [강화]는 올릴 수 있을 때만 켜진다.
+// 화면 골격이 바뀌면 스모크의 경로도 함께 고친다(2026-08-15에 간판 화면을 넣고 이 파일이 통째로 막혔던 자리다).
 
-await page.click('.ofcard-modal [data-action="levels"]');
-await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
-  .catch(() => fail('[레벨/스킬 관리]를 눌렀는데 판이 안 뜬다'));
-const who = await page.getAttribute('[data-screen="levelup-panel"]', 'data-officer');
-if (!who) fail('레벨/스킬 관리 판에 장수가 없다');
+const who = await page.getAttribute('.ofcard-modal', 'data-officer');
+if (!who) fail('장수 카드에 장수가 없다');
+if (await page.isEnabled('.ofcard-modal [data-action="levels"]')) fail('도시 Lv1인데 [강화]가 켜져 있다 — 장수 레벨 상한은 도시 레벨이다');
 
-/** 관리 판이 내보내는 것 — 걸음 · 성장 스택 길이 · 스탯 찍은 횟수 · 레벨(속성으로) */
-const lvState = async () => await page.evaluate(() => {
+/** 성장 상태 — 판의 걸음 · 성장 스택 길이 · 스탯 찍은 횟수(계정) · 카드의 레벨(속성으로) · 배운 책략 수 */
+const lvState = async () => await page.evaluate((id: string) => {
+  const inst = (window as any).__profile.current.roster?.[id];
+  if (!inst) return null;
+  const g = (inst.growth ?? []) as { stat: string; tactics: string[] }[];
+  const n = (k: string) => g.filter((s) => s.stat === k).length;
   const scr = document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null;
-  return scr ? {
-    step: scr.dataset.step ?? '',
-    growth: Number(scr.dataset.growth ?? -1),
-    taps: scr.querySelector('.lv-taps')?.getAttribute('data-taps') ?? '',
-    name: `Lv${scr.querySelector('.lvp-title .lv')?.getAttribute('data-level') ?? '?'}`,
-  } : null;
-});
+  const lv = document.querySelector(`.ofcard-modal[data-officer="${id}"] .ofcard-title [data-level]`)?.getAttribute('data-level');
+  return {
+    step: scr?.dataset.step ?? 'card',
+    growth: g.length,
+    taps: `${n('hp')}/${n('mp')}/${n('at')}`,
+    name: `Lv${lv ?? '?'}`,
+    tactics: g.reduce((a, s) => a + s.tactics.length, 0),
+  };
+}, who!);
 const before = (await lvState())!.name;
 
-/** 궁궐 → 일람 → 그 장수의 카드 → 레벨/스킬 관리 판. 새로고침 뒤에 다시 들어올 때 쓴다 */
+/** 궁궐 → 일람 → 그 장수의 카드. 새로고침 뒤에 다시 들어올 때 쓴다 */
 const openLevels = async (): Promise<void> => {
   await toPalace();
   await page.click('[data-action="officers"]');
   await page.waitForTimeout(250);
   await openCardOf(who!);
-  await page.click('.ofcard-modal [data-action="levels"]');
-  await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
-    .catch(() => fail('다시 들어왔는데 레벨/스킬 관리 판이 안 뜬다'));
 };
-/** 개발용 지급은 장터에 있다(2026-09-02) — 누르고, 저장을 흘려보내고, 판으로 돌아온다 */
+/** [강화] → 고르기 판 */
+const openEnhance = async (): Promise<void> => {
+  if (!await page.isEnabled('.ofcard-modal [data-action="levels"]')) fail('올릴 수 있어야 하는데 [강화]가 꺼져 있다');
+  await page.click('.ofcard-modal [data-action="levels"]');
+  await page.waitForSelector('[data-screen="levelup-panel"][data-step="levelup"]', { timeout: 5_000 })
+    .catch(() => fail('[강화]를 눌렀는데 고르기 판이 안 뜬다'));
+};
+/** 개발용 지급은 장터에 있다(2026-09-02) — 누르고, 저장을 흘려보내고, 카드로 돌아온다 */
 const devAtMarket = async (selector: string, times: number): Promise<void> => {
   await reenter();
   await clickPlace('market');
@@ -1923,35 +1931,36 @@ await devAtMarket(`[data-dev="cards"][data-officer="${who}"]`, 2);
 {
   /*
    * ★ **장수 레벨의 상한은 도시 레벨이다** (2026-09-14). 새 계정은 도시 Lv1이라 카드를
-   * 채워도 잠겨야 하고 **왜인지 적혀야** 한다. 막히는 것을 본 뒤 도시를 올린 계정으로
+   * 채워도 잠겨야 하고 **왜인지 말해야** 한다(카드 위의 사람, `data-say="levelCap"`). 막히는 것을 본 뒤 도시를 올린 계정으로
    * 다시 들어와 원래 시험을 잇는다 — `cityLevel`은 클라이언트도 `PUT`으로 올리므로
    * **먼저 흘려보내고** 서버에 쓴 다음 새로 읽는다(안 그러면 옛 값이 덮어쓴다).
    */
-  if (await page.isEnabled('[data-action="levelUp"]')) fail('도시 Lv1인데 장수를 Lv2로 올릴 수 있다 — 상한은 도시 레벨이다');
-  if (!await page.$('[data-field="levelCap"]')) fail('레벨업이 도시 레벨에 막혔는데 이유가 안 적혀 있다');
+  if (await page.isEnabled('.ofcard-modal [data-action="levels"]')) fail('도시 Lv1인데 장수를 Lv2로 올릴 수 있다 — 상한은 도시 레벨이다');
+  await page.waitForSelector('.stw[data-say="levelCap"]', { timeout: 5_000 })
+    .catch(() => fail('강화가 도시 레벨에 막혔는데 아무도 이유를 말하지 않는다'));
   await page.evaluate(() => (window as any).__profile.flush());
   const stored = await getProfile(player.uid);
-  if (!stored) fail('레벨업 절에서 서버 계정을 못 읽었다');
+  if (!stored) fail('강화 절에서 서버 계정을 못 읽었다');
   await saveProfileTrusted(player.uid, { ...stored!, cityLevel: 3 } as Parameters<typeof saveProfileTrusted>[1]);
   await reenter();
   await openLevels();
-  if (await page.getAttribute('[data-screen="levelup-panel"]', 'data-officer') !== who) {
-    fail('도시를 올린 뒤 같은 장수의 레벨업 화면으로 못 돌아왔다');
-  }
-  console.log('✓ 장수 레벨 상한 — 도시 Lv1에서는 카드가 있어도 잠기고 이유를 적는다 (도시 Lv3으로 올려 잇는다)');
+  if (await page.$('.stw[data-say="levelCap"]')) fail('도시를 올렸는데 아직 상한 이유를 말한다');
+  console.log('✓ 장수 레벨 상한 — 도시 Lv1에서는 카드가 있어도 [강화]가 꺼지고 이유를 말한다 (도시 Lv3으로 올려 잇는다)');
 }
-if (!await page.isEnabled('[data-action="levelUp"]')) {
-  fail('카드를 채웠는데 레벨업이 잠겨 있다 — 레벨업에 실패는 없다(2026-08-04 확정)');
+{
+  const cards = await page.evaluate(() => [...document.querySelectorAll('.ofcard-modal [data-field="enhanceCards"]')].map((e) => ({
+    text: e.textContent?.replace(/\s+/g, ' ').trim() ?? '', icon: !!e.querySelector('img'),
+  })));
+  if (cards.length !== 1 || !/^\d+ \/ 3$/.test(cards[0]!.text) || !cards[0]!.icon) fail(`[강화] 오른쪽이 「보유 / 3 (카드)」가 아니다: ${JSON.stringify(cards)}`);
 }
 
 const start = await lvState();
 if (start!.taps !== '0/0/0') fail(`Lv1인데 스탯 찍은 횟수가 0이 아니다: ${start!.taps}`);
 
-// [레벨 업] → 「고르기」. **아직 오르지 않았다** — 확정 전에 프로필이 바뀌면 안 된다
-await page.click('[data-action="levelUp"]');
-await page.waitForTimeout(250);
+// [강화] → 「고르기」. **아직 오르지 않았다** — 확정 전에 프로필이 바뀌면 안 된다
+await openEnhance();
 const picking = await lvState();
-if (picking!.step !== 'levelup') fail(`[레벨 업]을 눌렀는데 고르기로 안 간다: ${picking!.step}`);
+if (picking!.step !== 'levelup') fail(`[강화]를 눌렀는데 고르기로 안 간다: ${picking!.step}`);
 if (picking!.growth !== start!.growth) fail('고르기를 열었을 뿐인데 성장 스택이 늘었다');
 
 // 39쪽의 증분 미리보기 — **고른 줄만 증분이 붙는다.** `+5`를 화면이 손으로 적으면
@@ -2011,26 +2020,28 @@ if (!schools.find((s) => s.school === 'illusion')!.on) fail('환술을 눌렀는
 if (schools.find((s) => s.school === 'support')!.on) fail('택1인데 둘 다 체크돼 있다');
 
 await page.click('[data-action="confirm"]');
-// **레벨업은 서버 왕복이다**(2026-09-14, A2) — 고정 대기 대신 판이 관리 걸음으로 돌아올 때까지 본다.
-// 판은 결과가 올 때까지 고르기 걸음을 닫지 않는다(`LevelUpPanel`). 거절이면 그 말을 싣는다
+// **레벨업은 서버 왕복이다**(2026-09-14, A2) — 고정 대기 대신 판이 닫혀 카드로 돌아올 때까지 본다.
+// 판은 결과가 올 때까지 닫지 않는다(`LevelUpPanel`). 거절이면 판이 남고 그 말을 싣는다
 const waitLevelUp = async (what: string): Promise<void> => {
-  await page.waitForFunction(() =>
-    (document.querySelector('[data-screen="levelup-panel"]') as HTMLElement | null)?.dataset.step === 'manage',
-  undefined, { timeout: 8_000 }).catch(() => fail(`${what} — [확정] 뒤 8초가 지나도 관리 걸음으로 안 돌아온다`));
-  const note = await page.textContent('.stw[data-say="respecNote"] [data-field="guideText"]').catch(() => null);
-  if (note) fail(`${what} — 서버가 거절했다: "${note}"`);
+  const closed = await page.waitForSelector('[data-screen="levelup-panel"]', { state: 'detached', timeout: 8_000 })
+    .then(() => true, () => false);
+  if (!closed) {
+    const note = await page.textContent('.stw[data-say="respecNote"] [data-field="guideText"]').catch(() => null);
+    fail(`${what} — [확정] 뒤 8초가 지나도 카드로 안 돌아온다${note ? `: 서버가 거절했다 "${note}"` : ''}`);
+  }
+  await page.waitForTimeout(150);
 };
 await waitLevelUp('레벨업');
 
 const grown = await lvState();
-if (grown!.step !== 'manage') fail('확정했는데 관리 화면으로 안 돌아온다');
+if (grown!.step !== 'card') fail('확정했는데 카드로 안 돌아온다');
 if (grown!.growth !== start!.growth + 1) fail(`성장 스택이 한 걸음 늘지 않았다: ${grown!.growth}`);
 if (grown!.taps !== '1/0/0') fail(`HP를 찍었는데 횟수가 안 맞는다: ${grown!.taps}`);
 const after = grown!.name;
-if (before === after) fail(`레벨업했는데 표시가 그대로다: "${before}"`);
-const tactics = await page.evaluate(() => document.querySelectorAll('[data-screen="levelup-panel"] .lvp-tactic').length);
+if (before === after) fail(`레벨업했는데 카드 표시가 그대로다: "${before}"`);
+const tactics = grown!.tactics;
 if (tactics === 0) fail('레벨업했는데 책략을 배우지 않았다 (능력 택1 + 책략 택1)');
-console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍은 횟수 ${grown!.taps}`);
+console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은 횟수 ${grown!.taps}`);
 
 // ── 재설계(둔갑천서) — **쓴 카드를 돌려주고 Lv1로 되감는다** ─────
 //
@@ -2042,8 +2053,8 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   const cardsOf = async () => await page.evaluate((id: string) =>
     ((window as any).__profile.current.cards?.[id] ?? 0) as number, who!);
 
-  // **[재설계]는 장터 [도시 물자]로 옮겼다** (2026-09-24, pptx 88쪽) — 레벨/스킬 관리에는 없다
-  if (await page.$('[data-screen="levelup-panel"] [data-action="respec"]')) fail('레벨/스킬 관리 판에 [재설계]가 남아 있다 — 장터로 옮겼다');
+  // **[재설계]는 장터 [도시 물자]로 옮겼다** (2026-09-24, pptx 88쪽) — 장수 카드에는 없다
+  if (await page.$('.ofcard-modal [data-action="respec"]')) fail('장수 카드에 [재설계]가 남아 있다 — 장터로 옮겼다');
   await devAtMarket('[data-dev="gold-respec"]', 1);
   const heldBefore = await cardsOf();
 
@@ -2113,7 +2124,7 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   await reenter();
   await openLevels();
   const reset = await lvState();
-  if (reset!.step !== 'manage') fail('재설계했는데 관리 화면이 아니다');
+  if (reset!.step !== 'card') fail('재설계했는데 장수 카드가 아니다');
   if (reset!.growth !== 0) fail(`재설계했는데 성장 스택이 남았다: ${reset!.growth}`);
   if (reset!.taps !== '0/0/0') fail(`재설계했는데 찍은 횟수가 남았다: ${reset!.taps}`);
   if (reset!.name !== before) fail(`Lv1로 안 돌아갔다: "${before}" 기대, "${reset!.name}"`);
@@ -2123,9 +2134,8 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
   console.log(`✓ 재설계 — ${after} → ${reset!.name}, 카드 ${heldBefore} → ${heldAfter}장 (쓴 만큼 돌아왔다)`);
 
   // **되감은 뒤에는 정상 레벨업 절차 그대로다** — 재설계 전용 절차가 없다는 것이 요점이다
-  if (!await page.isEnabled('[data-action="levelUp"]')) fail('돌려받은 카드로 다시 올릴 수 없다');
-  await page.click('[data-action="levelUp"]');
-  await page.waitForTimeout(250);
+  if (!await page.isEnabled('.ofcard-modal [data-action="levels"]')) fail('돌려받은 카드로 다시 올릴 수 없다');
+  await openEnhance();
   await page.click('[data-stat="hp"]');
   await page.waitForTimeout(120);
   await page.click('[data-action="confirm"]');
@@ -2137,9 +2147,12 @@ console.log(`✓ 레벨업 — ${before} → ${after}, 책략 ${tactics}종, 찍
 }
 
 // 레벨업 Flag가 일람까지 돌아오는가 — 카드가 남아 있으면 ON이다 (37쪽)
+// 고르기 판의 [X] — 오르지 않고 카드로 돌아온다
+await openEnhance();
 await page.click('[data-action="closeLevelUp"]');
 await page.waitForTimeout(200);
-if (await page.$('[data-screen="levelup-panel"]')) fail('레벨/스킬 관리 판의 [X]를 눌렀는데 닫히지 않는다');
+if (await page.$('[data-screen="levelup-panel"]')) fail('고르기 판의 [X]를 눌렀는데 닫히지 않는다');
+if ((await lvState())!.name !== after) fail('고르기 판을 [X]로 닫았는데 레벨이 바뀌었다');
 await closeCard();
 const back = await listRows();
 const flagged = back.find((r) => r.officer === who);
@@ -2156,13 +2169,11 @@ if (await page.$('.scr-new')) fail('새로고침했더니 계정이 사라졌다
 await toPalace();
 await page.click('[data-action="officers"]');
 await page.waitForTimeout(300);
-/** 일람이 열린 채로 그 장수의 레벨을 판에서 읽는다 — 화면 글자가 아니라 `data-level`로 */
+/** 일람이 열린 채로 그 장수의 레벨을 카드에서 읽는다 — 화면 글자가 아니라 `data-level`로 */
 const levelOf = async (officer: string): Promise<string> => {
   await openCardOf(officer);
-  await page.click('.ofcard-modal [data-action="levels"]');
-  await page.waitForSelector('[data-screen="levelup-panel"]', { timeout: 5_000 })
-    .catch(() => fail('카드에서 레벨/스킬 관리 판이 안 뜬다'));
-  return (await lvState())!.name;
+  const lv = await page.getAttribute(`.ofcard-modal[data-officer="${officer}"] .ofcard-title [data-level]`, 'data-level').catch(() => null);
+  return `Lv${lv ?? '?'}`;
 };
 const kept = await levelOf(who!);
 if (kept !== after) fail(`새로고침 뒤 상태가 다르다: "${after}" → "${kept}"`);

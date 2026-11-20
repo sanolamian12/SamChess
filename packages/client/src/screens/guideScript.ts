@@ -65,7 +65,7 @@ export const SPOT_SELECTOR = {
   squadNew: '[data-slot="atk-3v3"]',
   pickMode: '[data-field="pickMode"]',
   rewards: '[data-field="rewards"]',
-  levelSeal: '.ofc-levelup-seal',
+  levelSeal: '.ofc-lv-up',
   // 둘러보기(2026-10-23) — 메인의 자리 네모 · 장터 홈 · 대자보
   marketHot: '.city-hot[data-place="market"]',
   boardHot: '.city-hot[data-place="ranking"]',

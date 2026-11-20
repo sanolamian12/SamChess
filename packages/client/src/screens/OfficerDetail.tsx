@@ -3,12 +3,12 @@
  *
  * 예전에는 자리마다 장수 카드(`OfficerCardModal`)를 각자 띄우며 단추를 따로 달았다 — 궁궐은 [레벨/스킬 관리] · [전적 보기],
  * 부대 편집은 [아이템] · [해제하기]. 같은 장수가 어디서 열었느냐에 따라 다른 화면이었다. 이제 이 컴포넌트 하나가
- * 카드에 실을 값(낀 병기 · 부상과 [입원] · 레벨업 카드 수)을 계정에서 내고, 단추는 언제나 **[아이템] · [레벨/스킬 관리] · [뒤로 가기]**,
+ * 카드에 실을 값(낀 병기 · 부상과 [입원] · 레벨업 카드 수)을 계정에서 내고, 단추는 언제나 **[아이템] · [강화] · [뒤로 가기]**,
  * 그 자리의 한 수(옥색 [선택하기] · 붉은 [해제하기])가 있으면 그 밑이다.
  *
  * - **[아이템]** — 병기 · 아이템 고르기(`HeldPicker`, 부대 편집의 것 그대로). 보통은 고르는 순간 계정에 얹고,
  *   부대 편집처럼 초안에 모으는 자리는 `held`로 대신한다(그 자리의 초안 계정 · 얹는 함수).
- * - **[레벨/스킬 관리]** — 카드 위에 겹쳐 뜨는 판(`LevelUpPanel`). 닫으면 카드로 돌아온다.
+ * - **[강화]**(옛 [레벨/스킬 관리], 2026-11-20 기획자) — 카드 위에 겹쳐 뜨는 레벨업 고르기(`LevelUpPanel`). 올리거나 닫으면 카드로 돌아온다.
  *
  * 카드는 **장수 id로만** 연다 — 행째 들고 있으면 그 순간의 스냅샷이라, 카드 위에서 레벨을 올려도 옛 값이 남는다(2026-09-03).
  * 매 렌더 계정에서 다시 찾는다. 다른 계정의 장수(랭킹)는 이걸 안 쓰고 `OfficerCardModal`만 띄운다 — 관리할 수 없으니까.
@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canLevelUp, cardsToLevelUp, equippedBy, freeRooms, hospitalRooms, injuryHealsAt, isHealing, isInjured, nextRoomFreeAt,
+  canLevelUp, cardsToLevelUp, equippedBy, freeRooms, hospitalRooms, injuryHealsAt, isHealing, isInjured, nextRoomFreeAt, officerLevelCap,
   officerRankRows, pendingGuide,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -107,9 +107,14 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
   } : undefined;
   // 낀 병기 — 없으면 줄째로 사라진다. **부대 편집(초안)에서는 안 싣는다** — 지닌 것은 [아이템]을 눌러 보는 한 곳에만(2026-11-17 기획자)
   const equip = held ? undefined : equippedBy(profile, officer);
-  // [레벨/스킬 관리] 오른쪽 「{보유} / {필요}장」 — `cardsToLevelUp()`이 단일 출처
+  // [강화] 오른쪽 「{보유} / {필요} (카드)」 — `cardsToLevelUp()`이 단일 출처
   const need = cardsToLevelUp(row.level);
-  const levelsSub = need === null ? t('officer.cards.max') : t('officer.cards.have', { have: profile.cards[officer] ?? 0, need });
+  const have = profile.cards[officer] ?? 0;
+  const eligible = canLevelUp(profile, officer).ok;
+  // 카드는 넉넉한데 꺼져 있다 = 도시 레벨 상한 — 그것만 말한다(카드 모자람은 숫자가 말한다)
+  const cap = officerLevelCap(profile);
+  const levelsNote = need !== null && have >= need && inst.level >= cap
+    ? t('levelup.cityCap', { city: profile.cityLevel, cap }) : null;
 
   return (
     <>
@@ -118,8 +123,9 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
         onClose={onClose}
         onItems={() => setPicking(true)}
         onLevels={() => setManaging(true)}
-        levelsSub={levelsSub}
-        levelsEligible={canLevelUp(profile, officer).ok}
+        levelsCards={{ have, need }}
+        levelsEligible={eligible}
+        levelsNote={managing ? null : levelsNote}
         {...(equip ? { equip } : {})}
         {...(injury ? { injury } : {})}
         {...(action ? { action } : {})}

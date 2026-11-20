@@ -125,12 +125,12 @@ try {
   await page.waitForTimeout(600);
   await shot('a2-officer-card');
   const lv = await page.$('[data-action="levels"]');
-  if (lv) {
+  if (lv && await lv.isEnabled()) {
     await lv.click();
     await page.waitForSelector('[data-screen="levelup-panel"]');
     await page.waitForTimeout(400);
     await shot('a3-levelup');
-  } else console.log('  · 장수 카드에 [레벨/스킬 관리]가 없다');
+  } else console.log('  · 장수 카드의 [강화]가 없거나 꺼져 있다(카드 모자람 · 도시 상한)');
   // 장수 카드 — 맨 윗줄 전적(출전 · 승 · 무 · 패 · 격파). [전적 보기] 판은 2026-11-19에 걷었다
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });

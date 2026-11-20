@@ -1,5 +1,9 @@
 /**
- * 레벨/스킬 관리 — 장수 카드(`OfficerCardModal`) 위에 겹쳐 뜨는 판 (2026-09-02)
+ * 레벨업 고르기 — 장수 카드(`OfficerCardModal`) 위에 겹쳐 뜨는 판 (2026-09-02)
+ *
+ * ★ **2026-11-20 기획자 — 카드의 [레벨/스킬 관리]가 [강화]가 되며 「관리」 걸음을 걷었다.** [강화]는 올릴 수 있을 때만
+ * 켜지고, 누르면 곧장 아래 「고르기」(`Picker`)다 — 오르면 카드로 돌아간다. 보유 카드 수는 [강화] 오른쪽 끝, 도시 상한은
+ * 카드 위의 사람이 말한다(`OfficerDetailModal`). 보유 책략은 카드가 이미 보여 준다. 아래 옛 기록의 「관리」 몸통 이야기는 그때의 것이다.
  *
  * 장수 일람의 「보기」 카드에서 [레벨/스킬 관리]를 누르면 예전에는 전면 화면
  * (`LevelUpScreen`)으로 넘어갔다 — 카드가 이미 보여 준 그림·능력치·책략·인물
@@ -66,7 +70,7 @@ import { officerById, tacticById } from '@samchess/data';
 import { isTerrainTactic } from '@samchess/rules';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
-  canLevelUp, officerLevelCap, cardsToLevelUp, growthPreview, statPicksOf, tacticChoices, tacticsOf,
+  cardsToLevelUp, growthPreview, tacticChoices,
 } from '@samchess/meta';
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
 import { Say } from './Steward.tsx';
@@ -78,7 +82,6 @@ import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.t
 import { GradeBadge } from './GradeBadge.tsx';
 import { TacticIcon } from './TacticIcon.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
-import { TacticModal } from './TacticModal.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
@@ -93,37 +96,20 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   onClose: () => void;
 }): React.JSX.Element | null {
   useLang();
-  const [picking, setPicking] = useState(false);
   /** 레벨업을 서버가 거절했거나 못 닿았다 — 그 말을 그대로 적는다 (2026-09-14, A1) */
   const [respecNote, setRespecNote] = useState<string | null>(null);
   /** 레벨업을 서버에 보내는 중 — [확정]을 두 번 눌러도 한 번만 나간다 (2026-09-14, A2) */
   const committing = useRef(false);
   /** 같은 사실을 화면에 — 왕복이 길면 가리개가 뜬다(`BusyVeil`, 2026-10-23). 「멈춘 것」과 「기다리는 것」은 다르다 */
   const [busy, setBusy] = useState(false);
-  /** 「보유 책략」에서 누른 엠블럼 — 그 책략의 두루마리를 띄운다 */
-  const [peek, setPeek] = useState<string | null>(null);
-  // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 —
-  // "장수정보 패널과 똑같이"). 옛 전적 보기 판(2026-11-19에 걷었다)이 먼저 쓰던 앵커다
-  // (`RankingCommon.tsx`의 `useOfficerCardOverlayPos` 주석 참조) — 예전 기본값
-  // `'art'`(그림 아래)보다 위쪽 여유가 커져, 「고르기」 걸음의 내용이 늘어도
-  // 안 잘리고 판 안 스크롤이 잘 안 생긴다.
+  // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 — "장수정보 패널과 똑같이")
   const { backRef, backStyle, modalStyle } = useOfficerCardOverlayPos('top');
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
 
-  // 카드에서 이미 보유 확인을 했으니 정상 경로로는 안 온다 — 방어만 해 둔다
-  if (!inst || !data) return null;
-
-  const need = cardsToLevelUp(inst.level);
-  const owned = tacticsOf(inst).map((id) => tacticById.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
-  const picks = statPicksOf(inst);
-  const peekTactic = peek ? owned.find((x) => x.id === peek) : undefined;
-  const taps: Record<StatPick, number> = {
-    hp: picks.filter((p) => p === 'hp').length,
-    mp: picks.filter((p) => p === 'mp').length,
-    at: picks.filter((p) => p === 'at').length,
-  };
+  // 카드의 [강화]는 올릴 수 있을 때만 켜진다 — 정상 경로로는 안 온다, 방어만 해 둔다
+  if (!inst || !data || cardsToLevelUp(inst.level) === null) return null;
 
   return (
     <div
@@ -137,7 +123,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         className="place-panel lvp-modal"
         data-screen="levelup-panel"
         data-officer={officer}
-        data-step={picking ? 'levelup' : 'manage'}
+        data-step="levelup"
         data-growth={inst.growth.length}
         style={modalStyle}
         onClick={(e) => e.stopPropagation()}
@@ -149,107 +135,43 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
         <h3 className="lvp-title">
           <GradeBadge grade={data.grade} />
           {' '}{pickOfficerName(data)}{' '}
-          {/* 고르는 중에는 **올라갈 레벨**을 보여준다 */}
-          <LevelBadge level={inst.level + (picking ? 1 : 0)} className="lv" />
+          {/* **올라갈 레벨**을 보여준다 */}
+          <LevelBadge level={inst.level + 1} className="lv" />
         </h3>
 
-        {picking ? (
-          <Picker
-            inst={inst}
-            onCommit={(stat, school) => {
-              /*
-               * **레벨업은 서버가 한다** (2026-09-14, A2) — `roster`·`cards`가 서버 소유라 로컬로
-               * 올려 `PUT`하면 되돌아간다. 고르기 걸음은 **결과가 올 때까지 닫지 않고**, 그 사이
-               * [확정]을 또 눌러도 한 번만 나간다(카드가 넉넉하면 두 단계가 오른다).
-               */
-              if (committing.current) return;
-              committing.current = true;
-              setBusy(true);
-              setRespecNote(null);
-              void (async () => {
-                try {
-                  const fromServer = await levelUpOnServer(officer, stat, school);
-                  if (fromServer) onChange(fromServer);
-                  else setRespecNote(t('server.offline'));
-                } catch (err) {
-                  setRespecNote(err instanceof Error ? err.message : String(err));
-                } finally {
-                  committing.current = false;
-                  setBusy(false);
-                  setPicking(false);
-                }
-              })();
-            }}
-          />
-        ) : (
-          <>
-            <p className="lvp-line" data-field="cards">
-              {t('levelup.cards')}
-              {' : '}
-              {need === null
-                ? t('officer.cards.max')
-                : t('officer.cards.have', { have: profile.cards[officer] ?? 0, need })}
-            </p>
-
-            {/* 「스탯 찍은 횟수」 — 전면 화면(`LevelUpScreen`의 `Manage`)과 같은
-                클래스를 그대로 쓴다(`.lv-taps`는 스코프 없는 공용 규칙이다). */}
-            <div className="lv-taps" data-taps={`${taps.hp}/${taps.mp}/${taps.at}`}>
-              <span className="k">{t('levelup.taps')}</span>
-              {(['hp', 'mp', 'at'] as StatPick[]).map((key) => (
-                <span key={key} className="lv-tap" data-tap={key}>
-                  <GameIcon name={STAT_ICON[key]} label={key.toUpperCase()} /> <b>×{taps[key]}</b>
-                </span>
-              ))}
-            </div>
-
-            {/* 「보유 책략」 — 두루마리 한 장 위에 「이름+아이콘」을 흘려 담는다 */}
-            <div className="lvp-tactics">
-              {/* `data-field`가 이름표와 빈 상태("없음")를 가른다 — 아이콘은
-                  이름표에만 붙는다(`style.css`의 `.lvp-line[data-field]::before`) */}
-              <span className="lvp-line" data-field="tactics">{t('levelup.tactics')}</span>
-              <div className="lvp-tactic-field" data-count={owned.length}>
-                {owned.length === 0
-                  ? <span className="lvp-line">{t('levelup.none')}</span>
-                  : owned.map((x) => (
-                    /* 엠블럼만 — 누르면 그 책략의 두루마리(`TacticModal`)가 뜬다. 태학 현황판의
-                       엠블럼과 같은 몸짓(2026-10-23 기획자 지정) */
-                    <button key={x.id} type="button" className="lvp-tactic" data-action="peekTactic"
-                      data-school={x.school} data-tactic={x.id} aria-label={pickTacticName(x)}
-                      aria-expanded={peek === x.id} onClick={() => setPeek(x.id)}>
-                      <TacticIcon id={x.id} className="lvp-tactic-icon" label={pickTacticName(x)} />
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            <button
-              className="btn wide primary"
-              data-action="levelUp"
-              disabled={!canLevelUp(profile, officer).ok}
-              onClick={() => setPicking(true)}
-            >
-              {need === null ? t('levelup.max') : t('levelup.go', { need })}
-            </button>
-            <Say text={respecNote} name="respecNote" />
-            {/* 장수 레벨의 상한은 도시 레벨이다 (2026-09-14) — 전면 화면(`LevelUpScreen`)과 같은 줄 */}
-            {need !== null && inst.level >= officerLevelCap(profile) && (
-              <p className="note" data-field="levelCap">
-                {t('levelup.cityCap', { city: profile.cityLevel, cap: officerLevelCap(profile) })}
-              </p>
-            )}
-          </>
-        )}
+        <Picker
+          inst={inst}
+          onCommit={(stat, school) => {
+            /*
+             * **레벨업은 서버가 한다** (2026-09-14, A2) — `roster`·`cards`가 서버 소유라 로컬로
+             * 올려 `PUT`하면 되돌아간다. **결과가 올 때까지 닫지 않고**, 그 사이 [확정]을 또
+             * 눌러도 한 번만 나간다. 오르면 카드로 돌아간다 — 카드가 넉넉하면 [강화]를 다시 누른다.
+             */
+            if (committing.current) return;
+            committing.current = true;
+            setBusy(true);
+            setRespecNote(null);
+            void (async () => {
+              let ok = false;
+              try {
+                const fromServer = await levelUpOnServer(officer, stat, school);
+                if (fromServer) { onChange(fromServer); ok = true; }
+                else setRespecNote(t('server.offline'));
+              } catch (err) {
+                setRespecNote(err instanceof Error ? err.message : String(err));
+              } finally {
+                committing.current = false;
+                setBusy(false);
+              }
+              if (ok) onClose();
+            })();
+          }}
+        />
+        <Say text={respecNote} name="respecNote" />
       </div>
 
       {/* 레벨업은 서버 왕복이다 — `.lvp-back`(z 55) 안에서 판까지 덮는다. 클릭은 가리개가 먹어
           가리개 뒤의 「바깥 누르면 닫기」도 안 걸린다 */}
-      {/* 책략 두루마리 — `.lvp-back`(z 55) 안에 띄워야 판 위로 온다. 가리개를 눌러 닫는 클릭이
-          `.lvp-back`까지 올라가 판까지 닫지 않게 감싼 자리에서 끊는다 */}
-      {peekTactic && (
-        <div onClick={(e) => e.stopPropagation()}>
-          <TacticModal tactic={peekTactic} onClose={() => setPeek(null)} />
-        </div>
-      )}
       {busy && <BusyVeil label={t('levelup.busy')} />}
     </div>
   );

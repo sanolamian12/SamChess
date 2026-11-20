@@ -1710,30 +1710,18 @@ img.no-art { visibility: hidden; }
    않는다. */
 .ofc-row .c-nm { display: flex; align-items: center; gap: .2rem; min-width: 0; font-weight: 600; }
 .ofc-row .c-nm .c-nm-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-/* 레벨업 대상 도장 — 정적 그림이 아니라 3프레임 애니메이션이다(2026-09-02,
-   `stamp.png` 원본을 "0.5초씩 재생하면 자연스러운 도장"으로 지정). 그래서
-   `<img>`가 아니라 배경 스프라이트를 쓰는 빈 요소다 — `<img src>`는 정지된
-   한 그림만 보여줄 뿐이라 애니메이션 자리에 못 쓴다. `levelup-stamp.png`는
-   `tools/build_ui.py`의 `build_sprite()`가 세 프레임을 **같은 상자**로 잘라
-   가로로 이어 붙인 것(개별 트리밍이면 프레임마다 여백이 달라 흔들린다) —
-   `background-size: 300% 100%`(프레임 폭 = 이 요소 폭)로 펴고 `steps(3)`로
-   되감는다. */
-.ofc-levelup-seal {
-  width: .85rem; height: .85rem; flex: none;
-  background-image: url(icons/levelup-stamp.png);
-  background-repeat: no-repeat;
-  background-size: 300% 100%;
-  animation: ofc-levelup-stamp-play 1.5s steps(3) infinite;
+/* 레벨업 요건이 된 장수 — 레벨 배지 오른쪽 위를 덮는 겹 갈매기(차례 표지 묶음의 셋째 `ui/turn/chevron.png`, 아래를 가리키는 그림을 180° 돌려 위로)가
+   위아래로 오간다 (2026-11-20 기획자 — 화살촉 + 다음 레벨 배지 + 흰 별빛은 난잡해 보여 걷었다, 그전엔 이름 옆 도장 애니메이션) */
+.ofc-lv { position: relative; display: inline-flex; flex: none; }
+.ofc-lv-up {
+  position: absolute; z-index: 1; right: -.5em; top: -.4em; width: 1.25em; height: 1.25em; object-fit: contain; pointer-events: none;
+  filter: drop-shadow(0 1px 1px #0008); animation: ofc-lv-up-bob 1.2s ease-in-out infinite;
 }
-/* 종료 지점이 150%인 이유: `background-position`의 퍼센트는
-   `(요소 폭 − 배경 폭) × p`로 정해져 배경 폭이 3배일 때 한 프레임 간격은
-   50%(0/50/100%)다 — `steps(3)`이 만드는 세 단계값(0/33.3/66.7%)과 안 맞아
-   중간 프레임에서 두 그림이 겹쳐 보였다(실측). `100 × N/(N−1)` = 150%로
-   맞춘다. */
-@keyframes ofc-levelup-stamp-play {
-  from { background-position: 0% 0; }
-  to { background-position: 150% 0; }
+@keyframes ofc-lv-up-bob {
+  0%, 100% { transform: translateY(.1em) rotate(180deg); }
+  50% { transform: translateY(-.15em) rotate(180deg); }
 }
+@media (prefers-reduced-motion: reduce) { .ofc-lv-up { animation: none; transform: rotate(180deg); } }
 /* 레벨 · 카드는 **둘 다 왼쪽 정렬**로 붙여 놓는다 — 오른쪽 정렬로 두면 각자
    제 칸의 반대쪽 끝에 붙어 오히려 멀어 보인다(스크린샷으로 확인, 2026-09-02).
    등급 배지 → Lv1 → 카드 수가 한 방향으로 나란히 붙는 모양이다. */
@@ -1741,7 +1729,11 @@ img.no-art { visibility: hidden; }
   display: flex; align-items: center; justify-content: flex-end; gap: .25rem;
   font-variant-numeric: tabular-nums;
 }
-.ofc-row .gr { --gr: 1.3rem; }
+.ofc-row .gr { --gr: 1.69rem; }
+/* 줄의 등급 보석 · 레벨 배지는 1.3배(2026-11-20 기획자 — 1.3rem → 1.69rem, 1.45em → 1.885em). 줄 높이는 그대로 — 커진 만큼 위아래 여백을 음수로 되돌린다
+   (장수 일람은 판 높이를 줄 여덟이 나누지만, 고르기 팝업의 줄은 내용 높이라 안 되돌리면 줄이 커진다) */
+.ofc-row .c-nm .glow-gr { margin-block: -.195rem; }
+.ofc-row .c-nm .lv-badge { height: 1.885em; margin-block: -.22em; }
 /* 표 머리의 글자는 **겹치기 전에 잘린다** — 칸 폭이 고정이라 긴 번역(몽골어
    「Зэрэглэл」)은 옆 칸 제목 위로 흘렀다(2026-09-18). 삼능력은 아이콘이라 여기 안 걸린다 */
 .ofc-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -2964,9 +2956,16 @@ button.lv-tactic-row {
 .pager[data-ends="1"] { gap: .4rem; }
 /* 판 폭 전체를 다섯 칸으로 똑같이 — [처음] · [이전] · 쪽 · [다음] · [끝] (`Pager`의 `spread`, 2026-11-19 기획자).
    목판은 칸을 다 채우고(비율은 그대로), 글자가 더 넓은 판을 받는다 */
-.pager[data-spread="1"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; width: 100%; justify-items: stretch; }
-/* 폭만 칸을 채우고 높이는 옛 3.4rem 목판의 높이(539:300) 그대로 — 비율대로 키우면 판이 길어져 고르기 팝업에 스크롤이 생겼다(market_ux) */
-.pager[data-spread="1"] .pg-btn { width: 100%; aspect-ratio: auto; height: calc(3.4rem * 300 / 539); }
+/* 가운데 쪽 번호는 숫자 폭만(`auto`), 남는 폭은 단추 넷이 나눈다 — 단추 칸은 **글자 폭 밑으로는 안 줄어든다**(`minmax(max-content, …)`).
+   다섯 칸을 똑같이 나누던 때는 긴 번역(이탈리아어 「Precedente」 · 스페인어 「Anterior」)이 목판에서 잘렸다(2026-11-20 기획자).
+   [이전] · [다음]이 [처음] · [끝]보다 대개 길어 조금 더 받는다 */
+.pager[data-spread="1"] {
+  display: grid; gap: .3rem; width: 100%; justify-items: stretch;
+  grid-template-columns: minmax(max-content, 1fr) minmax(max-content, 1.2fr) auto minmax(max-content, 1.2fr) minmax(max-content, 1fr);
+}
+/* 폭만 칸을 채우고 높이는 옛 3.4rem 목판의 높이(539:300) 그대로 — 비율대로 키우면 판이 길어져 고르기 팝업에 스크롤이 생겼다(market_ux).
+   옆 여백은 화살표 꼭짓점 몫 — 글자 폭(max-content)에 이것까지 들어가야 꼭짓점에 글자가 안 걸린다 */
+.pager[data-spread="1"] .pg-btn { width: 100%; aspect-ratio: auto; height: calc(3.4rem * 300 / 539); padding: 0 .55rem; }
 .pager[data-spread="1"] .pager-label { min-width: 0; }
 /* [처음]·[끝]이 없는 쪽 넘김 — 같은 다섯 칸의 가운데 셋 */
 .pager[data-spread="1"][data-ends="0"] > :nth-child(1) { grid-column: 2; }
@@ -6288,6 +6287,33 @@ button.sql-row:hover { background: #3a2c1e14; }
 .ofcard .btn.ofcard-lead:not(.ghost):not(.primary):hover { filter: brightness(1.08) drop-shadow(0 0 .2rem #f0d48a88); }
 .ofcard .btn.ofcard-lead .ofcard-lead-icon { position: absolute; right: .55rem; top: 50%; transform: translateY(-50%); display: flex; }
 .ofcard .btn.ofcard-lead .sqh-tile { width: 1.9rem; height: 1.9rem; }
+/* 카드의 [강화] · [뒤로 가기] — 이름은 가운데, [강화]의 「보유 / 필요 (카드)」는 오른쪽 끝에 떠 있다(이름을 안 민다, 2026-11-20 기획자) */
+.ofcard .btn.ofcard-mid { position: relative; justify-content: center; }
+.ofcard .btn.ofcard-mid .ofcard-enhance-cards {
+  position: absolute; right: .9rem; top: 50%; transform: translateY(-50%); margin: 0;
+  display: flex; align-items: center; gap: .25rem; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.ofcard .btn.ofcard-mid .ofcard-enhance-cards img { width: 1.25rem; height: 1.25rem; object-fit: contain; }
+/* [강화] — 옥색 두루마리(`btn-primary.png`, [아이템]의 금빛과 같은 틀 `12% 11%`, 2026-11-20 기획자). 미색 판 규칙(`:not` 둘)을 이겨야 해서 `.ofcard-lead`와 같은 세기 */
+.ofcard .btn.ofcard-enhance:not(.ghost):not(.primary) {
+  background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem; border-radius: 0;
+  border-image: url(ui/btn-primary.png) 12% 11% fill; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+}
+.ofcard .btn.ofcard-enhance:not(.ghost):not(.primary):hover:not(:disabled) { filter: brightness(1.08); }
+.ofcard .btn.ofcard-enhance:disabled { opacity: .5; cursor: not-allowed; }
+.ofcard .btn.ofcard-enhance .ofcard-enhance-cards { color: #cfd8cf; }
+/* 요건이 되면 「보유 / 필요」는 아이보리, 카드 그림과 함께 부드러운 네온이 숨 쉰다 */
+.ofcard .btn.ofcard-enhance .ofcard-enhance-cards.levelup-ready { color: #fff4d6; animation: enh-neon-text 2.2s ease-in-out infinite; }
+.ofcard .btn.ofcard-enhance .ofcard-enhance-cards.levelup-ready img { animation: enh-neon-img 2.2s ease-in-out infinite; }
+@keyframes enh-neon-text {
+  0%, 100% { text-shadow: 0 1px 2px #00000080, 0 0 .15rem #fff4d640; }
+  50% { text-shadow: 0 1px 2px #00000080, 0 0 .35rem #fff4d6, 0 0 .7rem #ffe9a8b0; }
+}
+@keyframes enh-neon-img {
+  0%, 100% { filter: drop-shadow(0 0 .1rem #fff4d640); }
+  50% { filter: drop-shadow(0 0 .3rem #fff4d6) drop-shadow(0 0 .55rem #ffe9a8b0); }
+}
+@media (prefers-reduced-motion: reduce) { .ofcard-enhance-cards.levelup-ready, .ofcard-enhance-cards.levelup-ready img { animation: none; } }
 /* 병기 · 아이템 고르기 — 목판 팝업 · 고정 칸 · 탭(칩 그림) · 그림 목록 */
 .modal.mod-plank.sqh-pick { width: 22rem; max-width: calc(100% - 1rem); display: flex; flex-direction: column; gap: .45rem; }
 .modal.mod-plank.sqh-pick .modal-ttl { white-space: nowrap; letter-spacing: .04em; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; }

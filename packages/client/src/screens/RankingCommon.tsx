@@ -36,7 +36,7 @@ import { LevelBadge } from './LevelBadge.tsx';
 
 /**
  * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
- * 시계도 모른다(`levelsSub`·`equip`과 같은 이유). 내 장수(`OfficerListScreen`)만 넘기고,
+ * 시계도 모른다(`levelsCards`·`equip`과 같은 이유). 내 장수(`OfficerListScreen`)만 넘기고,
  * 랭킹의 다른 계정 장수에는 안 넘긴다. **안 넘기면 부상이 아니다** — 카드에 아무 흔적도 없다.
  */
 export interface CardInjury {
@@ -402,26 +402,26 @@ export interface CardAction {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsSub, levelsEligible, equip, injury, action }: {
+export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsCards, levelsEligible, levelsNote, equip, injury, action }: {
   row: OfficerRankRow; onClose: () => void;
   /** 있으면 카드 맨 아래, [뒤로 가기] 밑에 그 자리의 한 수 (2026-11-16 기획자, 농지 보초병) —
       고르는 팝업에서는 옥색 [선택하기], 세운 보초병 · 부대원에서는 붉은 [해제하기] */
   action?: CardAction;
-  /** 있으면 카드 안에 [레벨/스킬 관리] 단추가 뜬다 — 내 장수일 때만 준다(`OfficerDetailModal`).
-      다른 계정의 장수(랭킹)는 안 준다 — 그 계정을 관리할 수 없으니까. */
+  /** 있으면 카드 안에 [강화](옛 [레벨/스킬 관리]) 단추가 뜬다 — 누르면 곧장 레벨업 고르기(2026-11-20 기획자).
+      내 장수일 때만 준다(`OfficerDetailModal`). 다른 계정의 장수(랭킹)는 안 준다 — 그 계정을 관리할 수 없으니까. */
   onLevels?: () => void;
-  /** 있으면 [레벨/스킬 관리] 위에 [아이템] — 병기 · 아이템 고르기(2026-11-19 기획자, 병영 부대 편집과 같은 단추). 내 장수일 때만 */
+  /** 있으면 [강화] 위에 [아이템] — 병기 · 아이템 고르기(2026-11-19 기획자, 병영 부대 편집과 같은 단추). 내 장수일 때만 */
   onItems?: () => void;
-  /** [레벨/스킬 관리] 오른쪽에 붙는 보유 카드 수 — 「{have} / {need}장」 같은
-      이미 만들어진 문구를 caller(`OfficerListScreen`)가 넘긴다. 여기서 다시
-      계산하지 않는다 — 카드 수는 `profile.cards`에서 나오는데, 이 카드는
-      `OfficerRankRow`만 받아 프로필을 모른다. */
-  levelsSub?: string;
+  /** [강화] 오른쪽 끝의 「{have} / {need} (카드 그림)」 — `need`가 `null`이면 최대 레벨. caller(`OfficerDetailModal`)가 넘긴다 —
+      카드 수는 `profile.cards`에서 나오는데, 이 카드는 `OfficerRankRow`만 받아 프로필을 모른다. */
+  levelsCards?: { have: number; need: number | null };
+  /** 카드는 넉넉한데 못 올리는 까닭(도시 레벨 상한) — 그 자리의 사람이 말한다. 카드가 모자란 것은 빤해서 말하지 않는다 */
+  levelsNote?: string | null;
   /** 지금 레벨업이 가능하면(`canLevelUp`) `true` — 장수 일람 표의 레벨업
       액자·인장과 같은 신호를 카드에서도 보여준다(2026-09-02, "이 프레임과
       마크를 보고 클릭을 하면"). caller가 이미 판정한 값을 그대로 받는다 —
       `OfficerRankRow`가 그 판정에 필요한 카드 보유량을 모르는 것도 위
-      `levelsSub`와 같은 이유다. */
+      `levelsCards`와 같은 이유다. 거짓이면 [강화]가 꺼진다. */
   levelsEligible?: boolean;
   /** `OfficerCard`로 그대로 넘긴다 — 뜻은 그쪽 주석 참조 */
   equip?: EquipmentData;
@@ -446,7 +446,8 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsSub, l
           row={row} onClose={onClose}
           {...(onLevels ? { onLevels } : {})}
           {...(onItems ? { onItems } : {})}
-          {...(levelsSub !== undefined ? { levelsSub } : {})}
+          {...(levelsCards ? { levelsCards } : {})}
+          {...(levelsNote ? { levelsNote } : {})}
           {...(equip ? { equip } : {})}
           {...(injury ? { injury } : {})}
           {...(action ? { action } : {})}
@@ -507,12 +508,12 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsSub, l
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligible, equip, injury, action, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onItems, levelsCards, levelsEligible, levelsNote, equip, injury, action, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   /** `OfficerCardModal`의 같은 이름 */
   action?: CardAction;
-  onLevels?: () => void; onItems?: () => void; levelsSub?: string; levelsEligible?: boolean;
-  /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsSub`와 같은 이유). 카드는
+  onLevels?: () => void; onItems?: () => void; levelsCards?: { have: number; need: number | null }; levelsEligible?: boolean; levelsNote?: string | null;
+  /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsCards`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
       알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
   equip?: EquipmentData;
@@ -691,16 +692,24 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsSub, levelsEligibl
         </button>
       )}
       {onLevels && (
-        /* 「레벨/스킬 관리」는 왼쪽 이름, 오른쪽에 보유 카드 수(`.sub`). 레벨업 가능하면(`levelsEligible`) 이름 옆에 인장 ·
-           카드 수 글자를 파란색으로(장수 일람 표의 같은 신호, 2026-09-02) */
-        <button className="btn wide" data-action="levels" onClick={onLevels}>
-          <span className="lbl">{t('officer.levels')}</span>
-          {levelsEligible && <span className="ofc-levelup-seal" role="img" aria-label={t('officers.flag')} />}
-          {levelsSub && <span className={`sub${levelsEligible ? ' levelup-ready' : ''}`}>{levelsSub}</span>}
-        </button>
+        /* [강화](옛 [레벨/스킬 관리], 2026-11-20 기획자) — 이름은 가운데, 오른쪽 끝에 「보유 / 필요 (카드 그림)」.
+           올릴 수 없으면(`levelsEligible` 거짓 — 카드 모자람 · 도시 상한 · 최대 레벨) 꺼진다. 누르면 곧장 레벨업 고르기 */
+        <>
+          <button className="btn wide ofcard-mid ofcard-enhance" data-action="levels" disabled={!levelsEligible} onClick={onLevels}>
+            <span className="lbl">{t('officer.levels')}</span>
+            {levelsCards && (
+              <span className={`sub ofcard-enhance-cards${levelsEligible ? ' levelup-ready' : ''}`} data-field="enhanceCards">
+                {levelsCards.need === null ? t('officer.cards.max') : (
+                  <>{levelsCards.have} / {levelsCards.need}<img src="market/market_card.png" alt={t('officers.col.cards')} /></>
+                )}
+              </span>
+            )}
+          </button>
+          <Say text={levelsNote} name="levelCap" />
+        </>
       )}
       {(onItems || onLevels || action) && (
-        <button className="btn wide" data-action="cardBack" onClick={onClose}>
+        <button className="btn wide ofcard-mid" data-action="cardBack" onClick={onClose}>
           <span className="lbl">{stripBackArrow(t('match.back'))}</span>
         </button>
       )}
