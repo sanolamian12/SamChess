@@ -20,7 +20,7 @@
  * 대자보는 **랭킹과 컬렉션 둘을 담는 자리**다. 랭킹은 원래 이 자리에 있던 랭킹 메뉴
  * (`RankingScreen`)가 한 걸음 안으로 들어간 것이고, 컬렉션(`CollectionScreen`, 2026-10-13)은
  * 장수 · 병기 · 아이템을 엮어 정사 · 연의의 이야기와 잇는다. 위 판의 점수는 제 프로필에서 바로 내고,
- * 순위는 서버다. 못 닿으면 「—위」, 줄에 안 서면(컬렉션 0점 · 공격대로 0판) 그 사실을 한 줄로 말한다 —
+ * 순위는 서버다. 못 닿으면 「—위」, 줄에 안 서면(컬렉션 0점 · 공격대로 0판) 「—위 (0회 참전)」처럼 짧게 —
  * 숫자를 지어내 채우지 않는다.
  *
  * 위 판은 랭킹 메뉴의 줄(`BoardSummary`)을 그대로 쓴다 — 「이름 : 순위 … 점수」 꼴이
@@ -41,15 +41,11 @@ import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 
-export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefense, defenseUnseen = 0 }: {
+export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
   profile: PlayerProfile;
   onBack: () => void;
   onRanking: () => void;
   onCollection: () => void;
-  /** [방어 기록 보기] (GDD §8.8 단계 5) */
-  onDefense: () => void;
-  /** 안 본 방어 기록 — 단추의 표지 */
-  defenseUnseen?: number;
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
@@ -93,10 +89,6 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefens
           </button>
           <button className="btn wide" data-action="ranking" onClick={onRanking}>
             <span className="lbl">{t('board.view.ranking')}</span>
-          </button>
-          <button className="btn wide" data-action="defense" data-unseen={defenseUnseen} onClick={onDefense}>
-            <span className="lbl">{t('board.view.defense')}</span>
-            {defenseUnseen > 0 && <i className="brd-badge" data-field="badge">{defenseUnseen}</i>}
           </button>
         </section>
       </div>

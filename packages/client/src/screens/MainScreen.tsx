@@ -171,7 +171,7 @@ interface CityHotspot {
 /** 자리마다 클릭 영역(그림 픽셀 좌표의 네모)과 이름표가 뜨는 자리.
     `main-day.jpg`를 보고 손으로 잡았다 — 건물을 정확히 덮을 필요는 없고,
     「그 근처」를 넉넉히 덮으면 된다(손가락으로 짚기엔 그게 더 낫다). */
-function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void, boardBadge = 0): CityHotspot[] {
+function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void): CityHotspot[] {
   return [
     // 성문 누각과 그 옆 성벽 — 가운데보다 오른쪽(2026-08-25 다섯 번째 조정: 위·왼쪽
     // 시작값과 높이는 그대로 두고 너비만 1.1배로 넓혔다).
@@ -199,7 +199,7 @@ function cityHotspots(onGo: (place: PlaceId) => void, onRanking: () => void, boa
     {
       key: 'ranking', nameKey: 'main.ranking', sub: t('main.ranking.sub'),
       rect: { x: 0, y: 1033, w: 255, h: 337 }, label: { x: 127, y: 1169 },
-      onClick: onRanking, badge: boardBadge,
+      onClick: onRanking,
     },
   ];
 }
@@ -280,7 +280,7 @@ export interface MainRaid {
   onFight: () => void;
 }
 
-export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid, defenseUnseen = 0 }: {
+export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
   profile: PlayerProfile;
   /** 서버가 고친 계정으로 갈아 끼운다 — 우편 받기 뒤 */
   onChange: (next: PlayerProfile) => void;
@@ -295,8 +295,6 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   /** 산 너머 건물에서 돌아왔을 때 — 성 안이 아니라 산 너머로 돌아간다 */
   initialView?: CityView | undefined;
   raid?: MainRaid | null;
-  /** 안 본 방어 기록 — 대자보 자리의 표지 */
-  defenseUnseen?: number;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
@@ -311,7 +309,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
 
   const hotspots = at === 'ext'
     ? extHotspots(profile, onBuilding)
-    : cityHotspots(onGo, onRanking, defenseUnseen);
+    : cityHotspots(onGo, onRanking);
   const art = at === 'ext' ? { w: EXT_W, h: EXT_H } : { w: ART_W, h: ART_H };
   /* 황제를 옹립하면 성 안 그림이 **황궁 쪽으로 갈린다** (2026-09-04, pptx 59쪽).
      산 너머(`ext`)는 성 밖이라 안 갈린다 — 그림도 한 벌뿐이다. */

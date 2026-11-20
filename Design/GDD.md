@@ -2783,7 +2783,7 @@ HP: 10, MP: 5, AT: 2-4           MP: 5,   +0  → 5
   지문이라 엑셀 수치가 바뀌면 저절로 바뀌고(글자 칸은 뺀다), 엔진 몫은 손으로 올린다(황금 재생 회귀가 깨지며 묻는다). `defense_log`에
   `rules_version` · `seen_at`. 게임 API `GET /defense` · `GET /defense/:id/replay`(본인만, 버전이 다르면 409) · `GET /defense/unseen` ·
   `POST /defense/seen`. 리플레이는 새 판정 주체 `ReplayTransport` — 공격자의 차례에 기록의 수를, 수비군 차례에 AI를 두고(서버 재생과 같은 걸음),
-  관전(`humanSide = null`) · 보는 쪽 `viewSide = P2`. 목록은 **연 것이 곧 본 것**이다. 화면은 `DefenseScreen` · `DefenseReplayScreen`.
+  관전(`humanSide = null`) · 보는 쪽 `viewSide = P2`. 목록은 **연 것이 곧 본 것**이다. 화면은 `DefenseScreen` · `DefenseReplayScreen`. **2026-11-20 걷음(기획자)** — 대자보 메뉴는 [컬렉션 보기] · [랭킹 보기] 둘이고, 목록 · 리플레이 화면과 안 본 판 팝업 · 표지가 없다. 수성 성공 수는 병영 모드 줄에 남는다(`GET /defense`의 `heldByMode`). 서버 기록 · API · `ReplayTransport`는 그대로다.
 
 **단계 6에서 정한 것** (2026-10-30 기획자 확정 — pptx 118~123쪽 초안을 검토해 고른 것. 「세션 기본값」 표시는 초안에 없어 이 세션이 정한 값이고, 바꾸려면 말한다)
 

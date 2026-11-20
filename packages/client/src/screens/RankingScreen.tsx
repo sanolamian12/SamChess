@@ -22,7 +22,7 @@
  *
  * **점수는 제 프로필로, 순위만 서버에서** (`GET /ranking/mine`). 몇 등인지는 전체를 모아야 알 수 있어서다. 서버가 안
  * 닿으면 순위 칸만 「—위」이고 점수는 그대로 뜬다. 전투는 「전체」(두 모드 공격대의 합)로 잰다. 줄에 안 서는 분야(공격대로
- * 한 판도 안 뜀 · 완성한 컬렉션 없음)는 그 사실을 한 줄로 말한다.
+ * 한 판도 안 뜀 · 완성한 컬렉션 없음)는 「—위 (0회 참전)」 · 「—위 (0개 수집)」로 짧게 적는다.
  *
  * 위 판의 줄 꼴(`SummaryLine`)은 대자보(`BoardScreen`)도 그대로 쓴다 — 「이름 : 순위 … 점수」가 두 화면에서 같아야 한다.
  */
@@ -67,17 +67,18 @@ export function myScore(profile: PlayerProfile, board: RankBoard): number | null
   return n > 0 ? n : null;
 }
 
-/** 위 판의 한 분야 줄 — 줄에 안 서면 그 사실을 한 줄로 */
+/** 줄에 안 서면 점수 자리에 짧은 괄호 — 「(0회 참전)」 · 「(0개 수집)」. 도시화는 언제나 줄에 선다 */
+const NONE: Partial<Record<RankBoard, StringKey>> = { battle: 'ranking.mine.none.battle', collection: 'ranking.mine.none.collection' };
+
+/** 위 판의 한 분야 줄 — 줄에 안 서면 「—위 (0회 참전)」처럼 짧게 (2026-11-20 기획자 — 문장은 언어에 따라 두 줄로 접혔다) */
 export function BoardSummary({ profile, board, ranks }: {
   profile: PlayerProfile; board: RankBoard; ranks: MyRanks | null;
 }): React.JSX.Element {
   const score = myScore(profile, board);
-  const empty: Partial<Record<RankBoard, StringKey>> = { battle: 'ranking.mine.none.battle', collection: 'ranking.mine.none.collection' };
   return (
     <SummaryLine board={board} icon={BOARD_ICON[board]} title={SUM_TITLE[board]}
-      {...(score === null
-        ? { empty: t(empty[board]!) }
-        : { rank: rankText(ranks?.[board]), total: t('ranking.sum.total', { total: score.toLocaleString() }) })} />
+      rank={rankText(score === null ? null : ranks?.[board])}
+      total={score === null ? t(NONE[board]!) : t('ranking.sum.total', { total: score.toLocaleString() })} />
   );
 }
 
@@ -145,16 +146,15 @@ export function RankingScreen({ profile, from, onBack, onBoard }: {
  * 요약 한 줄 — [아이콘] 「○○ :」 | 순위 + 이름 | 점수 (줄 전체 5 : 2).
  * 줄 자신은 칸을 안 만든다(`display: contents`) — 판(`.rk-summary`)의 그리드 칸에
  * 자식 넷이 그대로 앉아야 세 줄의 경계가 한 세로선에 맞는다.
- * 아직 없으면(`empty`) 안내문이 순위·점수 두 칸을 다 쓴다.
+ * 줄에 안 서도 같은 칸이다 — 순위 「—위」, 점수 자리에 「(0회 참전)」.
  */
-export function SummaryLine({ board, icon, title, rank, name, total, empty }: {
+export function SummaryLine({ board, icon, title, rank, name, total }: {
   board: RankBoard;
   icon: GameIconName;
   title: StringKey;
-  rank?: string;
+  rank: string;
   name?: string;
-  total?: string;
-  empty?: string;
+  total: string;
 }): React.JSX.Element {
   return (
     <div className="rk-sum-line" data-mine={board}>
@@ -162,17 +162,11 @@ export function SummaryLine({ board, icon, title, rank, name, total, empty }: {
         <img src={GAME_ICONS[icon]} alt="" />
       </span>
       <b className="rk-sum-ttl">{t('ranking.sum.head', { title: t(title) })}</b>
-      {empty !== undefined ? (
-        <span className="rk-sum-empty">{empty}</span>
-      ) : (
-        <>
-          <span className="rk-sum-val">
-            <span className="rk-sum-rank" data-field="rank">{rank}</span>
-            {name && <span className="rk-sum-name">{name}</span>}
-          </span>
-          <span className="rk-sum-total" data-field="total">{total}</span>
-        </>
-      )}
+      <span className="rk-sum-val">
+        <span className="rk-sum-rank" data-field="rank">{rank}</span>
+        {name && <span className="rk-sum-name">{name}</span>}
+      </span>
+      <span className="rk-sum-total" data-field="total">{total}</span>
     </div>
   );
 }

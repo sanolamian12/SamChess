@@ -76,7 +76,6 @@ export const SPOT_SELECTOR = {
   built: '',
   // 첫 판 점검으로 채운 빈자리 (2026-11-14) — 도시 관리의 조건 칸 · 대자보의 방어 기록 · 공성전 · 장터 안 · 산 너머 건물의 첫 단추
   upgradeNeeds: '[data-field="conds"]',
-  defenseDoor: '[data-action="defense"]',
   cityRow: '[data-action="openCity"]',
   autoMatch: '[data-action="autoMatch"]',
   pullDoor: '[data-action="openPull"]',
@@ -194,8 +193,6 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       return [
         { text: t('guide.board.intro.1'), spot: 'rankingDoor' },
         { text: t('guide.board.intro.2'), spot: 'collectionDoor' },
-        // 방어 기록 (2026-11-14) — 단추가 있는데 소개가 없었다
-        { text: t('guide.board.intro.3'), spot: 'defenseDoor' },
       ];
     case 'board.collection':
       return [

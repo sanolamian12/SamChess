@@ -53,7 +53,7 @@ const FLICK_SPEED = 0.6;
  */
 const HOLD_SELECTOR = [
   '#frame[data-sky]', '#frame [data-modal="rankingLoading"]', '#frame [data-modal="busy"]', '#frame [data-modal="enterLoading"]',
-  '#frame [data-modal="raidAlert"]', '#frame [data-modal="defenseUnseen"]', '#frame [data-modal="warInbox"]',
+  '#frame [data-modal="raidAlert"]', '#frame [data-modal="warInbox"]',
   '#frame [data-modal="academyNotice"]', '#frame [data-modal="aiAbandoned"]',
   '#frame .brs-frame[data-page="title"]', '#frame .brs-frame[data-veil]',
   // 다른 내관이 서 있다 — 앱이 세운 화면 안내와 화면 안에서 세운 안내(장수 일람 → 장수 상세)가 차례로 선다(2026-11-14).
