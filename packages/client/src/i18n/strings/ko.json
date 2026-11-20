@@ -2259,7 +2259,7 @@
   "market.storage.swapTitle": "아이템 지급",
   "market.storage.swapHas": "{officer} — 이미 「{what}」을(를) 지니고 있습니다.",
   "market.storage.swapWhere": "병기구는 대장간으로, 아이템은 장터 보관함으로 회수됩니다.",
-  "market.storage.given": "{item}을(를) {officer}에게 지급했습니다",
+  "market.storage.given": "{item} → {officer}, 지급했습니다",
   "market.confirm.ask": "확정하시겠습니까?",
   "market.confirm.ok": "확정",
   "market.goods.materials": "건축 자재",

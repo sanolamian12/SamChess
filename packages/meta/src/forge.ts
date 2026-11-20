@@ -124,10 +124,10 @@ export function forgeSummary(profile: PlayerProfile): { owned: number; assigned:
 
 export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string): MetaResult {
   const item = equipmentById.get(equipmentId);
-  if (!item) return { ok: false, reason: `모르는 장비다 — ${equipmentId}` };
+  if (!item) return { ok: false, reason: `알 수 없는 장비입니다 — ${equipmentId}` };
   const lv = forgeLevel(profile);
   if (item.unlockLevel > lv) {
-    return { ok: false, reason: `대장간 Lv${item.unlockLevel}이 필요하다 — 지금 Lv${lv}` };
+    return { ok: false, reason: `대장간 Lv${item.unlockLevel}이 필요합니다 — 지금 Lv${lv}` };
   }
   const allowed = forgeCopiesAllowed(lv, item.unlockLevel);
   if (forgeCopiesOwned(profile, equipmentId) >= allowed) {
@@ -135,12 +135,12 @@ export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string):
     return {
       ok: false,
       reason: maxed
-        ? `${item.name}은 ${allowed}자루까지만 만들 수 있다`
-        : `${item.name}은 대장간 Lv${lv}에서 ${allowed}자루까지다 — 대장간을 올리면 더 만들 수 있다`,
+        ? `${item.name}은 ${allowed}자루까지만 만드실 수 있습니다`
+        : `${item.name}은 대장간 Lv${lv}에서 ${allowed}자루까지입니다 — 대장간을 올리시면 더 만드실 수 있습니다`,
     };
   }
-  if (profile.forgeOrder) return { ok: false, reason: '이미 다른 병기를 제조 중이다' };
-  if (profile.gold < item.gold) return { ok: false, reason: `금화가 모자란다 — ${profile.gold}/${item.gold}` };
+  if (profile.forgeOrder) return { ok: false, reason: '이미 다른 병기를 제조 중입니다' };
+  if (profile.gold < item.gold) return { ok: false, reason: `금화가 모자랍니다 — ${profile.gold}/${item.gold}` };
   return { ok: true };
 }
 

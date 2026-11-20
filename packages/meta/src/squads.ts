@@ -158,14 +158,14 @@ export function validateSquad(
 export function validateSquadShape(
   profile: PlayerProfile, draft: Pick<SquadDraft, 'mode' | 'picks'>,
 ): MetaResult {
-  if (draft.picks.length === 0) return no('부대원이 한 명도 없다');
-  if (draft.picks.length > teamSize(draft.mode)) return no(`부대원은 ${teamSize(draft.mode)}명까지다`);
+  if (draft.picks.length === 0) return no('부대원이 한 명도 없습니다');
+  if (draft.picks.length > teamSize(draft.mode)) return no(`부대원은 ${teamSize(draft.mode)}명까지입니다`);
   const pieces = new Set<PieceType>();
   const officers = new Set<OfficerId>();
   for (const pick of draft.picks) {
     if (pieces.has(pick.piece)) return no(`기물이 겹친다: ${pick.piece}`);
-    if (officers.has(pick.officer)) return no('한 장수가 두 자리에 섰다');
-    if (!profile.roster[pick.officer]) return no('보유하지 않은 장수다');
+    if (officers.has(pick.officer)) return no('한 장수가 두 자리에 섰습니다');
+    if (!profile.roster[pick.officer]) return no('거느리지 않으신 장수입니다');
     pieces.add(pick.piece);
     officers.add(pick.officer);
   }
@@ -212,7 +212,7 @@ export function updateSquad(
 ): PlayerProfile {
   const before = squadById(profile, id);
   if (!before) throw new Error(`없는 부대다: ${id}`);
-  if (before.mode !== draft.mode) throw new Error('부대의 참여 인원은 바꿀 수 없다');
+  if (before.mode !== draft.mode) throw new Error('부대의 참여 인원은 바꾸실 수 없습니다');
   const check = validateSquadShape(profile, draft);
   if (!check.ok) throw new Error(`부대를 고칠 수 없다: ${check.reason}`);
 

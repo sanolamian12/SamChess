@@ -173,7 +173,7 @@ export function warEnlist(profile: PlayerProfile, squadId: string, mode: BattleM
 export function warReadyGate(profile: PlayerProfile, mode: BattleMode): MetaResult {
   const gate = sortieGate(profile);
   if (!gate.ok) return gate;
-  if (fightingAi(profile)) return no('ai.inProgress', '끝나지 않은 AI 대전이 있다');
+  if (fightingAi(profile)) return no('ai.inProgress', '끝나지 않은 AI 대전이 있습니다');
   const grain = canStartMatch(profile, mode);
   if (!grain.ok) return { ...grain, code: 'war.noGrain' };
   return { ok: true };
@@ -196,13 +196,13 @@ export interface DeclareFacts {
 }
 
 export function declareGate(f: DeclareFacts): MetaResult {
-  if (f.defenderCityLevel < Math.floor(f.attacker.cityLevel)) return no('siege.lowerCity', '도시 레벨이 낮은 도시는 칠 수 없다');
-  if (!f.defenderOnline) return no('war.offline', '그 도시는 방금 접속을 끊었다');
-  if (f.defenderBusy) return no('war.busy', '그 도시는 지금 전투 중이다');
-  if (f.attackerOpen) return no('war.pending', '걸어 둔 선전포고가 이미 있다');
-  if (f.defenderOpen) return no('war.engaged', '그 도시는 다른 선전포고를 받고 있다');
+  if (f.defenderCityLevel < Math.floor(f.attacker.cityLevel)) return no('siege.lowerCity', '도시 레벨이 낮은 도시는 치실 수 없습니다');
+  if (!f.defenderOnline) return no('war.offline', '그 도시는 방금 접속을 끊었습니다');
+  if (f.defenderBusy) return no('war.busy', '그 도시는 지금 전투 중입니다');
+  if (f.attackerOpen) return no('war.pending', '걸어 두신 선전포고가 이미 있습니다');
+  if (f.defenderOpen) return no('war.engaged', '그 도시는 다른 선전포고를 받고 있습니다');
   if (f.lastRefusedAt !== null && f.nowMs - f.lastRefusedAt < WAR_COOLDOWN_MS) {
-    return { ok: false, code: 'war.cooldown', reason: '같은 도시에는 잠시 뒤 다시 걸 수 있다',
+    return { ok: false, code: 'war.cooldown', reason: '같은 도시에는 잠시 뒤 다시 거실 수 있습니다',
       params: { sec: Math.ceil((WAR_COOLDOWN_MS - (f.nowMs - f.lastRefusedAt)) / 1000) } };
   }
   return warReadyGate(f.attacker, f.mode);

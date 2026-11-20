@@ -76,7 +76,7 @@ export const ONLINE_SEARCH_MS = 30_000;
 /** 출전할 수 있는가 — 참가비만큼 있으면 된다. **AI도 온라인도 같다** */
 export function canStartMatch(profile: PlayerProfile, mode: BattleMode): MetaResult {
   const cost = grainCost(mode);
-  if (profile.grain < cost) return no(`군량이 모자란다 — ${profile.grain}/${cost}`);
+  if (profile.grain < cost) return no(`군량이 모자랍니다 — ${profile.grain}/${cost}`);
   return { ok: true };
 }
 

@@ -136,7 +136,7 @@ describe('부대 CRUD', () => {
     const made = addSquad(base(), draft());
     assert.throws(
       () => updateSquad(made.profile, made.squad.id, draft('5v5')),
-      /참여 인원은 바꿀 수 없다/,
+      /참여 인원은 바꾸실 수 없습니다/,
     );
   });
 

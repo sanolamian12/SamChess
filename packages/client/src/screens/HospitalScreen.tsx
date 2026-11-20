@@ -132,7 +132,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
       .filter(([id, inst]) => !isInjured(inst, now) && officerById.get(id as OfficerId)?.grade !== 'E')
       .slice(0, 3)
       .map(([id]) => id as OfficerId);
-    if (healthy.length === 0) { setError('다치게 할 건강한 장수가 없다'); return; }
+    if (healthy.length === 0) { setError('다치게 할 건강한 장수가 없습니다'); return; }
     run(() => devGrantOnServer({ injure: healthy }));
   };
 

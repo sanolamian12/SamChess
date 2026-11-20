@@ -78,14 +78,14 @@ describe('제조 (대장간)', () => {
     const owned = forge({ forgeOwned: { [forgeItemKey(LV5_ITEM.id, 1)]: null } });
     const check = canStartForgeOrder(owned, LV5_ITEM.id);
     if (check.ok) assert.fail('해금 Lv5 두 번째 자루는 거부해야 한다');
-    assert.ok(!check.reason.includes('올리면'), `만렙인데 더 올리라고 한다: "${check.reason}"`);
+    assert.ok(!check.reason.includes('올리시면'), `만렙인데 더 올리라고 한다: "${check.reason}"`);
   });
 
   it('대장간이 낮으면 상한도 낮다 — 올리면 더 만들 수 있다고 말한다', () => {
     const low = forge({ buildings: { ...forge().buildings, forge: 1 }, forgeOwned: { [K1]: null } });
     const check = canStartForgeOrder(low, LV1_WEAPON.id);
     if (check.ok) assert.fail('대장간 Lv1에서 해금 Lv1은 한 자루까지다');
-    assert.ok(check.reason.includes('올리면'), `이유가 다음 길을 안 알려 준다: "${check.reason}"`);
+    assert.ok(check.reason.includes('올리시면'), `이유가 다음 길을 안 알려 준다: "${check.reason}"`);
   });
 
   it('진행 중인 주문도 한 자루로 센다 — 끝나 들어올 것까지 합쳐 상한을 넘지 않는다', () => {

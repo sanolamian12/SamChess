@@ -92,7 +92,7 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     assert.equal(recycleOutput({ [C1!]: 3, [C2!]: 3 }), 2);
     assert.equal(applyRecycle(p, C0!, { [C1!]: 3, [C2!]: 3 }).cards[C0!], 2);
     assert.match(why(canRecycle(p, C0!, { [C1!]: 2 })), /3장 단위/);
-    assert.match(why(canRecycle(p, C0!, {})), /고르지 않았다/);
+    assert.match(why(canRecycle(p, C0!, {})), /고르지 않으셨습니다/);
   });
 
   it('가진 것보다 많이는 못 쓴다 — 그만큼뿐이라고 말한다', () => {
@@ -109,7 +109,7 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     const p = base();
     const [notMine] = ofGrade('C', 1, 10);
     assert.equal(ownedOfficers(p).includes(notMine!), false);
-    assert.match(why(canRecycle(p, notMine!, { [C1!]: 2, [C2!]: 1 })), /보유한 장수/);
+    assert.match(why(canRecycle(p, notMine!, { [C1!]: 2, [C2!]: 1 })), /거느리신 장수/);
     assert.equal(recycleTargets(p, 'C').includes(notMine!), false);
   });
 
@@ -135,6 +135,6 @@ describe('카드 정리 — 같은 등급 3장 → 고른 장수 1장 (GDD §6.3
     const used = applyRecycle(p, C0!, { [boxed!]: 2, [C2!]: 1 });
     assert.equal(used.cards[boxed!], 1, '한 장은 남는다');
     assert.ok(boxedOfficers(used).includes(boxed!), '장수가 계정에서 사라지지 않는다');
-    assert.match(why(canRecycle(p, C0!, { [boxed!]: 3 })), /보관함 장수는 1장이 남는다/, '마지막 한 장은 못 쓴다');
+    assert.match(why(canRecycle(p, C0!, { [boxed!]: 3 })), /보관함 장수는 1장이 남습니다/, '마지막 한 장은 못 쓴다');
   });
 });

@@ -177,16 +177,16 @@ export const isInstantResearch = (profile: PlayerProfile, level: number): boolea
 
 export function canStartResearch(profile: PlayerProfile, tactic: string): MetaResult {
   const def = upgradeDef(tactic);
-  if (!def || def.academyLevel === undefined) return no(`모르는 연구 주제다 — ${tactic}`, 'unknown');
+  if (!def || def.academyLevel === undefined) return no(`알 수 없는 연구 주제입니다 — ${tactic}`, 'unknown');
   const level = def.academyLevel;
   const have = academyLevel(profile);
-  if (have < 1) return no('태학을 아직 짓지 않았다', 'notBuilt');
-  if (level > have) return no(`태학 Lv${level}이 필요하다 — 지금 Lv${have}`, 'locked', { level, have });
+  if (have < 1) return no('태학을 아직 짓지 않으셨습니다', 'notBuilt');
+  if (level > have) return no(`태학 Lv${level}이 필요합니다 — 지금 Lv${have}`, 'locked', { level, have });
   const a = academyOf(profile);
-  if (a.done.some((d) => d.level === level)) return no(`태학 Lv${level}의 연구는 이미 끝냈다`, 'levelDone', { level });
-  if (a.research) return no('이미 다른 연구가 진행 중이다', 'busy');
+  if (a.done.some((d) => d.level === level)) return no(`태학 Lv${level}의 연구는 이미 마치셨습니다`, 'levelDone', { level });
+  if (a.research) return no('이미 다른 연구가 진행 중입니다', 'busy');
   const first = firstUndone(a);
-  if (level !== first) return no(`태학 Lv${first}의 연구를 먼저 끝내야 한다`, 'order', { level: first });
+  if (level !== first) return no(`태학 Lv${first}의 연구를 먼저 마치셔야 합니다`, 'order', { level: first });
   return { ok: true };
 }
 
@@ -220,7 +220,7 @@ export function applyStartResearch(profile: PlayerProfile, tactic: string, nowMs
 }
 
 export function canCancelResearch(profile: PlayerProfile): MetaResult {
-  return academyOf(profile).research ? { ok: true } : no('진행 중인 연구가 없다', 'idle');
+  return academyOf(profile).research ? { ok: true } : no('진행 중인 연구가 없습니다', 'idle');
 }
 
 /**
@@ -234,7 +234,7 @@ export function canCancelResearch(profile: PlayerProfile): MetaResult {
 export function applyCancelResearch(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const check = canCancelResearch(profile);
   if (!check.ok) throw new Error(check.reason);
-  if (researchRemainingMs(profile, nowMs) <= 0) throw new Error('이미 끝난 연구는 취소할 수 없다');
+  if (researchRemainingMs(profile, nowMs) <= 0) throw new Error('이미 끝난 연구는 취소하실 수 없습니다');
   const { research: _drop, ...rest } = academyOf(profile);
   return { ...profile, academy: rest };
 }
@@ -275,9 +275,9 @@ export function applyAckResearch(profile: PlayerProfile): PlayerProfile {
 
 export function canResetAcademy(profile: PlayerProfile): MetaResult {
   const a = academyOf(profile);
-  if (a.done.length === 0 && !a.research) return no('되돌릴 연구가 없다', 'nothing');
+  if (a.done.length === 0 && !a.research) return no('되돌릴 연구가 없습니다', 'nothing');
   if (profile.gold < ACADEMY_RESET_GOLD) {
-    return no(`금화가 부족하다 — ${profile.gold}/${ACADEMY_RESET_GOLD}`, 'gold', { have: profile.gold, need: ACADEMY_RESET_GOLD });
+    return no(`금화가 부족합니다 — ${profile.gold}/${ACADEMY_RESET_GOLD}`, 'gold', { have: profile.gold, need: ACADEMY_RESET_GOLD });
   }
   return { ok: true };
 }

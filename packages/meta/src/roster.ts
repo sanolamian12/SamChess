@@ -44,12 +44,12 @@ export function validateRoster(
   if (picks.length !== need) return no(`${mode}은 ${need}명을 채워야 한다 — 지금 ${picks.length}명`);
 
   const pieces = new Set(picks.map((p) => p.piece));
-  if (pieces.size !== picks.length) return no('기물은 종류당 1개만 고를 수 있다');
-  if (!pieces.has('King')) return no('King(군주)은 반드시 넣어야 한다');
+  if (pieces.size !== picks.length) return no('기물은 종류마다 하나만 고르실 수 있습니다');
+  if (!pieces.has('King')) return no('King(군주)은 반드시 넣으셔야 합니다');
 
   // 한 진영에 같은 장수가 둘 이상 나오지 않는다 (GDD §12, 2026-07-31 확정)
   const officers = new Set(picks.map((p) => p.officer));
-  if (officers.size !== picks.length) return no('같은 장수를 두 번 넣을 수 없다');
+  if (officers.size !== picks.length) return no('같은 장수를 두 번 넣으실 수 없습니다');
 
   for (const pick of picks) {
     if (!profile.roster[pick.officer]) {
@@ -58,7 +58,7 @@ export function validateRoster(
     }
   }
   if (checkGrain && profile.grain < grainCost(mode)) {
-    return no(`군량이 모자란다 — ${profile.grain}/${grainCost(mode)}`);
+    return no(`군량이 모자랍니다 — ${profile.grain}/${grainCost(mode)}`);
   }
   return { ok: true };
 }

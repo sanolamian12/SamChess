@@ -106,11 +106,11 @@ type SiegeMatch = AiAction<{ seed: number; opponent: MatchOpponent; defender: Ai
 export async function matchSiegeAction(
   uid: string, defenderId: string, mode: BattleMode, picks: readonly RosterPick[], squadId: string | null,
 ): Promise<SiegeMatch> {
-  if (defenderId === uid) return { ok: false, status: 400, reason: '내 도시는 칠 수 없다', code: 'siege.self' };
+  if (defenderId === uid) return { ok: false, status: 400, reason: '우리 도시는 치실 수 없습니다', code: 'siege.self' };
   const target = await readTarget(defenderId, mode);
-  if (!target) return { ok: false, status: 404, reason: '그 도시의 수비군이 없다', code: 'siege.noTarget' };
+  if (!target) return { ok: false, status: 404, reason: '그 도시의 수비군이 없습니다', code: 'siege.noTarget' };
   // 접속 중인 도시는 공성전이 아니라 선전포고(단계 4)의 상대다 — 목록이 낡았을 수 있어 그 순간을 다시 본다
-  if (await isOnlineNow(defenderId)) return { ok: false, status: 409, reason: '그 도시는 지금 접속 중이다', code: 'siege.online' };
+  if (await isOnlineNow(defenderId)) return { ok: false, status: 409, reason: '그 도시는 지금 접속 중입니다', code: 'siege.online' };
   const seed = randomInt(0, 2 ** 31);
   return mutateProfile<SiegeMatch>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };

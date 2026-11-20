@@ -54,7 +54,7 @@ export function garrisonGate(profile: PlayerProfile): MetaResult {
       const size = mode === '3v3' ? 3 : 5;
       return {
         ok: false, code: 'sortie.noGarrison', params: { size },
-        reason: `${size}대${size} 수비대를 채워야 출정할 수 있다 — 수비대가 성을 지키는 수비군이다`,
+        reason: `${size}대${size} 수비대를 채우셔야 출정하실 수 있습니다 — 수비대가 성을 지키는 수비군입니다`,
       };
     }
   }

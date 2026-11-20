@@ -81,7 +81,7 @@ async function send(path: string, body: unknown): Promise<unknown | null> {
   if (res.status === 400) {
     // 규칙이 거부했다. 로컬로 물러나 봐야 같은 이유로 거부되므로 그대로 알린다
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new CityActionRejected(body.error ?? '할 수 없는 일이다');
+    throw new CityActionRejected(body.error ?? '할 수 없는 일입니다');
   }
   /*
    * **404는 「못 닿음」이 아니다 ★** (2026-09-04). 서버는 살아 있는데 이 길을

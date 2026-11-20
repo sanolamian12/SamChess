@@ -114,22 +114,22 @@ export function canBuyMarketItem(
 
   const lv = marketLevel(profile);
   if (lv < MARKET_ITEM_MIN_LEVEL) {
-    return fail(`시장 Lv${MARKET_ITEM_MIN_LEVEL}부터 아이템을 판다 (지금 Lv${lv})`,
+    return fail(`시장 Lv${MARKET_ITEM_MIN_LEVEL}부터 아이템을 팝니다 (지금 Lv${lv})`,
       'market.notBuilt', { need: MARKET_ITEM_MIN_LEVEL, have: lv });
   }
   if (def.unlockLevel > lv) {
-    return fail(`시장 Lv${def.unlockLevel}이 필요하다 — 지금 Lv${lv}`,
+    return fail(`시장 Lv${def.unlockLevel}이 필요합니다 — 지금 Lv${lv}`,
       'market.locked', { need: def.unlockLevel, have: lv });
   }
   if (marketStockLeft(profile, item, nowMs) <= 0) {
-    return fail('오늘 나온 물량이 다 나갔다', 'market.soldOut');
+    return fail('오늘 나온 물량이 다 나갔습니다', 'market.soldOut');
   }
   if (marketOwnedCount(profile) >= marketCapacity(profile)) {
     return fail(`더 둘 곳이 없다 (${marketOwnedCount(profile)}/${marketCapacity(profile)})`,
       'market.full', { have: marketOwnedCount(profile), max: marketCapacity(profile) });
   }
   if (profile.gold < def.gold) {
-    return fail(`금화가 모자란다 (${profile.gold}/${def.gold})`,
+    return fail(`금화가 모자랍니다 (${profile.gold}/${def.gold})`,
       'market.notEnoughGold', { have: profile.gold, need: def.gold });
   }
   return { ok: true };
@@ -194,7 +194,7 @@ export function canBuyMarketBasket(
     }
     any = true;
   }
-  if (!any) return fail('고른 아이템이 없다', 'market.emptyBasket');
+  if (!any) return fail('고르신 아이템이 없습니다', 'market.emptyBasket');
   return { ok: true };
 }
 
@@ -237,7 +237,7 @@ export function canCarryItem(
   profile: PlayerProfile, officer: OfficerId, item: string,
 ): MetaResult {
   if (!marketItemById.has(item)) return fail(`모르는 아이템이다 — ${item}`, 'market.unknownItem');
-  if (!profile.roster[officer]) return fail('보유하지 않은 장수다', 'market.noOfficer');
+  if (!profile.roster[officer]) return fail('거느리지 않으신 장수입니다', 'market.noOfficer');
   const already = profile.marketCarry?.[officer] === item ? 1 : 0;
   if (carriedCount(profile, item) - already >= marketHeldCount(profile, item)) {
     return fail(`가진 만큼만 들려 보낼 수 있다 (${marketHeldCount(profile, item)}개)`,

@@ -61,7 +61,7 @@ export const aiOpponentOf = (ai: AiBattleState): MatchOpponent =>
 export function matchAiBattle(
   profile: PlayerProfile, mode: BattleMode, picks: readonly RosterPick[], squadId: string | null, seed: number,
 ): { ok: true; profile: PlayerProfile; ai: AiBattleState } | AiFail {
-  if (fightingAi(profile)) return fail('ai.inProgress', '끝나지 않은 AI 대전이 있다');
+  if (fightingAi(profile)) return fail('ai.inProgress', '끝나지 않은 AI 대전이 있습니다');
   let mine;
   try {
     mine = toRosterEntries(profile, picks);
@@ -96,9 +96,9 @@ export interface SiegeTarget extends SiegeDefender {
 export function matchSiege(
   profile: PlayerProfile, target: SiegeTarget, picks: readonly RosterPick[], squadId: string | null, seed: number,
 ): { ok: true; profile: PlayerProfile; ai: AiBattleState } | AiFail {
-  if (fightingAi(profile)) return fail('ai.inProgress', '끝나지 않은 AI 대전이 있다');
-  if (target.cityLevel < Math.floor(profile.cityLevel)) return fail('siege.lowerCity', '도시 레벨이 낮은 도시는 칠 수 없다');
-  if (target.entries.length !== picks.length) return fail('ai.badPicks', '수비군과 인원이 다르다 — 모드를 확인한다');
+  if (fightingAi(profile)) return fail('ai.inProgress', '끝나지 않은 AI 대전이 있습니다');
+  if (target.cityLevel < Math.floor(profile.cityLevel)) return fail('siege.lowerCity', '도시 레벨이 낮은 도시는 치실 수 없습니다');
+  if (target.entries.length !== picks.length) return fail('ai.badPicks', '수비군과 인원이 다릅니다 — 모드를 확인해 주십시오');
   try {
     toRosterEntries(profile, picks);
   } catch (e) {
@@ -124,7 +124,7 @@ export function matchSiege(
 export function startAiBattle(profile: PlayerProfile, nowMs: number):
   { ok: true; profile: PlayerProfile; ai: AiBattleState } | AiFail {
   const ai = profile.aiBattle;
-  if (ai?.status !== 'matched') return fail('ai.notMatched', '시작할 AI 대전이 없다 — 상대를 다시 찾는다');
+  if (ai?.status !== 'matched') return fail('ai.notMatched', '시작할 AI 대전이 없습니다 — 상대를 다시 찾아 주십시오');
   // 기본 튜토리얼 · 도적떼(GDD §5.11) — 거절 코드는 막은 쪽의 것이다(예전 그대로 `raid.blocksSortie`도)
   const gate = sortieGate(profile);
   if (!gate.ok) return fail(gate.code ?? 'raid.blocksSortie', gate.reason);
@@ -164,7 +164,7 @@ function replayInput(ai: AiBattleState, intents: readonly Intent[]) {
  * 도적떼 화면과 같은 갈림이다.
  */
 export function aiBattleState(ai: AiBattleState): { ok: true; state: BattleState } | { ok: false; reason: string } {
-  if (ai.status !== 'fighting' || !ai.entries) return { ok: false, reason: '진행 중인 AI 대전이 없다' };
+  if (ai.status !== 'fighting' || !ai.entries) return { ok: false, reason: '진행 중인 AI 대전이 없습니다' };
   const intents = ai.intents ?? [];
   if (intents.length > 0) return replayPrefix(replayInput(ai, intents));
   // 재생기와 **같은 첫 판** — 양쪽 프리셋을 같은 순서로 깐다(`openReplay`). 따로 깔면 공성전에서 둘이 갈린다
@@ -184,7 +184,7 @@ function revealsIn(have: number, from: number, intents: readonly Intent[]): bool
 export function appendAiIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
   { ok: true; profile: PlayerProfile } | AiFail {
   const ai = fightingAi(profile);
-  if (!ai) return fail('ai.notFighting', '진행 중인 AI 대전이 없다');
+  if (!ai) return fail('ai.notFighting', '진행 중인 AI 대전이 없습니다');
   if (revealsIn(ai.intents?.length ?? 0, from, intents)) return fail('ai.revealByServer', '대결의 공개는 서버만 적는다');
   const r = appendIntentLog(ai.intents ?? [], from, intents, (next) => replayPrefix(replayInput(ai, next)));
   if (!r.ok) return r.kind === 'gap' ? fail('ai.intentsGap', r.reason, { have: r.have }) : fail('ai.intentsRejected', r.reason);
@@ -224,7 +224,7 @@ export function revealAiDuel(
   const replay = replayPrefix(replayInput(ai, log));
   if (!replay.ok) return fail('ai.intentsRejected', replay.reason);
   const d = replay.state.duel;
-  if (replay.state.phase !== 'duel' || !d || d.step !== 'round') return fail('ai.notDuelRound', '지금 합 중이 아니다');
+  if (replay.state.phase !== 'duel' || !d || d.step !== 'round') return fail('ai.notDuelRound', '지금은 합을 겨루는 중이 아닙니다');
   const fill: Partial<Record<Side, DuelPick>> = {};
   const pool = DUEL_POOL[d.kind];
   for (const unit of [d.challenger, d.defender]) {
@@ -262,7 +262,7 @@ export function settleAiBattleIntents(profile: PlayerProfile, humanIntents: read
   | { ok: true; profile: PlayerProfile; rewards: BattleRewards; settled: SettledAi }
   | AiFail {
   const ai = fightingAi(profile);
-  if (!ai) return fail('ai.notFighting', '정산할 AI 대전이 없다 — 이미 정산했거나 시작하지 않았다');
+  if (!ai) return fail('ai.notFighting', '정산할 AI 대전이 없습니다 — 이미 정산했거나 시작하지 않았습니다');
   if (!startsWithIntents(ai.intents ?? [], humanIntents)) return fail('ai.intentsGap', '덧붙여 둔 수로 시작하지 않는다');
   // 적어 둔 수 뒤의 공개는 서버가 안 적은 것이다 — 미리 읽은 패로 채운 판을 막는다 (R16)
   if (revealsIn(ai.intents?.length ?? 0, 0, humanIntents)) return fail('ai.revealByServer', '대결의 공개는 서버만 적는다');

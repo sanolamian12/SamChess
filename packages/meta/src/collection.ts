@@ -255,19 +255,19 @@ export function collectionRankRows(profiles: readonly PlayerProfile[]): Collecti
 
 export function canRegisterSlot(profile: PlayerProfile, id: string, index: number): MetaResult {
   const c = collectionById.get(id);
-  if (!c) return { ok: false, reason: `모르는 컬렉션이다 — ${id}` };
+  if (!c) return { ok: false, reason: `알 수 없는 컬렉션입니다 — ${id}` };
   if (!Number.isInteger(index) || index < 0 || index >= c.slots.length) {
-    return { ok: false, reason: `「${c.title}」에 ${index}번 칸이 없다` };
+    return { ok: false, reason: `「${c.title}」에 ${index}번 칸이 없습니다` };
   }
   const s = slotState(profile, c, index);
-  if (s.state === 'done') return { ok: false, reason: '이미 등록한 칸이다' };
+  if (s.state === 'done') return { ok: false, reason: '이미 등록하신 칸입니다' };
   if (s.state === 'blocked') {
     const name = slotName(c.slots[index]!);
     const why: Record<SlotBlock, string> = {
-      noSpare: `${name}의 여분 카드가 없다`,
-      notOwned: `${name}을(를) 가지고 있지 않다`,
-      equipped: `${name}이(가) 모두 장수에게 지급되어 있다 — 대장간에서 해제한다`,
-      carried: `${name}이(가) 이번 판에 들려 보낼 예정이다`,
+      noSpare: `${name}의 여분 카드가 없습니다`,
+      notOwned: `${name}을(를) 가지고 계시지 않습니다`,
+      equipped: `${name}이(가) 모두 장수에게 지급되어 있습니다 — 대장간에서 해제해 주십시오`,
+      carried: `${name}이(가) 이번 판에 들려 보낼 예정입니다`,
     };
     return { ok: false, reason: why[s.reason!] };
   }

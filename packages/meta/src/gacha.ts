@@ -102,7 +102,7 @@ export function gachaPullCost(kind: GachaPullKind): { gold: number; count: numbe
 /** 이 계정이 지금 이 뽑기를 살 수 있는가 — 화면은 이 판정을 다시 적지 않는다 */
 export function canAffordGacha(profile: PlayerProfile, kind: GachaPullKind): MetaResult {
   const { gold } = gachaPullCost(kind);
-  if (profile.gold < gold) return no(`금화가 부족하다 — ${profile.gold}/${gold}`);
+  if (profile.gold < gold) return no(`금화가 부족합니다 — ${profile.gold}/${gold}`);
   return { ok: true };
 }
 

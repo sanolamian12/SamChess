@@ -128,7 +128,7 @@ export function raidLoot(profile: PlayerProfile, raid: RaidState, grainNow: numb
 /** 도적떼가 출정을 막는가 — 막으면 병영 [출정하기]·AI 참가비·온라인 대기열이 거절한다 */
 export function raidBlocksSortie(profile: PlayerProfile): MetaResult {
   if (!raidActive(profile.raid)) return { ok: true };
-  return no('도적떼가 농지를 노리고 있다 — 농지 전투를 먼저 치러야 한다', 'raid.blocksSortie');
+  return no('도적떼가 농지를 노리고 있습니다 — 농지 전투를 먼저 치르셔야 합니다', 'raid.blocksSortie');
 }
 
 // ── 파수꾼 ───────────────────────────────────────────────────
@@ -191,15 +191,15 @@ export function guardsOf(profile: PlayerProfile): RosterPick[] {
 export function validateGuards(profile: PlayerProfile, picks: readonly RosterPick[]): MetaResult {
   if (picks.length === 0) return { ok: true };
   const slots = guardSlots(profile);
-  if (slots === 0) return no('농지를 먼저 지어야 한다', 'raid.noFarm');
-  if (picks.length > slots) return no(`파수꾼은 ${slots}명까지다 — 농지를 올리면 늘어난다`, 'raid.tooMany', { n: slots });
-  if (!picks.some((p) => p.piece === 'King')) return no('파수꾼에는 King이 있어야 한다', 'raid.needKing');
-  if (new Set(picks.map((p) => p.piece)).size !== picks.length) return no('기물은 종류당 하나다', 'raid.dupPiece');
-  if (new Set(picks.map((p) => p.officer)).size !== picks.length) return no('같은 장수를 두 번 세울 수 없다', 'raid.dupOfficer');
+  if (slots === 0) return no('농지를 먼저 지으셔야 합니다', 'raid.noFarm');
+  if (picks.length > slots) return no(`파수꾼은 ${slots}명까지입니다 — 농지를 올리시면 늘어납니다`, 'raid.tooMany', { n: slots });
+  if (!picks.some((p) => p.piece === 'King')) return no('파수꾼에는 King이 있어야 합니다', 'raid.needKing');
+  if (new Set(picks.map((p) => p.piece)).size !== picks.length) return no('기물은 종류마다 하나입니다', 'raid.dupPiece');
+  if (new Set(picks.map((p) => p.officer)).size !== picks.length) return no('같은 장수를 두 번 세우실 수 없습니다', 'raid.dupOfficer');
   const inSquad = squadOfficers(profile);
   for (const p of picks) {
-    if (!profile.roster[p.officer]) return no('보유하지 않은 장수다', 'raid.notOwned');
-    if (inSquad.has(p.officer)) return no('부대에 편성된 장수는 파수꾼이 될 수 없다', 'raid.inSquad');
+    if (!profile.roster[p.officer]) return no('거느리지 않으신 장수입니다', 'raid.notOwned');
+    if (inSquad.has(p.officer)) return no('부대에 편성된 장수는 파수꾼이 될 수 없습니다', 'raid.inSquad');
   }
   return { ok: true };
 }
@@ -278,7 +278,7 @@ function surrender(profile: PlayerProfile, raid: RaidState, at: number): PlayerP
 /** [항복] — 출몰한 도적 수만큼 약탈당한다. 전투 중이어도 된다(전투 화면의 항복) */
 export function surrenderRaid(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const raid = profile.raid;
-  if (!raid || !raidActive(raid)) throw new Error('항복할 도적떼가 없다');
+  if (!raid || !raidActive(raid)) throw new Error('항복할 도적떼가 없습니다');
   return surrender(profile, raid, Math.floor(nowMs));
 }
 
@@ -287,12 +287,12 @@ export function surrenderRaid(profile: PlayerProfile, nowMs: number): PlayerProf
 /** [지금 전투]를 누를 수 있는가 */
 export function canStartRaid(profile: PlayerProfile, nowMs: number): MetaResult {
   const raid = profile.raid;
-  if (!raid || !raidActive(raid)) return no('오늘은 도적떼가 없다', 'raid.none');
-  if (raid.status === 'fighting') return no('이미 전투가 시작됐다', 'raid.started');
-  if (nowMs >= raidDeadline(profile, raid)) return no('시간이 지났다 — 항복으로 처리된다', 'raid.expired');
+  if (!raid || !raidActive(raid)) return no('오늘은 도적떼가 없습니다', 'raid.none');
+  if (raid.status === 'fighting') return no('이미 전투가 시작되었습니다', 'raid.started');
+  if (nowMs >= raidDeadline(profile, raid)) return no('시간이 지났습니다 — 항복으로 처리됩니다', 'raid.expired');
   const guards = guardsOf(profile);
-  if (guards.length === 0) return no('농지에 파수꾼이 없다 — 파수꾼을 세워야 싸울 수 있다', 'raid.noGuards');
-  if (!guards.some((g) => g.piece === 'King')) return no('파수꾼에 King이 없다', 'raid.needKing');
+  if (guards.length === 0) return no('농지에 파수꾼이 없습니다 — 파수꾼을 세우셔야 싸우실 수 있습니다', 'raid.noGuards');
+  if (!guards.some((g) => g.piece === 'King')) return no('파수꾼에 King이 없습니다', 'raid.needKing');
   return { ok: true };
 }
 
@@ -322,7 +322,7 @@ export function startRaid(profile: PlayerProfile, nowMs: number, seed: number): 
  */
 export function raidBattleConfig(profile: PlayerProfile): BattleConfig & { humanSide: Side } {
   const raid = profile.raid;
-  if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없다');
+  if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없습니다');
   const { seed, startedAt, guards } = raid.battle;
   return {
     matchId: `raid-${raid.day}-${seed}`,
@@ -363,7 +363,7 @@ export function resumeRaidState(profile: PlayerProfile, intents: readonly Intent
 export function appendRaidIntents(profile: PlayerProfile, from: number, intents: readonly Intent[]):
   { ok: true; profile: PlayerProfile } | { ok: false; reason: string; code: string; params?: Record<string, number> } {
   const raid = profile.raid;
-  if (raid?.status !== 'fighting' || !raid.battle) return { ok: false, reason: '진행 중인 도적떼 전투가 없다', code: 'raid.notFighting' };
+  if (raid?.status !== 'fighting' || !raid.battle) return { ok: false, reason: '진행 중인 도적떼 전투가 없습니다', code: 'raid.notFighting' };
   const r = appendIntentLog(raidIntentsOf(raid), from, intents, (next) => resumeRaidState(profile, next));
   if (!r.ok) {
     return r.kind === 'gap'
@@ -400,7 +400,7 @@ export interface RaidBattleEnd {
  */
 export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: number): PlayerProfile {
   const raid = profile.raid;
-  if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없다');
+  if (raid?.status !== 'fighting' || !raid.battle) throw new Error('진행 중인 도적떼 전투가 없습니다');
   const at = Math.floor(nowMs);
   // 청낭서를 들고 나간 파수꾼은 빠진다 (2026-09-23, GDD §6.5)
   const hurt = fallenAfterShield(profile, 'raid', end.fallen);

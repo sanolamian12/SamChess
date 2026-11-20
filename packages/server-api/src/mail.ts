@@ -71,7 +71,7 @@ export async function listMail(uid: string): Promise<MailView[]> {
 
 /** 이미 받은 우편 — 표에 줄이 있었다. 받기 트랜잭션을 되감으려고 던진다 */
 class AlreadyClaimed extends Error {}
-const ALREADY = { ok: false, status: 409, reason: '이미 받은 우편이다', code: 'mail.claimed' } as const;
+const ALREADY = { ok: false, status: 409, reason: '이미 받은 우편입니다', code: 'mail.claimed' } as const;
 
 export type MailActionResult =
   | { ok: true; profile: PlayerProfile; mail: MailView; grainLost: number }
@@ -113,7 +113,7 @@ async function act(
 ): Promise<MailActionResult> {
   const [mail] = await visibleMail(uid, id);
   // 남의 우편 · 회수 · 기한 지남 · 없는 번호를 가르지 않는다 — 번호를 넣어 보며 남의 우편이 있는지 알아내지 못하게
-  if (!mail) return { ok: false, status: 404, reason: '받을 수 있는 우편이 아니다', code: 'mail.notFound' };
+  if (!mail) return { ok: false, status: 404, reason: '받으실 수 있는 우편이 아닙니다', code: 'mail.notFound' };
   const now = Date.now();
   return mutateProfile<MailActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };

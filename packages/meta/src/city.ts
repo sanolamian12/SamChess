@@ -155,10 +155,10 @@ export const BUILD_CITY_LEVEL = CITY_RULES.buildCityLevel;
  */
 export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
   const data = buildingById.get(id);
-  if (!data) return { ok: false, reason: `모르는 건물이다 — ${id}` };
+  if (!data) return { ok: false, reason: `알 수 없는 건물입니다 — ${id}` };
   const level = buildingLevel(profile, id);
   if (level >= data.maxLevel) {
-    return { ok: false, code: 'city.maxLevel', params: { lv: data.maxLevel }, reason: `${data.name}은 이미 최대 레벨이다 (Lv${data.maxLevel})` };
+    return { ok: false, code: 'city.maxLevel', params: { lv: data.maxLevel }, reason: `${data.name}은 이미 최대 레벨입니다 (Lv${data.maxLevel})` };
   }
   if (profile.cityLevel < BUILD_CITY_LEVEL) {
     // 코드는 화면이 번역할 때 쓴다(`reasonText`) — 건물 이름은 화면이 제 줄에 이미 적으므로 번역 문장에는 안 넣는다
@@ -173,7 +173,7 @@ export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
   }
   const left = buildCreditsLeft(profile);
   if (left !== null && left <= 0) {
-    return { ok: false, code: 'build.noCredits', reason: '건설 기회를 다 썼다 — 도시를 증축하면 다시 생긴다' };
+    return { ok: false, code: 'build.noCredits', reason: '건설 기회를 다 쓰셨습니다 — 도시를 증축하시면 다시 생깁니다' };
   }
   return { ok: true };
 }
@@ -400,12 +400,12 @@ export function hospitalWards(profile: PlayerProfile, nowMs: number): HospitalWa
 
 /** 치료할 수 있는가. **왜 안 되는지 글자로 말한다** */
 export function canHeal(profile: PlayerProfile, officer: OfficerId, nowMs: number): MetaResult {
-  if (hospitalRooms(profile) <= 0) return { ok: false, reason: '병원이 없다 — 먼저 지어야 한다' };
+  if (hospitalRooms(profile) <= 0) return { ok: false, reason: '병원이 없습니다 — 먼저 지으셔야 합니다' };
   const inst = profile.roster[officer];
-  if (!inst) return { ok: false, reason: '없는 장수다' };
-  if (!isInjured(inst, nowMs)) return { ok: false, reason: '부상이 아니다' };
-  if (isHealing(inst, nowMs)) return { ok: false, reason: '이미 치료 중이다' };
-  if (freeRooms(profile, nowMs) <= 0) return { ok: false, reason: '빈 room이 없다' };
+  if (!inst) return { ok: false, reason: '없는 장수입니다' };
+  if (!isInjured(inst, nowMs)) return { ok: false, reason: '다친 장수가 아닙니다' };
+  if (isHealing(inst, nowMs)) return { ok: false, reason: '이미 치료 중입니다' };
+  if (freeRooms(profile, nowMs) <= 0) return { ok: false, reason: '빈 치료실이 없습니다' };
   return { ok: true };
 }
 
@@ -615,22 +615,22 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
       return capNoEmperor();
     }
     const lv = Math.max(profile.cityLevel, MAX_CITY_LEVEL);
-    return { ok: false, code: 'city.maxLevel', params: { lv }, reason: `이미 최대 레벨이다 (Lv${lv})` };
+    return { ok: false, code: 'city.maxLevel', params: { lv }, reason: `이미 최대 레벨입니다 (Lv${lv})` };
   }
   const { have, need } = miss;
   switch (miss.kind) {
     case 'emperor':
       return capNoEmperor();
     case 'credits':
-      return { ok: false, code: 'city.credits', params: { n: have }, reason: `건설 기회가 ${have}회 남았다 — 다 쓰고 증축한다` };
+      return { ok: false, code: 'city.credits', params: { n: have }, reason: `건설 기회가 ${have}회 남았습니다 — 다 쓰신 뒤에 증축하소서` };
     case 'officers':
-      return { ok: false, code: 'city.officers', params: { have, need }, reason: `보유 장수가 모자란다 — ${have}/${need}명` };
+      return { ok: false, code: 'city.officers', params: { have, need }, reason: `보유 장수가 모자랍니다 — ${have}/${need}명` };
     case 'topOfficers':
-      return { ok: false, code: 'city.topOfficers', params: { have, need }, reason: `S·A급 장수가 모자란다 — ${have}/${need}명` };
+      return { ok: false, code: 'city.topOfficers', params: { have, need }, reason: `S·A급 장수가 모자랍니다 — ${have}/${need}명` };
     case 'wins':
-      return { ok: false, code: 'city.wins', params: { have, need }, reason: `전투 승리가 모자란다 — ${have}/${need}` };
+      return { ok: false, code: 'city.wins', params: { have, need }, reason: `전투 승리가 모자랍니다 — ${have}/${need}` };
     case 'materials':
-      return { ok: false, code: 'city.materials', params: { have, need }, reason: `건축 자재가 모자란다 — ${have}/${need}` };
+      return { ok: false, code: 'city.materials', params: { have, need }, reason: `건축 자재가 모자랍니다 — ${have}/${need}` };
   }
 
   // 헌제가 없어서 막힌 것과 진짜 끝인 것을 **가려서 말한다** — 「이미 최대」라고만
@@ -639,7 +639,7 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
     const cap = maxCityLevel(profile);
     return {
       ok: false, code: 'city.capNoEmperor', params: { cap, max: MAX_CITY_LEVEL },
-      reason: `Lv${cap}이 상한이다 — Lv${MAX_CITY_LEVEL}은 황제를 옹립해야 갈 수 있다`,
+      reason: `Lv${cap}이 상한입니다 — Lv${MAX_CITY_LEVEL}은 황제를 옹립하셔야 오르실 수 있습니다`,
     };
   }
 }
@@ -706,7 +706,7 @@ export function canBuyMaterials(profile: PlayerProfile): MetaResult {
   if (profile.gold < gold) {
     return {
       ok: false, code: 'market.notEnoughGold',
-      reason: `금화가 부족하다 — ${profile.gold}/${gold}`,
+      reason: `금화가 부족합니다 — ${profile.gold}/${gold}`,
       params: { have: profile.gold, need: gold },
     };
   }
@@ -766,14 +766,14 @@ export function canBuyGrain(profile: PlayerProfile, nowMs: number): MetaResult {
   if (grainCap(synced) - synced.grain < GRAIN_BUY_MIN_ROOM) {
     return {
       ok: false, code: 'market.grainFull',
-      reason: `군량 창고에 자리가 모자라다 — ${synced.grain}/${grainCap(synced)}`,
+      reason: `군량 창고에 자리가 모자랍니다 — ${synced.grain}/${grainCap(synced)}`,
       params: { have: synced.grain, max: grainCap(synced) },
     };
   }
   if (synced.gold < gold) {
     return {
       ok: false, code: 'market.notEnoughGold',
-      reason: `금화가 부족하다 — ${synced.gold}/${gold}`,
+      reason: `금화가 부족합니다 — ${synced.gold}/${gold}`,
       params: { have: synced.gold, need: gold },
     };
   }

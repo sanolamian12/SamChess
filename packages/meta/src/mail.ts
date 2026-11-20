@@ -169,8 +169,8 @@ function withEntry(profile: PlayerProfile, entry: MailboxEntry, nowMs: number): 
 }
 
 const live = (mail: Mail, nowMs: number): MetaResult =>
-  mail.revokedAt !== null ? { ok: false, reason: '회수된 우편이다', code: 'mail.revoked' }
-    : nowMs >= mail.expiresAt ? { ok: false, reason: '기한이 지난 우편이다', code: 'mail.expired' }
+  mail.revokedAt !== null ? { ok: false, reason: '회수된 우편입니다', code: 'mail.revoked' }
+    : nowMs >= mail.expiresAt ? { ok: false, reason: '기한이 지난 우편입니다', code: 'mail.expired' }
     : { ok: true };
 
 /** 읽었다 — 이미 읽었으면 그대로 */
@@ -204,8 +204,8 @@ export function claimMail(profile: PlayerProfile, mail: Mail, nowMs: number):
   { ok: true; profile: PlayerProfile; grainLost: number } | Extract<MetaResult, { ok: false }> {
   const gate = live(mail, nowMs);
   if (!gate.ok) return gate;
-  if (mail.rewards.length === 0) return { ok: false, reason: '받을 것이 없는 공지 우편이다', code: 'mail.noRewards' };
-  if (mailClaimed(profile, mail.id)) return { ok: false, reason: '이미 받은 우편이다', code: 'mail.claimed' };
+  if (mail.rewards.length === 0) return { ok: false, reason: '받을 것이 없는 공지 우편입니다', code: 'mail.noRewards' };
+  if (mailClaimed(profile, mail.id)) return { ok: false, reason: '이미 받은 우편입니다', code: 'mail.claimed' };
 
   const grainLost = mailGrainLoss(profile, mail);
   let next = profile;
@@ -219,7 +219,7 @@ export function claimMail(profile: PlayerProfile, mail: Mail, nowMs: number):
       }
     }
   } catch (e) {
-    return { ok: false, reason: e instanceof Error ? e.message : '받을 수 없다', code: 'mail.cannotApply' };
+    return { ok: false, reason: e instanceof Error ? e.message : '받으실 수 없습니다', code: 'mail.cannotApply' };
   }
   return { ok: true, profile: withEntry(next, { id: mail.id, exp: mail.expiresAt, claimed: true }, nowMs), grainLost };
 }

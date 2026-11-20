@@ -260,16 +260,16 @@ export const officerLevelCap = (profile: PlayerProfile): number =>
 
 export function canLevelUp(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
-  if (!inst) return no('보유하지 않은 장수다');
+  if (!inst) return no('거느리지 않으신 장수입니다');
   const need = cardsToLevelUp(inst.level);
-  if (need === null) return no(`이미 최대 레벨이다 (Lv${GROWTH.maxLevel})`);
+  if (need === null) return no(`이미 최대 레벨입니다 (Lv${GROWTH.maxLevel})`);
   // 카드보다 **먼저** 본다 — 카드를 모아 봐야 못 올린다는 것이 더 앞선 사실이다
   const cap = officerLevelCap(profile);
   if (inst.level >= cap) {
-    return no(`도시가 Lv${profile.cityLevel}이라 장수도 Lv${cap}까지다 — 도시를 증축하면 더 올릴 수 있다`);
+    return no(`도시가 Lv${profile.cityLevel}이라 장수도 Lv${cap}까지입니다 — 도시를 증축하시면 더 올리실 수 있습니다`);
   }
   const have = profile.cards[officer] ?? 0;
-  if (have < need) return no(`카드가 모자란다 — ${have}/${need}장`);
+  if (have < need) return no(`카드가 모자랍니다 — ${have}/${need}장`);
   return { ok: true };
 }
 
@@ -425,14 +425,14 @@ export const normalizeCityName = (name: string): string => name.normalize('NFC')
 /** 도시 이름을 바꿀 수 있는가. **다른 계정과 겹치는지는 여기서 모른다** — DB가 거절한다 */
 export function canRenameCity(profile: PlayerProfile, name: string, nowMs: number): MetaResult {
   const trimmed = normalizeCityName(name);
-  if (!trimmed) return no('도시 이름을 입력해야 한다');
-  if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 된다`);
-  if (trimmed === profile.cityName) return no('지금과 같은 이름이다');
+  if (!trimmed) return no('도시 이름을 적어 주십시오');
+  if (trimmed.length > CITY_NAME_MAX) return no(`${CITY_NAME_MAX}자까지만 됩니다`);
+  if (trimmed === profile.cityName) return no('지금과 같은 이름입니다');
   if (profile.cityNameChangedAt !== undefined) {
     const nextOk = profile.cityNameChangedAt + RENAME_COOLDOWN_MS;
-    if (nowMs < nextOk) return no(`아직 바꿀 수 없다 — ${Math.ceil((nextOk - nowMs) / 86_400_000)}일 남았다`);
+    if (nowMs < nextOk) return no(`아직 바꾸실 수 없습니다 — ${Math.ceil((nextOk - nowMs) / 86_400_000)}일 남았습니다`);
   }
-  if (profile.gold < CITY_RENAME_GOLD) return no(`금화가 부족하다 — ${profile.gold}/${CITY_RENAME_GOLD}`);
+  if (profile.gold < CITY_RENAME_GOLD) return no(`금화가 부족합니다 — ${profile.gold}/${CITY_RENAME_GOLD}`);
   return { ok: true };
 }
 
@@ -452,9 +452,9 @@ export function applyRenameCity(profile: PlayerProfile, name: string, nowMs: num
 /** 재설계할 수 있는가. Lv1은 되감을 것이 없다 */
 export function canRespec(profile: PlayerProfile, officer: OfficerId): MetaResult {
   const inst = profile.roster[officer];
-  if (!inst) return no('보유하지 않은 장수다');
-  if (inst.level < 2) return no('Lv1은 아직 올린 적이 없다');
-  if (profile.gold < RESPEC_GOLD) return no(`둔갑천서가 필요하다 — 금화 ${profile.gold}/${RESPEC_GOLD}`);
+  if (!inst) return no('거느리지 않으신 장수입니다');
+  if (inst.level < 2) return no('Lv1은 아직 올리신 적이 없습니다');
+  if (profile.gold < RESPEC_GOLD) return no(`둔갑천서가 필요합니다 — 금화 ${profile.gold}/${RESPEC_GOLD}`);
   return { ok: true };
 }
 

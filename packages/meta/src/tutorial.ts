@@ -132,7 +132,7 @@ export const sortieTutorialsDone = (profile: PlayerProfile): boolean =>
 export const SORTIE_REASONS = ['tutorial.required', 'sortie.noGarrison', 'raid.blocksSortie'] as const;
 
 export function sortieGate(profile: PlayerProfile): MetaResult {
-  if (!sortieTutorialsDone(profile)) return { ok: false, reason: '전투 기초 튜토리얼을 먼저 끝내야 출정할 수 있다', code: 'tutorial.required' };
+  if (!sortieTutorialsDone(profile)) return { ok: false, reason: '전투 기초 튜토리얼을 먼저 마치셔야 출정하실 수 있습니다', code: 'tutorial.required' };
   const garrison = garrisonGate(profile);
   if (!garrison.ok) return garrison;
   return raidBlocksSortie(profile);

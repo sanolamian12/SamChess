@@ -107,24 +107,24 @@ export const recycleOutput = (inputs: RecycleInputs): number =>
 export function canRecycle(profile: PlayerProfile, target: OfficerId, inputs: RecycleInputs): MetaResult {
   const data = officerById.get(target);
   if (!data) return no(`모르는 장수다 — ${target}`);
-  if (!ownedOfficers(profile).includes(target)) return no('보유한 장수의 카드만 받을 수 있다');
-  if (isMaxed(profile, target)) return no(`${data.name}은 이미 최대 레벨이다`);
+  if (!ownedOfficers(profile).includes(target)) return no('거느리신 장수의 카드만 받으실 수 있습니다');
+  if (isMaxed(profile, target)) return no(`${data.name}은 이미 최대 레벨입니다`);
 
   for (const [id, n] of Object.entries(inputs) as [OfficerId, number | undefined][]) {
     if (!n) continue;
     if (!Number.isInteger(n) || n < 0) return no(`재료 수가 이상하다 — ${n}`);
-    if (id === target) return no('받을 장수의 카드는 재료로 못 쓴다');
+    if (id === target) return no('받을 장수의 카드는 재료로 쓰실 수 없습니다');
     const from = officerById.get(id);
-    if (!from || from.grade !== data.grade) return no(`${data.grade}급 카드만 재료로 쓸 수 있다`);
+    if (!from || from.grade !== data.grade) return no(`${data.grade}급 카드만 재료로 쓰실 수 있습니다`);
     const usable = recyclableCards(profile, id);
     if (n > usable) {
       return no(profile.roster[id]
-        ? `${from.name}의 카드는 ${usable}장뿐이다`
-        : `${from.name}의 카드는 ${usable}장까지 쓸 수 있다 — 보관함 장수는 1장이 남는다`);
+        ? `${from.name}의 카드는 ${usable}장뿐입니다`
+        : `${from.name}의 카드는 ${usable}장까지 쓰실 수 있습니다 — 보관함 장수는 1장이 남습니다`);
     }
   }
   const total = recycleTotal(inputs);
-  if (total === 0) return no('재료를 고르지 않았다');
+  if (total === 0) return no('재료를 고르지 않으셨습니다');
   if (total % RECYCLE_CARDS_IN !== 0) {
     return no(`재료는 ${RECYCLE_CARDS_IN}장 단위다 — 지금 ${total}장`);
   }
