@@ -2147,6 +2147,7 @@ export class BattleScene extends Phaser.Scene {
       // 카메라가 이미 보고 있는 자리는 다시 「간다」고 기다리지 않는다(내 차례의 장수 — 2026-10-09)
       const poseMs = this.poses.plan(events, state, {
         camera: this.cueNow, intro: this.playback.phase !== 'awaitingInput',
+        focusTurn: this.manual ? null : this.playback.humanSide,
       });
       // 첫 줄은 동작이 시작될 때, 효과 줄은 배지가 붙을 때 (2026-10-09) — 카메라가 시전자에게 가기도 전에
       // 「침묵을 걸었다」가 먼저 뜨지 않게

@@ -308,6 +308,30 @@ FRINGE_PURE_A = 160   #   몸에서 조금 더 멀어도(`FRINGE_PURE_REACH`) �
 FRINGE_PURE_REACH = 6
 
 
+# 테두리가 두꺼운 원본 — 투명 곁 · 몸까지 거리를 이만큼 넓혀 고치고, 몸 곁(`reach`)의 옅은 순 마젠타 안개는 지운다
+# 여상(2026-11-20, 기획자): 어두운 윤곽 밖에 마젠타 줄이 4~6px 두께로 남아 몸 둘레가 분홍으로 떴다
+FRINGE_WIDE = {"여상": 7}
+FRINGE_HAZE_A = 110   # 〃 이보다 옅은 순 마젠타(`FRINGE_PURE`)는 바탕이 번진 안개다
+
+
+def defringe_wide(rgb: np.ndarray, alpha: np.ndarray, reach: int) -> tuple[np.ndarray, np.ndarray]:
+    """`FRINGE_WIDE`의 장수 — 넓게 고치고 안개를 지운다. 고친 색과 알파를 돌려준다."""
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    visible = alpha > 8
+    tint = np.minimum(r, b) - g
+    mag = visible & (tint >= FRINGE_MAG)
+    body = visible & ~mag & (alpha > 128)
+    if not mag.any() or not body.any():
+        return rgb, alpha
+    d, (iy, ix) = ndimage.distance_transform_edt(~body, return_indices=True)
+    near_clear = ndimage.binary_dilation(~visible, iterations=reach)
+    haze = mag & (tint >= FRINGE_PURE) & (alpha < FRINGE_HAZE_A) & (d <= reach * 2)
+    fix = mag & near_clear & (d <= reach) & ~haze
+    out = rgb.copy()
+    out[fix] = rgb[iy[fix], ix[fix]]
+    return out, np.where(haze, 0.0, alpha)
+
+
 def defringe(rgb: np.ndarray, alpha: np.ndarray) -> tuple[np.ndarray, int]:
     """마젠타 바탕을 손으로 지운 PNG에 남은 **분홍 테두리**를 몸의 색으로 칠한다 (2026-11-13).
 
@@ -618,7 +642,10 @@ HOLE_FILL_NEAR = {"비관": {0: 900, 2: 900, 3: 900, 4: 900}}
 HOLE_FILL_LOW = {"양회": {2: 900}}
 # 〃 바깥으로 트여 있어 「갇힌 구멍」으로 안 잡히는 자리(양회 책략 칸 왼다리 — 바짓가랑이 바깥 윤곽까지 빠졌다): 이 네모(원본 px,
 # x0 · y0 · x1 · y1 — 끝 포함) 안의 빈 픽셀을 둘레 색으로 메우고, 바깥 투명에 닿는 가장자리는 윤곽선 색으로 다시 긋는다
-HOLE_BOX = {"양회": {3: [(1066, 255, 1098, 275)]}}
+HOLE_BOX = {"양회": {3: [(1066, 255, 1098, 275)]},
+            "여몽": {1: [(478, 226, 494, 241)], 2: [(735, 229, 752, 259)],
+                     3: [(1031, 153, 1057, 170), (1126, 157, 1140, 166)], 4: [(1352, 212, 1398, 248)]}}
+# 여몽(2026-11-20, 기획자): 이동 · 공격 · 피격 칸 아랫자락, 책략 칸 두 어깨판
 HOLE_OUTLINE = (38, 30, 36)   # 〃 다시 긋는 윤곽선 색(이 그림체의 검은 테)
 HOLE_RIM = 2   # 〃 구멍 둘레의 번진 테두리(px)
 HOLE_PINK = 20       # 〃 둘레 색으로 메울 때(`HOLE_FILL_NEAR`) min(R, B) − G 가 이만큼 넘는 분홍 기운도 메운다
@@ -743,6 +770,8 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
     rgb, alpha, from_jpg = load(path)
     alpha, _ = strip_dividers(alpha, rgb)
+    if path.stem in FRINGE_WIDE:
+        rgb, alpha = defringe_wide(rgb, alpha, FRINGE_WIDE[path.stem])
     rgb, _ = defringe(rgb, alpha)
     h, w = alpha.shape
     bodies = find_bodies(alpha)

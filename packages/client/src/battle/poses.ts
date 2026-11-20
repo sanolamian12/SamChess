@@ -20,7 +20,7 @@
 
 import { STATUS_META, other, supplyDepotOf } from '@samchess/rules';
 import { VISUAL_EFFECTS, tacticById } from '@samchess/data';
-import type { BattleEvent, BattleState, StatusId, UnitId, Vec2 } from '@samchess/rules';
+import type { BattleEvent, BattleState, Side, StatusId, UnitId, Vec2 } from '@samchess/rules';
 import { BURN_REASON, ROUT_REASON } from '@samchess/meta';
 import { ringsOfKind } from './visualEffect.ts';
 import { CameraTrack, EMPTY_TRACK, SCALE_FIT, SCALE_FOCUS, type CameraCue } from './camera.ts';
@@ -314,6 +314,12 @@ export interface PlanFrom {
    * 그 장수에게 와 있고, [이동]을 고르면 판 전체로 물러나 있다 — 거기서 다시 장수에게 다가갔다 물러나면 누른 뒤 2초가 헛돈다.
    */
   intro?: boolean;
+  /**
+   * 차례를 받으면 카메라가 먼저 가서 비추는 진영 — 내 진영, 자동 포커스가 켜져 있을 때만(2026-11-20 기획자). 평상 동작은 카메라가
+   * 닿은 뒤에 한다 — 예전엔 판 전체에서 평상 동작을 다 하고 나서야 카메라가 다가가 동작이 안 보였다. 상대 진영은 안 비춘다 —
+   * 비췄다 판 전체로 물러났다 다음 행동에서 다시 다가가 출렁인다.
+   */
+  focusTurn?: Side | null;
 }
 
 /**
@@ -840,6 +846,8 @@ export class PoseDirector {
          */
         case 'controlGranted': {
           if (state.units[ev.unit]?.casting) break;
+          // 내 장수면 카메라가 먼저 닿는다 — 차례를 받은 뒤의 카메라(`wantedCue`의 「내 차례」)와 같은 자리라 그 뒤로 안 움직인다
+          if (from.focusTurn && state.units[ev.unit]?.side === from.focusTurn) look(SCALE_FOCUS, ev.unit);
           const len = ANIM.flourish.length * FLOURISH_FRAME_MS;
           show(ev.unit, 0, len, POSE.idle, { frames: ANIM.flourish, step: FLOURISH_FRAME_MS });
           break;
