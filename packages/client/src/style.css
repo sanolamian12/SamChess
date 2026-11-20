@@ -1710,18 +1710,27 @@ img.no-art { visibility: hidden; }
    않는다. */
 .ofc-row .c-nm { display: flex; align-items: center; gap: .2rem; min-width: 0; font-weight: 600; }
 .ofc-row .c-nm .c-nm-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-/* 레벨업 요건이 된 장수 — 레벨 배지 오른쪽 위를 덮는 겹 갈매기(차례 표지 묶음의 셋째 `ui/turn/chevron.png`, 아래를 가리키는 그림을 180° 돌려 위로)가
-   위아래로 오간다 (2026-11-20 기획자 — 화살촉 + 다음 레벨 배지 + 흰 별빛은 난잡해 보여 걷었다, 그전엔 이름 옆 도장 애니메이션) */
+/* 레벨업 요건이 된 장수 (2026-11-20 기획자) — 둘이 함께 선다:
+   ① 레벨 배지 오른쪽 위를 덮는 겹 갈매기(차례 표지 묶음의 셋째 `ui/turn/chevron.png`, 아래를 가리키는 그림을 180° 돌려 위로)가 위아래로 오간다
+   ② 이름 오른쪽에 깃발(넷째 `ui/turn/banner.png`), 크기는 레벨 배지만큼 · 뒤에 황금 섬광 · 깃발만 위아래로 살짝 */
 .ofc-lv { position: relative; display: inline-flex; flex: none; }
-.ofc-lv-up {
+.ofc-lv-chev {
   position: absolute; z-index: 1; right: -.5em; top: -.4em; width: 1.25em; height: 1.25em; object-fit: contain; pointer-events: none;
-  filter: drop-shadow(0 1px 1px #0008); animation: ofc-lv-up-bob 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 1px 1px #0008); animation: ofc-lv-chev-bob 1.2s ease-in-out infinite;
 }
-@keyframes ofc-lv-up-bob {
+@keyframes ofc-lv-chev-bob {
   0%, 100% { transform: translateY(.1em) rotate(180deg); }
   50% { transform: translateY(-.15em) rotate(180deg); }
 }
-@media (prefers-reduced-motion: reduce) { .ofc-lv-up { animation: none; transform: rotate(180deg); } }
+/* 깃발은 레벨 배지의 1.3배(2026-11-20 기획자 — 1.885em → 2.45em). 줄 높이는 그대로 — 커진 만큼 위아래 여백을 음수로 */
+.ofc-lv-up { position: relative; display: inline-flex; flex: none; width: 2.45em; height: 2.45em; margin-block: -.5em; }
+.ofc-lv-up img {
+  position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 1px #0008);
+  animation: ofc-lv-up-bob 1.8s ease-in-out infinite;
+}
+@keyframes ofc-lv-up-bob { 0%, 100% { transform: translateY(.06em); } 50% { transform: translateY(-.08em); } }
+.ofc-lv-up-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.6; z-index: 0; }
+@media (prefers-reduced-motion: reduce) { .ofc-lv-chev { animation: none; transform: rotate(180deg); } .ofc-lv-up img { animation: none; } }
 /* 레벨 · 카드는 **둘 다 왼쪽 정렬**로 붙여 놓는다 — 오른쪽 정렬로 두면 각자
    제 칸의 반대쪽 끝에 붙어 오히려 멀어 보인다(스크린샷으로 확인, 2026-09-02).
    등급 배지 → Lv1 → 카드 수가 한 방향으로 나란히 붙는 모양이다. */
@@ -1791,7 +1800,7 @@ img.no-art { visibility: hidden; }
 .glow-gr { position: relative; display: inline-flex; flex: none; --glint-delay: 0s; }
 .glow-gr-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 3.2; z-index: 0; }
 /* 밝은 양피지 위라 꼬마 뒤(.6)보다 진하게 — .6이면 흰 별빛이 종이에 묻혀 안 보였다 */
-.glow-gr-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
+.glow-gr-halo .blink-halo, .ofc-lv-up-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
 @keyframes glow-gr-in { to { opacity: 1; } }
 /* 크기는 E급 금빛 기준 — S급 자주 90% · A급 흰 별빛 80%(2026-11-20 기획자) */
 .glow-gr-halo[data-blink="purple"] { --blink-w: calc(3.2 * .9); }

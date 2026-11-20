@@ -114,6 +114,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
 import { GlowGrade } from './GlowGrade.tsx';
+import { BlinkGlow } from './BlinkGlow.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import { useFitText } from './useFitText.ts';
 
@@ -420,17 +421,25 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                 {/* 레벨업 Flag — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었는데
                     번역이 길어지면(포르투갈어 "Subir de nível" 등) 카드 수·이름
                     칸을 가려 뷰가 깨졌다(2026-09-02 피드백 스크린샷으로 확인).
-                    글자 대신 표지 하나만(2026-11-20부터 레벨 배지 오른쪽 위의 겹 갈매기 `.ofc-lv-up`, 그전엔 이름 옆 도장 애니메이션)
+                    글자 대신 표지 하나만(2026-11-20부터 레벨 배지 위 겹 갈매기 `.ofc-lv-chev` + 이름 오른쪽 깃발 · 황금 섬광 `.ofc-lv-up`, 그전엔 이름 옆 도장 애니메이션)
                     붙인다 — 언어 길이에 안 흔들린다. 줄 전체를 두르던 금색
                     액자는 2026-09-02에 다시 걷어냈다(style.css 참조). */}
                 <span className="c-nm">
                   <GlowGrade grade={r.grade} />
-                  {/* 레벨업 요건이 되면 레벨 배지 오른쪽 위에 위를 가리키는 겹 갈매기가 위아래로 오간다(2026-11-20 기획자 — 화살촉 + 다음 레벨 배지를 걷었다) */}
+                  {/* 레벨 배지 오른쪽 위에 위를 가리키는 겹 갈매기가 위아래로 오간다 */}
                   <span className="ofc-lv">
                     <LevelBadge level={r.level} />
-                    {r.canLevelUp && <img className="ofc-lv-up" src="ui/turn/chevron.png" role="img" alt={t('officers.flag')} draggable={false} />}
+                    {r.canLevelUp && <img className="ofc-lv-chev" src="ui/turn/chevron.png" alt="" draggable={false} />}
                   </span>
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
+                  {/* 레벨업 요건이 되면 이름 오른쪽에 깃발(차례 표지 묶음의 넷째 `ui/turn/banner.png`) + 뒤에 황금 섬광
+                      (2026-11-20 기획자 — 레벨 배지 위 겹 갈매기와 함께, 둘 다 위아래로) */}
+                  {r.canLevelUp && (
+                    <span className="ofc-lv-up" role="img" aria-label={t('officers.flag')}>
+                      <BlinkGlow tone="gold" className="ofc-lv-up-halo" />
+                      <img src="ui/turn/banner.png" alt="" draggable={false} />
+                    </span>
+                  )}
                 </span>
                 {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서 이미 계산해 낸다(화면은 다시 세지 않는다) */}
                 <span className="c-cd">{r.cards}</span>
