@@ -332,6 +332,24 @@ def defringe_wide(rgb: np.ndarray, alpha: np.ndarray, reach: int) -> tuple[np.nd
     return out, np.where(haze, 0.0, alpha)
 
 
+# 바닥 안개 — 몸에서 떨어진 작고 옅은 섬(넓이 < `HAZE_MAX` · 평균 알파 < `HAZE_A`)을 지운다. 잔디 지우기가 대신 걷던 것을
+# `GRASS_FREE`로 빼면 그대로 남는 장수만 — 오란(2026-11-20, 기획자): 초록 갑옷 하체를 잔디로 깎아 빼자 피격 칸 발치에 회색 얼룩이 남았다
+HAZE_DROP = {"오란"}
+HAZE_MAX = 500
+HAZE_A = 60
+
+
+def drop_haze(alpha: np.ndarray) -> np.ndarray:
+    lab, n = ndimage.label(alpha > 8, EIGHT)
+    if n == 0:
+        return alpha
+    idx = np.arange(1, n + 1)
+    size = ndimage.sum(np.ones_like(alpha), lab, idx)
+    mean_a = ndimage.mean(alpha, lab, idx)
+    drop = idx[(size < HAZE_MAX) & (mean_a < HAZE_A)]
+    return np.where(np.isin(lab, drop), 0.0, alpha)
+
+
 def defringe(rgb: np.ndarray, alpha: np.ndarray) -> tuple[np.ndarray, int]:
     """마젠타 바탕을 손으로 지운 PNG에 남은 **분홍 테두리**를 몸의 색으로 칠한다 (2026-11-13).
 
@@ -625,7 +643,7 @@ def render_frame(rgb: np.ndarray, alpha: np.ndarray, body: dict, size: int) -> I
 
 # 기획자가 원본에서 잔디판을 손으로 지운 장수(2026-11-15) — 옷단이 잔디와 색 · 높이가 같아
 # 잔디 지우기가 옷단을 깎았다. 원본이 이미 깨끗하므로 잔디 지우기를 건너뛴다.
-GRASS_FREE = {"간옹", "노숙", "관순", "뇌동", "순상"}  # 순상: 원본에 잔디판이 없고 연녹색 바지를 잔디로 깎았다(2026-11-19)
+GRASS_FREE = {"간옹", "노숙", "관순", "뇌동", "순상", "오란"}  # 순상 · 오란: 원본에 잔디판이 없고 연녹색 바지 · 초록 갑옷 하체를 잔디로 깎았다(2026-11-19 · 20)
 
 # 초록 옷단이 잔디판 바로 위까지 내려와 잔디로 함께 지워지는 장수(2026-11-16, 관우 책략 칸의 앞자락 — 기획자) — 발에서
 # 이만큼(원본 px) 위까지만 잔디를 찾는다. 관우: 잔디판 윗선은 발 위 18~27px, 앞자락 아래끝은 발 위 40px
@@ -770,6 +788,8 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
     크기별로 따로 돌리면 시간이 배로 들고, 판단이 같으니 결과도 같다."""
     rgb, alpha, from_jpg = load(path)
     alpha, _ = strip_dividers(alpha, rgb)
+    if path.stem in HAZE_DROP:
+        alpha = drop_haze(alpha)
     if path.stem in FRINGE_WIDE:
         rgb, alpha = defringe_wide(rgb, alpha, FRINGE_WIDE[path.stem])
     rgb, _ = defringe(rgb, alpha)
