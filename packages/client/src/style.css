@@ -5017,12 +5017,6 @@ button.lv-tactic-row {
    이미 `flex: 1; overflow-y: auto`를 준다(팝업 뿌리에 `scr-officers`를 함께
    입히는 이유, `OfficerPickModal` 주석 참조). 여백만 팝업에 맞게 줄인다. */
 .ofcpick-modal .place-body { padding: 0; }
-/* 장수 카드 팝업만 — 화면 가운데가 아니라 제목 바로 아래에 뜬다(2026-08-27
-   열다섯 번째 지정). `.modal-back`은 `.place-body`(제목 바 바로 아래부터
-   시작하는 영역, `.scr-ranking-officer .place-body{flex:1}`)에 `inset:0`으로
-   앉으므로, 세로 정렬만 가운데(`center`)에서 위(`flex-start`)로 바꾸면
-   된다 — 다른 화면의 `.modal-back`(환경설정 등)은 그대로 가운데를 쓴다. */
-.scr-ranking-officer .modal-back { align-items: flex-start; padding-top: .7rem; }
 .modal {
   width: 100%; max-width: 19rem; max-height: 100%; overflow-y: auto;
   display: flex; flex-direction: column; gap: .35rem;
@@ -5582,9 +5576,9 @@ button.lv-tactic-row {
    높이를 다 먹고 스스로 스크롤하고, `.rk-mine`은 제 내용만큼만 차지해 늘 바닥에
    붙는다. `place-body` 자체는 스크롤하지 않는다(`.rk-top` 하나만 한다) — 안 그러면
    내 정보가 스크롤을 따라 화면 밖으로 밀려나 "바닥에 고정"이 안 된다(2026-08-26). */
+.scr-ranking-battle .place-body,
 .scr-ranking-city .place-body,
-.scr-ranking-squad .place-body,
-.scr-ranking-officer .place-body {
+.scr-ranking-collection .place-body {
   margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
 }
@@ -5626,21 +5620,12 @@ button.lv-tactic-row {
 .rk-sum-total { min-width: 0; font-weight: 700; word-break: keep-all; text-align: right; }
 .rk-sum-empty { grid-column: 3 / 5; font-weight: 700; color: #5a4128; }
 
-/* 아이콘 — **검정 바탕 → 금테 → 아이콘**을 겹쳐 띄운다 (2026-09-18 지정). 액자
-   안에 담는 게 아니라 셋을 쌓는다: 금테는 칸 전체에 깔리고(`::after`), 아이콘은
-   그 위에 같은 크기로 떠서 테두리까지 덮는다. 크기는 **아래 세 단추의 아이콘과
-   같다**(`.rk-tab-icon`의 1.7rem). 금테는 대장간 썸네일·고유기술 라벨과 같은
-   `ui/stat-frame.png` 9분할 3%(452px에서 테두리 12px)다 */
-.rk-sum-icon { position: relative; display: block; width: 1.7rem; height: 1.7rem; background: #000; }
-.rk-sum-icon::after {
-  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  border-style: solid; border-color: transparent; border-width: .16rem;
-  border-image: url(ui/stat-frame.png) 3% fill;
-}
-.rk-sum-icon img {
-  position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%;
-  object-fit: contain; filter: drop-shadow(0 1px 2px #000c);
-}
+/* 아이콘 — 둥근 메달 셋(전투 = 승리 · 도시화 = 궁궐 · 컬렉션 = 관우 꼬마 얼굴, 2026-11-20 기획자). 메달이 제 금테를 들고 있어
+   옛 「검정 바탕 → 금테(`ui/stat-frame.png`) → 아이콘」 네모 액자는 걷었다. 크기는 아래 세 단추의 아이콘(`.rk-tab-icon`)과 같다 */
+.rk-sum-icon { display: block; width: 1.9rem; height: 1.9rem; }
+.rk-sum-icon img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px #0009); }
+/* 대자보 위 판의 제목 「랭킹」 — 그리드 한 줄을 다 쓴다(세 줄의 칸 경계는 그대로) */
+.rk-sum-head { grid-column: 1 / -1; justify-self: center; color: #6b2e22; font-size: .95rem; letter-spacing: .08em; }
 
 .sqd-top { gap: .3rem; }
 .sqd-count { font-size: .8rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
@@ -7930,7 +7915,7 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 }
 
 /* 랭킹 메뉴 3버튼 — 도시(성문)·부대(깃발)·장수(투구) 아이콘 */
-.rk-tab-icon { width: 1.7rem; height: 1.7rem; flex: none; object-fit: contain; }
+.rk-tab-icon { width: 1.9rem; height: 1.9rem; flex: none; object-fit: contain; }
 
 /* 검색 버튼 — 돋보기(`search.png`, 먹선 아이콘이라 목판 위에서도 안 묻힌다).
    `.rk-searchbar`가 이제 그리드(7:3)라 이 버튼은 제 칸(3fr)을 그대로 채우면
@@ -8003,9 +7988,9 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
    둘의 가운데 값을 여기 한 자리에 적는다(세기 0,3,0이라 둘 다 이긴다).
    장수 판도 같은 값이다 — 예전엔 표 머리와 같은 .64rem이었다. */
 .scr-ranking .rk-row:not(.rk-thead) { font-size: .81rem; }
-/* 장수 랭킹 표만 — 글자색은 검정으로(2026-08-27 열두 번째 지정 — "표 머리와
-   똑같은 폰트를 적용하되 컬러만 검정색으로"). 크기는 위 공통 값을 따른다. */
-.scr-ranking-officer .rk-row:not(.rk-thead) { color: #000; }
+/* 내 도시의 줄 — 옅은 금빛 띠 (2026-11-20). 열 줄 안에 없으면 「⋮」 밑에 한 줄 더 선다(`RankingBoardScreen`) */
+.scr-ranking .rk-row[data-mine="1"]:not(.rk-thead) { background: #d6aa3c47; border-radius: .25rem; }
+.scr-ranking .rk-gap { text-align: center; color: #5a4128; line-height: 1; font-weight: 700; }
 
 /* 드롭다운·정렬 필터의 펼침 목록 — 장부 패널(`panel_ledger.png`, 표·「내
    정보」 패널과 같은 그림) 위에 언어 칩과 같은 나뭇결/옥색 칩(`chip-neutral`/
@@ -8444,9 +8429,6 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 /* 「퇴각」은 그림 발치에 겹친다 — 줄을 하나 더 쓰면 5v5에서 종이를 넘친다 */
 .brs-out { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); font-size: 2.1cqw; line-height: 1.3; padding: 0 1cqw; border-radius: .6cqw; background: #8a2f17; color: #fbeee0; white-space: nowrap; }
 /* 이름 아래 통산 승 / 무 / 패 — 이번 판으로 오른 칸만 초록으로 조금 크게 (2026-10-12 기획자 지정) */
-.brs-wdl { font-size: 2.5cqw; line-height: 1.2; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.brs-wdl b { font-weight: 700; }
-.brs-wdl b.up { color: #1f7a2e; font-size: 3.3cqw; text-shadow: 0 0 .6cqw #ffffffb0; }
 
 /* 「누르면 넘어간다」 — 두루마리 아래. 마지막 장에서는 단추가 그 자리를 갖는다 */
 .brs-tap { margin: 0; font-size: .8rem; color: #e9e2d2; text-shadow: 0 1px 3px #000; animation: brs-tap 1.6s ease-in-out infinite; }

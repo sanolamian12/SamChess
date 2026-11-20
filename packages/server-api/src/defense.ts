@@ -35,20 +35,44 @@ export async function listDefense(uid: string): Promise<{ rows: DefenseRow[]; su
     `select id, attacker_city, mode, seed, winner, reason, attacker_power, defender_power, defender_squad,
             coalesce(jsonb_array_length(replay->'intents'), 0) as moves, rules_version, seen_at, at
        from defense_log where defender_id = $1 order by at desc limit ${DEFENSE_LIST_LIMIT}`, [uid]);
-  const c = await pool.query<{ total: string; held: string; held3: string; held5: string }>(
-    `select count(*) as total, count(*) filter (where winner = 'P2') as held,
-            count(*) filter (where winner = 'P2' and mode = '3v3') as held3, count(*) filter (where winner = 'P2' and mode = '5v5') as held5
-       from defense_log where defender_id = $1`, [uid]);
   const rows = r.rows.map((x): DefenseRow => ({
     id: Number(x.id), attackerCity: x.attacker_city, mode: x.mode, result: defenseResultOf(x.winner, x.reason),
     attackerPower: x.attacker_power, defenderPower: x.defender_power, defenderSquad: x.defender_squad,
     at: x.at.getTime(), moves: x.moves, replayable: replayable(x.rules_version), seen: x.seen_at !== null,
   }));
+  return { rows, summary: await defenseSummary(uid) };
+}
+
+/**
+ * 합계 — 병영의 「막은 판」(모드마다)이 이것이다. **관리자 계정 상세도 이 함수를 부른다**(2026-11-20 부대 전적) —
+ * 셈을 두 벌 적으면 관리자가 본 수와 사용자가 본 수가 조용히 갈린다.
+ */
+export async function defenseSummary(uid: string): Promise<DefenseSummary> {
+  const c = await pool.query<{ total: string; held: string; held3: string; held5: string }>(
+    `select count(*) as total, count(*) filter (where winner = 'P2') as held,
+            count(*) filter (where winner = 'P2' and mode = '3v3') as held3, count(*) filter (where winner = 'P2' and mode = '5v5') as held5
+       from defense_log where defender_id = $1`, [uid]);
   const k = c.rows[0];
-  return { rows, summary: {
+  return {
     total: Number(k?.total ?? 0), held: Number(k?.held ?? 0),
     heldByMode: { '3v3': Number(k?.held3 ?? 0), '5v5': Number(k?.held5 ?? 0) },
-  } };
+  };
+}
+
+/**
+ * 모든 계정의 수성 성공 — uid → 모드마다 막은 판. 전투 랭킹이 부른다(2026-11-20). 「막은 판」의 셈은
+ * 위 `defenseSummary`와 **같은 조건**(`winner = 'P2'`)이다 — 병영 · 관리자 · 랭킹이 같은 수를 보인다.
+ */
+export async function heldByModeAll(): Promise<Map<string, Record<BattleMode, number>>> {
+  const r = await pool.query<{ uid: string; mode: BattleMode; n: string }>(
+    `select defender_id as uid, mode, count(*) as n from defense_log where winner = 'P2' group by defender_id, mode`);
+  const out = new Map<string, Record<BattleMode, number>>();
+  for (const x of r.rows) {
+    const m = out.get(x.uid) ?? { '3v3': 0, '5v5': 0 };
+    m[x.mode] = Number(x.n);
+    out.set(x.uid, m);
+  }
+  return out;
 }
 
 /** 그 판을 다시 볼 재료 — 남의 판 · 없는 판은 `null`, 규칙이 바뀐 판은 `'stale'` */

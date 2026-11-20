@@ -4,8 +4,10 @@
  * ```
  * ┌ ← 도시로        대자보 ───────┐
  * ┌ 위 정보 판 ──────────────────┐
- * │ [▣] 수집 컬렉션 : 3위    250점 │
- * │ [성] 도시 랭킹  : 6위     4 점 │
+ * │           랭킹                 │   ← 2026-11-20 기획자: 제목 + 세 분야(전투 → 도시화 → 컬렉션), 랭킹 메뉴와 같은 줄
+ * │ (승리) 전투   : 6위     94 점 │
+ * │ (궁궐) 도시화 : 21위   340 점 │
+ * │ (관우) 컬렉션 : 3위    250 점 │
  * └─────────────────────────────┘
  *              (게시판 그림)
  * ┌ 명령 판 ─────────────────────┐
@@ -18,32 +20,26 @@
  * 대자보는 **랭킹과 컬렉션 둘을 담는 자리**다. 랭킹은 원래 이 자리에 있던 랭킹 메뉴
  * (`RankingScreen`)가 한 걸음 안으로 들어간 것이고, 컬렉션(`CollectionScreen`, 2026-10-13)은
  * 장수 · 병기 · 아이템을 엮어 정사 · 연의의 이야기와 잇는다. 위 판의 점수는 제 프로필에서 바로 내고,
- * 순위는 서버다 — 컬렉션은 컬렉션 화면과 같은 `GET /ranking/collection`(2026-10-15). 못 닿거나
- * 점수가 0이라 줄에 안 서면 「—위」다 — 숫자를 지어내 채우지 않는다.
+ * 순위는 서버다. 못 닿으면 「—위」, 줄에 안 서면(컬렉션 0점 · 공격대로 0판) 그 사실을 한 줄로 말한다 —
+ * 숫자를 지어내 채우지 않는다.
  *
- * 위 판은 랭킹 메뉴의 요약 줄(`SummaryLine`)을 그대로 쓴다 — 「이름 : 순위 … 점수」 꼴이
- * 두 화면에서 같아야 한다. 도시 순위는 서버(`GET /ranking/mine`), 점수는 제 프로필이다.
- * **두 응답이 다 올 때까지** 랭킹 화면과 같은 로딩 판이 덮는다 — 한 줄만 먼저 차면 판이 들썩인다.
+ * 위 판은 랭킹 메뉴의 줄(`BoardSummary`)을 그대로 쓴다 — 「이름 : 순위 … 점수」 꼴이
+ * 두 화면에서 같아야 한다. 순위는 서버(`GET /ranking/mine` 한 번에 세 분야), 점수는 제 프로필이다.
+ * **응답이 올 때까지** 랭킹 화면과 같은 로딩 판이 덮는다 — 한 줄만 먼저 차면 판이 들썩인다.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { cityRankRow, collectionPoints } from '@samchess/meta';
-import type { MyRanks, PlayerProfile, RecordFilter } from '@samchess/meta';
-import type { BattleMode } from '@samchess/rules';
+import { useEffect, useState } from 'react';
+import { RANK_BOARDS } from '@samchess/meta';
+import type { MyRanks, PlayerProfile } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
-import { fetchCollectionRanking, fetchMyRanks } from '../meta/ranking.ts';
-import type { CollectionRanking } from '../meta/ranking.ts';
+import { fetchMyRanks } from '../meta/ranking.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
-import { SummaryLine, rankText } from './RankingScreen.tsx';
+import { BoardSummary } from './RankingScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-
-/** 랭킹 메뉴와 같은 값으로 잰다 — 두 화면의 도시 순위가 같아야 한다 */
-const MODE: BattleMode = '3v3';
-const FILTER: RecordFilter = 'all';
 
 export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefense, defenseUnseen = 0 }: {
   profile: PlayerProfile;
@@ -57,19 +53,17 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefens
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
-  const [collection, setCollection] = useState<CollectionRanking | null>(null);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     let live = true;
-    void Promise.allSettled([
-      fetchMyRanks(FILTER, MODE).then((r) => { if (live) setRanks(r); }),
-      fetchCollectionRanking().then((r) => { if (live) setCollection(r); }),
-    ]).then(() => { if (live) setSettled(true); });   // 실패한 쪽은 순위만 「—」
+    fetchMyRanks()
+      .then((r) => { if (live) setRanks(r); })
+      .catch(() => { /* 순위만 「—」 */ })
+      .finally(() => { if (live) setSettled(true); });
     return () => { live = false; };
   }, []);
   const veil = useRankingLoading(!settled);
   const backLabel = stripBackArrow(t('place.back'));
-  const city = useMemo(() => cityRankRow(profile, FILTER, MODE), [profile]);
 
   return (
     <ScreenChrome
@@ -87,11 +81,10 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection, onDefens
 
       <div className="place-body">
         <section className="place-panel rk-summary" data-field="board">
-          {/* 줄 꼴은 도시 줄과 같다(「순위 … 값」) — 점수는 제 프로필, 순위는 서버 (2026-10-15) */}
-          <SummaryLine board="collection" icon="records" title="board.sum.collection"
-            rank={t('ranking.sum.rank', { n: collection?.mine?.rank ?? '—' })} total={t('collection.sum.board', { n: collectionPoints(profile).toLocaleString() })} />
-          <SummaryLine board="city" icon="tab-city" title="ranking.tab.city"
-            rank={rankText(ranks?.city)} total={t('ranking.sum.total', { total: city.total })} />
+          {/* 랭킹 메뉴의 위 판과 같은 줄 — 점수는 제 프로필, 순위는 서버(`GET /ranking/mine`).
+              2026-11-20 기획자: 「랭킹」 제목 밑에 전투 · 도시화 · 컬렉션 세 줄 */}
+          <b className="rk-sum-head" data-field="boardTitle">{t('board.ranking')}</b>
+          {RANK_BOARDS.map((b) => <BoardSummary key={b} profile={profile} board={b} ranks={ranks} />)}
         </section>
 
         <section className="place-panel rk-menu">

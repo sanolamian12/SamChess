@@ -38,6 +38,24 @@ export function gameApiProblems(env: Env): string[] {
   return out;
 }
 
+/**
+ * 관리자 MFA(TOTP)를 끄는가 (2026-11-20 기획자 — 개발 동안만 끄고 배포 때 다시 켠다).
+ * `SAMCHESS_ADMIN_MFA=off`이고 **개발일 때만** 참이다 — 운영에서는 값이 있어도 거짓이고, `adminApiProblems`가 부팅을 막는다.
+ */
+export function adminMfaOff(env: Env): boolean {
+  return env['SAMCHESS_ADMIN_MFA'] === 'off' && samchessEnv(env) === 'development';
+}
+
+/** 관리자 API가 이 환경으로 떠도 되는가 — 운영에서 MFA를 끈 채로는 안 뜬다(배포 때 켜는 것을 잊을 수 없게) */
+export function adminApiProblems(env: Env): string[] {
+  const which = samchessEnv(env);
+  if (which === null) return [`SAMCHESS_ENV=${env['SAMCHESS_ENV']} — development 또는 production만 된다`];
+  if (which === 'production' && env['SAMCHESS_ADMIN_MFA'] === 'off') {
+    return ['SAMCHESS_ADMIN_MFA=off — 운영에서 관리자 2단계 인증(TOTP)이 꺼진다(.env.production에서 그 줄을 지운다)'];
+  }
+  return [];
+}
+
 /** 부팅 자리에서 — 문제가 있으면 전부 적고 던진다 */
 export function assertBootable(label: string, problems: string[]): void {
   if (problems.length === 0) return;

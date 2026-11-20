@@ -17,7 +17,7 @@ import type { BattleMode, OfficerId } from '@samchess/rules';
 import {
   PROFILE_VERSION, CARD_WEIGHT, MATCH_BAND, REWARD_TABLE, ownedOfficers, rewardKey, rewardTier, winPoints,
   MATCH_LOG_CAP, accountTally, applyBattleResult,
-  createProfile, migrateProfile, recentMatches, sumTally, totalTally, winChance,
+  createProfile, migrateProfile, recentMatches, winChance,
 } from '../src/index.ts';
 import type {
   BattleOpponent, BattleOutcome, BattleResult, PlayerProfile, RewardKey, RosterPick,
@@ -180,7 +180,7 @@ describe('승점 — 이긴 판마다 100 × (1 − 예상 승률)', () => {
     assert.ok(winPoints({ mine: 0, theirs: 2000 }) <= 100, '한 판이 100을 넘지 않는다');
   });
 
-  it('이긴 판만 — 계정 · 출전 장수 칸에 같은 값이 쌓인다', () => {
+  it('이긴 판만 — 계정 칸에 쌓인다', () => {
     let p = profile();
     const picks = picksOf(p, 3);
     p = fight(p, { result: 'win', picks, power: { mine: 600, theirs: 800 } }).profile;
@@ -188,7 +188,6 @@ describe('승점 — 이긴 판마다 100 × (1 − 예상 승률)', () => {
     p = fight(p, { result: 'draw', picks }).profile;
     p = fight(p, { result: 'win', picks, power: EVEN }).profile;
     assert.equal(accountTally(p).points, 88 + 50);
-    for (const pick of picks) assert.equal(totalTally(p.roster[pick.officer]!).points, 88 + 50);
   });
 
   it('옛 기록(승점 칸이 없다)은 0으로 되접힌다', () => {
@@ -201,47 +200,17 @@ describe('승점 — 이긴 판마다 100 × (1 − 예상 승률)', () => {
   });
 });
 
-// ── 전적 — 기물 × 모드 × 상대 교차 (40쪽) ───────────────────────
+// ── 전적 — 계정 · 부대 칸 (40쪽, 장수 칸은 2026-11-20에 없어졌다) ────────
 
 describe('전적 (40쪽)', () => {
-  it('출전한 장수 전원에게, 그 기물 칸에 남는다', () => {
+  it('장수에는 전적 칸이 없다 — 계정 칸에 판수 · 팀 격파로 한 번 센다 (2026-11-20 기획자: 전적은 부대로 본다)', () => {
     const p = profile();
     const picks = picksOf(p, 3);
-    const kills = { [picks[0]!.officer]: 2 };
+    const kills = { [picks[0]!.officer]: 2, [picks[1]!.officer]: 1 };
     const after = fight(p, { result: 'win', picks, kills }).profile;
 
-    for (const pick of picks) {
-      const inst = after.roster[pick.officer]!;
-      assert.deepEqual(inst.record[`field/3v3/${pick.piece}`], {
-        plays: 1, wins: 1, draws: 0, losses: 0,
-        kills: pick.officer === picks[0]!.officer ? 2 : 0, points: 50,
-      }, `${pick.piece} 칸이 다르다`);
-      assert.equal(Object.keys(inst.record).length, 1, '뛰지 않은 칸은 만들지 않는다');
-    }
-  });
-
-  it('기물별 합 = 모드별 합 = 총합 ★ (같은 숫자를 세 가지로 요구한다)', () => {
-    let p = profile();
-    const three = picksOf(p, 3);
-    p = fight(p, { result: 'win', picks: three, kills: { [three[0]!.officer]: 1 } }).profile;
-    p = fight(p, { result: 'lose', picks: three }).profile;
-    p = fight(p, { result: 'draw', picks: three, opponent: 'siege' }).profile;
-    // 같은 장수를 다른 기물로 다시 내보낸다 — 기물 칸이 갈리는지 본다
-    p = fight(p, { result: 'win', picks: three.map((x, i) => ({ ...x, piece: i === 0 ? 'Queen' : x.piece })) as RosterPick[] }).profile;
-
-    const inst = p.roster[three[0]!.officer]!;
-    const total = totalTally(inst);
-    assert.equal(total.plays, 4);
-    assert.deepEqual(total, { plays: 4, wins: 2, draws: 1, losses: 1, kills: 1, points: 100 });
-
-    // 칸은 교차로 한 번만 센다 — 기물별 · 모드별로 갈라 더해도 총합이다(장수 랭킹이 모드로 가른다)
-    const pieces = ['King', 'Rock', 'Bishop', 'Knight', 'Queen', 'Pawn'] as const;
-    const byPiece = Object.fromEntries(pieces.map((piece) => [piece, sumTally(inst.record, { piece }).plays]));
-    const byMode = (['3v3', '5v5'] as const).reduce((n, mode) => n + sumTally(inst.record, { mode }).plays, 0);
-    assert.equal(Object.values(byPiece).reduce((a, b) => a + b, 0), total.plays, '기물별 합이 총합과 다르다');
-    assert.equal(byMode, total.plays, '모드별 합이 총합과 다르다');
-    // King 3판 + Queen 1판
-    assert.deepEqual(byPiece, { King: 3, Rock: 0, Bishop: 0, Knight: 0, Queen: 1, Pawn: 0 });
+    for (const pick of picks) assert.ok(!('record' in after.roster[pick.officer]!), `${pick.officer}에 전적 칸이 생겼다`);
+    assert.deepEqual(after.record['field/3v3'], { plays: 1, wins: 1, draws: 0, losses: 0, kills: 3, points: 50 });
   });
 
   it('필터가 공성전과 야전을 가른다 · 순수 AI 대전은 어디에도 안 센다 (2026-10-28 기획자 확정)', () => {
@@ -254,12 +223,10 @@ describe('전적 (40쪽)', () => {
     const afterAi = fight(p, { result: 'win', picks, opponent: 'ai' });
     p = afterAi.profile;
 
-    const inst = p.roster[picks[0]!.officer]!;
-    assert.equal(totalTally(inst, 'all').plays, 3, 'AI 대전은 장수 전적에 안 든다');
-    assert.equal(totalTally(inst, 'field').plays, 1);
-    assert.equal(totalTally(inst, 'siege').plays, 2);
-    assert.equal(totalTally(inst, 'field').wins, 1);
-    assert.equal(totalTally(inst, 'siege').wins, 0);
+    assert.equal(accountTally(p, 'field').plays, 1);
+    assert.equal(accountTally(p, 'siege').plays, 2);
+    assert.equal(accountTally(p, 'field').wins, 1);
+    assert.equal(accountTally(p, 'siege').wins, 0);
     assert.equal(accountTally(p).plays, 3, 'AI 대전은 계정 전적에 안 든다');
     assert.equal(accountTally(p).points, before.points, 'AI 대전의 승리는 승점을 안 준다');
     assert.equal(p.matches.length, before.matches, 'AI 대전은 이력에 안 남는다');
@@ -276,12 +243,6 @@ describe('전적 (40쪽)', () => {
     assert.equal(account.kills, 2, '적격파는 팀 합계다');
   });
 
-  it('재설계는 전적을 건드리지 않는다 (B의 경계를 그대로 지킨다)', () => {
-    // `applyRespec`은 성장만 되감는다 — 여기서는 전적이 v3에서도 그 규약을 지키는지만 본다
-    const p = fight(profile(), { result: 'win' }).profile;
-    const before = JSON.stringify(p.roster);
-    assert.ok(before.includes('field/3v3/King'));
-  });
 });
 
 // ── 대전 이력 (DB 이식 전제) ────────────────────────────────────
@@ -342,7 +303,7 @@ describe('대전 이력', () => {
     assert.deepEqual(Object.keys(after.record), ['field/3v3'], '계정 — 온라인은 야전, AI는 버린다');
     assert.equal(after.record['field/3v3']!.wins, 2);
     assert.equal(after.record['field/3v3']!.points, 20, '승점도 따라간다');
-    assert.deepEqual(Object.keys(after.roster[who as OfficerId]!.record), ['field/3v3/King'], '장수 — 같다');
+    assert.ok(!('record' in after.roster[who as OfficerId]!), '장수 칸은 버린다(2026-11-20 — 전적은 부대로 본다)');
     assert.deepEqual(after.matches.map((m) => [m.seq, m.opponent]), [[2, 'field']], '이력 — AI 줄은 빠지고 온라인 줄은 야전');
     assert.equal(after.version, PROFILE_VERSION, '전적 갈래는 v7, 그 뒤로도 지금 형식까지 올라간다');
     // 새 형식에서 옛 열쇠는 모르는 열쇠다 — 다시 지나도 그대로(멱등)
@@ -380,7 +341,7 @@ describe('저장 형식 v3로 되접기', () => {
     assert.equal(Object.keys(after.roster).length, 5, '장수는 그대로다');
     assert.equal(after.cityName, '전적성');
     for (const inst of Object.values(after.roster)) {
-      assert.deepEqual(inst.record, {}, '기물도 모드도 모르는 값은 넣을 칸이 없다');
+      assert.ok(!('record' in inst), '옛 장수 전적은 넣을 칸이 없다');
     }
     assert.deepEqual(after.matches, []);
     assert.equal(after.matchSeq, 1);
@@ -397,17 +358,15 @@ describe('저장 형식 v3로 되접기', () => {
   it('망가진 칸은 그 칸만 빠지고, 출전 수는 **다시 센다**', () => {
     const p = fight(profile(), { result: 'win' }).profile;
     const who = Object.keys(p.roster)[0]!;
-    const raw = JSON.parse(JSON.stringify(p)) as {
-      roster: Record<string, { record: Record<string, unknown> }>;
-    };
-    raw.roster[who]!.record['field/3v3/King'] = { plays: 99, wins: 1, draws: 0, losses: 0, kills: 0 };
-    raw.roster[who]!.record['field/9v9/King'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
-    raw.roster[who]!.record['쓰레기'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
+    const raw = JSON.parse(JSON.stringify(p)) as { record: Record<string, unknown> };
+    raw.record['field/3v3'] = { plays: 99, wins: 1, draws: 0, losses: 0, kills: 0 };
+    raw.record['field/9v9'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
+    raw.record['field/3v3/King'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
+    raw.record['쓰레기'] = { plays: 3, wins: 3, draws: 0, losses: 0, kills: 0 };
 
     const after = migrateProfile(raw)!;
-    const record = after.roster[who as OfficerId]!.record;
-    assert.deepEqual(Object.keys(record), ['field/3v3/King'], '모르는 키는 버린다');
-    assert.equal(record['field/3v3/King']!.plays, 1, 'plays = 승 + 무 + 패로 다시 센다');
+    assert.deepEqual(Object.keys(after.record), ['field/3v3'], '모르는 키는 버린다');
+    assert.equal(after.record['field/3v3']!.plays, 1, 'plays = 승 + 무 + 패로 다시 센다');
   });
 
   it('망가진 이력 줄만 빠지고 줄 번호는 앞으로만 간다', () => {

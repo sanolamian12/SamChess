@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { RECONNECT_GRACE_MS } from '@samchess/rules';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import type {
-  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView, DefenseReplayData, DefenseUnseen,
+  AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView, DefenseReplayData, DefenseUnseen, RankBoard,
 } from '@samchess/meta';
 import {
   PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
@@ -75,9 +75,7 @@ import { BuildingScreen } from './BuildingScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
 import { BuildingsScreen } from './BuildingsScreen.tsx';
 import { RankingScreen } from './RankingScreen.tsx';
-import { CityRankingScreen } from './CityRankingScreen.tsx';
-import { SquadRankingScreen } from './SquadRankingScreen.tsx';
-import { OfficerRankingScreen } from './OfficerRankingScreen.tsx';
+import { RankingBoardScreen } from './RankingBoardScreen.tsx';
 import { MarketScreen } from './MarketScreen.tsx';
 import { OfficerListScreen } from './OfficerListScreen.tsx';
 import { SortieScreen } from './SortieScreen.tsx';
@@ -117,7 +115,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
     case 'officers': case 'city': case 'buildings': return 'palace';
     case 'tutorials': case 'squads': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
-    case 'board': case 'collection': case 'defense': case 'ranking': case 'rankingCity': case 'rankingSquad': case 'rankingOfficer': return 'board';
+    case 'board': case 'collection': case 'defense': case 'ranking': case 'rankingBoard': return 'board';
     case 'building': return screen.building;
     default: return null;
   }
@@ -171,9 +169,8 @@ export type Screen =
   /** 방어 기록 리플레이 — 전투 무대를 쓰는 관전. 정산 없이 목록으로 돌아간다 */
   | { name: 'defenseReplay'; data: DefenseReplayData }
   | { name: 'ranking'; from: 'city' | 'main' }
-  | { name: 'rankingCity'; from: 'city' | 'main' }
-  | { name: 'rankingSquad'; from: 'city' | 'main' }
-  | { name: 'rankingOfficer'; from: 'city' | 'main' }
+  /** 랭킹 한 분야 — 전투 · 도시화 · 컬렉션 (2026-11-20) */
+  | { name: 'rankingBoard'; board: RankBoard; from: 'city' | 'main' }
   | { name: 'market' }
   /** `officer`가 있으면 그 장수의 카드를 연 채로 들어온다 — 장터 초심의 서의 [궁궐로 이동] (2026-09-25) */
   | { name: 'officers'; officer?: OfficerId }
@@ -923,23 +920,13 @@ export function App(): React.JSX.Element {
           profile={profile}
           from={screen.from}
           onBack={() => setScreen(screen.from === 'main' ? { name: 'board' } : { name: 'city' })}
-          onCity={() => setScreen({ name: 'rankingCity', from: screen.from })}
-          onSquad={() => setScreen({ name: 'rankingSquad', from: screen.from })}
-          onOfficer={() => setScreen({ name: 'rankingOfficer', from: screen.from })}
+          onBoard={(board) => setScreen({ name: 'rankingBoard', board, from: screen.from })}
         />
-      ) : screen.name === 'rankingCity' ? (
-        <CityRankingScreen
+      ) : screen.name === 'rankingBoard' ? (
+        <RankingBoardScreen
+          key={screen.board}
           profile={profile}
-          onBack={() => setScreen({ name: 'ranking', from: screen.from })}
-        />
-      ) : screen.name === 'rankingSquad' ? (
-        <SquadRankingScreen
-          profile={profile}
-          onBack={() => setScreen({ name: 'ranking', from: screen.from })}
-        />
-      ) : screen.name === 'rankingOfficer' ? (
-        <OfficerRankingScreen
-          profile={profile}
+          board={screen.board}
           onBack={() => setScreen({ name: 'ranking', from: screen.from })}
         />
       ) : screen.name === 'officers' ? (

@@ -1,158 +1,169 @@
 /**
- * 랭킹 — 도시 / 부대 / 장수 세 판 (pptx 46~49쪽, 2026-08-26)
+ * 랭킹 — **전투 · 도시화 · 컬렉션** 세 분야 (2026-11-20 기획자, 옛 도시 · 부대 · 장수 세 판을 바꿨다)
  *
  * ────────────────────────────────────────────────────────────────
  * 한 프로필에서 행을 뽑는 자리라서 서버와 클라가 같이 쓴다 ★
  * ────────────────────────────────────────────────────────────────
  *
- * 서버는 이 함수들로 **전체 유저**를 훑어 top 5 · 검색을 낸다(`packages/server-api`).
- * 클라이언트는 **자기 프로필 하나**에 똑같은 함수를 돌려 "내 랭킹" 하단을 만든다 —
- * 서버 왕복 없이 즉시 뜨고, 서버가 죽어 있어도 보인다(§5-61과 같은 결).
+ * 서버는 이 함수들로 **전체 유저**를 훑어 1~10위 · 검색 · 내 순위를 낸다(`packages/server-api`의 `ranking.ts`).
+ * 클라이언트는 **자기 프로필 하나**에 같은 함수를 돌려 랭킹 메뉴의 「점수」를 낸다 — 서버가 안 닿아도 점수는 뜨고
+ * 순위만 「—」다. 이 파일은 다른 유저의 것을 모른다 — 몇 등인가는 서버가 전체를 모아 매긴다.
  *
- * 이 파일은 다른 유저의 것을 절대 모른다 — "내가 몇 등인가"는 여기서 안 낸다.
- * 그건 서버가 전체를 모아 놓고 매기는 일이다.
- *
- * ────────────────────────────────────────────────────────────────
- * "승점" = 이긴 판마다 100 × (1 − 내 예상 승률) (2026-10-27 확정 — 「총점」을 바꿨다)
- * ────────────────────────────────────────────────────────────────
- *
- * 옛 총점(승×3 − 패 + 적격파, 2026-08-26)은 **판을 많이 뛸수록** 오르는 활동량이었다. 공성전에서
- * 상대를 고르게 되자 약한 상대를 골라 이기는 것이 곧 점수가 됐다. 승점은 **이기기 어려웠던 승리일수록**
- * 많이 준다 — 비슷한 상대 50, 훨씬 센 상대 100에 가깝게, 약한 상대는 조금. 한 판이 100을 못 넘어
- * 복권이 되지 않고, 예상 승률은 모드를 묻지 않는 눈금이라 3v3 · 5v5를 더해도 된다. 기획자 원안
- * 「(상대 전투력 − 내 전투력)을 더한다」는 대등한 승리가 0, 약한 상대의 승리가 음수, 두 모드의 눈금이
- * 섞이는 문제가 있어 같은 뜻을 이 식으로 옮겼다.
- *
- * 한 판의 값은 `rewards.ts`의 `winPoints()`가 정산하며 칸(`RecordTally.points`)에 쌓는다 — 세 판
- * (도시 · 부대 · 장수)이 같은 칸을 읽고, `battleScore()` 하나가 그 읽는 자리다.
+ * 순위는 **끝까지 정한다** — 점수가 같으면 정해 둔 다음 기준, 마지막은 도시 이름(계정 사이에 고유하다).
+ * 그래서 같은 등수가 없고, 검색으로 찾은 도시의 등수가 1~10위 표의 등수와 같은 눈금이다(컬렉션 순위와 같은 규약).
  *
  * ────────────────────────────────────────────────────────────────
- * 부대 랭킹에는 "전투력"을 안 보여준다 (2026-08-27 확정 — 한 차례 뒤집었다)
+ * 전투 — 공격대의 승점 (부대 전적, 2026-11-20)
  * ────────────────────────────────────────────────────────────────
  *
- * `power.ts`의 `battlePower()`는 9개 특징에 실측 회귀 계수를 곱한 값이라
- * (`might×1.43 + skillS×34.3 + … − 129.6`) 화면에 "왜 이 숫자인가"를 한 줄로
- * 설명할 수 없다 — 매칭에는 그래도 되지만(승률로 환산되는 눈금이면 충분하다),
- * 랭킹처럼 사람이 보고 납득해야 하는 자리에는 안 맞는다.
+ * 전적은 장수가 아니라 **부대**로 본다. 점수는 그 모드 **공격대 칸의 승점**이고(`Squad.record`의 `points` —
+ * 이긴 판마다 100 × (1 − 예상 승률), `rewards.ts`의 `winPoints()`), 「전체」는 두 모드 공격대의 합이다
+ * (예상 승률은 모드를 묻지 않는 눈금이라 더해도 된다). 줄에는 병영과 같은 전 · 승 · 무 · 패 · 격파와
+ * **수성 성공 수**를 보인다 — 수성 성공은 방어 기록(서버의 `defense_log`)에만 있어 이 함수가 인자로 받는다.
+ * 수비대는 줄에 안 선다(수성전은 AI가 두어 수비대 칸에 전적이 안 쌓인다). **한 판도 안 뛴 도시는 줄에 안 선다** —
+ * 0점 수천이 같은 꼴찌로 서면 「몇 위」가 뜻이 없다(컬렉션의 「0점은 안 선다」와 같은 결).
  *
- * 처음엔 `squadDisplayPower()`(`GRADE_SCORE` × 레벨의 합)라는 계수 없는 대체
- * 수치를 따로 뒀었는데, **부대 행을 누르면 구성(포지션·등급·레벨·HP·MP·AT)이
- * 그대로 펼쳐지므로** 요약 숫자 하나를 또 낼 필요가 없다고 뒤집었다 — 숫자
- * 하나로 뭉치면 오히려 "이게 뭘 뜻하는 숫자냐"는 질문이 하나 더 생긴다. 그래서
- * `SquadRankRow`에는 `power`가 아예 없다. **매칭·저장 쪽 `battlePower()`는
- * 그대로다** — 여기서 빠진 것은 랭킹 화면의 표시값 뿐이다.
+ * ────────────────────────────────────────────────────────────────
+ * 도시화 — 도시 레벨 · 보유 장수 · 레벨 성숙도의 가중 합 (2026-11-20 기획자)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 건물 레벨은 뺐다 — 도시 레벨을 올리면 따라 채워지는 것이라 두 번 세게 된다. 보유 장수는 풀 + 보관함
+ * (`ownedOfficers()` — 증축 조건 · 황제 판정과 같은 셈), 성숙도는 **풀 장수들이 올린 레벨의 합**(Lv1이면 0 ~ Lv10이면 9).
+ * 가중치는 `CITY_RANK_WEIGHTS` 하나다 — 바꾸면 화면의 점수 설명(`ranking.note.city`)도 함께 고친다.
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 컬렉션 — 완성할 때 받는 점수 (`collection.ts`의 `collectionRankRows`, 2026-10-13)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * 줄 세우기는 그쪽에 원래 있던 것 그대로다. 완성한 수는 보여 주기만 한다(점수가 같을 때의 둘째 기준이기는 하다).
+ *
+ * ────────────────────────────────────────────────────────────────
+ * 장수 랭킹 · 부대 랭킹은 없어졌다 (2026-11-20)
+ * ────────────────────────────────────────────────────────────────
+ *
+ * `officerRankRows()`는 남는다 — 이름과 달리 이제 **장수 카드의 행**(내 장수 상세 · 농지 · 부대원 고르기)을 만드는 자리다.
+ * 장수 전적 칸은 같은 날 걷었다 — 정산이 세지 않고 저장 형식에도 없다(카드 행에 전적이 없다).
  */
 
 import { officerById, tacticById } from '@samchess/data';
 import type { StoryLang } from '@samchess/data';
 import type { BattleMode, Grade, OfficerId } from '@samchess/rules';
 import { atRange } from './officers.ts';
-import { gradeScore, statsOf, tacticsOf } from './profile.ts';
-import { sumTally, totalTally, whereOf } from './records.ts';
-import type { RecordFilter } from './records.ts';
-import { squadRow } from './squads.ts';
-import type { SquadMember } from './squads.ts';
-import type { PlayerProfile, RecordTally, Squad } from './types.ts';
+import { ownedOfficers, statsOf, tacticsOf } from './profile.ts';
+import { sumTally } from './records.ts';
+import { squadAt } from './squads.ts';
+import type { PlayerProfile, RecordTally } from './types.ts';
 
-export type RankBoard = 'city' | 'squad' | 'officer';
-export type CityRankSort = 'size' | 'battle' | 'total';
-export type SquadRankSort = 'battle' | 'total';
-/**
- * pptx 49쪽(장수 랭킹)은 47쪽의 정렬 버튼 셋을 그대로 복사해 「도시 규모 순」이 붙어
- * 있는데, 장수 한 명 한 명의 행에는 뜻이 없는 기준이다(같은 슬라이드 틀을 복붙한
- * 흔적으로 보인다). 붙어 있는 열(레벨)에 맞춰 「레벨 순」으로 바꿔 단다.
- */
-export type OfficerRankSort = 'level' | 'battle' | 'total';
+/** 세 분야 */
+export type RankBoard = 'battle' | 'city' | 'collection';
+export const RANK_BOARDS: readonly RankBoard[] = ['battle', 'city', 'collection'];
 
-/** 승점 — 이긴 판마다 쌓인 `winPoints()`의 합(2026-10-27 확정, 위 머리말 참조). 세 판이 같은 값을 쓴다 */
+/** 전투 랭킹의 모드 — `all`은 두 모드 공격대의 합 */
+export type BattleRankMode = BattleMode | 'all';
+export const BATTLE_RANK_MODES: readonly BattleRankMode[] = ['all', '3v3', '5v5'];
+
+/** 상세 화면이 보이는 줄 수 — 1~10위. 검색해도 열 줄까지 */
+export const RANK_TOP = 10;
+
+/** 승점 — 이긴 판마다 쌓인 `winPoints()`의 합(2026-10-27 확정). 전투 랭킹 · 공성전 목록의 도시 점수가 같은 값을 쓴다 */
 export const battleScore = (t: RecordTally): number => t.points;
 
-// ── 도시 랭킹 ────────────────────────────────────────────────────
+/** 순위가 붙은 줄 — 1부터, 같은 등수 없음 */
+export type Ranked<T> = T & { rank: number };
+
+const byName = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** 줄 세운 목록에 1부터 등수를 붙인다 */
+export const withRanks = <T>(sorted: readonly T[]): Ranked<T>[] => sorted.map((r, i) => ({ ...r, rank: i + 1 }));
+
+// ── 전투 랭킹 ────────────────────────────────────────────────────
+
+export interface BattleRankRow {
+  cityName: string;
+  /** 공격대 전적 — `all`이면 두 모드의 합 */
+  tally: RecordTally;
+  /** 수성 성공 수 — 방어 기록에서 센 값(서버가 넣는다) */
+  held: number;
+  /** 점수 = 승점 */
+  total: number;
+}
+
+const modesOf = (mode: BattleRankMode): readonly BattleMode[] => (mode === 'all' ? ['3v3', '5v5'] : [mode]);
+
+/** 공격대 전적 — 병영의 모드 줄과 같은 값(그 모드 공격대 칸의 `record`). `all`이면 두 칸을 더한다 */
+export function attackTally(profile: PlayerProfile, mode: BattleRankMode): RecordTally {
+  // 키가 `{상대}/{모드}`라 두 모드 칸이 겹치지 않는다 — 합쳐 한 번에 센다
+  return sumTally(Object.assign({}, ...modesOf(mode).map((m) => squadAt(profile, m, 'attack')?.record ?? {})));
+}
+
+/** 전투 랭킹의 한 줄 — `heldByMode`는 서버가 방어 기록에서 센 수성 성공(없으면 0) */
+export function battleRankRow(
+  profile: PlayerProfile, mode: BattleRankMode, heldByMode?: Partial<Record<BattleMode, number>>,
+): BattleRankRow {
+  const tally = attackTally(profile, mode);
+  const held = modesOf(mode).reduce((n, m) => n + (heldByMode?.[m] ?? 0), 0);
+  return { cityName: profile.cityName, tally, held, total: battleScore(tally) };
+}
+
+/** 줄에 서는가 — 공격대로 한 판이라도 뛰었다 */
+export const battleRankable = (row: BattleRankRow): boolean => row.tally.plays > 0;
+
+/** 승점 → 승 → 격파 → 도시 이름 */
+export function sortBattleRows<T extends BattleRankRow>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => b.total - a.total || b.tally.wins - a.tally.wins
+    || b.tally.kills - a.tally.kills || byName(a.cityName, b.cityName));
+}
+
+// ── 도시화 랭킹 ──────────────────────────────────────────────────
+
+/**
+ * 도시화 점수의 가중치 (2026-11-20 기획자 — 가중 합). 범위는 도시 레벨 1~11 · 보유 장수 ~260 · 올린 레벨 합 ~2,340이라
+ * 한 계정에서 대략 100~1,100 · 10~2,600 · 0~2,340이 된다. **리터럴로 적는다** — 화면의 설명 문장이 이 값을 끼운다.
+ */
+export const CITY_RANK_WEIGHTS = { cityLevel: 100, officer: 10, level: 1 } as const;
 
 export interface CityRankRow {
   cityName: string;
   cityLevel: number;
-  officerCount: number;
-  gradeScore: number;
-  tally: RecordTally;
+  /** 보유 장수 — 풀 + 보관함 */
+  officers: number;
+  /** 레벨 성숙도 — 풀 장수들이 올린 레벨의 합 */
+  maturity: number;
+  /** 점수 = 가중 합 */
   total: number;
 }
 
-export function cityRankRow(
-  profile: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
-): CityRankRow {
-  const where = { ...whereOf(filter), ...(mode ? { mode } : {}) };
-  const tally = sumTally(profile.record, where);
+/** 레벨 성숙도 — 풀 장수들이 올린 레벨(Lv − 1)의 합 */
+export const levelMaturity = (profile: PlayerProfile): number =>
+  Object.values(profile.roster).reduce((n, inst) => n + Math.max(0, inst.level - 1), 0);
+
+export function cityRankRow(profile: PlayerProfile): CityRankRow {
+  const officers = ownedOfficers(profile).length;
+  const maturity = levelMaturity(profile);
+  const w = CITY_RANK_WEIGHTS;
   return {
-    cityName: profile.cityName,
-    cityLevel: profile.cityLevel,
-    officerCount: Object.keys(profile.roster).length,
-    gradeScore: gradeScore(profile),
-    tally,
-    total: battleScore(tally),
+    cityName: profile.cityName, cityLevel: profile.cityLevel, officers, maturity,
+    total: profile.cityLevel * w.cityLevel + officers * w.officer + maturity * w.level,
   };
 }
 
-export function sortCityRows(rows: readonly CityRankRow[], sort: CityRankSort): CityRankRow[] {
-  const out = [...rows];
-  if (sort === 'size') {
-    out.sort((a, b) => b.cityLevel - a.cityLevel || b.officerCount - a.officerCount);
-  } else if (sort === 'battle') {
-    out.sort((a, b) => b.tally.wins - a.tally.wins || b.tally.kills - a.tally.kills);
-  } else {
-    out.sort((a, b) => b.total - a.total);
-  }
-  return out;
+/** 점수 → 도시 레벨 → 도시 이름 */
+export function sortCityRows<T extends CityRankRow>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => b.total - a.total || b.cityLevel - a.cityLevel || byName(a.cityName, b.cityName));
 }
 
-// ── 부대 랭킹 ────────────────────────────────────────────────────
+// ── 내 순위 (랭킹 메뉴 위쪽 판) ──────────────────────────────────
 
-export interface SquadRankRow {
-  cityName: string;
-  squad: Squad;
-  members: SquadMember[];
-  tally: RecordTally;
-  total: number;
+/** 한 분야에서의 내 순위 · 점수 — 줄에 안 서면(전투 0판 · 컬렉션 0점) 그 분야가 `null` */
+export interface MyRank { rank: number; total: number }
+
+export interface MyRanks {
+  battle: MyRank | null;
+  city: MyRank;
+  collection: MyRank | null;
 }
 
-/** 이 프로필의 부대를 전부 행으로 편다 — `mode`를 주면 그 모드만(3v3/5v5는 안 섞는다) */
-export function squadRankRows(
-  profile: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
-): SquadRankRow[] {
-  const where = whereOf(filter);
-  return profile.squads
-    .filter((s) => !mode || s.mode === mode)
-    .map((squad) => {
-      const row = squadRow(profile, squad);
-      const tally = sumTally(squad.record, where);
-      return {
-        cityName: profile.cityName,
-        squad,
-        members: row.members,
-        tally,
-        total: battleScore(tally),
-      };
-    });
-}
-
-/**
- * 동점은 **id 순**이다 (2026-09-18) — 안 정하면 계정 안의 순서(Postgres `jsonb`가
- * 키를 다시 늘어놓는다)를 따라, 저장 전의 화면과 서버가 서로 다른 「최고」를 골랐다
- * (`myRanks()` 참조). 다른 계정끼리는 id가 겹쳐도 상관없다 — 순서만 정해지면 된다.
- */
-const byId = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
-
-export function sortSquadRows(rows: readonly SquadRankRow[], sort: SquadRankSort): SquadRankRow[] {
-  const out = [...rows];
-  if (sort === 'battle') {
-    out.sort((a, b) => b.tally.wins - a.tally.wins || b.tally.kills - a.tally.kills);
-  } else {
-    out.sort((a, b) => b.total - a.total || byId(a.squad.id, b.squad.id));
-  }
-  return out;
-}
-
-// ── 장수 랭킹 ────────────────────────────────────────────────────
+// ── 장수 카드의 행 (옛 장수 랭킹의 행 — 이제 카드 데이터) ────────
 
 export interface OfficerRankRow {
   cityName: string;
@@ -176,32 +187,22 @@ export interface OfficerRankRow {
   story?: Partial<Record<StoryLang, string>>;
   /**
    * 고유기술 id — `@samchess/data`의 `skillById`로 직접 찾는다. 정적 장수 데이터라
-   * (레벨에 안 따라간다) 통째로 안 싣는다 — SP·유래·효과문까지 매 랭킹 행마다
-   * 실으면 네트워크만 무거워진다(스냅샷에 로그를 안 싣는 것과 같은 결).
+   * (레벨에 안 따라간다) 통째로 안 싣는다.
    */
   uniqueSkillId?: string;
   /**
-   * 배운 책략 — 이건 **성장(레벨)에 달려 같은 장수라도 계정마다 다르다**, 그래서
+   * 배운 책략 — **성장(레벨)에 달려 같은 장수라도 계정마다 다르다**, 그래서
    * 위 고유기술과 달리 여기서 직접 계산해 싣는다. `tacticsOf(inst)`가 단일 출처다.
    */
   tactics: { id: string; name: string; school: 'support' | 'illusion'; text: string }[];
-  tally: RecordTally;
-  total: number;
 }
 
-/**
- * 이 프로필의 보유 장수를 전부 행으로 편다 — 40쪽 장수 전적과 같은 필터 두 갈래.
- * `mode`를 주면 3v3/5v5를 안 섞는다(2026-08-27 열세 번째 지정 — "장수 일람처럼
- * 장수 랭킹도 모드를 나눠 볼 수 있어야 한다") — 도시·부대 랭킹과 같은 결이다.
- */
-export function officerRankRows(
-  profile: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
-): OfficerRankRow[] {
+/** 이 프로필의 보유 장수를 전부 카드 행으로 편다 */
+export function officerRankRows(profile: PlayerProfile): OfficerRankRow[] {
   const rows: OfficerRankRow[] = [];
   for (const inst of Object.values(profile.roster)) {
     const data = officerById.get(inst.officer);
     if (!data) continue; // 데이터에 없는 장수(정정으로 id가 갈린 옛 저장분)는 버린다
-    const tally = mode ? sumTally(inst.record, { ...whereOf(filter), mode }) : totalTally(inst, filter);
     const { hp, mp } = statsOf(inst);
     const tactics = tacticsOf(inst)
       .map((id) => tacticById.get(id))
@@ -222,79 +223,7 @@ export function officerRankRows(
       ...(data.story ? { story: data.story } : {}),
       ...(data.uniqueSkill ? { uniqueSkillId: data.uniqueSkill } : {}),
       tactics,
-      tally,
-      total: battleScore(tally),
     });
   }
   return rows;
-}
-
-export function sortOfficerRows(rows: readonly OfficerRankRow[], sort: OfficerRankSort): OfficerRankRow[] {
-  const out = [...rows];
-  if (sort === 'level') {
-    out.sort((a, b) => b.level - a.level);
-  } else if (sort === 'battle') {
-    out.sort((a, b) => b.tally.wins - a.tally.wins || b.tally.kills - a.tally.kills);
-  } else {
-    out.sort((a, b) => b.total - a.total || byId(a.officer, b.officer));
-  }
-  return out;
-}
-
-// ── 내 순위 (랭킹 메뉴 위쪽 판, 2026-09-18) ──────────────────────
-
-/**
- * 한 판에서의 내 순위 — `id`는 부대·장수 판에서 **어느 것의 순위인가**다
- * (도시 판은 계정이 곧 하나라 없다). `total`은 그 행의 총점.
- */
-export interface MyRank { rank: number; total: number; id?: string }
-
-export interface MyRanks {
-  city: MyRank;
-  /** 이 모드의 부대가 하나도 없으면 `null` */
-  squad: MyRank | null;
-  /** 보유 장수가 없으면 `null` */
-  officer: MyRank | null;
-}
-
-/** 공동 순위 — 「나보다 총점이 **높은** 행 수 + 1」. 같은 점수는 같은 순위다 */
-const rankAmong = (totals: readonly number[], mine: number): number =>
-  1 + totals.filter((t) => t > mine).length;
-
-/**
- * 전체 계정(`all`) 가운데 **내 도시 · 내 최고 부대 · 내 최고 장수**의 총점 순위
- * (랭킹 메뉴 위쪽 판 — 2026-09-18 지정).
- *
- * 머리말의 「이 파일은 다른 유저의 것을 절대 모른다」는 그대로다 — 여기도 **받은
- * 목록**만 볼 뿐이고, 목록을 모으는 것은 서버다(`GET /ranking/mine`). 순수 함수라
- * 가짜 계정 몇으로 고정할 수 있다.
- *
- * 「최고」는 내 것들을 `sort*Rows(…, 'total')`로 줄 세운 첫째다 — 화면이 자기
- * 프로필로 고르는 것과 **같은 함수·같은 순서**라(정렬이 안정적이다) 서버와 화면이
- * 같은 부대·장수를 가리킨다. `me`가 `all` 안에 있어도 된다(제 점수보다 **높은**
- * 것만 센다).
- */
-export function myRanks(
-  all: readonly PlayerProfile[], me: PlayerProfile, filter: RecordFilter, mode?: BattleMode,
-): MyRanks {
-  const city = cityRankRow(me, filter, mode);
-  const cityTotals = all.map((p) => cityRankRow(p, filter, mode).total);
-
-  const bestSquad = sortSquadRows(squadRankRows(me, filter, mode), 'total')[0];
-  const squadTotals = bestSquad ? all.flatMap((p) => squadRankRows(p, filter, mode).map((r) => r.total)) : [];
-
-  const bestOfficer = sortOfficerRows(officerRankRows(me, filter, mode), 'total')[0];
-  const officerTotals = bestOfficer
-    ? all.flatMap((p) => officerRankRows(p, filter, mode).map((r) => r.total))
-    : [];
-
-  return {
-    city: { rank: rankAmong(cityTotals, city.total), total: city.total },
-    squad: bestSquad
-      ? { rank: rankAmong(squadTotals, bestSquad.total), total: bestSquad.total, id: bestSquad.squad.id }
-      : null,
-    officer: bestOfficer
-      ? { rank: rankAmong(officerTotals, bestOfficer.total), total: bestOfficer.total, id: bestOfficer.officer }
-      : null,
-  };
 }

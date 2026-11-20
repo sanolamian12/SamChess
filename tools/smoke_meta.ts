@@ -1147,6 +1147,9 @@ await page.click('[data-action="minGrainOk"]');
 // AI 상대는 이제 서버가 찾는다(2026-10-15) — 서버가 막 뜬 뒤 첫 요청은 3초 넘게 걸린 적이 있어 고정 4.5초 대신 상태를 기다린다
 await page.waitForFunction(() => (document.querySelector('[data-screen="match"]') as HTMLElement | null)?.dataset.state === 'found',
   null, { timeout: 10_000 }).catch(() => {});
+// 「왜 없나」는 무관이 말한다(`Say`, 2026-11-19) — 글은 서고 나서 조금 뒤에 찬다. 찾은 순간 읽으면 빈 글이다
+await page.waitForFunction(() => (document.querySelector('.stw[data-say="noDecline"] [data-field="guideText"]')?.textContent ?? '') !== '',
+  null, { timeout: 5_000 }).catch(() => {});
 {
   const found = await matchView();
   if (found.state !== 'found') fail(`대기열의 상대를 못 찾았다 — ${found.state}`);
@@ -1521,18 +1524,12 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     const scr = document.querySelector('[data-screen="result"]') as HTMLElement | null;
     if (!scr) return null;
     const p = (window as any).__profile.current;
-    const cells = Object.values(p.roster as Record<string, { record: Record<string, {
-      plays: number; losses: number;
-    }> }>).flatMap((inst) => Object.entries(inst.record));
+    // 계정 전적 칸 — 장수 전적 칸은 2026-11-20에 없어졌다(전적은 부대로 본다)
+    const cells = Object.entries((p.record ?? {}) as Record<string, unknown>);
     return {
       kind: scr.dataset.result,
       // 전과 장 — 출전한 장수마다 한 칸(꼬마 장수 · 격파 수)
       units: [...scr.querySelectorAll('.brs-unit[data-officer]')].map((el) => (el as HTMLElement).dataset.officer ?? ''),
-      // 이름 아래 통산 승 / 무 / 패와 이번 판으로 오른 칸 (2026-10-12 — 예상 승률 줄을 이것으로 갈았다)
-      wdl: [...scr.querySelectorAll('[data-field="wdl"]')].map((el) => {
-        const d = (el as HTMLElement).dataset;
-        return { w: Number(d.w), d: Number(d.d), l: Number(d.l), bump: d.bump ?? '' };
-      }),
       cells,
       matches: (p.matches as {
         opponent: string; result: string; myPower: number; chance: number;
@@ -1564,9 +1561,6 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     lossCard = { officer, grade, isNew: !rosterBeforeBattle.includes(officer) };
     console.log(`✓ 패배 카드 — ${officer} (${grade}급, ${lossCard.isNew ? '새 장수' : '보유한 장수'})`);
   }
-  // 전과 장의 장수별 통산 승무패 — **AI 대전은 안 센 판이라 줄을 안 띄운다**(2026-10-28). 띄우면 이번 판 칸이 초록으로 서서 센 것처럼 읽힌다.
-  // 공성전 · 야전의 통산 줄은 전적 화면 검사(아래 「전적 필터」)가 본다
-  if (result!.wdl.length !== 0) fail(`AI 대전인데 전과 장에 통산 승무패가 섰다: ${JSON.stringify(result!.wdl)}`)
   if (result!.grainSaved !== grain + 1) fail(`군량이 계정에 안 들어갔다 — ${grain} → ${result!.grainSaved}`);
 
   // **순수 AI 대전은 전적 · 이력에 안 남는다** (2026-10-28 기획자 확정) — 보상(군량 · 카드)만. 「센다」로 되돌아가면 여기서 깨진다
@@ -2251,16 +2245,17 @@ console.log(`✓ 저장 유지 — ${kept}`);
   const kept = await listRows();
   if (kept.length !== firstPage) fail(`v2를 되접은 뒤 일람 첫 쪽이 ${kept.length}줄이다 (기대 ${firstPage}줄)`);
   const folded = await apiGet().then((p) => {
-    const insts = Object.values(p['roster']) as { record: Record<string, unknown> }[];
+    const insts = Object.values(p['roster']) as Record<string, unknown>[];
     return {
       version: p['version'] as number,
-      cells: insts.reduce((n, i) => n + Object.keys(i.record).length, 0),
+      // 장수 전적 칸은 2026-11-20에 없어졌다 — 옛 저장분의 칸은 되접기가 버려야 한다
+      cells: insts.filter((i) => 'record' in i).length,
       matches: Array.isArray(p['matches']) ? p['matches'].length : -1,
       seq: p['matchSeq'] as number,
     };
   });
   if (folded.version !== PROFILE_VERSION) fail(`v2를 되접었는데 version이 ${folded.version}다 (저장까지 확인)`);
-  if (folded.cells !== 0) fail(`기물도 모드도 모르는 옛 전적이 칸에 들어갔다 (${folded.cells}칸)`);
+  if (folded.cells !== 0) fail(`옛 장수 전적 칸이 되접은 뒤에도 남았다 (장수 ${folded.cells}명)`);
   if (folded.matches !== 0 || folded.seq !== 1) fail(`이력 자리가 초기화되지 않았다: ${JSON.stringify(folded)}`);
   console.log(`✓ v2 되접기 — 장수 ${kept.length}명 유지 · version 2 → ${PROFILE_VERSION} · 옛 평평한 전적은 0에서 시작`);
 }
@@ -2467,44 +2462,42 @@ console.log(`✓ 저장 유지 — ${kept}`);
   console.log(`✓ 증축 — Lv2 · 수치는 그대로(${it!.pool}) · 건물 관리 ${blds!.credits}`);
 
   /*
-   * ⑤ 도시 전적 — **장수 전적의 합이 아니다** (11i, 2026-10-06 랭킹 화면 기준으로 다시 썼다).
+   * ⑤ 랭킹 — 전투 · 도시화 · 컬렉션 (2026-11-20 기획자, 옛 「도시 전적은 장수 전적의 합이 아니다」 절을 바꿨다).
    *
-   * 한 판에 셋이 뛰면 도시는 1전, 장수 합은 3전이다. 계정 전적(`PlayerProfile.record`)은
-   * 장수 전적을 더해 만들지 않고 **따로 센다**(CLAUDE.md 「전적은 한 번만 세고 표는 합으로」).
-   * 도시 전적이 보이는 자리는 2026-08-25부터 메인의 「랭킹」 → [도시 랭킹]이다 — 예전
-   * `[data-screen="cityRecords"]`는 없어졌고, 이 절은 그 뒤 한 번도 안 돌았다.
-   *
-   * 심는 값: 도시 3v3 온라인 4판(3승 1패) + 5v5 AI 2판(1승 1무). 장수 **셋**이 3v3 그 네 판을
-   * 똑같이 뛰었다 → 장수 합으로 만들면 3v3이 12판(9승 3패)으로 부푼다.
+   * 전투 랭킹은 **공격대의 부대 전적**이다 — 계정 전적(`PlayerProfile.record`)은 안 읽는다. 그래서 둘에
+   * **서로 다른 값**을 심는다: 공격대 3v3 4판(3승 1패), 계정 전적 7판. 어느 칸을 읽었는지가 숫자로 갈린다
+   * (「기본값과 같은 값을 보면 아무것도 확인하지 않는다」). 5v5 공격대는 안 뛰었다 → 5v5에서는 줄에 안 선다.
    */
   {
     const p = await apiGet();
-    p['record'] = {
-      'field/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9 },
-      'siege/5v5': { plays: 2, wins: 1, draws: 1, losses: 0, kills: 3 },
-    };
-    const roster = p['roster'] as Record<string, any>;
-    const three = [who!, ...Object.keys(roster).filter((id) => id !== who)].slice(0, 3);
-    if (three.length < 3) fail(`장수가 셋이 안 된다 (${three.length}명) — 판수 대 인원수를 못 잰다`);
-    for (const id of three) {
-      roster[id].record = { 'field/3v3/King': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 3 } };
-    }
-    // `roster`가 서버 소유라(2026-09-14, A2) `PUT`으로는 장수 전적이 안 심긴다 — 서버 함수로 쓴다
+    p['record'] = { 'field/3v3': { plays: 7, wins: 2, draws: 2, losses: 3, kills: 1, points: 40 } };
+    const squads = p['squads'] as { id: string; record: Record<string, unknown> }[];
+    const atk = squads.find((s) => s.id === 'atk-3v3');
+    if (!atk) fail(`3v3 공격대가 없다 — 전투 랭킹을 잴 부대가 없다 [${squads.map((s) => s.id).join(' ')}]`);
+    atk!.record = { 'field/3v3': { plays: 4, wins: 3, draws: 0, losses: 1, kills: 9, points: 150 } };
+    // `roster` · `squads`가 서버 소유라 `PUT`으로는 안 심긴다 — 서버 함수로 쓴다
     await page.evaluate(() => (window as any).__profile.flush());
     await saveProfileTrusted(player.uid, p as Parameters<typeof saveProfileTrusted>[1]);
   }
   const cityName = String((await apiGet())['cityName']);
   await reenter();
   await clickPlace('ranking');
-  // 게시판 자리는 대자보로 먼저 든다(2026-10-13) — 위 판 두 줄 · [컬렉션 보기] · [랭킹 보기]
+  // 게시판 자리는 대자보로 먼저 든다(2026-10-13) — 위 판 「랭킹」 제목 + 세 줄(전투 · 도시화 · 컬렉션, 2026-11-20) · [컬렉션 보기] · [랭킹 보기]
   await page.waitForSelector('[data-screen="board"]', { timeout: 5_000 })
     .catch(() => fail('메인의 「대자보」를 눌렀는데 대자보 화면이 안 뜬다'));
   {
     const board = await page.evaluate(() => ({
       lines: [...document.querySelectorAll('[data-field="board"] .rk-sum-line')].map((l) => (l as HTMLElement).dataset['mine']),
+      title: document.querySelector('[data-field="board"] [data-field="boardTitle"]')?.textContent ?? '',
+      // 줄마다 둥근 메달 — 승리 · 궁궐 · 관우 꼬마 얼굴(2026-11-20). 그림이 실제로 실렸는지 너비로 본다
+      icons: [...document.querySelectorAll('[data-field="board"] .rk-sum-icon img')]
+        .map((i) => `${(i as HTMLImageElement).getAttribute('src')}:${(i as HTMLImageElement).naturalWidth > 0 ? 1 : 0}`),
       collectionOff: (document.querySelector('.scr-board [data-action="collection"]') as HTMLButtonElement | null)?.disabled,
     }));
-    if (board.lines.join(',') !== 'collection,city') fail(`대자보 위 판의 줄이 다르다: [${board.lines.join(' ')}]`);
+    if (board.lines.join(',') !== 'battle,city,collection') fail(`대자보 위 판의 줄이 다르다: [${board.lines.join(' ')}]`);
+    if (board.title.trim() !== '랭킹') fail(`대자보 위 판의 제목이 「${board.title}」다 (「랭킹」)`);
+    const wantIcons = ['icons/record/rec-win.png:1', 'icons/city/bld-palace.png:1', 'icons/record/rec-collection.png:1'];
+    if (board.icons.join(',') !== wantIcons.join(',')) fail(`대자보 위 판의 메달이 다르다: [${board.icons.join(' ')}]`);
     if (board.collectionOff !== false) fail('[컬렉션 보기]가 꺼져 있다 — 컬렉션 화면이 붙었다(2026-10-13)');
   }
   // 컬렉션 — 들어가 목록이 뜨고 [대자보로]로 돌아온다. 칸 등록 · 두루마리는 `tools/collection_ux.ts`가 본다
@@ -2517,42 +2510,45 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await page.click('.scr-board [data-action="ranking"]');
   await page.waitForSelector('[data-screen="ranking"]', { timeout: 5_000 })
     .catch(() => fail('대자보의 [랭킹 보기]를 눌렀는데 랭킹 화면이 안 뜬다'));
+  {
+    // 랭킹 메뉴 — 위 판 세 줄(전투 · 도시화 · 컬렉션) · 단추 셋 + [뒤로 가기]. 전투 점수는 공격대 승점(150)이다
+    const menu = await page.evaluate(() => ({
+      lines: [...document.querySelectorAll('[data-field="mine"] .rk-sum-line')].map((l) => (l as HTMLElement).dataset['mine']),
+      battle: document.querySelector('[data-field="mine"] [data-mine="battle"] [data-field="total"]')?.textContent ?? '',
+      buttons: [...document.querySelectorAll('.rk-menu button')].map((b) => (b as HTMLElement).dataset['action']),
+    }));
+    if (menu.lines.join(',') !== 'battle,city,collection') fail(`랭킹 메뉴 위 판의 줄이 다르다: [${menu.lines.join(' ')}]`);
+    if (menu.buttons.join(',') !== 'rankingBattle,rankingCity,rankingCollection,backRanking') fail(`랭킹 메뉴 단추가 다르다: [${menu.buttons.join(' ')}]`);
+    if (!/\b150\b/.test(menu.battle)) fail(`전투 점수가 공격대 승점(150)이 아니다: "${menu.battle}" — 계정 전적(40)을 읽었나`);
+  }
+  await page.click('[data-action="rankingBattle"]');
+  await page.waitForSelector('[data-screen="rankingBoard"][data-board="battle"]', { timeout: 5_000 })
+    .catch(() => fail('[전투 랭킹]을 눌렀는데 화면이 안 뜬다'));
+  // 남의 도시가 위를 채우고 있을 수 있다 — 이름으로 좁힌다(스모크 도시 이름은 무작위 꼬리가 붙는다).
+  // 검색은 단추 없이 입력 뒤 잠깐 기다렸다 저절로 나간다(`RANK_SEARCH_DEBOUNCE_MS`)
+  await page.fill('.scr-ranking-battle [data-field="search"]', cityName);
+  const rowSel = `.scr-ranking-battle .rk-row[data-city="${cityName}"]`;
+  await page.waitForSelector(`${rowSel} .rk-wdl`, { timeout: 8_000 })
+    .catch(() => fail(`전투 랭킹 검색에 내 도시(${cityName}) 줄이 안 뜬다`));
+  const wdl = (await page.textContent(`${rowSel} .rk-wdl`))!.replace(/\s+/g, '');
+  if (wdl === '2/2/3') fail('전투 랭킹이 계정 전적을 읽었다 — 공격대의 부대 전적이라야 한다');
+  if (wdl !== '3/0/1') fail(`전투 랭킹(전체)이 「3/0/1」이 아니다: "${wdl}"`);
+  // 5v5 — 5v5 공격대로는 안 뛰었다 → 줄에 안 선다(검색해도 안 나온다)
+  await page.click('.scr-ranking-battle [data-field="mode"]');
+  await page.click('.scr-ranking-battle .rk-pop [data-value="5v5"]');
+  await page.waitForFunction((sel) => !document.querySelector(sel), rowSel, { timeout: 5_000 })
+    .catch(() => fail('5v5 공격대로 한 판도 안 뛰었는데 5v5 전투 랭킹에 줄이 섰다'));
+  await page.click('.scr-ranking-battle [data-action="backRanking"]');
+  // 도시화 — 모든 도시가 선다. 점수 = 도시 레벨 × 100 + 보유 장수 × 10 + 올린 레벨 합
   await page.click('[data-action="rankingCity"]');
-  await page.waitForSelector('[data-screen="rankingCity"]', { timeout: 5_000 })
-    .catch(() => fail('[도시 랭킹]을 눌렀는데 화면이 안 뜬다'));
-  // 남의 도시가 위를 채우고 있을 수 있다 — 이름으로 좁힌다(스모크 도시 이름은 무작위 꼬리가 붙는다)
-  // 도시 랭킹 검색은 단추 없이 입력 뒤 잠깐 기다렸다 저절로 나간다(`RANK_SEARCH_DEBOUNCE_MS`)
+  await page.waitForSelector('[data-screen="rankingBoard"][data-board="city"]', { timeout: 5_000 })
+    .catch(() => fail('[도시화 랭킹]을 눌렀는데 화면이 안 뜬다'));
   await page.fill('.scr-ranking-city [data-field="search"]', cityName);
-  const rowSel = `.scr-ranking-city .rk-row[data-city="${cityName}"] .rk-wdl`;
-  const cityRow = async (): Promise<string> => {
-    await page.waitForSelector(rowSel, { timeout: 8_000 })
-      .catch(() => fail(`도시 랭킹에 내 도시(${cityName}) 줄이 안 뜬다`));
-    return (await page.textContent(rowSel))!.replace(/\s+/g, '');
-  };
-  const pick = async (field: 'mode' | 'filter', value: string): Promise<void> => {
-    await page.click(`.scr-ranking-city [data-field="${field}"]`);
-    await page.click(`.scr-ranking-city .rk-pop [data-value="${value}"]`);
-    await page.waitForTimeout(600);
-  };
-  // 3v3 · 전체 — 판수(4)여야 한다. 장수 합이면 9/0/3이 된다
-  const city3 = await cityRow();
-  if (city3 === '9/0/3') fail('도시 전적이 장수 전적의 합이다 — 한 판에 셋이 뛴 것을 세 번 셌다');
-  if (city3 !== '3/0/1') fail(`도시 3v3 전적이 「3/0/1」이 아니다: "${city3}"`);
-  // 5v5 · AI만 — 필터가 계정 칸에도 걸린다
-  await pick('mode', '5v5');
-  await pick('filter', 'siege');
-  const city5ai = await cityRow();
-  if (city5ai !== '1/1/0') fail(`도시 5v5 공성전 전적이 「1/1/0」이 아니다: "${city5ai}"`);
-  await pick('filter', 'field');
-  // 필터를 바꾼 조회가 600ms보다 늦으면 직전 줄(1/1/0)을 읽는다 — 고정 대기 대신 줄이 바뀌거나 사라질 때까지(2026-10-15)
-  await page.waitForFunction((sel) => {
-    const el = document.querySelector(sel);
-    return !el || (el.textContent ?? '').replace(/\s+/g, '') !== '1/1/0';
-  }, rowSel, { timeout: 5_000 }).catch(() => {});
-  const city5on = await page.$(rowSel);
-  const city5onText = city5on ? (await city5on.textContent())!.replace(/\s+/g, '') : '(줄 없음)';
-  if (city5on && city5onText !== '0/0/0') fail(`5v5 야전은 판이 없는데 「${city5onText}」다`);
-  console.log(`✓ 도시 전적(랭킹) — 3v3 ${city3} · 5v5 공성전 ${city5ai} · 5v5 야전 ${city5onText} — 장수 셋이 뛰어도 판수로 센다`);
+  const cityScoreText = await page.waitForSelector(`.scr-ranking-city .rk-row[data-city="${cityName}"] [data-field="score"]`, { timeout: 8_000 })
+    .then((el) => el.textContent())
+    .catch(() => fail(`도시화 랭킹 검색에 내 도시(${cityName}) 줄이 안 뜬다`));
+  if (!(Number(String(cityScoreText).replace(/\D/g, '')) >= 100)) fail(`도시화 점수가 도시 레벨 몫(100)보다 작다: "${cityScoreText}"`);
+  console.log(`✓ 랭킹 — 메뉴 셋 · 전투 ${wdl}(공격대 전적, 계정 전적 아님) · 5v5 줄 없음 · 도시화 ${cityScoreText}점`);
 
   /*
    * ⑥ 부상 — 장수 카드의 라벨 · 붉은 능력치 · [입원시키기] (트랙 11g, GDD §8.2 · §5.7)

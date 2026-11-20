@@ -18,6 +18,9 @@
  */
 import { isAdminRole, readAuthUser } from '@samchess/meta';
 import type { AdminUser } from './types.ts';
+import { adminMfaOff } from '../environment.ts';
+
+const MFA_OFF = adminMfaOff(process.env);
 
 const SUPABASE_URL = process.env['SUPABASE_URL'];
 const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'];
@@ -43,8 +46,8 @@ export async function verifyAdmin(authHeader: string | undefined): Promise<Admin
   if (r.kind !== 'ok') return 'unauthorized';
   const role = r.appMetadata['role'];
   if (!isAdminRole(role)) return 'forbidden';
-  // MFA는 CS도 똑같다
-  if (jwtAal(token) !== 'aal2' || !hasVerifiedTotp(body)) return 'mfa_required';
+  // MFA는 CS도 똑같다. 개발에서 `SAMCHESS_ADMIN_MFA=off`면 건너뛴다(2026-11-20 — 운영은 `adminApiProblems`가 부팅을 막는다)
+  if (!MFA_OFF && (jwtAal(token) !== 'aal2' || !hasVerifiedTotp(body))) return 'mfa_required';
   return { uid: r.uid, email: r.email, role };
 }
 

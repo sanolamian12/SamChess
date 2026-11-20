@@ -1,44 +1,39 @@
 /**
- * 랭킹 API 클라이언트 — `GET /ranking`. 전체 유저 top 5(또는 검색)만 서버에 묻는다.
- * "내 랭킹"은 여기 안 온다 — 화면이 `@samchess/meta`의 `cityRankRow`/`squadRankRows`/
- * `officerRankRows`를 자기 `profile`에 바로 돌린다(`ranking.ts`의 머리말 참조).
+ * 랭킹 API 클라이언트 — 전투 · 도시화 · 컬렉션 세 분야(2026-11-20).
+ * 점수는 화면이 제 프로필로 바로 낼 수 있지만(`@samchess/meta`의 `battleRankRow` · `cityRankRow` · `collectionPoints`),
+ * **몇 등인가**는 전체를 모아야 알 수 있어 서버에 묻는다.
  */
 import type {
-  CityRankRow, CollectionRankRow, MyRanks, OfficerRankRow, RankBoard, RecordFilter, SquadRankRow,
+  BattleRankMode, BattleRankRow, CityRankRow, CollectionRankRow, MyRanks, RankBoard, Ranked,
 } from '@samchess/meta';
-import type { BattleMode } from '@samchess/rules';
 import { authedFetch } from './storage.ts';
 
-export interface FetchRankingParams {
-  board: RankBoard;
-  filter: RecordFilter;
-  mode?: BattleMode;
-  sort: string;
-  q?: string;
+/** 분야마다 줄의 모양 */
+export interface BoardRows {
+  battle: Ranked<BattleRankRow>;
+  city: Ranked<CityRankRow>;
+  collection: CollectionRankRow;
 }
 
-type RankRow = CityRankRow | SquadRankRow | OfficerRankRow;
+export interface RankingAnswer<B extends RankBoard> {
+  /** 검색이 없으면 1~10위, 있으면 이름에 그 글자가 든 도시들(그 도시의 등수 그대로, 열 줄까지) */
+  rows: BoardRows[B][];
+  /** 내 줄 — 그 분야 줄에 안 서면 `null` */
+  mine: BoardRows[B] | null;
+}
 
-/** 실패하면 던진다 — 화면이 잡아서 "top 5를 못 불러왔다"로 보여 준다(내 랭킹은 무관하게 뜬다) */
-export async function fetchRanking(params: FetchRankingParams): Promise<RankRow[]> {
-  const q = new URLSearchParams({ board: params.board, filter: params.filter, sort: params.sort });
-  if (params.mode) q.set('mode', params.mode);
-  if (params.q?.trim()) q.set('q', params.q.trim());
-
-  const res = await authedFetch(`/ranking?${q.toString()}`);
+/** 한 분야의 1~10위(또는 검색) + 내 줄 — `GET /ranking`. 실패하면 던진다 */
+export async function fetchRanking<B extends RankBoard>(board: B, mode: BattleRankMode, q?: string): Promise<RankingAnswer<B>> {
+  const query = new URLSearchParams({ board, mode });
+  if (q?.trim()) query.set('q', q.trim());
+  const res = await authedFetch(`/ranking?${query.toString()}`);
   if (!res.ok) throw new Error(`GET /ranking → ${res.status}`);
-  const body = (await res.json()) as { rows: RankRow[] };
-  return body.rows;
+  return (await res.json()) as RankingAnswer<B>;
 }
 
-/**
- * 내 도시·최고 부대·최고 장수의 **순위**만 — `GET /ranking/mine` (랭킹 메뉴 위쪽 판,
- * 2026-09-18). 행(이름·총점)은 화면이 제 프로필로 내므로 서버가 안 닿아도 뜨고,
- * 순위 칸만 「—」로 남는다. 실패하면 던진다.
- */
-export async function fetchMyRanks(filter: RecordFilter, mode: BattleMode): Promise<MyRanks> {
-  const q = new URLSearchParams({ filter, mode });
-  const res = await authedFetch(`/ranking/mine?${q.toString()}`);
+/** 세 분야의 내 순위 · 점수 — `GET /ranking/mine` (랭킹 메뉴 · 대자보의 위 판). 실패하면 던진다 */
+export async function fetchMyRanks(): Promise<MyRanks> {
+  const res = await authedFetch('/ranking/mine');
   if (!res.ok) throw new Error(`GET /ranking/mine → ${res.status}`);
   return ((await res.json()) as { ranks: MyRanks }).ranks;
 }

@@ -107,8 +107,7 @@ export function admitFromBox(profile: PlayerProfile): PlayerProfile {
 
 /** 새 장수 인스턴스 — Lv1 · 성장 스택 비어 있음 (GDD §4.2 기본치는 룰 엔진이 계산한다) */
 export function newInstance(officer: OfficerId): OfficerInstance {
-  // 전적은 **희소하다** — 뛴 적 없는 기물의 칸은 만들지 않는다 (40쪽 표는 합으로 낸다)
-  return { officer, level: 1, growth: [], record: {} };
+  return { officer, level: 1, growth: [] };
 }
 
 /**

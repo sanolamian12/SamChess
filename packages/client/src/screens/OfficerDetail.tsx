@@ -56,7 +56,7 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
   const [healError, setHealError] = useState<string | null>(null);
 
   // 「보기」 카드 — 모드를 안 줘 3v3 · 5v5 통산이다
-  const row = useMemo(() => officerRankRows(profile, 'all').find((r) => r.officer === officer) ?? null, [profile, officer]);
+  const row = useMemo(() => officerRankRows(profile).find((r) => r.officer === officer) ?? null, [profile, officer]);
   const inst = profile.roster[officer];
   const hurt = !!inst && isInjured(inst, now);
   useEffect(() => {

@@ -449,6 +449,9 @@ def build() -> dict[str, Image.Image]:
         "ic_rec_draw": medal(scene("backgrounds/result-draw.jpg", 0, 380, 230), fill=1),
         "ic_rec_lose": medal(scene("backgrounds/result-lose.jpg", 400, 1240, 286), fill=1),
         "ic_rec_fallen": medal(gray(me), bg=DARK, fill=1.0, shadow=False),
+        # 랭킹 「컬렉션」 줄 — 도적 메달(`ic_bandit`)처럼 얼굴로 원을 채우되 관우 꼬마(`anims-hd` 첫 칸)의 머리 (2026-11-20 기획자).
+        # 꼬마 시트는 투명이라 종이 바탕을 깐다
+        "ic_rec_collection": medal(pub("anims-hd/gwan-u.webp").crop((124, 74, 276, 226)), bg=PAPER, fill=1.0, shadow=False),
         # 결말
         "ic_out_king": medal(trim(pub("ui/pieces/king-foe.png")).rotate(-62, expand=True, resample=Image.BICUBIC), bg=ASH, fill=.86, dy=8),          # 붉은 기물이 붉은 바탕에 묻혀 잿빛으로
         "ic_out_supply": medal(trim(pub("terrain/supply.png")), bg=GOLD, fill=.84),

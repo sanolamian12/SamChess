@@ -43,7 +43,6 @@ function asV1(inst: OfficerInstance): Record<string, unknown> {
     level: inst.level,
     statPicks: statPicksOf(inst),
     tactics: tacticsOf(inst),
-    record: inst.record,
   };
 }
 
@@ -281,21 +280,17 @@ describe('재설계(둔갑천서) — 쓴 카드를 돌려주고 Lv1로 (GDD §4
     assert.deepEqual(statsOf(p.roster[GWAN]!), { hp: 10, mp: 13, at: 2 }, '빌드는 새로 갈렸다');
   });
 
-  it('금화가 나가고 전적·보유는 그대로다', () => {
+  it('금화가 나가고 보유는 그대로다', () => {
     const before = { ...lv5(), gold: RESPEC_GOLD + 4 };
-    const fought = { plays: 4, wins: 3, draws: 0, losses: 1, kills: 7, points: 150 };
-    before.roster[GWAN]!.record = { 'online/3v3/King': { ...fought } };
     const after = applyRespec(before, GWAN);
     assert.equal(after.gold, 4, '둔갑천서 값만 나간다');
-    assert.deepEqual(after.roster[GWAN]!.record, { 'online/3v3/King': fought },
-      '되감는 것은 성장이지 그 캐릭터가 싸운 역사가 아니다');
     assert.ok(after.roster[GWAN], '풀에서 빠지지 않는다');
   });
 
   it('결과가 처음부터 Lv1이던 장수와 **구별되지 않는다**', () => {
     const respecced = applyRespec(lv5(), GWAN).roster[GWAN]!;
     const fresh = newInstance(GWAN);
-    assert.deepEqual({ ...respecced, record: fresh.record }, fresh, '표식도 흔적도 남지 않는다');
+    assert.deepEqual(respecced, fresh, '표식도 흔적도 남지 않는다');
   });
 
   it('입력 프로필을 건드리지 않는다 (룰 엔진의 apply와 같은 규약)', () => {

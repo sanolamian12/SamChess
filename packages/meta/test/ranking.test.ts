@@ -1,25 +1,26 @@
 /**
- * 랭킹 회귀 (pptx 46~49쪽, 2026-08-26) — 도시/부대/장수 세 판을 낸다.
+ * 랭킹 회귀 — 전투 · 도시화 · 컬렉션 세 분야(2026-11-20 기획자, 옛 도시 · 부대 · 장수 세 판을 바꿨다).
  *
- * 여기서 고정하는 것 셋.
- *  - **부대 전적이 이력 꼬리와 무관하게 쌓이는가** — `applyBattleResult()`가
- *    `outcome.mySquad`(부대 이름)로 찾아 `squad.record`를 계정 전적과 같이 올리는가
- *  - **`battleScore()`가 세 판에서 같은 값(승점 — 이긴 판마다 `winPoints()`, 2026-10-27)인가**
- *  - **세 정렬이 각자의 기준대로 내림차순인가**
+ * 여기서 고정하는 것.
+ *  - **전투 = 공격대의 부대 전적** — 병영의 모드 줄과 같은 값(`squad.record`), 「전체」는 두 모드 합, 수비대는 안 센다,
+ *    수성 성공은 받은 값을 그 모드만큼 더한다, 한 판도 안 뛴 도시는 줄에 안 선다
+ *  - **도시화 = 도시 레벨 × 100 + 보유 장수(풀 + 보관함) × 10 + 올린 레벨 합** — 건물 레벨은 안 본다
+ *  - **등수는 끝까지 정한다** — 같은 점수면 정한 다음 기준, 마지막은 도시 이름이라 같은 등수가 없다
+ *  - 장수 카드의 행(`officerRankRows`)은 그대로 — 랭킹이 아니라 카드 데이터다
  */
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { OfficerId } from '@samchess/rules';
 import {
-  addSquad, applyBattleResult, battleScore, cityRankRow, createProfile, myRanks,
-  officerRankRows, sortCityRows, sortOfficerRows, sortSquadRows, squadRankRows,
+  CITY_RANK_WEIGHTS, addSquad, applyBattleResult, attackTally, battleRankRow, battleRankable, battleScore, cityRankRow, cityScore,
+  createProfile, levelMaturity, officerRankRows, ownedOfficers, sortBattleRows, sortCityRows, withRanks,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
 const AT = 1_700_000_000_000;
 
-const profile = (): PlayerProfile => createProfile('랭킹성', 1);
+const profile = (name = '랭킹성'): PlayerProfile => createProfile(name, 1);
 
 function picksOf(p: PlayerProfile, count: number): RosterPick[] {
   const pieces = ['King', 'Rock', 'Bishop', 'Knight', 'Queen'] as const;
@@ -38,156 +39,118 @@ function fight(p: PlayerProfile, over: Partial<BattleOutcome> = {}, seed = 1): P
   return applyBattleResult(p, outcome, seed).profile;
 }
 
-describe('battleScore — 세 판이 같은 값을 쓴다', () => {
+/** 3v3 · 5v5 공격대를 둔 계정 */
+function withAttack(name = '랭킹성'): PlayerProfile {
+  let p = profile(name);
+  p = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) }).profile;
+  return addSquad(p, { mode: '5v5', role: 'attack', picks: picksOf(p, 5) }).profile;
+}
+
+/** 3v3 공격대로 `wins`판 이긴 계정 */
+function winner(wins: number, name = '랭킹성'): PlayerProfile {
+  let p = withAttack(name);
+  for (let i = 0; i < wins; i++) p = fight(p, { mode: '3v3', mySquad: 'atk-3v3' }, i + 1);
+  return p;
+}
+
+describe('battleScore', () => {
   it('승점 칸 그대로 — 승패 수 · 격파는 더하지 않는다 (2026-10-27)', () => {
     assert.equal(battleScore({ plays: 4, wins: 2, draws: 0, losses: 2, kills: 5, points: 138 }), 138);
     assert.equal(battleScore({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 }), 0);
   });
 });
 
-describe('도시 랭킹', () => {
-  it('cityRankRow — 도시명·레벨·장수 수·전적을 낸다', () => {
-    const p = fight(profile());
-    const row = cityRankRow(p, 'all');
-    assert.equal(row.cityName, p.cityName);
-    assert.equal(row.cityLevel, p.cityLevel);
-    assert.equal(row.officerCount, Object.keys(p.roster).length);
-    assert.equal(row.tally.wins, 1);
-    assert.equal(row.total, battleScore(row.tally));
-  });
-
-  it('sortCityRows — 총점 순은 내림차순이다', () => {
-    const weak = cityRankRow(profile(), 'all');
-    const strong = cityRankRow(fight(profile()), 'all');
-    const sorted = sortCityRows([weak, strong], 'total');
-    assert.equal(sorted[0], strong);
-  });
-});
-
-describe('부대 랭킹 — 이력이 아니라 `squad.record`에 쌓인다', () => {
-  it('출전한 부대의 전적이 오른다 (mySquad는 칸 id다)', () => {
-    let p = profile();
-    const made = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
-    p = made.profile;
-    const squad = made.squad;
-    assert.deepEqual(squad.record, {}, '만들 때는 빈 전적이다');
-
-    p = fight(p, { mode: '3v3', mySquad: squad.id });
-    const rows = squadRankRows(p, 'all');
-    const row = rows.find((r) => r.squad.id === squad.id)!;
-    assert.equal(row.tally.wins, 1);
-    assert.equal(row.total, battleScore(row.tally));
-  });
-
-  it('부대 없이 나간 판은 조용히 건너뛴다 — 다른 부대의 전적을 안 건드린다', () => {
-    let p = profile();
-    const made = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
-    p = made.profile;
-    p = fight(p, { mode: '3v3', mySquad: null });
-    const row = squadRankRows(p, 'all').find((r) => r.squad.id === made.squad.id)!;
-    assert.deepEqual(row.tally, { plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 });
-  });
-
-  it('sortSquadRows — 총점 순은 내림차순이다 (부대 랭킹에는 전투력 표시값이 없다, 2026-08-27)', () => {
-    let p = profile();
-    const a = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) });
-    p = a.profile;
+describe('전투 랭킹 — 공격대의 부대 전적', () => {
+  it('모드마다 그 공격대 칸의 전적 · 「전체」는 두 모드 합', () => {
+    let p = withAttack();
     p = fight(p, { mode: '3v3', mySquad: 'atk-3v3' });
-    const b = addSquad(p, { mode: '5v5', role: 'attack', picks: picksOf(p, 5) });
-    p = b.profile;
-    const rows = squadRankRows(p, 'all');
-    const sorted = sortSquadRows(rows, 'total');
-    for (let i = 1; i < sorted.length; i++) {
-      assert.ok(sorted[i - 1]!.total >= sorted[i]!.total);
-    }
-    // 부대 랭킹 행에는 `power` 필드가 아예 없다 — 타입에서부터 빠졌다
-    assert.ok(!('power' in rows[0]!));
+    p = fight(p, { mode: '5v5', mySquad: 'atk-5v5', result: 'lose' }, 2);
+    assert.equal(attackTally(p, '3v3').wins, 1);
+    assert.equal(attackTally(p, '5v5').losses, 1);
+    const all = attackTally(p, 'all');
+    assert.equal(all.plays, 2);
+    assert.equal(all.points, attackTally(p, '3v3').points + attackTally(p, '5v5').points);
+    assert.ok(all.points > 0, '이긴 판에 승점이 있어야 한다');
+    assert.equal(battleRankRow(p, 'all').total, all.points);
+  });
+
+  it('수비대 칸의 전적은 안 센다 — 선전포고를 받아 싸운 판도', () => {
+    let p = withAttack();
+    p = addSquad(p, { mode: '3v3', role: 'defense', picks: picksOf(p, 3) }).profile;
+    p = fight(p, { mode: '3v3', mySquad: 'def-3v3' });
+    assert.equal(p.squads.find((s) => s.id === 'def-3v3')!.record['field/3v3']?.wins, 1, '수비대 칸에는 쌓였다');
+    assert.equal(attackTally(p, 'all').plays, 0);
+    assert.equal(battleRankable(battleRankRow(p, 'all')), false, '공격대로 안 뛰었으면 줄에 안 선다');
+  });
+
+  it('수성 성공은 받은 값을 그 모드만큼 — 「전체」는 두 모드 합', () => {
+    const p = winner(1);
+    const held = { '3v3': 4, '5v5': 2 };
+    assert.equal(battleRankRow(p, '3v3', held).held, 4);
+    assert.equal(battleRankRow(p, '5v5', held).held, 2);
+    assert.equal(battleRankRow(p, 'all', held).held, 6);
+    assert.equal(battleRankRow(p, 'all').held, 0, '방어 기록이 없으면 0');
+  });
+
+  it('승점 → 승 → 격파 → 도시 이름 — 같은 등수가 없다', () => {
+    const a = battleRankRow(winner(1, '가성'), 'all');
+    const b = battleRankRow(winner(1, '나성'), 'all');
+    const c = battleRankRow(winner(3, '다성'), 'all');
+    const ranked = withRanks(sortBattleRows([b, a, c]));
+    assert.deepEqual(ranked.map((r) => [r.cityName, r.rank]), [['다성', 1], ['가성', 2], ['나성', 3]]);
+  });
+
+  it('공성전 목록의 도시 점수(`cityScore`)는 전투 「전체」의 점수다', () => {
+    const p = winner(2);
+    assert.equal(cityScore(p), battleRankRow(p, 'all').total);
   });
 });
 
-describe('장수 랭킹', () => {
-  it('officerRankRows — 레벨·스탯·전적을 낸다', () => {
-    const p = fight(profile());
-    const rows = officerRankRows(p, 'all');
+describe('도시화 랭킹 — 도시 레벨 · 보유 장수 · 레벨 성숙도', () => {
+  it('가중 합 — 도시 레벨 × 100 + 보유 장수 × 10 + 올린 레벨 합', () => {
+    const p = profile();
+    const ids = Object.keys(p.roster) as OfficerId[];
+    p.roster[ids[0]!]!.level = 4;   // 올린 레벨 3
+    p.roster[ids[1]!]!.level = 2;   // 1
+    p.cityLevel = 3;
+    const row = cityRankRow(p);
+    assert.equal(row.maturity, 4);
+    assert.equal(levelMaturity(p), 4);
+    assert.equal(row.officers, ownedOfficers(p).length);
+    assert.equal(row.total, 3 * CITY_RANK_WEIGHTS.cityLevel + row.officers * CITY_RANK_WEIGHTS.officer + 4 * CITY_RANK_WEIGHTS.level);
+  });
+
+  it('건물 레벨은 점수에 안 들어간다', () => {
+    const p = profile();
+    const before = cityRankRow(p).total;
+    const q: PlayerProfile = { ...p, buildings: Object.fromEntries(Object.keys(p.buildings).map((k) => [k, 5])) as PlayerProfile['buildings'] };
+    assert.equal(cityRankRow(q).total, before);
+  });
+
+  it('점수 → 도시 레벨 → 도시 이름', () => {
+    const a = { ...cityRankRow(profile('나성')), total: 500, cityLevel: 2 };
+    const b = { ...cityRankRow(profile('가성')), total: 500, cityLevel: 2 };
+    const c = { ...cityRankRow(profile('다성')), total: 500, cityLevel: 3 };
+    const d = { ...cityRankRow(profile('라성')), total: 900, cityLevel: 1 };
+    assert.deepEqual(withRanks(sortCityRows([a, b, c, d])).map((r) => r.cityName), ['라성', '다성', '가성', '나성']);
+  });
+});
+
+describe('장수 카드의 행 — 옛 장수 랭킹의 행', () => {
+  it('officerRankRows — 장수 카드가 필요한 필드(삼능력 · AT 범위 · 서사)를 낸다', () => {
+    const rows = officerRankRows(fight(profile()));
     assert.ok(rows.length > 0);
     for (const r of rows) {
       assert.equal(typeof r.stats.hp, 'number');
-      assert.equal(r.total, battleScore(r.tally));
-    }
-  });
-
-  it('officerRankRows — 장수 카드가 필요한 필드(삼능력·AT 범위)를 낸다 (pptx 53쪽)', () => {
-    const rows = officerRankRows(fight(profile()), 'all');
-    for (const r of rows) {
       assert.equal(typeof r.might, 'number');
-      assert.equal(typeof r.intellect, 'number');
-      assert.equal(typeof r.leadership, 'number');
       assert.ok(r.at.max >= r.at.min, `AT 범위가 거꾸로다 — ${r.at.min}-${r.at.max}`);
-      // 「stats」에는 이제 hp·mp만 있다 — at은 범위라 별도 필드다
       assert.ok(!('at' in r.stats));
+      assert.ok(Array.isArray(r.tactics));
     }
-    // G1이 218/260명만 채웠다 — 최소 한 명은 story·courtesyName이 있어야 한다
+    // G1이 218/260명만 채웠다 — 최소 한 명은 story · courtesyName이 있어야 한다
     assert.ok(rows.some((r) => r.story), '인물 서사가 하나도 안 붙었다');
     assert.ok(rows.some((r) => r.courtesyName), '자(courtesyName)가 하나도 안 붙었다');
-  });
-
-  it('officerRankRows — 고유기술 id·책략 목록을 낸다 (장수 카드 4·5번째 줄)', () => {
-    const p = fight(profile());
-    const rows = officerRankRows(p, 'all');
-    // S~B급은 고유기술이 있다(SP_COST에 등급이 있다), C·D급은 없다 — 둘 다 나와야 한다
     assert.ok(rows.some((r) => r.uniqueSkillId), '고유기술이 있는 장수가 하나도 없다');
     assert.ok(rows.some((r) => !r.uniqueSkillId), '고유기술이 없는 장수가 하나도 없다');
-    // 갓 만든 계정은 아직 책략을 안 배웠다 — 빈 배열이지 undefined가 아니다
-    for (const r of rows) assert.ok(Array.isArray(r.tactics));
-    assert.ok(rows.every((r) => r.tactics.length === 0), '레벨 1인데 이미 책략을 배웠다');
-  });
-
-  it('sortOfficerRows — 레벨 순은 내림차순이다', () => {
-    const rows = officerRankRows(fight(profile()), 'all');
-    const sorted = sortOfficerRows(rows, 'level');
-    for (let i = 1; i < sorted.length; i++) {
-      assert.ok(sorted[i - 1]!.level >= sorted[i]!.level);
-    }
-  });
-});
-
-describe('내 순위 — 랭킹 메뉴 위쪽 판 (2026-09-18)', () => {
-  /** 3v3 부대 하나를 만들어 `wins`판 이긴 계정 */
-  const winner = (wins: number): PlayerProfile => {
-    let p = profile();
-    p = addSquad(p, { mode: '3v3', role: 'attack', picks: picksOf(p, 3) }).profile;
-    for (let i = 0; i < wins; i++) p = fight(p, { mode: '3v3', mySquad: 'atk-3v3' }, i + 1);
-    return p;
-  };
-
-  it('나보다 총점이 높은 것만 센다 — 같은 점수는 같은 순위다', () => {
-    const [a, b, c, me] = [winner(3), winner(1), winner(1), winner(1)];
-    const r = myRanks([a, b, c, me], me, 'all', '3v3');
-    assert.equal(r.city.rank, 2, '3승 한 계정만 위에 있다 — 1승 셋은 공동 2위');
-    assert.equal(r.squad?.rank, 2);
-    assert.equal(r.city.total, cityRankRow(me, 'all', '3v3').total);
-  });
-
-  it('최고 부대·장수는 화면이 자기 프로필로 고르는 것과 같다', () => {
-    const me = winner(2);
-    const r = myRanks([me], me, 'all', '3v3');
-    assert.equal(r.squad?.id, sortSquadRows(squadRankRows(me, 'all', '3v3'), 'total')[0]!.squad.id);
-    assert.equal(r.officer?.id, sortOfficerRows(officerRankRows(me, 'all', '3v3'), 'total')[0]!.officer);
-    assert.equal(r.city.rank, 1, '혼자면 1위다');
-  });
-
-  it('동점이면 id 순 — 계정 안 장수 순서가 달라도 같은 장수를 고른다', () => {
-    const me = profile();
-    const shuffled = { ...me, roster: Object.fromEntries(Object.entries(me.roster).reverse()) };
-    const pick = (p: PlayerProfile) => sortOfficerRows(officerRankRows(p, 'all', '3v3'), 'total')[0]!.officer;
-    assert.equal(pick(me), pick(shuffled), '모두 0점인데 순서에 따라 「최고 장수」가 바뀌었다');
-  });
-
-  it('그 모드의 부대가 없으면 부대 순위는 null — 도시·장수는 그대로 낸다', () => {
-    const me = profile();
-    const r = myRanks([winner(1), me], me, 'all', '5v5');
-    assert.equal(r.squad, null);
-    assert.ok(r.officer);
-    assert.equal(r.city.rank, 1, '5v5 전적은 아무도 없다 — 모두 0점 공동 1위');
   });
 });

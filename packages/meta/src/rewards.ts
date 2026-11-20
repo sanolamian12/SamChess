@@ -44,7 +44,7 @@ import { applyInjuries, grainCap } from './city.ts';
 import { fallenAfterShield } from './market.ts';
 import { carriedOf } from './types.ts';
 import { MATCH_BAND, winChance } from './power.ts';
-import { MATCH_LOG_CAP, accountKey, bumpTally, recordKey } from './records.ts';
+import { MATCH_LOG_CAP, accountKey, bumpTally } from './records.ts';
 import { battleWinsOf } from './wins.ts';
 import type {
   BattleOutcome, BattleResult, BattleRewards, MatchRow, PlayerProfile,
@@ -152,17 +152,9 @@ export function applyBattleResult(
   // ── 전적 — 기물별 × 모드별 × 갈래별로 한 번만 센다 (40쪽) ──
   // **순수 AI 대전은 세지 않는다** (2026-10-28 기획자 확정) — 전적 · 이력 · 승점 어디에도. 보상 · 부상만 아래로 간다
   if (opponent !== 'ai') {
-    // 승점은 이긴 판에만 — 계정 · 부대 · 장수 칸에 같은 값을 더한다(세 랭킹이 같은 식)
+    // 승점은 이긴 판에만 — 계정 · 부대 칸에 같은 값을 더한다. **장수 칸은 없다**(2026-11-20 기획자 — 전적은 부대로 본다)
     const points = result === 'win' ? winPoints(outcome.power) : 0;
-    let teamKills = 0;
-    for (const pick of outcome.picks) {
-      const kills = outcome.kills?.[pick.officer] ?? 0;
-      teamKills += kills;
-      const inst = next.roster[pick.officer];
-      // 이미 계정에서 빠진 장수(초기화·정정)는 건너뛴다. 계정 칸에는 그대로 센다
-      if (!inst) continue;
-      bumpTally(inst.record, recordKey(opponent, mode, pick.piece), result, kills, points);
-    }
+    const teamKills = outcome.picks.reduce((n, pick) => n + (outcome.kills?.[pick.officer] ?? 0), 0);
     bumpTally(next.record, accountKey(opponent, mode), result, teamKills, points);
 
     // 부대 전적 — `outcome.mySquad`는 **칸 id**다(2026-11-14 부대 개편, 그전에는 부대 이름).

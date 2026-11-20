@@ -1,8 +1,8 @@
 /**
- * 랭킹 세 화면(도시·부대·장수)이 같이 쓰는 조각 — pptx 50~52쪽 디자인 가이드.
+ * 랭킹 화면(전투 · 도시화 · 컬렉션, 2026-11-20)이 같이 쓰는 조각 — pptx 50~52쪽 디자인 가이드.
+ * 장수 카드(`OfficerCardModal`)도 여기 산다 — 옛 장수 랭킹에서 태어나 지금은 내 장수 상세 · 농지 · 부대원 고르기가 쓴다.
  *
- * 필터(온라인/AI/전체, 3v3/5v5)는 **드롭다운(리스트 박스) 둘**이고 한 줄에
- * 나란히 놓인다 — 모드가 왼쪽, 상대가 오른쪽(2026-08-26 지정). 정렬은
+ * 전투 랭킹의 모드(전체 / 3v3 / 5v5)는 **드롭다운(리스트 박스)**이다. 정렬은
  * **[정렬 필터] 버튼을 누르면 뜨는 팝업**이다(50~52쪽의 화살표가 가리키는 그
  * 뜬 패널). 검색은 입력칸 + [검색] 버튼 — 타이핑마다 서버를 부르지 않고 **누르거나
  * Enter를 쳐야** 나간다(전체 유저를 훑는 요청이라 값싸지 않다).
@@ -11,11 +11,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { skillById, tacticById } from '@samchess/data';
 import type { EquipmentData } from '@samchess/data';
-import { INJURY_PENALTY, RECORD_FILTERS, injuredStat } from '@samchess/meta';
-import type { OfficerRankRow, RankBoard, RecordFilter, RecordTally } from '@samchess/meta';
-import type { BattleMode } from '@samchess/rules';
+import { BATTLE_RANK_MODES, INJURY_PENALTY, RANK_TOP, injuredStat } from '@samchess/meta';
+import type { BattleRankMode, OfficerRankRow, RankBoard } from '@samchess/meta';
 import { Say } from './Steward.tsx';
 import { fetchRanking } from '../meta/ranking.ts';
+import type { BoardRows } from '../meta/ranking.ts';
 import { OfficerActionArt } from './OfficerArt.tsx';
 import { SkillModal } from './SkillModal.tsx';
 import { TacticModal } from './TacticModal.tsx';
@@ -82,18 +82,10 @@ export function RankingBackPanel({ onBack }: { onBack: () => void }): React.JSX.
   );
 }
 
-export const FILTER_KEY: Record<RecordFilter, StringKey> = {
-  all: 'records.filter.all', siege: 'records.filter.siege', field: 'records.filter.field',
+/** 전투 랭킹의 모드 이름 — 「전체」는 두 모드 공격대의 합 */
+export const RANK_MODE_KEY: Record<BattleRankMode, StringKey> = {
+  all: 'records.filter.all', '3v3': 'ranking.mode.3v3', '5v5': 'ranking.mode.5v5',
 };
-export const MODE_KEY: Record<BattleMode, StringKey> = {
-  '3v3': 'ranking.mode.3v3', '5v5': 'ranking.mode.5v5',
-};
-export const BATTLE_MODES: readonly BattleMode[] = ['3v3', '5v5'];
-
-/** 「12전 · 7승 1무 4패 · 적격파 19」 — 40·41쪽과 같은 문구 */
-export const sumText = (tally: RecordTally): string => t('records.sum', {
-  plays: tally.plays, w: tally.wins, d: tally.draws, l: tally.losses, k: tally.kills,
-});
 
 /**
  * 화면 화풍을 두른 드롭다운 — 원래는 브라우저 기본 `<select>`였는데, 펼쳤을 때
@@ -154,31 +146,19 @@ export function Dropdown<T extends string>({ value, options, label, dataField, b
   );
 }
 
-/** 상대 필터 — 리스트 박스(드롭다운) 하나. `FilterRow` 안에서 오른쪽에 둔다 */
-export function FilterSelect({ value, onChange }: {
-  value: RecordFilter; onChange: (v: RecordFilter) => void;
+/** 전투 랭킹의 모드 — 리스트 박스(드롭다운) 하나. 「전체 / 3 vs 3 / 5 vs 5」 */
+export function RankModeSelect({ value, onChange }: {
+  value: BattleRankMode; onChange: (v: BattleRankMode) => void;
 }): React.JSX.Element {
   return (
     <Dropdown
-      value={value} options={RECORD_FILTERS} dataField="filter"
-      label={(v) => t(FILTER_KEY[v])} onChange={onChange}
+      value={value} options={BATTLE_RANK_MODES} dataField="mode"
+      label={(v) => t(RANK_MODE_KEY[v])} onChange={onChange}
     />
   );
 }
 
-/** 모드 필터 — 리스트 박스(드롭다운) 하나. `FilterRow` 안에서 왼쪽에 둔다 */
-export function ModeSelect({ value, onChange }: {
-  value: BattleMode; onChange: (v: BattleMode) => void;
-}): React.JSX.Element {
-  return (
-    <Dropdown
-      value={value} options={BATTLE_MODES} dataField="mode"
-      label={(v) => t(MODE_KEY[v])} onChange={onChange}
-    />
-  );
-}
-
-/** 모드·상대 리스트 박스를 한 줄에 놓는다 — 순서 그대로가 곧 왼쪽·오른쪽이다 */
+/** 리스트 박스를 한 줄에 놓는다 — 순서 그대로가 곧 왼쪽·오른쪽이다 */
 export function FilterRow({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <div className="rk-filterrow">{children}</div>;
 }
@@ -305,34 +285,29 @@ export function SearchBar({ value, onSubmit, placeholder, debounceMs }: {
 export const RANK_SEARCH_DEBOUNCE_MS = 500;
 
 /**
- * 랭킹 세 판은 **1~3위만** 보여 준다 (2026-09-18 지정 — 예전엔 5위까지, 검색은 20줄).
- * 검색해도 셋이다. 서버도 같은 수를 주지만(`server-api`의 `RANK_LIMIT`) 여기서 한 번 더
- * 자른다 — 서버를 다시 안 띄운 채로도 화면이 약속을 지킨다.
+ * 한 분야의 1~10위(또는 검색) + 내 줄 — 서버 요청을 갈무리한다(2026-11-20). 서버가 열 줄로 자르지만 여기서 한 번 더
+ * 자른다(`RANK_TOP`) — 서버를 다시 안 띄운 채로도 화면이 약속을 지킨다.
  */
-export const RANK_TOP = 3;
-
-/** top-3(또는 검색) 서버 요청을 갈무리한다 — 세 화면이 모양만 다르고 흐름은 같다.
-    "내 랭킹"은 여기 안 온다 — 화면이 `profile`로 직접 낸다(§ranking.ts 머리말) */
-export function useRankingRows<Row>(
-  params: { board: RankBoard; filter: RecordFilter; mode?: BattleMode; sort: string; q: string },
-): { rows: Row[]; error: boolean; loading: boolean; ready: boolean } {
-  const [rows, setRows] = useState<Row[]>([]);
+export function useRankingBoard<B extends RankBoard>(board: B, mode: BattleRankMode, q: string): {
+  rows: BoardRows[B][]; mine: BoardRows[B] | null; error: boolean; loading: boolean; ready: boolean;
+} {
+  const [rows, setRows] = useState<BoardRows[B][]>([]);
+  const [mine, setMine] = useState<BoardRows[B] | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   /** 첫 응답(성공이든 실패든)이 왔는가 — 전용 로딩 화면(`RankingLoading.tsx`)은 그때까지만 덮는다 */
   const [ready, setReady] = useState(false);
-  const { board, filter, mode, sort, q } = params;
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    fetchRanking({ board, filter, ...(mode ? { mode } : {}), sort, ...(q ? { q } : {}) })
-      .then((r) => { if (alive) { setRows((r as Row[]).slice(0, RANK_TOP)); setError(false); setLoading(false); setReady(true); } })
+    fetchRanking(board, mode, q)
+      .then((r) => { if (alive) { setRows(r.rows.slice(0, RANK_TOP)); setMine(r.mine); setError(false); setLoading(false); setReady(true); } })
       .catch(() => { if (alive) { setRows([]); setError(true); setLoading(false); setReady(true); } });
     return () => { alive = false; };
-  }, [board, filter, mode, sort, q]);
+  }, [board, mode, q]);
 
-  return { rows, error, loading, ready };
+  return { rows, mine, error, loading, ready };
 }
 
 /**

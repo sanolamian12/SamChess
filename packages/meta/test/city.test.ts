@@ -25,7 +25,7 @@ import {
   applyBattleResult, applyBuild, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
   CITY_UPGRADE_REASONS, canBuild, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
-  poolCap, syncCity, syncGrain, totalTally, upgradeCost,
+  poolCap, syncCity, syncGrain, upgradeCost,
   addCard, admitFromBox, battleWinsOf, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
@@ -789,9 +789,9 @@ describe('도시 전적 (41쪽)', () => {
    *
    * 한 판에 3~5명이 함께 뛰므로 「장수 전적을 다 더하면 도시 전적이 된다」는 성립하지
    * 않는다. C1이 계정 칸(`PlayerProfile.record`)을 따로 세는 이유가 이것이고,
-   * 41쪽의 「총 출전」은 그 칸에서 나온다.
+   * 41쪽의 「총 출전」은 그 칸에서 나온다. 장수 전적 칸은 2026-11-20에 없어졌다(전적은 부대로 본다).
    */
-  it('도시 전적 합 ≠ 장수 전적 합 — 세 명이 한 판을 뛰면 1전 대 3전 ★', () => {
+  it('도시는 판수로 센다 — 세 명이 한 판을 뛰어도 1전이고, 장수에는 전적 칸이 없다', () => {
     let p = city();
     const picks: RosterPick[] = Object.keys(p.roster).slice(0, 3)
       .map((officer, i) => ({ piece: (['King', 'Rock', 'Bishop'] as const)[i]!, officer: officer as OfficerId }));
@@ -803,9 +803,7 @@ describe('도시 전적 (41쪽)', () => {
     p = applyBattleResult(p, outcome, 1).profile;
 
     assert.equal(accountTally(p).plays, 1, '도시는 판수로 센다');
-    const sumOfficers = picks.reduce((n, k) => n + totalTally(p.roster[k.officer]!).plays, 0);
-    assert.equal(sumOfficers, 3, '장수 전적을 더하면 사람 수만큼 부푼다');
-    assert.notEqual(accountTally(p).plays, sumOfficers);
+    for (const k of picks) assert.ok(!('record' in p.roster[k.officer]!), `${k.officer}에 장수 전적 칸이 생겼다`);
   });
 });
 

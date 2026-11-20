@@ -15,6 +15,10 @@ import cors from '@fastify/cors';
 import { registerAdminRoutes } from './routes.ts';
 import { attachRequestContext } from '../requestContext.ts';
 import { attachTraffic } from '../health.ts';
+import { adminApiProblems, adminMfaOff, assertBootable } from '../environment.ts';
+
+// 운영에서 2단계 인증을 끈 채로는 안 뜬다(2026-11-20)
+assertBootable('관리자 API', adminApiProblems(process.env));
 
 const PORT = Number(process.env['SAMCHESS_ADMIN_PORT'] ?? 8788);
 /** 관리자 화면의 주소. 쉼표로 여럿 */
@@ -33,4 +37,5 @@ registerAdminRoutes(app);
 const HOST = process.env['SAMCHESS_ADMIN_HOST'] ?? '127.0.0.1';
 app.listen({ port: PORT, host: HOST }).then(() => {
   console.log(`✓ 관리자 API — http://localhost:${PORT} (허용 화면: ${ORIGINS.join(', ')})`);
+  if (adminMfaOff(process.env)) console.log('⚠ 관리자 2단계 인증(TOTP) 꺼짐 — SAMCHESS_ADMIN_MFA=off (개발 전용, 운영에서는 안 뜬다)');
 });

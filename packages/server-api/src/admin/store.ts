@@ -10,6 +10,7 @@ import { pool } from '../db.ts';
 import type { PoolClient } from 'pg';
 import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore.ts';
 import { grantsOfAccount } from '../grants.ts';
+import { defenseSummary } from '../defense.ts';
 import {
   ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
   isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage, BUILD_CITY_LEVEL, buildCreditsLeft, upgradeChecklist,
@@ -153,6 +154,8 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
     autoResolveAt: { aiBattle: profile ? aiAbandonAt(profile) : null, raid: profile ? raidAutoSurrenderAt(profile) : null },
     play: profile ? adminPlayStatus(profile) : null,
     defenseSnapshots: snaps.rows.map((x) => ({ mode: x.mode, squadName: x.squad_name, power: x.power, updatedAt: x.updated_at.toISOString() })),
+    // 수성에 성공한 판 — 게임 병영과 같은 함수(2026-11-20 부대 전적)
+    heldByMode: (await defenseSummary(uid)).heldByMode,
     // 결제 연동 전 — 결제 주문 표가 생기면 여기서 채운다(확정 · 환불 뺀 합, KRW는 주문에 적어 둔 결제 시점 금액의 합). `AdminPayments` 머리말
     payments: null,
     city: profile ? { upgrade: upgradeChecklist(profile), creditsLeft: buildCreditsLeft(profile), buildCityLevel: BUILD_CITY_LEVEL } : null,

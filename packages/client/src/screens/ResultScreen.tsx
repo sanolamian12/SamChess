@@ -25,7 +25,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
-import { grainCost, totalTally } from '@samchess/meta';
+import { grainCost } from '@samchess/meta';
 import type { BattleOutcome, BattleResult, BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
 import type { BattleMode, Grade } from '@samchess/rules';
 import { currentSession } from '../meta/auth.ts';
@@ -51,9 +51,6 @@ const OUTCOME_ICON: Record<string, GameIconName> = {
 const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> = {
   win: 'result.win', draw: 'result.draw', lose: 'result.lose',
 };
-
-/** 이번 판으로 오른 전적 칸 — 전과 장이 초록으로 크게 쓴다 */
-const BUMP: Record<BattleResult, 'w' | 'd' | 'l'> = { win: 'w', draw: 'd', lose: 'l' };
 
 /** 결말 → 두루마리. 성립하지 않은 판은 무승부와 같은 비취 두루마리다(기획자 지정) */
 const SKIN: Record<ResultBackdropId, 'win' | 'draw' | 'lose'> = {
@@ -146,7 +143,7 @@ export function ResultScreen({
     } else if (page === 'reward') {
       sheet = <RewardsPage given={rewards} />;
     } else {
-      sheet = <RecordPage record={record!} profile={profile} />;
+      sheet = <RecordPage record={record!} />;
     }
     return sheet;
   };
@@ -375,18 +372,13 @@ export function RewardsPage({ given }: { given: BattleRewards | null }): React.J
 
 /**
  * 전과 장 — 출전한 꼬마 장수(판 위의 그 그림)가 줄지어 서고 머리 위에 격파 수, 퇴각한 장수는 흑백이다.
- * 이름 아래는 그 장수의 **통산 승 / 무 / 패**이고, **이번 판으로 오른 칸**을 초록으로 조금 크게 쓴다 (2026-10-12 기획자 지정 —
- * 예상 승률 · 전투력 줄을 이것으로 갈았다. 예상 승률은 이력에 그대로 남는다). 합은 meta의 `totalTally()`가 낸다 —
- * 화면이 전적 칸을 직접 더하지 않는다(「한 번만 세고 표는 합으로 낸다」). 보상이 이미 반영된 계정을 읽으므로 이번 판이 들어 있다.
+ * 이름 아래의 장수별 통산 승 / 무 / 패(2026-10-12)는 2026-11-20에 걷었다 — 장수 전적 칸이 없어졌다(기획자: 전적은 부대로 본다).
  */
-function RecordPage({ record, profile }: { record: BattleOutcome; profile: PlayerProfile }): React.JSX.Element {
+function RecordPage({ record }: { record: BattleOutcome }): React.JSX.Element {
   const fallen = new Set(record.fallen ?? []);
   const mine = record.mySquad ?? t('result.squadNone');
   // AI에게는 부대가 없다 — 이력과 같은 자리에서 「AI」라고 적는다
   const theirs = record.theirSquad ?? (record.opponent === 'ai' ? t('result.ai') : t('result.squadNone'));
-  const bump = BUMP[record.result];
-  // 순수 AI 대전은 전적에 안 센다(2026-10-28) — 통산 줄을 띄우면 이번 판이 들어간 것처럼 칸이 초록으로 선다
-  const counted = record.opponent !== 'ai';
   return (
     <div className="brs-record" data-field="record">
       <h2 className="brs-cap">{t('result.vs', { mine, theirs })}</h2>
@@ -395,8 +387,6 @@ function RecordPage({ record, profile }: { record: BattleOutcome; profile: Playe
           const o = officerById.get(p.officer);
           const out = fallen.has(p.officer);
           const kills = record.kills?.[p.officer] ?? 0;
-          const inst = profile.roster[p.officer];
-          const tally = inst && counted ? totalTally(inst) : null;
           return (
             <li key={p.officer} className={`brs-unit${out ? ' fallen' : ''}`} data-officer={p.officer} data-kills={kills} data-fallen={out ? '1' : '0'}>
               {/* 격파는 아이콘 + 숫자 — 「0 бут цохив」·「3 derrotados」처럼 글자로 적으면 다섯 칸이 서로 겹친다 */}
@@ -411,12 +401,6 @@ function RecordPage({ record, profile }: { record: BattleOutcome; profile: Playe
                 {out && <span className="brs-out">{t('result.fallen')}</span>}
               </span>
               <span className="brs-unm">{o ? pickOfficerName(o) : p.officer}</span>
-              {tally && (
-                <span className="brs-wdl" data-field="wdl" data-w={tally.wins} data-d={tally.draws} data-l={tally.losses} data-bump={bump}>
-                  <b className={bump === 'w' ? 'up' : ''}>{tally.wins}</b> / <b className={bump === 'd' ? 'up' : ''}>{tally.draws}</b>
-                  {' / '}<b className={bump === 'l' ? 'up' : ''}>{tally.losses}</b>
-                </span>
-              )}
             </li>
           );
         })}

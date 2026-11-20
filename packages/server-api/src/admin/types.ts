@@ -196,6 +196,12 @@ export interface UserDetail {
    */
   defenseSnapshots: { mode: BattleMode; squadName: string; power: number; updatedAt: string }[];
   /**
+   * 수성에 성공한 판 — 모드마다(2026-11-20 부대 전적). **게임 병영의 「막은 판」과 같은 함수**(`defenseSummary`)가 낸 수다.
+   * 전적은 장수가 아니라 부대로 본다 — 공격은 그 모드 공격대의 `Squad.record`(전 · 승 · 무 · 패 · 격파), 수비는 이 수 하나.
+   * 수성전은 AI가 두므로 수비대의 `record`에는 안 쌓이고 방어 기록(`defense_log`)에서 센다
+   */
+  heldByMode: Record<BattleMode, number>;
+  /**
    * 누적 결제(2026-11-13) — **결제 연동 전이라 언제나 `null`**이다(결제 기록 표가 아직 없다, `history/2026-09-25_현금결제연동_1차검토.md`).
    * 화면은 `null`이면 「연동 전」을 띄운다. 결제 주문 표가 생기면 `readUser()` 한 곳에서 채운다.
    */

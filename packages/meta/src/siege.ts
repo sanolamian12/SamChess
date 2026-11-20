@@ -22,7 +22,7 @@
  */
 
 import type { BattleMode, RosterEntry } from '@samchess/rules';
-import { cityRankRow } from './ranking.ts';
+import { battleRankRow } from './ranking.ts';
 import type { PlayerProfile } from './types.ts';
 
 export type SiegeTab = 'recommended' | 'upper';
@@ -60,7 +60,7 @@ export interface SiegeListRow {
   power: number;
   /** 명단 — 레벨 · 능력 선택까지 실린 그대로(상대 수비군 상세가 그린다) */
   entries: RosterEntry[];
-  /** 도시 점수 — 대자보의 승점 합(`cityScore`). 표시만 */
+  /** 도시 점수 — 전투 랭킹의 점수(두 모드 공격대의 승점 합, `cityScore`). 표시만 */
   score: number;
   /** 지금 접속 중인가(`isPresent`) — 줄의 점 · 같은 레벨 안에서 위로 · 공성전 불가 */
   online: boolean;
@@ -83,5 +83,5 @@ export function pickSiegeRows(rows: readonly SiegeListRow[], tab: SiegeTab, myLe
     .slice(0, SIEGE_LIST_LIMIT);
 }
 
-/** 도시 점수 — 대자보 도시 랭킹의 「종합」과 같은 값(승점 합, §7) */
-export const cityScore = (profile: PlayerProfile): number => cityRankRow(profile, 'all').total;
+/** 도시 점수 — 전투 랭킹 「전체」의 점수와 같은 값(두 모드 공격대의 승점 합, 2026-11-20 — 그전에는 계정 전적의 승점 합) */
+export const cityScore = (profile: PlayerProfile): number => battleRankRow(profile, 'all').total;

@@ -144,7 +144,7 @@ try {
 
   step('대자보 — 랭킹 셋');
   // 랭킹마다 메인에서 다시 들어간다 — 랭킹 화면의 「뒤로」가 어디로 가는지는 들어온 길이 가른다
-  for (const [act, name] of [['rankingCity', 'c1-rank-city'], ['rankingSquad', 'c2-rank-squad'], ['rankingOfficer', 'c3-rank-officer']] as const) {
+  for (const [act, name] of [['rankingBattle', 'c1-rank-battle'], ['rankingCity', 'c2-rank-city'], ['rankingCollection', 'c3-rank-collection']] as const) {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
     await page.click('.scr-main [data-place="ranking"]', { force: true });

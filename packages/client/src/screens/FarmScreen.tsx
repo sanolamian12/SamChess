@@ -130,7 +130,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
   const raidState = raidStateText(profile, now);
 
   // 장수 카드 — 장수 일람의 「보기」와 같은 카드·같은 행(3v3·5v5 통산)
-  const cardRows = useMemo(() => officerRankRows(profile, 'all'), [profile]);
+  const cardRows = useMemo(() => officerRankRows(profile), [profile]);
   const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
   const cardEquip = card ? equippedBy(profile, card.officer) : undefined;
   /** 카드로 연 장수가 세운 보초병이면 그 자리 — 카드에 [해제하기]가 붙는다 */

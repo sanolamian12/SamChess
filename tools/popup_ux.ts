@@ -130,40 +130,8 @@ try {
   ok('이름 변경 — 나무판 · 명패 · 두루마리 칸 · 옥색/참나무 단추 · 빈 이름은 단추만 잠김');
   await page.click('[data-action="renameCancel"]');
 
-  // ③ 장수 랭킹 → 카드 → 책략 칩 — 어두운 화면에서도 궁궐과 같은 두루마리인가
-  await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  await page.click('.scr-main [data-place="ranking"]', { force: true });
-  await page.waitForSelector('[data-screen="board"]');
-  await page.click('.scr-board [data-action="ranking"]');
-  await page.waitForSelector('[data-screen="ranking"]');
-  await page.click('[data-action="rankingOfficer"]');
-  await page.waitForSelector('[data-screen="rankingOfficer"]');
-  await page.waitForSelector('.rk-row.rk-clickable', { timeout: 15_000 });
-  const rows = await page.$$('.rk-row.rk-clickable');
-  let found = false;
-  for (const r of rows.slice(0, 12)) {
-    await r.click();
-    await page.waitForSelector('.ofcard-modal', { timeout: 5_000 });
-    const chip = await page.$('.ofcard-modal .ofcard-bar-tactics button.chip');
-    if (chip) {
-      // 책략은 글자가 아니라 엠블럼이다(2026-10-23) — 단추 안에 그림이 있는가, 글자는 없는가
-      if (!await chip.$('.tac-icon img')) fail('장수 카드의 책략 단추에 엠블럼이 없다');
-      if ((await chip.innerText()).replace('+', '').trim()) fail('장수 카드의 책략 단추에 글자가 남아 있다');
-      await shot('popup-03a-card');
-      await chip.click();
-      await page.waitForSelector('[data-modal="tactic"] .tac-modal');
-      const src = await art('[data-modal="tactic"] .tac-modal');
-      if (!src.includes('field-frame')) fail(`랭킹의 책략 팝업이 두루마리가 아니다 — ${src}`);
-      await shot('popup-03-tactic');
-      found = true;
-      break;
-    }
-    await page.click('.ofcard-modal [data-action="closeCard"]');
-    await page.waitForTimeout(150);
-  }
-  if (found) ok('랭킹의 책략 팝업 — 두루마리');
-  else console.log('  · 랭킹 위 12명 중 책략을 가진 장수가 없어 책략 팝업은 못 찍었다');
+  // ③ (옛) 장수 랭킹 → 카드 → 책략 칩 — 장수 랭킹이 없어져(2026-11-20) 걷었다. 책략 팝업은 궁궐의 장수 상세에서 같은 컴포넌트다
+
 
   // ④ [로그아웃] → 확인 — 실제로 간판으로 돌아가는가 (맨 끝에 둔다 — 세션이 끊긴다)
   await page.goto(BASE, { waitUntil: 'networkidle' });

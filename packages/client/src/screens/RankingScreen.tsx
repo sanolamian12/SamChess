@@ -1,84 +1,93 @@
 /**
- * 랭킹 메뉴 (pptx 50쪽 왼쪽) — [도시 랭킹] / [부대 랭킹] / [장수 랭킹] 세 자리.
- *
- * 궁궐·병영과 같은 「자리 → 그 안의 화면」 한 걸음이다(`PlaceScreen.tsx`와 같은
- * 결) — 세 판을 한 화면에 탭으로 몰아넣지 않고, 50쪽 목업 그대로 **여기서 하나를
- * 고르면 그 판의 화면으로 넘어간다.** 뒤로가기는 이 메뉴로 돌아오고, 이 메뉴의
- * 뒤로가기만 대자보/궁궐로 나간다(`from`). 메인의 게시판 자리는 2026-10-13부터 대자보
- * (`BoardScreen` — 랭킹 · 컬렉션)로 먼저 들어가고, 이 메뉴는 그 [랭킹 보기] 너머다.
- *
- * 배경은 게시판 그림(`rankingBackdrop`) — 도시 전적이 이 그림 위에 있던 자리
- * 그대로다(2026-08-25).
- *
- * ────────────────────────────────────────────────────────────────
- * 위쪽은 「우리 도시」 요약 세 줄 (2026-09-18 지정)
- * ────────────────────────────────────────────────────────────────
- *
- * 세 판 화면의 바닥에 있던 「내 도시 / 내 부대(상위 3) / 내 장수(상위 3)」를
- * 이리로 옮기고 **한 줄씩으로 줄였다** — 세 판 화면의 그 자리엔 [뒤로 가기]
- * 명령 판이 선다(`RankingBackPanel`).
+ * 랭킹 메뉴 — 전투 · 도시화 · 컬렉션 세 분야 (2026-11-20 기획자, 옛 도시 · 부대 · 장수 세 판을 바꿨다).
  *
  * ```
- * [성문] 도시 : 3위                  17 점
- * [깃발] 부대 : 2위   선봉대         15 점
- * [투구] 장수 : 5위   조운            9 점
- * └─────────── 5 ───────────┘   └─ 2 ─┘
+ * ┌ ← 대자보로          랭킹 ─────┐
+ * ┌ 위 판 — 내 순위 · 점수 ───────┐
+ * │ (승리) 전투   : 3위   1,240 점 │
+ * │ (궁궐) 도시화 : 6위     920 점 │
+ * │ (관우) 컬렉션 : 2위     250 점 │
+ * └─────────────────────────────┘
+ *              (게시판 그림)
+ * ┌ 명령 판 ─────────────────────┐
+ * │ [ 전투 랭킹 ]                  │
+ * │ [ 도시화 랭킹 ]                │
+ * │ [ 컬렉션 랭킹 ]                │
+ * │ [ 뒤로 가기 ]                  │
+ * └─────────────────────────────┘
  * ```
  *
- * 줄 전체가 **가로 5 : 2**(아이콘·제목·순위·이름 : 점수)이고 세 줄이 같은 칸을 쓴다
- * (판 전체가 한 그리드, 줄은 `display: contents`). 글자는 **짧게** — 「도시 랭킹」
- * 「도시 총점」이 아니라 「도시」「점수」다(2026-09-18 지정). 외국어에서 「랭킹」
- * 「총점」까지 붙이면 칸이 모자라 줄마다 접혔다. 점수는 「17 점」으로 오른쪽 끝에
- * 붙인다. 아이콘은 아래 세 단추의 것과 같은 그림을
- * **검정 바탕 → 금테(`ui/stat-frame.png`) → 아이콘** 순으로 겹쳐 띄운다 — 액자
- * 안에 담는 게 아니라 셋을 쌓는다(2026-09-18 지정). 표·[구성 보기]·[보기]는
- * 없다 — 자세히는 단추 너머의 판에서 본다.
+ * 궁궐·병영과 같은 「자리 → 그 안의 화면」 한 걸음이다 — 여기서 하나를 고르면 그 분야의 화면(`RankingBoardScreen`)으로
+ * 넘어간다. 뒤로가기는 이 메뉴로 돌아오고, 이 메뉴의 뒤로가기만 대자보/궁궐로 나간다(`from`).
  *
- * **이름·총점은 제 프로필로, 순위만 서버에서** (`GET /ranking/mine`). 몇 등인지는
- * 전체를 모아야 알 수 있어서다. 서버가 안 닿으면 순위 칸만 「—」이고 나머지는
- * 그대로 뜬다. 서버가 가리킨 부대·장수가 화면이 고른 것과 다르면(그 사이 전적이
- * 바뀌었다) 그 순위는 **안 쓴다** — 남의 순위를 붙여 보여 주느니 「—」가 낫다.
+ * **점수는 제 프로필로, 순위만 서버에서** (`GET /ranking/mine`). 몇 등인지는 전체를 모아야 알 수 있어서다. 서버가 안
+ * 닿으면 순위 칸만 「—위」이고 점수는 그대로 뜬다. 전투는 「전체」(두 모드 공격대의 합)로 잰다. 줄에 안 서는 분야(공격대로
+ * 한 판도 안 뜀 · 완성한 컬렉션 없음)는 그 사실을 한 줄로 말한다.
  *
- * 모드·상대 필터는 없다 — 세 판 화면이 처음 열릴 때의 값(**3 vs 3 · 전체 ·
- * 총점 순**)으로 잰다.
+ * 위 판의 줄 꼴(`SummaryLine`)은 대자보(`BoardScreen`)도 그대로 쓴다 — 「이름 : 순위 … 점수」가 두 화면에서 같아야 한다.
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  cityRankRow, officerRankRows, sortOfficerRows, sortSquadRows, squadRankRows,
-} from '@samchess/meta';
-import type { MyRank, MyRanks, PlayerProfile, RecordFilter } from '@samchess/meta';
-import type { BattleMode } from '@samchess/rules';
+import { battleRankRow, cityRankRow, collectionPoints } from '@samchess/meta';
+import type { MyRank, MyRanks, PlayerProfile, RankBoard } from '@samchess/meta';
 import { currentSession } from '../meta/auth.ts';
 import { fetchMyRanks } from '../meta/ranking.ts';
 import { rankingBackdrop } from './backdrop.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
-import { squadText } from './squadText.ts';
 import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerNameById } from '../i18n/story.ts';
+import { GAME_ICONS } from '../ui/gameIcon.ts';
+import type { GameIconName } from '../ui/gameIcon.ts';
 import { RankingLoading, useRankingLoading } from './RankingLoading.tsx';
 
-/** 세 판 화면이 처음 열릴 때의 값과 같다 */
-const MODE: BattleMode = '3v3';
-const FILTER: RecordFilter = 'all';
+/** 서버가 준 순위를 글자로 — 없으면(오프라인 · 줄에 안 섬) 숫자 자리만 「—」다(「—위」) */
+export const rankText = (r: MyRank | null | undefined): string => t('ranking.sum.rank', { n: r ? r.rank : '—' });
 
-/** 서버가 준 순위를 글자로 — 없거나(오프라인) **다른 것을 가리키면** 숫자 자리만
-    「—」다(「—위」 — 무엇을 적는 칸인지는 남긴다, 2026-09-18 지정) */
-export const rankText = (r: MyRank | null | undefined, id?: string): string =>
-  t('ranking.sum.rank', { n: r && (id === undefined || r.id === id) ? r.rank : '—' });
+/** 분야마다 아이콘 · 이름 — 위 판의 줄과 아래 단추가 같은 그림이다. 둥근 메달 셋(2026-11-20 기획자) — 전투 = 승리 메달 · 도시화 =
+    궁궐 메달 · 컬렉션 = 관우 꼬마 얼굴 메달(`build_icons_composed.py`의 `ic_rec_collection`) */
+export const BOARD_ICON: Record<RankBoard, GameIconName> = { battle: 'rec-win', city: 'bld-palace', collection: 'rec-collection' };
+export const BOARD_TITLE: Record<RankBoard, StringKey> = {
+  battle: 'ranking.tab.battle', city: 'ranking.tab.city', collection: 'ranking.tab.collection',
+};
+const SUM_TITLE: Record<RankBoard, StringKey> = {
+  battle: 'ranking.sum.ttl.battle', city: 'ranking.sum.ttl.city', collection: 'ranking.sum.ttl.collection',
+};
+const BOARD_ACTION: Record<RankBoard, string> = { battle: 'rankingBattle', city: 'rankingCity', collection: 'rankingCollection' };
 
-export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOfficer }: {
+/** 내 점수 — 제 프로필로 낸다(서버가 안 닿아도 뜬다). 그 분야 줄에 안 서면 `null` */
+export function myScore(profile: PlayerProfile, board: RankBoard): number | null {
+  if (board === 'battle') {
+    const row = battleRankRow(profile, 'all');
+    return row.tally.plays > 0 ? row.total : null;
+  }
+  if (board === 'city') return cityRankRow(profile).total;
+  const n = collectionPoints(profile);
+  return n > 0 ? n : null;
+}
+
+/** 위 판의 한 분야 줄 — 줄에 안 서면 그 사실을 한 줄로 */
+export function BoardSummary({ profile, board, ranks }: {
+  profile: PlayerProfile; board: RankBoard; ranks: MyRanks | null;
+}): React.JSX.Element {
+  const score = myScore(profile, board);
+  const empty: Partial<Record<RankBoard, StringKey>> = { battle: 'ranking.mine.none.battle', collection: 'ranking.mine.none.collection' };
+  return (
+    <SummaryLine board={board} icon={BOARD_ICON[board]} title={SUM_TITLE[board]}
+      {...(score === null
+        ? { empty: t(empty[board]!) }
+        : { rank: rankText(ranks?.[board]), total: t('ranking.sum.total', { total: score.toLocaleString() }) })} />
+  );
+}
+
+export function RankingScreen({ profile, from, onBack, onBoard }: {
   profile: PlayerProfile;
   /** 「뒤로」 글자와 목적지 — 궁궐(도시 관리)에서 왔으면 「도시 관리로」, 메인에서
       대자보를 지나 왔으면 「대자보로」다. */
   from: 'city' | 'main';
   onBack: () => void;
-  onCity: () => void;
-  onSquad: () => void;
-  onOfficer: () => void;
+  onBoard: (board: RankBoard) => void;
 }): React.JSX.Element {
   useLang();
   const [ranks, setRanks] = useState<MyRanks | null>(null);
@@ -86,7 +95,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     let live = true;
-    fetchMyRanks(FILTER, MODE)
+    fetchMyRanks()
       .then((r) => { if (live) setRanks(r); })
       .catch(() => { /* 순위만 「—」 */ })
       .finally(() => { if (live) setSettled(true); });
@@ -94,10 +103,7 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
   }, []);
   const veil = useRankingLoading(!settled);
   const backLabel = stripBackArrow(t(from === 'main' ? 'board.back' : 'city.records.back'));
-
-  const city = useMemo(() => cityRankRow(profile, FILTER, MODE), [profile]);
-  const squad = useMemo(() => sortSquadRows(squadRankRows(profile, FILTER, MODE), 'total')[0], [profile]);
-  const officer = useMemo(() => sortOfficerRows(officerRankRows(profile, FILTER, MODE), 'total')[0], [profile]);
+  const boards = useMemo((): RankBoard[] => ['battle', 'city', 'collection'], []);
 
   return (
     <ScreenChrome
@@ -114,37 +120,19 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
 
       <div className="place-body">
         <section className="place-panel rk-summary" data-field="mine">
-          <SummaryLine board="city" icon="tab-city" title="ranking.sum.ttl.city"
-            rank={rankText(ranks?.city)} total={t('ranking.sum.total', { total: city.total })} />
-          <SummaryLine board="squad" icon="tab-squad" title="ranking.sum.ttl.squad"
-            {...(squad
-              ? {
-                rank: rankText(ranks?.squad, squad.squad.id), name: squadText(squad.squad.id) ?? '',
-                total: t('ranking.sum.total', { total: squad.total }),
-              }
-              : { empty: t('ranking.mine.empty.squad') })} />
-          <SummaryLine board="officer" icon="tab-officer" title="ranking.sum.ttl.officer"
-            {...(officer
-              ? {
-                rank: rankText(ranks?.officer, officer.officer),
-                name: pickOfficerNameById(officer.officer, officer.name),
-                total: t('ranking.sum.total', { total: officer.total }),
-              }
-              : { empty: t('ranking.mine.empty.officer') })} />
+          {boards.map((b) => <BoardSummary key={b} profile={profile} board={b} ranks={ranks} />)}
         </section>
 
         <section className="place-panel rk-menu">
-          <button className="btn wide" data-action="rankingCity" onClick={onCity}>
-            <img className="rk-tab-icon" src="icons/tab-city.png" alt="" />
-            <span className="lbl">{t('ranking.tab.city')}</span>
-          </button>
-          <button className="btn wide" data-action="rankingSquad" onClick={onSquad}>
-            <img className="rk-tab-icon" src="icons/tab-squad.png" alt="" />
-            <span className="lbl">{t('ranking.tab.squad')}</span>
-          </button>
-          <button className="btn wide" data-action="rankingOfficer" onClick={onOfficer}>
-            <img className="rk-tab-icon" src="icons/tab-officer.png" alt="" />
-            <span className="lbl">{t('ranking.tab.officer')}</span>
+          {boards.map((b) => (
+            <button key={b} className="btn wide" data-action={BOARD_ACTION[b]} onClick={() => onBoard(b)}>
+              <img className="rk-tab-icon" src={GAME_ICONS[BOARD_ICON[b]]} alt="" />
+              <span className="lbl">{t(BOARD_TITLE[b])}</span>
+            </button>
+          ))}
+          {/* 세 단추 밑에 [뒤로 가기] (2026-11-20 기획자) — 위 띠의 「← 대자보로」와 같은 곳으로 나간다 */}
+          <button className="btn wide" data-action="backRanking" onClick={onBack}>
+            <span className="lbl">{stripBackArrow(t('match.back'))}</span>
           </button>
         </section>
       </div>
@@ -156,12 +144,12 @@ export function RankingScreen({ profile, from, onBack, onCity, onSquad, onOffice
 /**
  * 요약 한 줄 — [아이콘] 「○○ :」 | 순위 + 이름 | 점수 (줄 전체 5 : 2).
  * 줄 자신은 칸을 안 만든다(`display: contents`) — 판(`.rk-summary`)의 그리드 칸에
- * 자식 넷이 그대로 앉아야 세 줄의 3 : 1 경계가 한 세로선에 맞는다.
- * 아직 없으면(`empty`) 안내문이 순위·총점 두 칸을 다 쓴다.
+ * 자식 넷이 그대로 앉아야 세 줄의 경계가 한 세로선에 맞는다.
+ * 아직 없으면(`empty`) 안내문이 순위·점수 두 칸을 다 쓴다.
  */
 export function SummaryLine({ board, icon, title, rank, name, total, empty }: {
-  board: 'city' | 'squad' | 'officer' | 'collection';
-  icon: string;
+  board: RankBoard;
+  icon: GameIconName;
   title: StringKey;
   rank?: string;
   name?: string;
@@ -171,7 +159,7 @@ export function SummaryLine({ board, icon, title, rank, name, total, empty }: {
   return (
     <div className="rk-sum-line" data-mine={board}>
       <span className="rk-sum-icon">
-        <img src={`icons/${icon}.png`} alt="" />
+        <img src={GAME_ICONS[icon]} alt="" />
       </span>
       <b className="rk-sum-ttl">{t('ranking.sum.head', { title: t(title) })}</b>
       {empty !== undefined ? (

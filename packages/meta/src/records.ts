@@ -47,10 +47,6 @@ export const MATCH_LOG_CAP = 200;
 
 export const emptyTally = (): RecordTally => ({ plays: 0, wins: 0, draws: 0, losses: 0, kills: 0, points: 0 });
 
-/** 장수 전적의 키 — `siege/3v3/King` */
-export const recordKey = (opponent: OpponentKind, mode: BattleMode, piece: PieceType): string =>
-  `${opponent}/${mode}/${piece}`;
-
 /** 계정 전적의 키 — `siege/3v3`. 기물 차원이 없다(한 판에 여러 기물이 함께 뛴다) */
 export const accountKey = (opponent: OpponentKind, mode: BattleMode): string =>
   `${opponent}/${mode}`;
@@ -106,11 +102,6 @@ export function sumTally(record: Record<string, RecordTally>, where: TallyWhere 
 /** 필터를 조건으로 옮긴다. `all`은 「묻지 않는다」이지 「둘 다 더한다」가 아니다 */
 export const whereOf = (filter: RecordFilter): TallyWhere =>
   (filter === 'all' ? {} : { opponent: filter });
-
-/** 장수 카드 맨 윗줄의 출전 · 승 · 무 · 패 · 격파 — 칸(`{상대}/{모드}/{기물}`)의 합 (2026-11-19 기획자: 기물 · 모드별 전적 판을 걷고 이것만 보인다).
- *  칸은 그대로 교차로 센다 — 장수 랭킹이 모드 · 공성/야전으로 가른다(`officerRankRows`) */
-export const totalTally = (inst: OfficerInstance, filter: RecordFilter = 'all'): RecordTally =>
-  sumTally(inst.record, whereOf(filter));
 
 /** 계정(도시) 전적 — 41쪽의 「총 출전」 (C2) */
 export const accountTally = (profile: PlayerProfile, filter: RecordFilter = 'all'): RecordTally =>

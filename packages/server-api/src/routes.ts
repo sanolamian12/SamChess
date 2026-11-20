@@ -7,7 +7,8 @@ import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type {
   BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
 } from '@samchess/meta';
-import type { RankBoard } from '@samchess/meta';
+import type { BattleRankMode, RankBoard } from '@samchess/meta';
+import { BATTLE_RANK_MODES, RANK_BOARDS } from '@samchess/meta';
 import { RECORD_FILTERS, SIEGE_TABS, isTutorialId } from '@samchess/meta';
 import type { RecordFilter, SiegeTab } from '@samchess/meta';
 import { officerById } from '@samchess/data';
@@ -635,9 +636,9 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * 도시/부대/장수 랭킹 — 전체 유저 top 3(또는 검색 결과 셋, 2026-09-18). "내 랭킹"은 여기 안
-   * 온다(`ranking.ts` 머리말 참조) — 클라이언트가 자기 프로필로 직접 낸다.
-   * `/profile`과 같은 인증 수준(로그인한 유저면 누구나 조회).
+   * 랭킹 — 전투 · 도시화 · 컬렉션 (2026-11-20). 1~10위, `q`가 있으면 도시 이름 검색(그 도시의 진짜 등수로 열 줄까지), 내 줄도 함께.
+   * `mode`는 전투만(`all` · `3v3` · `5v5`, 기본 `all`). `/profile`과 같은 인증 수준(로그인한 유저면 누구나 조회).
+   * 경로를 `/ranking/:board`로 안 둔 것은 `/ranking/collection`(컬렉션 화면용, 모양이 다르다)과 겹치지 않게다.
    */
   app.get('/ranking', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
@@ -645,44 +646,19 @@ export function registerRoutes(app: FastifyInstance): void {
 
     const query = req.query as Record<string, string | undefined>;
     const board = query['board'];
-    if (board !== 'city' && board !== 'squad' && board !== 'officer') {
-      return reply.code(400).send({ error: 'invalid board' });
-    }
-    const filter = query['filter'];
-    if (!RECORD_FILTERS.includes(filter as RecordFilter) || filter === undefined) {
-      return reply.code(400).send({ error: 'invalid filter' });
-    }
-    const mode = query['mode'];
-    if (mode !== undefined && mode !== '3v3' && mode !== '5v5') {
-      return reply.code(400).send({ error: 'invalid mode' });
-    }
-    const q = query['q'];
-    const rows = await queryRanking({
-      board: board as RankBoard, filter: filter as RecordFilter, ...(mode ? { mode } : {}),
-      sort: query['sort'] ?? 'total', ...(q ? { q } : {}),
-    });
-    return { rows };
+    if (!RANK_BOARDS.includes(board as RankBoard)) return reply.code(400).send({ error: 'invalid board' });
+    const mode = query['mode'] ?? 'all';
+    if (!BATTLE_RANK_MODES.includes(mode as BattleRankMode)) return reply.code(400).send({ error: 'invalid mode' });
+    const out = await queryRanking(user.uid, board as RankBoard, mode as BattleRankMode, query['q']);
+    if (!out) return reply.code(404).send({ error: 'no profile' });
+    return out;
   });
 
-  /**
-   * 내 도시·최고 부대·최고 장수의 **순위** — 랭킹 메뉴 위쪽 판(2026-09-18). 행은
-   * 클라이언트가 제 프로필로 내고, 몇 등인지만 여기서 전체를 훑어 준다
-   * (`queryMyRanks`). 필터 검사는 `/ranking`과 같다.
-   */
+  /** 세 분야의 내 순위 · 점수 — 랭킹 메뉴 · 대자보의 위 판(2026-11-20). 전투는 두 모드 합 */
   app.get('/ranking/mine', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-
-    const query = req.query as Record<string, string | undefined>;
-    const filter = query['filter'] ?? 'all';
-    if (!RECORD_FILTERS.includes(filter as RecordFilter) || filter === undefined) {
-      return reply.code(400).send({ error: 'invalid filter' });
-    }
-    const mode = query['mode'];
-    if (mode !== undefined && mode !== '3v3' && mode !== '5v5') {
-      return reply.code(400).send({ error: 'invalid mode' });
-    }
-    const ranks = await queryMyRanks(user.uid, filter as RecordFilter, mode);
+    const ranks = await queryMyRanks(user.uid);
     if (!ranks) return reply.code(404).send({ error: 'no profile' });
     return { ranks };
   });

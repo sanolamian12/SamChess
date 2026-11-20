@@ -25,6 +25,8 @@ export const GAME_ICONS = {
   'rec-lose': 'icons/record/rec-lose.png',
   'rec-points': 'icons/record/rec-points.png',
   'rec-win': 'icons/record/rec-win.png',
+  // 랭킹 「컬렉션」 줄 — 관우 꼬마 얼굴 메달 (2026-11-20, `build_icons_composed.py`의 `ic_rec_collection`)
+  'rec-collection': 'icons/record/rec-collection.png',
   'goal-convert': 'icons/outcome/goal-convert.png',
   'goal-hpbelow': 'icons/outcome/goal-hpbelow.png',
   'goal-killcount': 'icons/outcome/goal-killcount.png',

@@ -274,7 +274,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
   }
 
   // ── 본판 ──
-  const cardRows = cardOf ? officerRankRows(work, 'all') : [];
+  const cardRows = cardOf ? officerRankRows(work) : [];
   const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
   const now = Date.now();
 

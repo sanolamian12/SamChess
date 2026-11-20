@@ -98,7 +98,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     roster: {},
     cards: {},
     // 계정 전적·이력은 v3에서 생겼다. v2 이하는 빈 채로 시작한다
-    record: readRecord(raw.record, 2, version),
+    record: readRecord(raw.record, version),
     matches: [],
     matchSeq: 1,
     // 부대는 E에서 더해졌다. **없으면 빈 배열**. v8(2026-11-14)부터 칸 넷 고정 — 아래 `readSquads()`가 접는다
@@ -245,7 +245,7 @@ function migrateInstance(officer: OfficerId, value: unknown, version: number): O
     //   저장된 `level`을 믿고 스택을 맞추는 쪽이면 손상된 입력에서 불변식이 깨진다.
     level: growth.length + 1,
     growth,
-    record: readRecord(raw.record, 3, version),
+    // 장수 전적 칸(`record`)은 2026-11-20에 걷었다 — 옛 값은 골라 담지 않아 버려진다(전적은 부대로 본다)
     // 부상 두 필드 (GDD §5.7, 2026-09-04에 더해졌다). **되접기가 이 둘을 빠뜨리고 있었다**
     // (2026-09-17에 잡았다) — 서버는 계정을 읽을 때마다 여기를 지나므로 **다친 장수가
     // 다음 읽기에서 조용히 나았다.** 병영의 「부상」 표시를 시험하려고 부상을 심었는데
@@ -283,18 +283,17 @@ const finiteNum = (v: unknown): number | null =>
  *
  * @param arity 키 조각 수 — 계정은 `{상대}/{모드}` 둘, 장수는 기물까지 셋
  */
-function readRecord(raw: unknown, arity: 2 | 3, version: number): Record<string, RecordTally> {
+function readRecord(raw: unknown, version: number): Record<string, RecordTally> {
   const out: Record<string, RecordTally> = {};
   if (!isRecord(raw)) return out;
   for (const [stored, value] of Object.entries(raw)) {
     if (!isRecord(value)) continue;
     const parts = stored.split('/');
-    if (parts.length !== arity) continue;
+    if (parts.length !== 2) continue;
     // v6 이하의 갈래는 v7로 옮긴다 — `ai`는 버리고 `online`은 야전(`opponentOf`)
     const opponent = opponentOf(parts[0], version);
     if (!opponent || !isMode(parts[1])) continue;
     const key = [opponent, ...parts.slice(1)].join('/');
-    if (arity === 3 && !isPiece(parts[2])) continue;
     const cell = emptyTally();
     cell.wins = count(value.wins);
     cell.draws = count(value.draws);
@@ -363,7 +362,7 @@ function readSquads(
       picks,
       deploy: { P1: readCells(isRecord(value.deploy) ? value.deploy.P1 : null),
                 P2: readCells(isRecord(value.deploy) ? value.deploy.P2 : null) },
-      record: readRecord(value.record, 2, version),
+      record: readRecord(value.record, version),
       ...(typeof value.createdAt === 'number' && Number.isFinite(value.createdAt)
         ? { createdAt: value.createdAt } : {}),
       // 수비군 방침(2026-10-30) — 되접기가 골라 담지 않으면 읽을 때마다 조용히 버려진다

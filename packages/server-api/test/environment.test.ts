@@ -7,7 +7,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { INTERNAL_SECRET_MIN, gameApiProblems, samchessEnv } from '../src/environment.ts';
+import { INTERNAL_SECRET_MIN, adminApiProblems, adminMfaOff, gameApiProblems, samchessEnv } from '../src/environment.ts';
+
+test('관리자 MFA 끄기 — 개발에서만 꺼지고, 운영에서 off면 관리자 API가 안 뜬다', () => {
+  assert.equal(adminMfaOff({}), false);
+  assert.equal(adminMfaOff({ SAMCHESS_ADMIN_MFA: 'off' }), true);
+  assert.equal(adminMfaOff({ SAMCHESS_ADMIN_MFA: 'OFF' }), false, '정확히 off만');
+  assert.equal(adminMfaOff({ SAMCHESS_ENV: 'production', SAMCHESS_ADMIN_MFA: 'off' }), false);
+  assert.deepEqual(adminApiProblems({ SAMCHESS_ADMIN_MFA: 'off' }), []);
+  assert.deepEqual(adminApiProblems({ SAMCHESS_ENV: 'production' }), []);
+  assert.match(adminApiProblems({ SAMCHESS_ENV: 'production', SAMCHESS_ADMIN_MFA: 'off' })[0]!, /ADMIN_MFA/);
+});
 
 const PROD_OK = {
   SAMCHESS_ENV: 'production', SAMCHESS_WEB_ORIGIN: 'https://play.example', INTERNAL_API_SECRET: 'x'.repeat(INTERNAL_SECRET_MIN),
