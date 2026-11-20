@@ -153,6 +153,26 @@ try {
   if (!cardsLine?.includes('6')) fail(`정리 가능 카드가 안 뜬다 — 「${cardsLine}」`);
   ok(`현황판 · 명령 둘 · 「${cardsLine?.trim()}」`);
 
+  step('금화 구매 — 상품 카드를 누르면 「구매 완료」 축하 화면(2026-11-20, 결제 전에는 개발용 지급이 켜졌을 때만)');
+  await page.click('[data-action="openGold"]');
+  await page.waitForSelector('.mkt-pack[data-pack="0"]', { timeout: 5_000 });
+  if (await page.isEnabled('.mkt-pack[data-pack="0"]')) {
+    const before = Number(await page.getAttribute('[data-field="goldHave"]', 'data-gold'));
+    const packGold = Number(await page.getAttribute('.mkt-pack[data-pack="0"]', 'data-gold'));
+    await page.click('.mkt-pack[data-pack="0"]');
+    await page.waitForSelector('[data-modal="goldDone"]', { timeout: 8_000 });
+    await page.waitForTimeout(1_500);   // 섬광 · 주머니 쾅이 끝난 뒤
+    await shot('gold-done');
+    const got = Number(await page.getAttribute('[data-modal="goldDone"] [data-gold]', 'data-gold'));
+    const have = Number(await page.getAttribute('[data-modal="goldDone"] [data-field="goldHave"]', 'data-gold'));
+    if (got !== packGold || have !== before + packGold) fail(`구매 완료 — 받은 ${got}(상품 ${packGold}) · 보유 ${before} → ${have}`);
+    await page.click('[data-modal="goldDone"] [data-action="doneOk"]');
+    await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });
+    ok(`금화 ${packGold} → 「구매 완료」 · 보유 ${before} → ${have} · 화면을 눌러 닫힘`);
+  } else ok('개발용 지급이 꺼진 서버 — 금화 상품은 눌리지 않는다(결제 전)');
+  await page.click('[data-action="backHome"]');
+  await page.waitForSelector('[data-action="openShop"]', { timeout: 5_000 });
+
   step('상품 구매 (76쪽 오른쪽) — 배너 셋');
   await page.click('[data-action="openShop"]');
   await page.waitForSelector('[data-banner="goods"]', { timeout: 5_000 });

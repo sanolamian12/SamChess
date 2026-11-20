@@ -961,19 +961,19 @@ TACTIC_UPGRADES: dict[str, tuple[int, str, list[dict], dict[str, str] | None]] =
                  "es_419": "Durante 3 días, 1 aliado no puede ser afectado por ilusiones; todas las ilusiones se anulan.",
                  "mn": "3 хоногийн турш нэг холбоотон ид шидэд өртөхгүй; бүх ид шид хүчингүй болно.",
              }),
-    "침묵": (1, "time 300 동안 적군 1명이 버프/환술을 사용할 수 없다",
+    "침묵": (1, "time 300 동안 적군 1명이 책략을 사용할 수 없다",   # 2026-11-20 기획자 — 「버프/환술」 → 「책략」(기본 침묵과 함께, TACTIC_TEXT_FIXES)
              [{"t": "applyStatus", "target": {"kind": "enemyOne"},
                "status": "silence", "duration": 300}],
              {
-                 "en": "For 3 days, one enemy cannot use support tactics or illusions.",
-                 "pt_BR": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
-                 "pt_PT": "Durante 3 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
-                 "ja": "3日間、敵1体は支援策・幻術を使用できない。",
-                 "zh_Hant": "3天內，敵方1名單位無法使用支援策與幻術。",
-                 "zh_Hans": "3天内，敌方1名单位无法使用支援策与幻术。",
-                 "it": "Per 3 giorni, un nemico non può usare tattiche di supporto né illusioni.",
-                 "es_419": "Durante 3 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
-                 "mn": "3 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй.",
+                 "en": "For 3 days, one enemy cannot use tactics.",
+                 "pt_BR": "Durante 3 dias, 1 inimigo não pode usar táticas.",
+                 "pt_PT": "Durante 3 dias, 1 inimigo não pode usar táticas.",
+                 "ja": "3日間、敵1体は策略を使用できない。",
+                 "zh_Hant": "3天內，敵方1名單位無法使用策略。",
+                 "zh_Hans": "3天内，敌方1名单位无法使用策略。",
+                 "it": "Per 3 giorni, un nemico non può usare tattiche.",
+                 "es_419": "Durante 3 días, 1 enemigo no puede usar tácticas.",
+                 "mn": "3 хоногийн турш нэг дайсан стратеги ашиглаж чадахгүй.",
              }),
     "화계": (1, "1×1 영역에 time 100마다 HP 2씩 감소하는 지형 생성",
              [{"t": "createTerrain", "target": {"kind": "tile", "filter": "noTerrain"}, "terrain": "fire"}],
@@ -1775,6 +1775,27 @@ TACTIC_LORE_CSV = LANGUAGES / "sam_tactics.csv"
 # 책략 설명 정정 — `SKILL_TEXT_FIXES`와 같은 규약(원본 엑셀 · CSV는 읽기 전용, 짝은 「옛 문장 → 새 문장」 통째로,
 # 원본이 고쳐지면 스스로 알린다). `attach_tactic_lore()` **뒤**에 부른다 — 그 함수가 CSV의 ko와 원본 설명을 대조한다.
 TACTIC_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-11-20 기획자 — 「버프/환술」 → 「책략」. 막는 것이 지원책 · 환술 둘 다라 곧 책략 전부다(고유기술은 안 막는다)
+    "침묵": [
+        ('2일 동안 적군 1명이 버프/환술을 사용할 수 없다',
+         '2일 동안 적군 1명이 책략을 사용할 수 없다'),
+        ('For 2 days, one enemy cannot use support tactics or illusions.',
+         'For 2 days, one enemy cannot use tactics.'),
+        ('Durante 2 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.',
+         'Durante 2 dias, 1 inimigo não pode usar táticas.'),
+        ('2日間、敵1体は支援策・幻術を使用できない。',
+         '2日間、敵1体は策略を使用できない。'),
+        ('2天內，敵方1名單位無法使用支援策與幻術。',
+         '2天內，敵方1名單位無法使用策略。'),
+        ('2天内，敌方1名单位无法使用支援策与幻术。',
+         '2天内，敌方1名单位无法使用策略。'),
+        ('Per 2 giorni, un nemico non può usare tattiche di supporto né illusioni.',
+         'Per 2 giorni, un nemico non può usare tattiche.'),
+        ('Durante 2 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.',
+         'Durante 2 días, 1 enemigo no puede usar tácticas.'),
+        ('2 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй.',
+         '2 хоногийн турш нэг дайсан стратеги ашиглаж чадахгүй.'),
+    ],
     # 2026-11-09 기획자 — 화계 피해 1 → 2 (육손 「화소연영」의 불과 같은 불). 주기도 0.9일 → 1일로 설명과 맞췄다(FORMULA.firePeriod)
     "화계": [
         ("1×1 영역에 1일마다 HP 1씩 감소하는 지형 생성",
@@ -2579,8 +2600,33 @@ EQUIP_TEXT_I18N: dict[tuple[str, int], dict[str, str]] = {
 }
 
 
+# 장비 이름의 다국어 정정 — {한국어 이름: {언어: (원본, 바꿀 값)}}. 원본 엑셀은 읽기 전용이다.
+# 짝으로 적어 원본이 바뀌면 「이 정정은 이제 필요 없다」고 알린다(`EQUIP_TEXT_FIXES`와 같은 규약).
+EQUIP_NAME_FIXES: dict[str, dict[str, tuple[str, str]]] = {
+    # 대장간 병기구 지급 목록의 이름 칸은 두 줄인데 휴대폰 폭에서 세 줄로 접혀 잘렸다(2026-11-20 기획자 — 「Máscara-Fera」)
+    "수면탄두연환개": {
+        "pt_BR": ("Cota Máscara-Fera", "Máscara-Fera"),
+        "pt_PT": ("Cota Máscara-Fera", "Máscara-Fera"),
+    },
+}
+
+
 def apply_equip_text_fixes(equipment: list[dict]) -> None:
     """`text` 열에 위 짝을 적용한다. `extract_equipment()` 뒤에 부른다."""
+    for name, by_lang in EQUIP_NAME_FIXES.items():
+        target = next((e for e in equipment if e["name"] == name), None)
+        if target is None:
+            fail(f"[장비] EQUIP_NAME_FIXES의 '{name}'에 대응하는 장비가 없다")
+            continue
+        names = target.get("nameI18n", {})
+        for lang, (before, after) in by_lang.items():
+            if names.get(lang) == before:
+                names[lang] = after
+                note(f"[장비] '{name}' {lang} 이름을 정정했다 — {before} → {after}")
+            else:
+                note(f"[장비] '{name}' {lang} 이름 정정이 안 걸렸다 — 원본이 갱신됐다면 "
+                     f"EQUIP_NAME_FIXES에서 지운다")
+
     for name, pairs in EQUIP_TEXT_FIXES.items():
         target = next((e for e in equipment if e["name"] == name), None)
         if target is None:

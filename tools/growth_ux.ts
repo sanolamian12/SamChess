@@ -132,6 +132,7 @@ try {
   const cityTtl = await page.$eval('[data-modal="upgradeDone"] .modal-ttl', (e) => getComputedStyle(e).fontSize);
   await shot('5b-upgrade-done');
   await page.click('[data-action="doneOk"]');
+  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
 
   // ── 증축 직후 (같은 화면): 내관이 기회 · [짓기] · 「기회를 다 써야 도시를 올린다」, 지을 수 있는 줄이 빛난다 → 하나 지으면 꺼진다 ──
   await hear('buildings.intro', '7-buildings', '[data-action="upgrade"]');
@@ -156,8 +157,10 @@ try {
   if (bld.ttl !== cityTtl) fail(`완료 팝업 제목 크기가 갈린다 — 도시 ${cityTtl} · 건물 ${bld.ttl}`);
   if (bld.lv !== '장터 Lv2' || bld.name) fail(`건물 완료 팝업이 다르다 — ${JSON.stringify(bld)}`);
   if (bld.can !== 'Lv2 전투 아이템 구매 가능') fail(`건물 완료 팝업의 기능 줄이 다르다 — 「${bld.can}」`);
+  await page.waitForTimeout(1500);   // 축하 화면(`Celebrate`)의 섬광 · 배지 쾅이 끝난 뒤
   await shot('8b-build-done');
   await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
+  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
   await page.waitForTimeout(300);
   if (await page.$('[data-guide-cue]')) fail('하나 지었는데 표지가 남았다');
   ok(`건물 관리 — 증축 뒤 buildings.intro(셋째 마디 [도시 증축]) · 남은 기회 붉은 글 · 빛나는 [짓기] ${cued}개 · 완료 「${bld.can}」 · 하나 지으니 꺼졌다`);

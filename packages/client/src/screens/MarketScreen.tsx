@@ -34,6 +34,7 @@ import type { OfficerId } from '@samchess/rules';
 import { Say } from './Steward.tsx';
 import { currentSession } from '../meta/auth.ts';
 import { devGrantOnServer, devGrantsEnabled } from '../meta/city.ts';
+import { Celebrate } from './Celebrate.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
@@ -43,7 +44,7 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
-import { CardStat, LayerContext, useServerCall } from './market/parts.tsx';
+import { CardStat, Layer, LayerContext, useServerCall } from './market/parts.tsx';
 import { MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
@@ -117,6 +118,8 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
   /** 팝업이 뜰 자리 — 화면(`.scr`) 그 자체(`market/parts.tsx`의 `Layer` 참조) */
   const [layer, setLayer] = useState<HTMLElement | null>(null);
   const [devOpen, setDevOpen] = useState(false);
+  /** 방금 받은 금화 — 「구매 완료」 축하 화면을 띄운다(금화 구매만 — 개별 물품 구매는 가벼운 알림 그대로, 2026-11-20 기획자) */
+  const [bought, setBought] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
     void devGrantsEnabled().then((on) => { if (alive) setDevOpen(on); });
@@ -177,11 +180,15 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
                 {GOLD_SHOP.map((pack, i) => {
                   const { stroke } = pack;
                   return (
-                    <div key={pack.gold} className="mkt-pack" data-pack={i} data-gold={pack.gold} data-krw={pack.krw}>
+                    // 결제가 붙기 전에는 **개발용 지급이 켜진 환경에서만** 눌린다 — 그 금화를 지급하고 「구매 완료」 축하 화면(2026-11-20 기획자).
+                    // 결제가 붙으면 결제 성공 자리에서 같은 `setBought`를 부른다
+                    <button key={pack.gold} type="button" className="mkt-pack" data-pack={i} data-gold={pack.gold} data-krw={pack.krw}
+                      data-action="buyGold" disabled={!devOpen || busy}
+                      onClick={() => run(() => devGrantOnServer({ gold: pack.gold }), () => setBought(pack.gold))}>
                       <img className="mkt-pack-art" src={`market/pack-${pack.gold}.png`} alt="" />
                       <span className="mkt-pack-name"><GameIcon name="res-gold" label={t('market.gold')} />{pack.gold}</span>
                       <span className="mkt-pack-price" data-stroke={stroke}>{krwText(pack.krw)}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -191,6 +198,8 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
               {t('market.charge.have')} <GameIcon name="res-gold" label={t('market.gold')} /> : {profile.gold.toLocaleString('en-US')}
             </p>
             <BackPanel onBack={up} />
+            {/* 화면(`.scr`) 맨 위 층으로 — 판 안에 두면 어둠이 제목 줄까지 못 덮는다 */}
+            {bought !== null && <Layer><GoldCelebrate gold={bought} have={profile.gold} onClose={() => setBought(null)} /></Layer>}
           </>
         )}
 
@@ -309,6 +318,34 @@ function Banner({ id, onClick, lockedUntil }: {
       </span>
       <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>
     </button>
+  );
+}
+
+/**
+ * 금화 구매 완료 — 공용 축하 화면(`Celebrate`, 2026-11-20 기획자 「구매 완료」 예시): 보물 상자 위에 금화 주머니가 내려찍히고
+ * 「[금화] +N」, 아래에 지금 가진 금화. 결제가 붙으면 결제 성공 자리가 이것을 띄운다
+ */
+function GoldCelebrate({ gold, have, onClose }: { gold: number; have: number; onClose: () => void }): React.JSX.Element {
+  return (
+    <Celebrate
+      modal="goldDone"
+      className="gold-cel"
+      tone="gold"
+      title={t('market.gold.done.title')}
+      art={<img className="cel-art-img" src="ui/cel-chest.png" alt="" />}
+      badge={<img className="gold-cel-bag" src="ui/cel-goldbag.png" alt="" />}
+      big={(
+        <span className="gold-cel-got" data-gold={gold}>
+          <GameIcon name="res-gold" label={t('market.gold')} />+{gold.toLocaleString('en-US')}
+        </span>
+      )}
+      bigField="goldGot"
+      onClose={onClose}
+    >
+      <p className="row dim" data-field="goldHave" data-gold={have}>
+        {t('market.charge.have')} <GameIcon name="res-gold" label={t('market.gold')} /> {have.toLocaleString('en-US')}
+      </p>
+    </Celebrate>
   );
 }
 

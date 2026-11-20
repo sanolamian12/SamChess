@@ -17,7 +17,9 @@ import { upgradeCityOnServer } from '../meta/city.ts';
 import { t } from '../i18n/index.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BusyVeil } from './BusyVeil.tsx';
-import { FitLine } from './FitLine.tsx';
+import { Celebrate } from './Celebrate.tsx';
+import { LevelBadge } from './LevelBadge.tsx';
+import { LEVEL_BADGE_MAX } from '../ui/levelBadge.ts';
 import { GameIcon } from './GameIcon.tsx';
 
 export function CityUpgrade({ profile, onChange, cue, onModal }: {
@@ -195,21 +197,17 @@ function UpgradeDoneModal({ profile, level, onClose }: {
   // 판정하지 않는다(§city.ts 「기회를 읽는 자리는 하나」와 같은 결)
   const palace = buildCreditsLeft(profile) === null;
   return (
-    <div className="modal-back" data-modal="upgradeDone" onClick={onClose}>
-      {/* 제목 1.3배 · 「도시 Lv2」 · 아래 줄 0.8배 — 「도시가 Lv2가 되었다」는 큰 글씨와 같은 말이라 뺐다 (2026-11-13 기획자).
-          크기는 `.cty-done` 공통 — 건물 관리의 완료 팝업도 같은 꼴이다 */}
-      <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
-        <FitLine className="modal-ttl" field="doneTitle" text={t('city.done.title')} />
-        <FitLine className="cty-done-lv" field="doneLevel" text={t('city.done.level', { lv: level })} />
-        {!palace && (
-          <p className="row dim">{t('city.done.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}</p>
-        )}
-        {level === BUILD_CITY_LEVEL && <p className="row dim">{t('city.done.opensBuilding')}</p>}
-        {palace && <p className="row dim" data-field="donePalace">{t('city.done.palace')}</p>}
-        <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
-          {t('city.done.ok')}
-        </button>
-      </div>
-    </div>
+    // 판 · 연출은 공용 축하 판(`Celebrate`, 2026-11-20) — 글만 넘긴다. 크기 · 글자 꼴은 `.cty-done`
+    // 비계 탑 위에 도시 레벨 배지 — 배지는 Lv1~10뿐이라 황궁(Lv11)에서는 글만
+    <Celebrate modal="upgradeDone" className="cty-done" title={t('city.done.title')}
+      art={<img className="cel-art-img" src="ui/cel-build.png" alt="" />}
+      badge={level <= LEVEL_BADGE_MAX ? <LevelBadge level={level} className="cel-badge-img" /> : undefined}
+      big={t('city.done.level', { lv: level })} onClose={onClose}>
+      {!palace && (
+        <p className="row dim">{t('city.done.credits', { n: BUILD_ACTIONS_PER_UPGRADE })}</p>
+      )}
+      {level === BUILD_CITY_LEVEL && <p className="row dim">{t('city.done.opensBuilding')}</p>}
+      {palace && <p className="row dim" data-field="donePalace">{t('city.done.palace')}</p>}
+    </Celebrate>
   );
 }

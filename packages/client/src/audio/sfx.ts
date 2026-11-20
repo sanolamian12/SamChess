@@ -39,7 +39,11 @@ export type SfxId =
   // 일기토 · 설전 (2026-11-05) — 신청 소리는 응답이 오면 끊어야 해서 `duelSound.ts`가 따로 든다
   | 'duel_refuse' | 'duel_tick' | 'duel_tick_long' | 'duel_reveal' | 'duel_turnover' | 'debate_hit'
   // 대결의 처음 · 끝 (2026-11-06 기획자) — 함성 · 말발굽(일기토) · 걸음(설전, 2026-11-11 — 원본 이름 `dual_`은 그대로) → 징 · 끝나면 환호
-  | 'duel_crowd' | 'duel_hooves' | 'dual_walking' | 'duel_cheer' | 'duel_gong';
+  | 'duel_crowd' | 'duel_hooves' | 'dual_walking' | 'duel_cheer' | 'duel_gong'
+  // 축하 화면이 닫히는 소리 (2026-11-20, `Celebrate.tsx`) — 받아 두기만 했던 소리
+  | 'woong'
+  // 축하 화면이 열리는 소리 (2026-11-20 기획자 — 원본 `assets/Audio/new/축하.mp3`를 `effects/celebrate.mp3`로 옮겼다)
+  | 'celebrate';
 
 const VOLUME = 0.8;
 

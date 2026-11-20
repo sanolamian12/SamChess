@@ -209,6 +209,7 @@ try {
   await page.click('[data-action="buildConfirm"]');
   await page.waitForSelector('[data-modal="buildDone"]', { timeout: 10_000 });
   await page.click('[data-action="doneOk"]');
+  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
   await page.waitForTimeout(300);
   const after = await page.evaluate(() => {
     const note = document.querySelector('[data-field="whyBuild"]');

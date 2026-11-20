@@ -490,6 +490,13 @@ def build() -> dict[str, Image.Image]:
         # 바탕은 둘 다 어두운 색 — 고름은 바탕색이 아니라 빛으로 가른다
         "ic_equip_tab_weapon": medal(trim(Image.open(icon_path("ic_forge_craft")).convert("RGBA")), bg=DARK, fill=.86),
         "ic_equip_tab_item": medal(trim(Image.open(icon_path("ic_mk_storage")).convert("RGBA")), bg=DARK, fill=.86),
+        # 레벨업 고르기의 절 이름 · 능력 줄 메달 (2026-11-20 기획자 — 「도적 메달처럼 입체 금테 안에 그림만」).
+        # 절 이름은 전투 명령 판의 [공격] · [책략] 그림 그대로, 능력 줄은 HP · MP · AT 아이콘. 바탕은 어두운 색 — 그림 색이 살게
+        "ic_cmd_attack_badge": medal(trim(pub("ui/cmd/attack.png")), bg=RED, fill=.84),
+        "ic_cmd_tactic_badge": medal(trim(pub("ui/cmd/castTactic.png")), bg=NIGHT, fill=.84),
+        "ic_stat_hp_badge": medal(trim(pub("icons/stat/stat-hp.png")), bg=DARK, fill=.8),
+        "ic_stat_mp_badge": medal(trim(pub("icons/stat/stat-mp.png")), bg=DARK, fill=.8),
+        "ic_stat_at_badge": medal(trim(pub("icons/stat/stat-at.png")), bg=DARK, fill=.8),
         # 튜토리얼 클리어 표 — 안 깼으면 붉은 체크 인장(`mk-done`), 깼으면 같은 인장을 **파랗게**(기획자 2026-10-26)
         "ic_mk_done_blue": recolor_blue(Image.open(icon_path("ic_mk_done")).convert("RGBA")),
         # 컬렉션 도시 효과 인장

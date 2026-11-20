@@ -49,6 +49,7 @@ import { useFitNames } from './fitNames.ts';
 import { useAllLangLayout } from './useAllLangLayout.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 import { BuildingLevelBadge } from './LevelBadge.tsx';
+import { Celebrate } from './Celebrate.tsx';
 
 export function BuildingsScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
@@ -251,23 +252,22 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
   const row = buildingRows(profile).find((r) => r.id === id);
   const credits = buildCreditsLeft(profile);
   return (
-    <div className="modal-back" data-modal="buildDone" onClick={onClose}>
-      <div className="modal cty-modal cty-done" onClick={(e) => e.stopPropagation()}>
-        <FitLine className="modal-ttl" field="doneTitle" text={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')} />
-        {/* 큰 글씨 「장터 Lv2」 — 이름 줄(그림 + 이름)은 큰 글씨와 같은 말이라 뺐다. 도시 증축 완료와 같은 꼴 (2026-11-13 기획자) */}
-        {/* 이름 + 레벨 배지(2026-11-19 기획자 — 건물 레벨은 글자 대신 배지) */}
+    // 판 · 연출은 공용 축하 판(`Celebrate`, 2026-11-20) — 글만 넘긴다
+    <Celebrate modal="buildDone" className="cty-done" title={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
+      art={<img className="cel-art-img" src="ui/cel-build.png" alt="" />}
+      badge={<BuildingLevelBadge level={level} className="cty-done-badge cel-badge-img" />}
+      bigField="doneBld"
+      big={(
+        // 큰 글씨 「장터」 — 레벨은 비계 탑 위에 내려찍힌 배지(2026-11-19 기획자 — 건물 레벨은 글자 대신 배지)
         <div className="cty-done-bld" data-field="doneLevel" data-level={level}>
           <FitLine className="cty-done-lv" field="doneBldName" text={buildingNameText(id)} />
-          <BuildingLevelBadge level={level} className="cty-done-badge" />
         </div>
-        {/* 그 레벨에서 할 수 있는 일 — 「Lv1 병기구 제작 가능」 (2026-11-13 기획자: 현황 대신 기능) */}
-        {row && <p className="row dim" data-field="doneCan">{buildingCanText(row)}</p>}
-        {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
-        <button className="btn primary wide" data-action="doneOk" onClick={onClose}>
-          {t('city.done.ok')}
-        </button>
-      </div>
-    </div>
+      )}
+      onClose={onClose}>
+      {/* 그 레벨에서 할 수 있는 일 — 「Lv1 병기구 제작 가능」 (2026-11-13 기획자: 현황 대신 기능) */}
+      {row && <p className="row dim" data-field="doneCan">{buildingCanText(row)}</p>}
+      {credits !== null && <p className="row dim">{t('city.credits.n', { n: credits })}</p>}
+    </Celebrate>
   );
 }
 

@@ -91,6 +91,7 @@ try {
     await page.click('[data-place="forge"]');
     await page.waitForSelector('[data-action="craft"]');
     if (await page.$('[data-action="ackDone"]')) await page.click('[data-action="ackDone"]');
+    await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
     await page.click('[data-action="craft"]');
     await page.waitForSelector('.frg-tile');
 

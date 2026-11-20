@@ -380,7 +380,7 @@
     "school": "illusion",
     "level": 3,
     "mpCost": 1,
-    "text": "2일 동안 적군 1명이 버프/환술을 사용할 수 없다",
+    "text": "2일 동안 적군 1명이 책략을 사용할 수 없다",
     "requiresResistCheck": true,
     "effects": [
       {
@@ -404,15 +404,15 @@
       "mn": "Чимээгүйдэл"
     },
     "textI18n": {
-      "en": "For 2 days, one enemy cannot use support tactics or illusions.",
-      "pt_BR": "Durante 2 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
-      "pt_PT": "Durante 2 dias, 1 inimigo não pode usar táticas de apoio nem ilusões.",
-      "ja": "2日間、敵1体は支援策・幻術を使用できない。",
-      "zh_Hant": "2天內，敵方1名單位無法使用支援策與幻術。",
-      "zh_Hans": "2天内，敌方1名单位无法使用支援策与幻术。",
-      "it": "Per 2 giorni, un nemico non può usare tattiche di supporto né illusioni.",
-      "es_419": "Durante 2 días, 1 enemigo no puede usar tácticas de apoyo ni ilusiones.",
-      "mn": "2 хоногийн турш нэг дайсан дэмжлэгийн стратеги болон ид шид ашиглаж чадахгүй."
+      "en": "For 2 days, one enemy cannot use tactics.",
+      "pt_BR": "Durante 2 dias, 1 inimigo não pode usar táticas.",
+      "pt_PT": "Durante 2 dias, 1 inimigo não pode usar táticas.",
+      "ja": "2日間、敵1体は策略を使用できない。",
+      "zh_Hant": "2天內，敵方1名單位無法使用策略。",
+      "zh_Hans": "2天内，敌方1名单位无法使用策略。",
+      "it": "Per 2 giorni, un nemico non può usare tattiche.",
+      "es_419": "Durante 2 días, 1 enemigo no puede usar tácticas.",
+      "mn": "2 хоногийн турш нэг дайсан стратеги ашиглаж чадахгүй."
     }
   },
   {

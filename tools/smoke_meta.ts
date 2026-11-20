@@ -1967,7 +1967,7 @@ const preview = await page.evaluate(() =>
     now: el.querySelector('.c-now')?.textContent ?? '',
     next: el.querySelector('.c-next')?.textContent ?? '',
   })));
-if (preview.length !== 3) fail(`물리 성장이 세 줄이 아니다 — ${preview.length}줄`);
+if (preview.length !== 3) fail(`전투력(능력 성장)이 세 줄이 아니다 — ${preview.length}줄`);
 const hpRow = preview.find((r) => r.stat === 'hp')!;
 if (!hpRow.on || hpRow.add === '0') fail(`고른 줄에 증분이 없다: ${JSON.stringify(hpRow)}`);
 // **세 줄 모두 자기를 골랐을 때의 증분을 보여준다**(2026-09-03 — 예전엔 고른 줄에만
@@ -1987,36 +1987,51 @@ if (onRow.next === onRow.now) fail(`고른 줄인데 결과가 안 늘었다: ${
 const atRow = preview.find((r) => r.stat === 'at')!;
 if (!/^\d+-\d+$/.test(atRow.now)) fail(`AT가 범위 표기가 아니다: "${atRow.now}"`);
 
-// 책략 두 장(지원책·환술)이 **각자 이름과 설명을 들고 나란히 펼쳐져 있다** —
-// 둘 중 하나를 고르는 판단 근거이고, 2026-09-03부터 고른 쪽만 보이는 게 아니라
-// 둘 다 늘 보인다(두루마리 두 장). 한쪽만 봐서는 "고른 쪽만 그린다"로 되돌아가도
-// 안 걸리므로 **양쪽 다** 본다.
-await page.click('[data-school="illusion"]');
-await page.waitForTimeout(150);
+// 책략은 **토글 둘 + 설명 판 하나**(2026-11-20 기획자 개편) — 토글마다 이름, 설명 판에는 두 학파의 설명이 같은 칸에 겹쳐
+// 있고 **고른 쪽만 보인다.** 두 학파의 설명이 다 있어야 하므로 양쪽 다 본다(보이는 것 · 안 보이는 것 모두).
+await page.click('.lvu-tab[data-school="illusion"]');
+await page.waitForTimeout(250);
 const schools = await page.evaluate(() =>
-  // 두루마리 자신(직계 자식)만 — 2026-10-26부터 두루마리 안의 학파 아이콘도 `data-school`을 단다
-  [...document.querySelectorAll('[data-field="tacticDesc"] > [data-school]')].map((el) => ({
-    school: (el as HTMLElement).dataset.school!,
-    on: el.classList.contains('on'),
-    name: el.querySelector('.lv-tactic-label')?.textContent?.trim() ?? '',
-    text: el.querySelector('.lv-tactic-text')?.textContent?.trim() ?? '',
-    mp: el.querySelector('.lv-tactic-mp')?.textContent?.trim() ?? '',
-  })));
-if (schools.length !== 2) fail(`책략 두루마리가 두 장이 아니다 — ${schools.length}장`);
+  [...document.querySelectorAll('[data-field="tacticDesc"] > .lvu-desc-item')].map((el) => {
+    const school = (el as HTMLElement).dataset.school!;
+    return {
+      school,
+      on: document.querySelector(`.lvu-tab[data-school="${school}"]`)?.classList.contains('on') ?? false,
+      shown: getComputedStyle(el).visibility === 'visible',
+      name: document.querySelector(`.lvu-tab[data-school="${school}"] [data-field="tacticName"]`)?.textContent?.trim() ?? '',
+      text: el.querySelector('.lv-tactic-text')?.textContent?.trim() ?? '',
+      mp: el.querySelector('.lv-tactic-mp')?.textContent?.trim() ?? '',
+    };
+  }));
+if (schools.length !== 2) fail(`책략 설명이 두 학파가 아니다 — ${schools.length}`);
 for (const s of schools) {
-  if (!s.name) fail(`${s.school} 두루마리에 책략 이름이 없다`);
-  if (s.text.length < 10) fail(`${s.school} 두루마리에 설명이 없다: "${s.text}"`);
+  if (!s.name) fail(`${s.school} 토글에 책략 이름이 없다`);
+  if (s.text.length < 10) fail(`${s.school} 설명이 없다: "${s.text}"`);
   // 소모 MP는 **데이터에서 온 값**이다 — 이름 옆에 실제 숫자가 찍혀야 한다
   // (`tactics.json`의 `mpCost`는 1~3이라 0이 나오면 그것 자체가 이상하다)
-  if (!/\(MP:\s*[1-9]\d*\)/.test(s.mp)) fail(`${s.school} 두루마리에 소모 MP가 없다: "${s.mp}"`);
+  if (!/\(MP:\s*[1-9]\d*\)/.test(s.mp)) fail(`${s.school} 설명에 소모 MP가 없다: "${s.mp}"`);
 }
-if (!schools.find((s) => s.school === 'illusion')!.on) fail('환술을 눌렀는데 체크가 안 옮겨 온다');
-if (schools.find((s) => s.school === 'support')!.on) fail('택1인데 둘 다 체크돼 있다');
+const ill = schools.find((s) => s.school === 'illusion')!;
+const sup = schools.find((s) => s.school === 'support')!;
+if (!ill.on || !ill.shown) fail('환술을 눌렀는데 토글 · 설명이 안 옮겨 온다');
+if (sup.on || sup.shown) fail('택1인데 지원책 토글 · 설명이 아직 켜져 있다');
 
 await page.click('[data-action="confirm"]');
 // **레벨업은 서버 왕복이다**(2026-09-14, A2) — 고정 대기 대신 판이 닫혀 카드로 돌아올 때까지 본다.
 // 판은 결과가 올 때까지 닫지 않는다(`LevelUpPanel`). 거절이면 판이 남고 그 말을 싣는다
 const waitLevelUp = async (what: string): Promise<void> => {
+  // 오르면 축하 판(`Celebrate`, 2026-11-20)이 뜬다 — 오른 레벨 · 고른 능력 줄을 보고 [확인]으로 카드에
+  const celebrated = await page.waitForSelector('[data-modal="levelUpDone"]', { timeout: 8_000 }).then(() => true).catch(() => false);
+  if (celebrated) {
+    const cel = await page.evaluate(() => ({
+      level: document.querySelector('[data-modal="levelUpDone"] [data-field="doneLevel"] [data-level]')?.getAttribute('data-level') ?? '',
+      stat: document.querySelector('[data-modal="levelUpDone"] [data-field="doneStat"]')?.getAttribute('data-stat') ?? '',
+    }));
+    if (!/^\d+$/.test(cel.level) || !cel.stat) fail(`${what} — 축하 판에 오른 레벨 · 능력 줄이 없다: ${JSON.stringify(cel)}`);
+    await page.click('[data-modal="levelUpDone"] [data-action="doneOk"]');
+    await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
+    await page.waitForSelector('[data-modal="levelUpDone"]', { state: 'detached', timeout: 5_000 });
+  }
   const closed = await page.waitForSelector('[data-screen="levelup-panel"]', { state: 'detached', timeout: 8_000 })
     .then(() => true, () => false);
   if (!closed) {
@@ -2418,6 +2433,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
     if (refused) fail(`서버가 증축을 거절했다: "${refused}"`);
   }
   await page.click('[data-action="doneOk"]');
+  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
   await page.waitForTimeout(200);
   // 건물 관리에서 증축했다 — 현황판(도시 관리)으로 돌아가 읽는다
   await page.click('[data-screen="buildings"] [data-action="back"]');

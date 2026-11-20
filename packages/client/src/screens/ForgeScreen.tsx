@@ -51,6 +51,8 @@ import { Say } from './Steward.tsx';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
+import { Celebrate } from './Celebrate.tsx';
+import { equipBlink } from './BlinkGlow.tsx';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
@@ -708,17 +710,17 @@ export function ForgeScreen({ profile, onBack, onChange }: {
       {/* 「축하합니다! 완성!」(pptx 62쪽) — 제작 완료 시, 또는 완료 후 화면
           진입 시 뜬다(`justDone`이 그 둘을 이미 하나로 잡는다, 위 참조). */}
       {justDone && (
-        <div className="modal-back" data-modal="forgeDone" onClick={() => acknowledgeDone(justDone.key)}>
-          <div className="modal frg-done" onClick={(e) => e.stopPropagation()}>
-            <p className="modal-ttl">{t('forge.done.title')}</p>
-            <img src={`blacksmith/${justDone.item.id}.png`} alt="" className="frg-detail-art" />
-            <p className="frg-done-body">{t('forge.done.body', { item: equipLabel(justDone.item) })}</p>
-            <p className="hint">{t('forge.done.hint')}</p>
-            <button className="btn primary wide" data-action="ackDone" onClick={() => acknowledgeDone(justDone.key)}>
-              {t('forge.done.confirm')}
-            </button>
-          </div>
-        </div>
+        // 공용 축하 화면(`Celebrate`, 2026-11-20 기획자 「제작 완료」 예시) — 모루(대장간 [병기구 제작] 그림) 위에 만든 병기가 비스듬히
+        // 내려찍힌다. 빛줄기는 그 병기의 레벨 색. 큰 글씨는 「Lv3 청룡언월도」, 아래는 어디서 보는지
+        // `key` — 미지급이 여럿이면 닫자마자 다음 것이 이어 뜬다. 열쇠가 없으면 React가 「닫히는 중」인 화면을 재사용해 다음 것이 안 보였다
+        <Celebrate key={justDone.key} modal="forgeDone" className="frg-done" title={t('forge.done.title')}
+          art={<img className="cel-art-img" src="ui/cel-forge.png" alt="" />}
+          badge={<img className="frg-cel-weapon" src={`blacksmith/${justDone.item.id}.png`} alt="" />}
+          tone={equipBlink(justDone.item.unlockLevel)}
+          big={equipLabel(justDone.item)} bigField="doneItem"
+          okAction="ackDone" onClose={() => acknowledgeDone(justDone.key)}>
+          <p className="row dim">{t('forge.done.hint')}</p>
+        </Celebrate>
       )}
 
       {/*

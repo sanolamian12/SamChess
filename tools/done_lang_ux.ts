@@ -90,6 +90,7 @@ try {
     const city = await check('[data-modal="upgradeDone"]', `${lang} 도시`);
     await page.screenshot({ path: join(OUT, `${lang}-city.png`) });
     await page.click('[data-action="doneOk"]');
+    await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
     // 2. 건물 일곱 — 기회를 넉넉히 넣고 하나씩(짓기 넷 · 증축 셋)
     await saveProfileTrusted(u.uid, { ...(await getProfile(u.uid))!, buildCredits: BUILDINGS.length });
     await page.reload({ waitUntil: 'networkidle' });
@@ -108,6 +109,7 @@ try {
       if (b.id === 'market') await page.screenshot({ path: join(OUT, `${lang}-market.png`) });
       blds.push(`${r.lv}(${r.lvScale})`);
       await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
+      await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
     }
     rows.push(`${lang.padEnd(8)} 제목 ${city.ttl}(${city.ttlScale}) · ${city.lv}(${city.lvScale}) | ${blds.join(' · ')}`);
     await page.click('[data-action="backBottom"]');

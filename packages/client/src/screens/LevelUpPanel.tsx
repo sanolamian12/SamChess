@@ -5,6 +5,9 @@
  * 켜지고, 누르면 곧장 아래 「고르기」(`Picker`)다 — 오르면 카드로 돌아간다. 보유 카드 수는 [강화] 오른쪽 끝, 도시 상한은
  * 카드 위의 사람이 말한다(`OfficerDetailModal`). 보유 책략은 카드가 이미 보여 준다. 아래 옛 기록의 「관리」 몸통 이야기는 그때의 것이다.
  *
+ * ★ **같은 날 고르기 판도 다시 그렸다** — 금테 두 절 · 캡슐 줄(체크 나무판 걷음) · 책략 토글 둘 + 설명 판 하나 ·
+ * [확정] 아래 [뒤로 가기]. 아래 「두루마리 두 장」 이야기는 그때의 것이다. 자세한 것은 `Picker`의 머리말, 눈 확인은 `tools/levelup_ux.ts`.
+ *
  * 장수 일람의 「보기」 카드에서 [레벨/스킬 관리]를 누르면 예전에는 전면 화면
  * (`LevelUpScreen`)으로 넘어갔다 — 카드가 이미 보여 준 그림·능력치·책략·인물
  * 소개를 다시 보여줄 뿐인 화면으로, 디자인도 궁궐 나머지와 다른 옛 평면
@@ -75,19 +78,21 @@ import {
 import type { OfficerInstance, PlayerProfile, StatPick, StatPreview } from '@samchess/meta';
 import { Say } from './Steward.tsx';
 import { levelUpOnServer } from '../meta/city.ts';
-import { useOfficerCardOverlayPos } from './RankingCommon.tsx';
+import { stripBackArrow, useOfficerCardOverlayPos } from './RankingCommon.tsx';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName, pickTacticName, pickTacticText } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { TacticIcon } from './TacticIcon.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
-import { GameIcon } from './GameIcon.tsx';
+import { Celebrate } from './Celebrate.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
-import type { GameIconName } from '../ui/gameIcon.ts';
 
 /** HP · MP · AT 칸의 아이콘 — 글자(`HP`)는 올리면 보인다 */
-const STAT_ICON: Record<StatPick, GameIconName> = { hp: 'stat-hp', mp: 'stat-mp', at: 'stat-at' };
+/** HP · MP · AT 줄 앞의 금테 메달(`build_icons_composed.py`의 `ic_stat_*_badge`, 도적 메달과 같은 테) — 2026-11-20 기획자 */
+const STAT_ICON: Record<StatPick, string> = {
+  hp: 'icons/stat/stat-hp-badge.png', mp: 'icons/stat/stat-mp-badge.png', at: 'icons/stat/stat-at-badge.png',
+};
 
 export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   profile: PlayerProfile;
@@ -102,11 +107,51 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
   const committing = useRef(false);
   /** 같은 사실을 화면에 — 왕복이 길면 가리개가 뜬다(`BusyVeil`, 2026-10-23). 「멈춘 것」과 「기다리는 것」은 다르다 */
   const [busy, setBusy] = useState(false);
+  /** 올랐다 — 축하 판(`Celebrate`)을 띄운다. [확인]에 카드로 (2026-11-20 기획자 — 「레벨을 올리는 중」 뒤 그냥 닫혀 밋밋했다) */
+  const [done, setDone] = useState<{ level: number; row: StatPreview; tactics: TacticId[] } | null>(null);
   // 'top' — 카드(`.ofcard`) 시작점과 같은 y에서 뜬다(2026-09-03 재지정 — "장수정보 패널과 똑같이")
   const { backRef, backStyle, modalStyle } = useOfficerCardOverlayPos('top');
 
   const inst = profile.roster[officer];
   const data = officerById.get(officer);
+
+  if (done && data) {
+    // 축하 — 팔뚝 위에 **오른 레벨** 배지(서버가 준 계정의 값)가 내려찍히고, 아래는 장수 · 고른 능력의 오름 · 새 책략.
+    // 숫자는 고르기 판이 보여 준 것과 같은 엔진 값(`growthPreview`)이다
+    return (
+      <Celebrate
+        modal="levelUpDone"
+        className="lvd"
+        title={t('levelup.done.title')}
+        art={<img className="cel-art-img" src="ui/cel-levelup.png" alt="" />}
+        badge={<LevelBadge level={done.level} className="cel-badge-img" />}
+        big={(
+          <span className="lvd-who" data-level={done.level}>
+            <GradeBadge grade={data.grade} />
+            <span className="lvd-name">{pickOfficerName(data)}</span>
+          </span>
+        )}
+        onClose={onClose}
+      >
+        <p className="lvd-row" data-field="doneStat" data-stat={done.row.key}>
+          <img className="lvd-medal" src={STAT_ICON[done.row.key]} alt="" />
+          <b>{done.row.key.toUpperCase()}</b>
+          <span>{show(done.row, 'now')}</span>
+          <img className="lvd-arrow" src="ui/turn/arrowhead.png" alt="→" />
+          <b className="lvd-next">{show(done.row, 'next')}</b>
+        </p>
+        {done.tactics.length > 0 && (
+          <p className="lvd-row" data-field="doneTactic" data-school={tacticById.get(done.tactics[0]!)?.school}>
+            <img className="lvd-medal" src="icons/control/cmd-tactic-badge.png" alt="" />
+            <span className="lvd-k">{t('levelup.tactic')}</span>
+            {done.tactics.map((id) => tacticById.get(id)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => (
+              <span key={x.id} className="lvd-tac"><TacticIcon id={x.id} className="lvd-tac-icon" />{pickTacticName(x)}</span>
+            ))}
+          </p>
+        )}
+      </Celebrate>
+    );
+  }
 
   // 카드의 [강화]는 올릴 수 있을 때만 켜진다 — 정상 경로로는 안 온다, 방어만 해 둔다
   if (!inst || !data || cardsToLevelUp(inst.level) === null) return null;
@@ -141,21 +186,28 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
 
         <Picker
           inst={inst}
+          onBack={onClose}
           onCommit={(stat, school) => {
             /*
              * **레벨업은 서버가 한다** (2026-09-14, A2) — `roster`·`cards`가 서버 소유라 로컬로
              * 올려 `PUT`하면 되돌아간다. **결과가 올 때까지 닫지 않고**, 그 사이 [확정]을 또
-             * 눌러도 한 번만 나간다. 오르면 카드로 돌아간다 — 카드가 넉넉하면 [강화]를 다시 누른다.
+             * 눌러도 한 번만 나간다. 오르면 축하 판(`Celebrate`) → [확인]에 카드로 — 카드가 넉넉하면 [강화]를 다시 누른다.
              */
             if (committing.current) return;
             committing.current = true;
+            // 축하 판에 실을 것 — 고르기 판이 보여 준 그 값(엔진)을 보내기 전에 잡는다
+            const row = growthPreview(inst, stat).find((r) => r.key === stat)!;
+            const gained = tacticChoices(inst.level + 1)[school];
             setBusy(true);
             setRespecNote(null);
             void (async () => {
-              let ok = false;
               try {
                 const fromServer = await levelUpOnServer(officer, stat, school);
-                if (fromServer) { onChange(fromServer); ok = true; }
+                if (fromServer) {
+                  onChange(fromServer);
+                  // 오른 레벨은 서버가 준 계정에서 읽는다(+1로 짐작하지 않는다 — 도시 증축 축하와 같은 규약)
+                  setDone({ level: fromServer.roster[officer]?.level ?? inst.level + 1, row, tactics: gained });
+                }
                 else setRespecNote(t('server.offline'));
               } catch (err) {
                 setRespecNote(err instanceof Error ? err.message : String(err));
@@ -163,7 +215,6 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
                 committing.current = false;
                 setBusy(false);
               }
-              if (ok) onClose();
             })();
           }}
         />
@@ -184,15 +235,23 @@ type School = 'support' | 'illusion';
 /** `2.5` → `2.5`, `2` → `2`. 소수점 뒤 0을 남기면 「+2.0」처럼 어수선하다 */
 const fmt = (n: number): string => String(Math.round(n * 100) / 100);
 
-/** 「고르기」 — 능력 택1 + 책략 택1. 재설계 뒤에도 **이 판 그대로** 다시 밟는다.
-    예전 전면 화면(`LevelUpScreen`, 2026-10-06 삭제)에서 옮겨 왔다. */
+/**
+ * 「고르기」 — 능력 택1 + 책략 택1 (2026-11-20 기획자 개편).
+ *
+ * - **두 절을 제 판에 담는다**(`.lvu-sec`) — 「전투력」은 고유기술 판(`panel-battle-skill`), 「새 책략」은 전투 명령 판
+ *   (`panel-battle-command`). 절 이름은 판 밖 왼쪽 벽에, 앞에 금테 메달(전투 명령 판의 [공격] · [책략] 그림을 도적 메달과 같은
+ *   입체 금테에 담은 것, `SecHead`). 「택1」은 뺐다 — 토글이 그렇게 이끈다.
+ * - **능력 줄은 붓 획 한 줄**(`.lv-stat-row`) — 장수 상세의 숫자 밑줄과 같은 붓 획 · 같은 색(HP 옥색 · MP 청회색 · AT 쪽빛).
+ *   앞에 금테 메달 + 「HP」 이름, 화살표는 내 차례 표지의 화살촉이 좌우로. 고른 줄은 제 색의 네온이 천천히 들어왔다 빠진다(장수 일람 정렬 머리와 같은 결).
+ * - **책략은 토글 둘 + 설명 판 하나** — 토글은 병기 | 아이템 토글과 같은 속판(지원책 비취 · 환술 보라), 테만 붉은 옻칠 대사 판(`dialog-line`)의 테.
+ *   설명 판은 둘을 **같은 칸에 겹쳐** 두고 고른 쪽만 보인다. 높이는 **고정**
+ *   (열 언어 × 모든 레벨 중 가장 긴 것, `tools/levelup_ux.ts`의 `MEASURE=1`).
+ * - 단추는 [확정] 아래 [뒤로 가기](카드의 [뒤로 가기]와 같은 판).
+ */
 function Picker({ inst, onCommit, onBack }: {
   inst: OfficerInstance;
   onCommit: (stat: StatPick, school: School) => void;
-  /** 없으면 [뒤로]를 안 그린다 — `LevelUpPanel.tsx`(카드 위 모달)는 우상단
-      [X]가 이미 그 역할을 하므로 안 넘긴다. `LevelUpScreen.tsx`(전면 화면)는
-      X가 없어 반드시 넘긴다. */
-  onBack?: () => void;
+  onBack: () => void;
 }): React.JSX.Element {
   const [stat, setStat] = useState<StatPick>('hp');
   const [school, setSchool] = useState<School>('support');
@@ -203,11 +262,11 @@ function Picker({ inst, onCommit, onBack }: {
   // | 칸 | 뜻 | 예 (HP를 골랐을 때 MP 줄) |
   // |---|---|---|
   // | `now`  | 지금 값 | `5` |
-  // | `add`  | **고르면** 오를 양 — 회색, 실제로는 안 더해진다 | `+2` |
+  // | `add`  | **고르면** 오를 양 — 흐리게, 실제로는 안 더해진다 | `+2` |
   // | `next` | **실제로** 적용될 값 — 안 고른 줄은 `now` 그대로 | `5` |
   //
   // 그래서 `next`·`range`는 「지금 고른 것」 기준(`growthPreview(inst, stat)`)을
-  // 그대로 두고, `add`만 줄마다 제 것을 골라 따로 물어 얹는다. 회색 증분까지
+  // 그대로 두고, `add`만 줄마다 제 것을 골라 따로 물어 얹는다. 흐린 증분까지
   // 오른쪽 결과에 반영하면 「MP가 7이 된다」는 거짓말이 된다 — 실제로 오르는 건
   // 고른 하나뿐이다. 어느 쪽이든 숫자를 내는 것은 언제나 엔진이다.
   const gains = new Map((['hp', 'mp', 'at'] as StatPick[]).map(
@@ -217,11 +276,16 @@ function Picker({ inst, onCommit, onBack }: {
   const choices = tacticChoices(level);
   // 그 레벨에 지원이 없으면(지금 데이터에는 없지만) 고를 수 있는 쪽으로 물러난다
   const pickedSchool: School = choices[school].length > 0 ? school : (school === 'support' ? 'illusion' : 'support');
+  const schools = (['support', 'illusion'] as School[]).map((s) => ({
+    s,
+    list: choices[s].map((id: TacticId) => tacticById.get(id)).filter((x): x is NonNullable<typeof x> => !!x),
+  }));
 
   return (
     <>
-      <div className="lv-pick" data-picker={level}>
-        <span className="k k-physical">{t('levelup.physical')}</span>
+      {/* 절 이름은 판 밖, 왼쪽 벽에 붙여 — 아이콘은 동그란 금테 배지 (2026-11-20 기획자) */}
+      <SecHead icon="icons/control/cmd-attack-badge.png" text={t('levelup.physical')} sec="physical" />
+      <section className="lvu-sec" data-sec="physical" data-picker={level}>
         <div className="lv-stats">
           {rows.map((row) => (
             <button
@@ -229,108 +293,106 @@ function Picker({ inst, onCommit, onBack }: {
               className={`opt lv-stat-row${stat === row.key ? ' on' : ''}`}
               data-stat={row.key}
               data-add={fmt(row.add)}
+              aria-pressed={stat === row.key}
               onClick={() => setStat(row.key)}
             >
-              {/* 칸 자체는 80%, 나머지는 체크 칩(`.lv-check`) — 2026-09-03
-                  세 번째 지정. 칸의 배경 그림은 **지금 없다**(어울리는 액자를
-                  기다리는 중, `style.css`의 `.scr-officers .lv-stat` 주석과
-                  `docs/PROMPT.md`의 「능력치 줄 명패」 절 참조). */}
               <span className="lv-stat">
-                <span className="c-k"><GameIcon name={STAT_ICON[row.key]} label={row.key.toUpperCase()} /></span>
+                <span className="c-k">
+                  {/* 광택(`.lvu-shine`)은 고른 줄의 메달에만 — CSS가 `.on`으로 가른다 */}
+                  <span className="lvu-shine lvu-stat-shine"><img className="lvu-stat-medal" src={STAT_ICON[row.key]} alt="" /></span>
+                  {/* 「HP」 · 「MP」 · 「AT」 — 번역 없이 그대로 쓰는 약어 */}
+                  <span className="lvu-stat-name">{row.key.toUpperCase()}</span>
+                </span>
                 <span className="c-now">{show(row, 'now')}</span>
                 <span className="c-add">+{fmt(row.add)}</span>
-                <span className="c-arrow">→</span>
+                {/* 화살촉 — 내 차례 표지(`battle_myturn`) 둘째 칸을 오른쪽으로 눕혀 좌우로 흔든다 */}
+                <span className="c-arrow" aria-label="→"><img src="ui/turn/arrowhead.png" alt="" /></span>
                 <span className="c-next">{show(row, 'next')}</span>
-              </span>
-              <span className="lv-check" aria-hidden="true">
-                <img className="lv-check-icon" src="icons/confirm.png" alt="" />
               </span>
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/*
-        「책략 택1」(39쪽) — **두루마리 두 장을 위아래로**(2026-09-03 네 번째
-        지정). 위가 지원책, 아래가 환술이고, 각 두루마리의 첫 줄이 「책략 이름 +
-        체크할 나무 판」, 그 아래가 설명이다.
-
-        예전에는 이름 줄(택1 단추)과 설명 상자가 **따로** 있었다 — 고른 쪽 설명만
-        보이니 둘을 견주려면 번갈아 눌러야 했고, 글 길이에 따라 상자 높이가
-        흔들려 그걸 막는 겹쳐 재기 장치(`.lv-desc-stack`)까지 있었다. 둘 다 늘
-        펼쳐 두면 견주기도 되고 높이도 애초에 안 흔들린다 — 그래서 그 장치는
-        같이 지웠다. 스모크가 찾는 `data-field="tacticDesc"`는 설명이 사는
-        자리를 그대로 따라 여기로 옮겼다.
-      */}
-      <div className="lv-pick">
-        <span className="k k-tactic">{t('levelup.tactic', { level })}</span>
-        <div className="lv-tactics" data-field="tacticDesc">
-          {(['support', 'illusion'] as School[]).map((s) => {
-            const list = choices[s]
-              .map((id: TacticId) => tacticById.get(id))
-              .filter((x): x is NonNullable<typeof x> => !!x);
-            return (
-              <button
-                key={s}
-                className={`opt lv-tactic-row${pickedSchool === s ? ' on' : ''}`}
-                data-school={s}
-                disabled={list.length === 0}
-                onClick={() => setSchool(s)}
-              >
-                <span className="lv-tactic-head">
-                  {/* Lv6·7의 지원은 「화계 + 진화」처럼 **한 쌍이 한 선택지**다 —
-                      소모 MP는 둘이 다르므로(화계 2 · 진화 1) 이름마다 따로 붙인다.
-                      「MP」는 `Lv`·`HP`/`AT`처럼 이 게임이 번역 없이 그대로 쓰는
-                      약어라 i18n 키를 만들지 않는다(능력치 줄도 `row.key`를 그대로
-                      대문자로 찍는다). */}
-                  <span className="lv-tactic-label">
-                    {list.length === 0
-                      ? t('levelup.none')
-                      : list.map((x, i) => (
-                        <span key={x.id}>
-                          {i > 0 ? ' + ' : ''}
-                          {/* 책략 엠블럼 — 위 「보유 책략」 줄과 같은 그림 (2026-10-23) */}
-                          <TacticIcon id={x.id} className="lv-tactic-icon" />
-                          {pickTacticName(x)}{' '}
-                          <span className="lv-tactic-mp">(MP: {x.mpCost})</span>
-                        </span>
-                      ))}
-                  </span>
-                  <span className="lv-check" aria-hidden="true">
-                    <img className="lv-check-icon" src="icons/confirm.png" alt="" />
-                  </span>
+      <SecHead icon="icons/control/cmd-tactic-badge.png" text={t('levelup.tactic')} sec="tactic" />
+      <section className="lvu-sec" data-sec="tactic">
+        {/* 토글 둘 — 지원책 | 환술. Lv6·7의 지원은 「화계 + 진화」처럼 **한 쌍이 한 선택지**라 엠블럼 · 이름이 둘이다 */}
+        <div className="lvu-tabs" role="tablist">
+          {schools.map(({ s, list }) => (
+            <button
+              key={s}
+              className={`lvu-tab${pickedSchool === s ? ' on' : ''}`}
+              role="tab"
+              aria-selected={pickedSchool === s}
+              data-school={s}
+              data-on={pickedSchool === s ? '1' : '0'}
+              disabled={list.length === 0}
+              onClick={() => setSchool(s)}
+            >
+              {/* 옛 붓 획 칸 — 지금은 `display: contents`라 상자가 없다(기획자가 토글의 붓 획을 걷었다) */}
+              <span className="lvu-tab-ink">
+                <span className="lvu-tab-icons">
+                  {list.map((x) => <TacticIcon key={x.id} id={x.id} className="lvu-tab-icon" />)}
                 </span>
-                {list.map((x) => (
-                  <span key={x.id} className="lv-tactic-text">{pickTacticText(x)}</span>
-                ))}
-                {/* 발동 조건 — `FORMULA.supportRate`·`illusionRate`·`terrainRate`를
-                    말로 옮긴 문구이고, 공식이 바뀌면 `levelup.trigger.*` 열 언어를
-                    같이 고쳐야 한다(`style.css`의 `.lv-tactic-cond` 주석 참조).
-                    **학파가 아니라 책략이 정한다** — 지원책이면서 칸에 거는
-                    화계·진화는 겨눌 상대가 없어 공식이 다르다(2026-09-03). 갈래를
-                    화면이 다시 적지 않도록 엔진의 `isTerrainTactic()`에 묻는다. */}
-                {list.length > 0 && (
-                  <span className="lv-tactic-cond">
-                    {t(list.every((x) => isTerrainTactic(x))
-                      ? 'levelup.trigger.terrain'
-                      : s === 'support' ? 'levelup.trigger.support' : 'levelup.trigger.illusion')}
+                <span className="lvu-tab-txt">
+                  <span className="lvu-tab-name" data-field="tacticName">
+                    {list.length === 0 ? t('levelup.none') : list.map((x) => pickTacticName(x)).join(' + ')}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  <span className="lvu-tab-school">{t(s === 'support' ? 'academy.school.support' : 'academy.school.illusion')}</span>
+                </span>
+              </span>
+            </button>
+          ))}
         </div>
-      </div>
+        {/* 설명 판 하나 — 두 학파의 설명을 같은 칸에 겹쳐 두고 고른 쪽만 보인다(판 높이는 긴 쪽). 안의 꼴은 책략 두루마리
+            (`TacticModal`)와 같은 `.lv-tactic-*` — 이름 + 소모 MP, 효과문, 발동 조건 */}
+        <div className="lvu-desc" data-field="tacticDesc" data-school={pickedSchool}>
+          {schools.map(({ s, list }) => (
+            <div key={s} className="lvu-desc-item" data-school={s} data-on={pickedSchool === s ? '1' : '0'} aria-hidden={pickedSchool !== s}>
+              {list.map((x) => (
+                <div key={x.id} className="lvu-desc-one">
+                  <span className="lv-tactic-label">
+                    {pickTacticName(x)}{' '}
+                    {/* 「MP」는 `HP`/`AT`처럼 번역 없이 그대로 쓰는 약어다 */}
+                    <span className="lv-tactic-mp">(MP: {x.mpCost})</span>
+                  </span>
+                  <span className="lv-tactic-text">{pickTacticText(x)}</span>
+                </div>
+              ))}
+              {/* 발동 조건 — `FORMULA.supportRate`·`illusionRate`·`terrainRate`를 말로 옮긴 문구(`levelup.trigger.*`).
+                  **학파가 아니라 책략이 정한다** — 칸에 거는 화계·진화는 엔진의 `isTerrainTactic()`에 묻는다 */}
+              {list.length > 0 && (
+                <span className="lv-tactic-cond">
+                  {t(list.every((x) => isTerrainTactic(x))
+                    ? 'levelup.trigger.terrain'
+                    : s === 'support' ? 'levelup.trigger.support' : 'levelup.trigger.illusion')}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="lv-acts">
         <button className="btn primary wide" data-action="confirm" onClick={() => onCommit(stat, pickedSchool)}>
-          {t('levelup.confirm')}
+          <span className="lbl">{t('levelup.confirm')}</span>
         </button>
-        {onBack && (
-          <button className="btn ghost wide" data-action="stepBack" onClick={onBack}>{t('levelup.back')}</button>
-        )}
+        {/* [뒤로 가기] — 카드의 [뒤로 가기]와 같은 판 · 같은 글자. 누르면 [X]처럼 카드로 */}
+        <button className="btn wide lvu-back" data-action="stepBack" onClick={onBack}>
+          <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+        </button>
       </div>
     </>
+  );
+}
+
+/** 절 이름 — 판 밖 왼쪽, 앞에 금테 메달(전투 명령 판의 [공격] · [책략] 그림, `ic_cmd_*_badge`) */
+function SecHead({ icon, text, sec }: { icon: string; text: string; sec: string }): React.JSX.Element {
+  return (
+    <h4 className="lvu-head" data-sec={sec}>
+      <span className="lvu-shine lvu-head-shine" aria-hidden="true"><img className="lvu-medal" src={icon} alt="" /></span>
+      <span className="lvu-head-txt">{text}</span>
+    </h4>
   );
 }
 

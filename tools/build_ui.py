@@ -119,6 +119,8 @@ FRAMES: dict[str, str] = {
     "chip_neutral": "chip-neutral.png",
     "chip_selected": "chip-selected.png",
     # (고유기술 팝업 배경 `panel_skill_a_b` · `panel_skill_s_e`는 2026-11-19에 등급 셋의 새 판 `SKILL_PANELS`로 갈음했다.)
+    # 그중 A·B 판은 2026-11-20에 레벨업 고르기의 「새 책략」 판으로 다시 쓴다(`style.css`의 `.lvu-sec[data-sec="tactic"]`)
+    "panel_skill_a_b": "panel-skill-ab.png",
     # 랭킹 3화면·장수 카드 화풍 확장(2026-08-27) — `style.css`의 「랭킹 3화면 ·
     # 장수 카드 화풍 확장」절. `panel_ledger`가 그 절의 `panel_settings.png`
     # 임시 배선을 대체하고, `plate_wide`는 `place-nm`(화면 제목 바)에 새로 붙는다.
@@ -214,11 +216,26 @@ FRAMES: dict[str, str] = {
     # 오른쪽 대사 판(9분할로 가로를 늘린다). 장수 판(`panel-battle-officer`)과 같은 옻칠 테 · 가죽 · 쇠 귀퉁이. 검은 바탕 JPG로 왔다
     "dialog_portrait": "dialog-portrait.png",
     "dialog_line": "dialog-line.png",
+    # 레벨업 고르기의 책략 토글 테(2026-11-20 기획자) — 붉은 옻칠 테 · 금 귀퉁이, 속이 빈 액자. 검은 바탕 JPG라 바깥 · 가운데 검정을 걷는다
+    "책략_패널": "frame-tactic.png",
+    # 축하 화면의 주인공 그림(2026-11-20 기획자, `축하 예시.pptx`) — 강화 완료의 팔뚝 · 증축 완료의 비계 탑. 투명 PNG로 왔다
+    "celebrate_levelup": "cel-levelup.png",
+    "celebrate_build": "cel-build.png",
+    # 구매 완료(금화) — 뒤의 보물 상자 · 앞에 내려찍히는 금화 주머니, 연구 완료(태학) — 뒤의 두루마리(앞은 그 책략의 엠블럼)
+    "celebrate_chest": "cel-chest.png",
+    "celebrate_goldbag": "cel-goldbag.png",
+    "celebrate_scroll": "cel-scroll.png",
+    # 제작 완료(대장간) — 뒤의 모루. 대장간 [병기구 제작] 아이콘의 원본(`facility/ic_forge_craft.png`)을 그대로 크게 굽는다(기획자 지정 —
+    # 사본을 두면 아이콘을 다시 그릴 때 한쪽만 낡는다). 앞에는 그 병기 그림(`blacksmith/{id}.png`, 투명)이 내려찍힌다
+    "facility/ic_forge_craft": "cel-forge.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
 FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2": 1400, "전투-책략 개량": 96,
-                             "dialog_portrait": 480, "dialog_line": 1600}
+                             "dialog_portrait": 480, "dialog_line": 1600, "책략_패널": 600,
+                             "celebrate_levelup": 512, "celebrate_build": 512,
+                             "celebrate_chest": 512, "celebrate_goldbag": 512, "celebrate_scroll": 256,
+                             "facility/ic_forge_craft": 512}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
@@ -226,7 +243,7 @@ FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2
 FRAME_BLACK_BG: set[str] = {"panel_battle_command", "button_battle_command", "battle_plate_map", "battle_panel_officier",
                              "battle_end_win", "battle_end_draw", "battle_end_lose", "대자보 패널", "detail-paper.png",
                              "slot-empty", "slot-done", "slot-first2", "전투-책략 개량",
-                             "dialog_portrait", "dialog_line"}
+                             "dialog_portrait", "dialog_line", "책략_패널"}
 
 # 검정을 **밝기로** 걷는 판(2026-10-14) — 가장자리에서 이어진 검정만 걷는(`knock_out_black`) 대신 `key_black`.
 # 밝은 종이라 판 안에 어두운 것이 없고, 종이 안의 **갇힌 검정**(핀 구멍 · 찢긴 홈)도 뚫려야 뒤 배경이 비친다.
@@ -239,7 +256,7 @@ FRAME_TURNED: dict[str, str] = {"panel-board-paper.png": "panel-board-paper-wide
 
 # **속이 빈 액자** — 바깥뿐 아니라 가운데 구멍의 검정도 걷는다(`knock_out_black(hollow=True)`).
 # 바깥만 걷는 판때기와 달리 가운데가 캔버스 가장자리와 안 이어져 있어 따로 찾아야 한다.
-FRAME_HOLLOW: set[str] = {"battle_plate_map", "dialog_portrait"}
+FRAME_HOLLOW: set[str] = {"battle_plate_map", "dialog_portrait", "책략_패널"}
 
 # 컬렉션 시대 칩의 붓 획(2026-10-14, 의뢰서 ⑥) — 굵은 「一」 위에 시대 이름을 얹는다. 두 벌을 굽고 화면이 고른다.
 #  · B `era-stroke-b-{n}.png` — 시대마다 색을 넣어 따로 받은 여덟 장(검은 바탕 JPG). 획이 장마다 조금씩 달라 심심함을 던다(기획자)

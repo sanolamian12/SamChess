@@ -4424,7 +4424,8 @@ button.lv-tactic-row {
    "Não atribuída"가 한 줄로 두니 둘째 낱말이 칸 밖으로 흘러 단추 위에 겹쳐
    찍혔다, 2026-09-11 스크린샷으로 잡았다). */
 .frg-row .c-hold {
-  font-size: .8rem; text-align: center; line-height: 1.1; min-width: 0;
+  /* 줄 높이 1.25 — 1.1에서는 몽골어 「Олгоогүй」의 키릴 글자가 위아래로 2px 넘쳤다(2026-11-20). 언어마다 따로 두지 않고 모두 같은 값 */
+  font-size: .8rem; text-align: center; line-height: 1.25; min-width: 0;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   overflow: hidden; overflow-wrap: anywhere;
 }
@@ -7786,6 +7787,372 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
+
+/* ── 레벨업 고르기 개편 (2026-11-20 기획자, `LevelUpPanel.tsx`의 `Picker`) ─────────
+ *
+ * ① 두 절을 **제 판**에 담는다 — 「전투력」은 고유기술 판(`panel-battle-skill`, 네 귀퉁이에 칼 · 활 · 창 · 방패),
+ *    「새 책략」은 전투 명령 판(`panel-battle-command`, 전투 아래 칸과 같은 자르기 · 얇은 테).
+ *    **절 이름은 판 밖**, 레벨업 판의 왼쪽 벽에 붙고(`.lvu-head`), 앞에 금테 메달 — 전투 명령 판의 [공격] · [책략] 그림을
+ *    도적 메달과 같은 입체 금테에 담았다(`tools/build_icons_composed.py`의 `ic_cmd_*_badge`). HP · MP · AT도 같은 메달(`ic_stat_*_badge`).
+ * ② 능력 줄의 바탕은 **붓 획**이다 — 장수 상세의 숫자 밑줄과 같은 그림 · 같은 색(HP 옥색 `b-5` · MP 청회색 `b-3` · AT 쪽빛 `b-7`).
+ *    고른 줄은 **그 색의 네온이 천천히 들어왔다 빠진다** — 장수 일람 정렬 머리의 네온과 같은 결(`lvu-pulse` 1.6초, 붓 모양을 따라).
+ *    책략 토글은 붓 획 없이 병기 | 아이템 토글과 같은 속판 그대로, 테는 책략 판 테(`frame-tactic`). 고른 쪽은 학파 색 네온.
+ *    화살표는 내 차례 표지(`battle_myturn`)의 둘째 칸 화살촉(`ui/turn/arrowhead.png`)을 오른쪽으로 눕혀, 고른 줄의 것만 좌우로 흔든다.
+ * ③ 설명 판(`field-frame` 두루마리)은 **높이가 고정**이다 — 열 언어 × 모든 레벨의 두 학파를 재서 가장 긴 것(`tools/levelup_ux.ts`의
+ *    MEASURE=1)에 맞췄다. 책략 설명 · 발동 조건 문구 · 판 폭을 바꾸면 다시 잰다(넘치면 그 도구의 「설명 판 넘침」이 잡는다).
+ * ④ [확정] 아래 [뒤로 가기] — 판은 그 화면의 보조 단추 규칙(궁궐이면 참나무 목판)을 그대로 받는다. 아래 `.lvu-back`은
+ *    그런 규칙이 없는 화면을 위한 바닥값이라 세기를 낮게 둔다.
+ *
+ * 글자 크기 차례 — 절 이름(1.05rem) > HP · MP · AT(.98rem) > 수치(.9rem).
+ * 전부 `.lvp-modal`로 좁힌다 — 장수 상세는 궁궐 · 병영 · 대장간이 함께 띄우므로 `.scr-officers`에 묶으면 다른 화면에서 빠진다.
+ */
+.lvp-modal .lvu-head {
+  display: flex; align-items: center; gap: .4rem; margin: .15rem 0 -.2rem;
+  font-size: 1.05rem; font-weight: 700; color: #2c2013; text-align: left;
+}
+.lvu-medal { flex: none; width: 2.1rem; height: 2.1rem; object-fit: contain; filter: drop-shadow(0 1px 2px #0007); }
+
+.lvp-modal .lvu-sec { display: flex; flex-direction: column; gap: .45rem; }
+.lvp-modal .lvu-sec[data-sec="physical"] {
+  border-style: solid; border-color: transparent; border-width: 1.35rem 1.2rem 1.45rem 1.3rem;
+  border-image: url(ui/panel-battle-skill.png) 82 70 90 84 fill / 2.1rem 1.8rem 2.3rem 2.2rem;
+  padding: .1rem .3rem;   /* 줄이 귀퉁이의 칼 · 창 · 방패를 덮지 않게 */
+}
+/* 전투 아래 칸(`.cmd-panel` 계열)과 같은 자르기 · 같은 테 두께 — 옛 A·B 판은 테가 너무 두꺼웠다(기획자) */
+.lvp-modal .lvu-sec[data-sec="tactic"] {
+  border-style: solid; border-color: transparent; border-width: .75rem .85rem;
+  border-image: url(ui/panel-battle-command.png) 108 130 130 108 fill / 1.05rem 1.26rem 1.26rem 1.05rem;
+  padding: 0;
+}
+/* 장수 이름 줄의 등급 보석 — 장수 상세 이름 줄(`.ofcard-title .gr`)과 같은 광택(`gr-glint`) */
+.lvp-title .gr { position: relative; }
+.lvp-title .gr::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, #fff0 30%, #fffd 47%, #fff 50%, #fffd 53%, #fff0 70%) no-repeat;
+  background-size: 300% 100%; background-position: 150% 0;
+  -webkit-mask: var(--gr-img) center / contain no-repeat; mask: var(--gr-img) center / contain no-repeat;
+  mix-blend-mode: screen; animation: gr-glint 5s ease-in-out infinite;
+}
+.lvp-title .gr[data-grade="S"] { --gr-img: url(icons/grade-s.png); }
+.lvp-title .gr[data-grade="A"] { --gr-img: url(icons/grade-a.png); }
+.lvp-title .gr[data-grade="B"] { --gr-img: url(icons/grade-b.png); }
+.lvp-title .gr[data-grade="C"] { --gr-img: url(icons/grade-c.png); }
+.lvp-title .gr[data-grade="D"] { --gr-img: url(icons/grade-d.png); }
+.lvp-title .gr[data-grade="E"] { --gr-img: url(icons/grade-e.png); }
+.lvp-title .gr[data-fallback]::after { display: none; }
+
+/* 붓 획 색 — 장수 상세의 숫자 밑줄과 같은 값(`.ofcard-layout [data-field="hp"]` …), 빛은 그 획의 먹색(`.clx-era`의 `--era-ink`) */
+.lvp-modal .lv-stat-row[data-stat="hp"] { --lvu-stroke: url(ui/era-stroke-b-5.png); --lvu-ink: #2f7f6e; --lvu-glow: #5fd3b4; }
+.lvp-modal .lv-stat-row[data-stat="mp"] { --lvu-stroke: url(ui/era-stroke-b-3.png); --lvu-ink: #4f6478; --lvu-glow: #9cc2e6; }
+.lvp-modal .lv-stat-row[data-stat="at"] { --lvu-stroke: url(ui/era-stroke-b-7.png); --lvu-ink: #2d4a8a; --lvu-glow: #7fa6ff; }
+/* 고른 것 — 장수 일람 정렬 머리의 네온(`.sort-head[data-neon]`, `neon-img-*`)과 같은 결: 빛만 천천히 들어왔다 빠진다(1.6초).
+   색은 그 줄의 붓 획 색. drop-shadow라 붓 모양을 따라 빛난다 (2026-11-20 기획자) */
+@keyframes lvu-pulse {
+  0%, 100% { filter: drop-shadow(0 0 .14rem var(--lvu-glow)) drop-shadow(0 0 .35rem var(--lvu-glow)); }
+  50% { filter: drop-shadow(0 0 .02rem #0000) drop-shadow(0 0 .05rem #0000); }
+}
+@media (prefers-reduced-motion: reduce) { .lvp-modal .lv-stat-row.on .lv-stat { animation: none !important; } }
+
+/* ② 능력 줄 — 붓 획 한 줄. 바깥 단추(`.lv-stat-row`)는 레이아웃만, 획은 안쪽 칸(`.lv-stat`)이 진다(빛이 획을 따라가게) */
+.lvp-modal .lv-stats { gap: .3rem; }
+.lvp-modal button.lv-stat-row, .lvp-modal button.lv-stat-row.on { padding: 0; border: 0; background: none; border-radius: 0; box-shadow: none; }
+.lvp-modal .lv-stat {
+  flex: 1 1 auto; min-height: 2.5rem; box-sizing: border-box;
+  /* 증분 · 결과 칸을 같은 폭(1fr)으로 두고 가운데 정렬 — 화살촉이 두 숫자 사이 한가운데 선다 */
+  grid-template-columns: 4.6rem 1fr 1fr 2.25rem 1fr; gap: .2rem;
+  font-size: .9rem; color: #f8ead0; text-shadow: 0 1px 2px #000b;
+  border: 0 solid transparent; padding: .1rem 1.6em .1rem .15rem;
+  border-image-source: var(--lvu-stroke);
+  border-image-slice: 0 34% 0 12% fill; border-image-width: 0 1.6em 0 .9em; border-image-repeat: stretch;
+  opacity: .82; transition: opacity .15s;
+}
+.lvp-modal .lv-stat-row:hover:not(.on) .lv-stat { opacity: .95; }
+.lvp-modal .lv-stat-row.on .lv-stat { opacity: 1; animation: lvu-pulse 1.6s ease-in-out infinite; }
+/* 메달 + 「HP」 — 메달은 획의 둥근 머리 위에 */
+.lvp-modal .lv-stat .c-k { display: flex; align-items: center; gap: .3rem; font-weight: 700; }
+.lvu-stat-medal { flex: none; width: 2.1rem; height: 2.1rem; object-fit: contain; filter: drop-shadow(0 1px 2px #0008); }
+.lvu-stat-name { font-size: .98rem; font-weight: 700; letter-spacing: .02em; color: #fff4d6; }
+.lvp-modal .lv-stat .c-now, .lvp-modal .lv-stat .c-next { font-weight: 700; }
+.lvp-modal .lv-stat .c-now, .lvp-modal .lv-stat .c-add, .lvp-modal .lv-stat .c-next { text-align: center; }
+/* 고른 줄의 증분과 오른쪽 열(결과)은 「HP」 이름과 같은 글꼴(.98rem 굵게 · 밝은 미색) — 기획자 */
+.lvp-modal .lv-stat-row:not(.on) .c-add { color: #e9dfcaa6; font-weight: 400; }
+.lvp-modal .lv-stat-row.on .c-add,
+.lvp-modal .lv-stat .c-next { font-size: .98rem; font-weight: 700; letter-spacing: .02em; color: #fff4d6; }
+/* 화살촉 — 아래를 보는 그림을 오른쪽으로 눕혀 좌우로 오간다 */
+.lvp-modal .lv-stat .c-arrow { display: flex; align-items: center; justify-content: center; }
+.lvp-modal .lv-stat .c-arrow img {
+  width: 2.25rem; height: 2.25rem; object-fit: contain; rotate: -90deg;   /* 1.5rem의 1.5배 (기획자) */
+  filter: drop-shadow(0 1px 1px #000a);
+}
+/* 좌우로 오가는 것은 고른 줄의 화살촉만 (2026-11-20 기획자) */
+.lvp-modal .lv-stat-row.on .lv-stat .c-arrow img { animation: lvu-nudge 1.4s ease-in-out infinite; }
+@keyframes lvu-nudge { 0%, 100% { translate: -.14rem 0; } 50% { translate: .14rem 0; } }
+@media (prefers-reduced-motion: reduce) { .lvp-modal .lv-stat .c-arrow img { animation: none; } }
+
+/* ③ 책략 토글 — 병기 | 아이템 토글(`.sqh-tab`)과 같은 속판(지원책 비취 `btn-battle-ready` · 환술 쪽빛 `btn-battle-intel`에 보라를 섞어),
+   테는 책략 판 테(`frame-tactic`). 붓 획은 깔지 않는다(기획자 — 능력 줄만). 안 고른 쪽은 어둠 한 겹, 고른 쪽은 엠블럼 · 이름이 금빛 */
+.lvu-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; }
+.lvu-tab {
+  display: flex; align-items: center; gap: .25rem; min-width: 0; padding: .37rem .32rem;   /* 테가 안쪽으로 덮는 몫만큼 더 */
+  font: inherit; text-align: left; cursor: pointer; border-radius: 0;
+  /* 테 — 책략 판 테(`frame-tactic` ← `assets/icons/ui/책략_패널.jpg`, 붉은 옻칠 · 금 귀퉁이, 속이 빈 액자 600 × 439).
+     귀퉁이 50px를 9분할로 — 가운데는 안 채운다, 속판 색이 그대로 보인다 (2026-11-20 기획자 — 금테 · 명패 테 · 대사 판 테 다음) */
+  /* 테두리 칸(.26rem)을 그림의 테 안쪽 끝보다 얇게 — 속판(`padding-box`)이 테 밑까지 깔려 틈이 없다. 테 그림은 네 면의 두께 · 여백이
+     조금씩 달라(안쪽 끝이 왼 .37 · 오른 .30 · 위 .35 · 아래 .31rem) 옛 .38rem이면 왼쪽만 맞고 세 면에 틈이 보였다 (2026-11-20 기획자) */
+  border: .26rem solid transparent; border-image: url(ui/frame-tactic.png) 50 / .6rem stretch;
+  background-color: #1a1d23; background-clip: padding-box; background-repeat: no-repeat;
+  background-size: 125% 161%; background-position: 48.8% 47.6%;   /* 그림을 키워 안쪽 색 판만 상자에 든다(`.sqh-tab[data-tab]`과 같은 값) */
+  transition: box-shadow .15s;
+}
+.lvu-tab[data-school="support"] { background-image: url(ui/btn-battle-ready.png); }
+/* 환술 — 쪽빛 판에 보라를 「색」으로 섞는다(무늬 · 밝기는 그림 그대로). 두 겹이라 크기 · 자리도 두 벌 */
+.lvu-tab[data-school="illusion"] {
+  background-image: linear-gradient(#7a4aa8, #7a4aa8), url(ui/btn-battle-intel.png);
+  background-blend-mode: color, normal;
+  background-size: 100% 100%, 125% 161%; background-position: center, 48.8% 47.6%;
+}
+.lvu-tab:not(.on) { box-shadow: inset 0 0 0 10rem #0000008c; }
+.lvu-tab:hover:not(.on):not(:disabled) { box-shadow: inset 0 0 0 10rem #00000059; }
+.lvu-tab:disabled { cursor: default; opacity: .5; }
+.lvu-tab-ink { display: contents; }   /* 붓 획을 걷어 이제 상자가 없다 — 안의 엠블럼 · 글자가 단추에 바로 선다 */
+.lvu-tab-icons { display: flex; flex: none; }
+.lvu-tab-icons .lvu-tab-icon + .lvu-tab-icon { margin-left: -.55rem; }   /* 한 쌍(화계 + 진화)은 살짝 겹쳐 */
+.lvu-tab-icon.tac-icon { width: 1.75rem; height: 1.75rem; }
+.lvu-tab-icon.tac-icon > img { filter: grayscale(.8) brightness(.6); transition: filter .15s; }
+.lvu-tab.on .lvu-tab-icon.tac-icon > img { animation: lvu-gold 1.6s ease-in-out infinite; }
+.lvu-tab-txt { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; pointer-events: none; }
+/* 이름은 접혀도 된다(긴 언어 · 한 쌍) — 줄이지 않는다(글자 하한 .8rem) */
+.lvu-tab-name {
+  font-size: .86rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word;
+  color: #8f8573; text-shadow: 0 1px 2px #000c; transition: color .15s;
+}
+.lvu-tab-school { font-size: .8rem; line-height: 1.2; color: #8f8573b3; text-shadow: 0 1px 2px #000c; }
+.lvu-tab.on .lvu-tab-name { color: #f6dc9a; animation: lvu-gold-text 1.6s ease-in-out infinite; }
+.lvu-tab.on .lvu-tab-school { color: #e9dfca; }
+.lvu-tab:hover:not(.on) .lvu-tab-name { color: #c4b89c; }
+
+/* ④ 금빛 후광도 같은 네온 — 고른 책략의 엠블럼 · 이름, 고른 능력 줄의 메달 (2026-11-20 기획자) */
+@keyframes lvu-gold {
+  0%, 100% { filter: drop-shadow(0 0 .25rem #f0c674) drop-shadow(0 0 .5rem #f0c674aa); }
+  50% { filter: drop-shadow(0 0 .03rem #f0c67422) drop-shadow(0 0 .06rem #f0c67400); }
+}
+@keyframes lvu-gold-text {
+  0%, 100% { text-shadow: 0 0 .35rem #f0c674aa, 0 1px 2px #000c; }
+  50% { text-shadow: 0 0 .05rem #f0c67422, 0 1px 2px #000c; }
+}
+.lvp-modal .lv-stat-row.on .lvu-stat-medal { animation: lvu-gold 1.6s ease-in-out infinite; }
+/* ⑥ 고른 책략 단추 — 능력 줄처럼 그 학파 색 네온(지원책 비취 · 환술 보라) */
+.lvu-tab[data-school="support"] { --lvu-glow: #5fd3b4; }
+.lvu-tab[data-school="illusion"] { --lvu-glow: #d58be0; }
+.lvu-tab.on { animation: lvu-pulse 1.6s ease-in-out infinite; }
+
+/* ⑤ 광택 — 3초에 한 번 빛이 비스듬히 스친다(등급 보석의 `gr-glint`와 같은 마디). 메달 · 엠블럼이 둥글어 원으로 자른다.
+   절 이름의 두 메달은 늘, 능력 줄 메달 · 책략 엠블럼은 고른 것만 */
+.lvu-shine { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
+.lvp-modal .lvu-tab-icon.tac-icon { position: relative; }
+.lvu-head-shine::after,
+.lvp-modal .lv-stat-row.on .lvu-stat-shine::after,
+.lvp-modal .lvu-tab.on .lvu-tab-icon.tac-icon::after {
+  content: ''; position: absolute; inset: 6%; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(115deg, #fff0 30%, #fffc 47%, #fff 50%, #fffc 53%, #fff0 70%) no-repeat;
+  background-size: 300% 100%; background-position: 150% 0;
+  mix-blend-mode: screen; animation: gr-glint 3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lvp-modal .lvu-shine::after, .lvp-modal .lvu-tab-icon.tac-icon::after { animation: none; display: none; }
+  .lvp-modal .lv-stat-row.on .lvu-stat-medal, .lvu-tab.on, .lvu-tab.on .lvu-tab-icon.tac-icon > img, .lvu-tab.on .lvu-tab-name { animation: none; }
+}
+
+/* 설명 판 하나 — 두 학파를 같은 칸(grid 1/1)에 겹치고 고른 쪽만 보인다 */
+.lvu-desc {
+  display: grid; align-content: center; padding: .3rem .45rem; box-sizing: border-box;
+  /* 고정 높이 — 열 언어 × Lv2~10 × 두 학파 중 가장 긴 것(es_419 Lv5 지원책, 390px · 700px 폭 모두 8.47~8.49rem)에 여유를 조금.
+     다시 재는 법은 `MEASURE=1 node … tools/levelup_ux.ts` (2026-11-20) */
+  height: 8.6rem;
+  border-style: solid; border-color: transparent; border-width: .5rem .8rem;
+  border-image: url(ui/field-frame.png) 14% 10% fill;
+}
+.lvu-desc-item { grid-area: 1 / 1; display: flex; flex-direction: column; gap: .3rem; transition: opacity .18s; }
+.lvu-desc-item[data-on="0"] { visibility: hidden; opacity: 0; }
+.lvu-desc-one { display: flex; flex-direction: column; gap: .1rem; }
+.lvp-modal .lvu-desc .lv-tactic-label { font-size: .86rem; color: #2c2013; }
+.lvp-modal .lvu-desc .lv-tactic-text { color: #4a3826; }
+.lvp-modal .lvu-desc .lv-tactic-cond { color: #6b5942; }
+.lvp-modal .lvu-desc .lv-tactic-mp { color: #2b5578; }
+
+/* ④ [확정] · [뒤로 가기] */
+.lvp-modal .lv-acts { gap: .35rem; }
+.lvp-modal .lv-acts .btn { justify-content: center; }
+.lvu-back {
+  background: transparent;
+  border-style: solid; border-color: transparent; border-width: .3rem 1rem;
+  border-image: url(ui/btn-secondary.png) 7% 15% fill;
+  border-radius: 0; color: #2c2013; text-shadow: 0 1px 1px #ffffff40;
+}
+
+/* ── 축하 화면 (`Celebrate.tsx`, 2026-11-20 기획자 — 공용, `축하 예시.pptx`) ─────────────────────────
+ * 액자 없이 화면 전체를 어둡게 깔고 한가운데에서 터진다: 어둠 · 섬광 → 그림이 떠오르고 빛줄기(`BlinkGlow`)가 돈다 → 배지가 쾅(`cel-slam`) ·
+ * 무대가 한 번 흔들림(`cel-shake`) · 금가루 → 제목 · 아래 줄 → 「화면을 터치해주세요.」가 숨 쉬듯. 아무 데나 누르거나 아무 키나 누르면
+ * 무대가 커지며 번쩍 사라진다(`[data-leaving]`, .36초 — 컴포넌트의 `LEAVE_MS`와 같은 값).
+ * ★ 옛 판 규칙(`.modal.cty-done` · `.modal.frg-done` — 붉은 금박 9분할)이 같은 갈래 클래스로 붙어 오므로 **세게 적어** 걷는다(0,4,0).
+ */
+.modal-back.cel-back {
+  z-index: 56;   /* 카드 위에 겹쳐 뜨는 판(레벨업 고르기 `.lvp-back` 55)보다 위 */
+  cursor: pointer; overflow: hidden; padding: 1rem;
+  background: #000000eb; animation: cel-dim .3s ease-out both;   /* 예시처럼 거의 검게 — 뒤 화면이 비치면 그림이 묻힌다 */
+}
+@keyframes cel-dim { from { background-color: #0000; } }
+/* 화면 전체 누름 칸 — 맨 위(무대 · 금가루 위), 보이지 않는다 */
+.cel-hit { position: absolute; inset: 0; z-index: 5; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; }
+.cel-hit:focus { outline: none; }
+.modal-back.cel-back .modal.cel {
+  position: relative; z-index: 1; width: min(22rem, 100%); max-width: none; max-height: 100%; overflow: visible;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: .35rem; padding: 0;
+  background: none; border: 0; border-image: none; border-radius: 0; color: #f6ead8;
+}
+/* 무대 — 그림 · 빛줄기 · 배지가 한 상자에 겹친다 */
+.cel-stage {
+  position: relative; width: min(17rem, 78vw); aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  animation: cel-shake .32s ease-out .52s both;
+}
+@keyframes cel-shake {
+  0%, 100% { translate: 0 0; } 20% { translate: -.22rem .12rem; } 40% { translate: .2rem -.1rem; }
+  60% { translate: -.14rem -.08rem; } 80% { translate: .08rem .06rem; }
+}
+.cel-rays { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.2; z-index: 1; }
+.cel-art { position: absolute; inset: 4%; z-index: 0; display: flex; align-items: center; justify-content: center;
+  animation: cel-rise .55s cubic-bezier(.2, 1.2, .4, 1) .08s both; }
+@keyframes cel-rise { from { transform: scale(.6) translateY(1.2rem); opacity: 0; } to { transform: none; opacity: 1; } }
+.cel-art-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .4rem 1rem #000c); }
+.cel-badge { position: relative; z-index: 2; display: flex; animation: cel-slam .5s cubic-bezier(.3, 1.4, .5, 1) .3s both; }
+@keyframes cel-slam {
+  0% { transform: scale(3.2); opacity: 0; filter: blur(3px); }
+  55% { transform: scale(.9); opacity: 1; filter: none; }
+  75% { transform: scale(1.07); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.cel-badge .cel-badge-img { height: min(8.5rem, 38vw); width: auto; filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
+/* 건물 레벨 배지는 그림을 감싼 칸(`.bld-badge`)이라 칸째 키운다 — 옛 완료 팝업의 `.cty-done .cty-done-badge`(3.4rem)보다 세게 */
+.cel-back .cel-badge .bld-badge { height: min(8.5rem, 38vw); }
+/* 제목 — 예시의 큰 미색 글씨 */
+.cel-back .cel .cel-ttl {
+  align-self: stretch; min-width: 0; margin: .2rem 0 0; white-space: nowrap; letter-spacing: .12em;
+  font-size: calc(2.5rem * var(--fit-scale, 1)); font-weight: 700; color: #f6e2cc;
+  text-shadow: 0 .15rem .5rem #000, 0 0 1.2rem #f0c67455;
+  animation: cel-rise .5s cubic-bezier(.2, 1.2, .4, 1) .55s both;
+}
+.cel-back .cel .cel-big { align-self: stretch; min-width: 0; animation: cel-rise .45s ease-out .7s both; }
+.cel-back .cel .cty-done-lv { font-size: calc(1.6rem * var(--fit-scale, 1)); margin: 0; white-space: nowrap; text-align: center; color: #f0c674; }
+.cel-back .cel .cel-big-node { display: flex; justify-content: center; }
+.cel-back .cel > p:not(.cel-tap), .cel-back .cel > .row { margin: 0; animation: cel-rise .45s ease-out .8s both; }
+.cel-back .cel .row { text-align: center; word-break: keep-all; font-size: .9rem; }
+.cel-back .cel .row.dim { color: #e3cfa4; }
+/* 「화면을 터치해주세요.」 — 다 나온 뒤 숨 쉬듯 */
+.cel-tap {
+  margin: 1.1rem 0 0; font-size: 1.1rem; font-weight: 700; letter-spacing: .06em; color: #f6e2cc; text-shadow: 0 .1rem .4rem #000;
+  opacity: 0; animation: cel-tap 1.8s ease-in-out 1.1s infinite;
+}
+@keyframes cel-tap { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+/* 열리는 순간 · 닫히는 순간 하얗게 */
+.cel-flash {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 40%, #fff 0%, #fffbe8d9 28%, #fff0 70%);
+  animation: mkt-flash .55s ease-out .32s both;
+}
+/* 금가루 — 화면 위에서 흩날려 내린다 */
+.cel-flakes { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.cel-flakes > i {
+  position: absolute; top: -4%; display: block; rotate: 45deg; opacity: 0;
+  background: linear-gradient(135deg, #fff6c8, #f0c674 45%, #a8792e);
+  box-shadow: 0 0 .25rem #f0c674cc; border-radius: 1px;
+  animation: cel-flake 3s linear infinite;
+}
+@keyframes cel-flake {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: .95; }
+  85% { opacity: .8; }
+  100% { transform: translate(var(--cel-drift, 1rem), 110vh) rotate(540deg); opacity: 0; }
+}
+/* 닫힘 — 무대가 커지며 사라지고 화면이 한 번 하얗게, 어둠은 걷힌다 */
+.cel-back[data-leaving] { animation: cel-undim .36s ease-in both; pointer-events: none; }
+@keyframes cel-undim { to { background-color: #0000; } }
+.cel-back[data-leaving] .modal.cel { animation: cel-out .36s cubic-bezier(.5, 0, .9, .4) both; }
+@keyframes cel-out { to { transform: scale(1.35); opacity: 0; filter: blur(2px) brightness(1.8); } }
+.cel-back[data-leaving] .cel-flash { animation: cel-flash-out .36s ease-out both; }
+@keyframes cel-flash-out { 0% { opacity: 0; } 30% { opacity: .7; } 100% { opacity: 0; } }
+.cel-back[data-leaving] .cel-flakes { opacity: 0; transition: opacity .2s; }
+@media (prefers-reduced-motion: reduce) {
+  .modal-back.cel-back, .cel-stage, .cel-art, .cel-badge, .cel-back .cel .cel-ttl, .cel-back .cel .cel-big,
+  .cel-back .cel > p:not(.cel-tap), .cel-back[data-leaving] .modal.cel { animation: none; }
+  .cel-tap { animation: none; opacity: 1; }
+  .cel-flash, .cel-flakes { display: none; }
+}
+
+/* 제작 완료(대장간) — 모루 위에 만든 병기가 비스듬히(예시처럼 오른쪽 위로 기울여) 내려찍힌다 */
+.cel-badge .frg-cel-weapon { width: min(17rem, 78vw); height: auto; rotate: -14deg; translate: 0 -12%;
+  filter: drop-shadow(0 0 .6rem #fff6) drop-shadow(0 .4rem .6rem #000c); }
+.frg-done .cel-stage .cel-art { inset: 14% 2% 2%; }
+
+/* 연구 완료(`AcademyNotice`) — 두루마리 위에 개량된 책략의 엠블럼, 아래에 이름 · MP · 효과 · 「몇 명에게 적용」 */
+.cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
+/* 개량 표지(「+」) — 큰 엠블럼에서는 글자가 원에 비해 작고 원이 밖으로 튀어나가 어색했다. 귀퉁이 안쪽에 엠블럼 크기에 맞춰 */
+.cel-badge .acd-cel-emblem .tac-icon-plus {
+  right: 0; bottom: 0; min-width: 32%; height: 32%; font-size: min(2rem, 9vw);
+  background: radial-gradient(circle at 40% 35%, #c98a3e, #7a3f12); box-shadow: 0 0 0 .14rem #f3e2b0, 0 .2rem .4rem #000a;
+}
+.cel-back .acd-cel .acd-notice-item {
+  align-self: stretch; display: flex; flex-direction: column; gap: .2rem; padding: .4rem .55rem; border-radius: .3rem;
+  background: #ffffff10; box-shadow: inset 0 0 0 1px #f0c67440; animation: cel-rise .45s ease-out .8s both;
+}
+.cel-back .acd-cel .acd-notice-nm { display: flex; align-items: center; justify-content: center; gap: .3rem; margin: 0; font-size: 1.05rem; font-weight: 700; color: #f0c674; }
+.cel-back .acd-cel .acd-cel-mp { font-size: .85rem; color: #9cc2e6; }
+.cel-back .acd-cel .acd-cel-effect { margin: 0; font-size: .9rem; color: #f6ecd2; line-height: 1.35; }
+.cel-back .acd-cel .acd-notice-apply { margin: 0; font-size: .85rem; color: #e3cfa4; }
+
+/* 금화 구매 완료(`MarketScreen`의 `GoldCelebrate`) — 보물 상자 위에 금화 주머니, 「[금화] +N」 */
+.cel-badge .gold-cel-bag { width: min(9rem, 42vw); height: auto; filter: drop-shadow(0 0 .9rem #f0c674aa) drop-shadow(0 .4rem .7rem #000c); }
+.gold-cel .cel-stage .cel-art { inset: 10% 4% 16%; }
+.gold-cel-got { display: inline-flex; align-items: center; gap: .3rem; font-size: 1.9rem; font-weight: 700; color: #ffe08a;
+  text-shadow: 0 2px 6px #000c, 0 0 1.2rem #f0c67488; font-variant-numeric: tabular-nums; }
+.gold-cel-got .gic img { height: 1.9rem; }
+.cel-back .gold-cel [data-field="goldHave"] .gic img { height: 1.1em; vertical-align: -.2em; }
+/* 금화 상품 카드는 단추다(개발용 지급이 켜졌을 때만 눌린다) — 단추 기본 꼴(글꼴 · 회색 비활성)을 걷는다 */
+button.mkt-pack { font: inherit; color: inherit; background: none; cursor: pointer; }
+button.mkt-pack:disabled { cursor: default; color: inherit; opacity: 1; }
+button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) brightness(1.06); }
+
+/* 강화 완료(`LevelUpPanel`) — 「[등급] 이름」 · 고른 능력의 오름 · 새 책략 */
+.lvd-who { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; max-width: 100%; }
+.lvd-who .gr { --gr: 1.7rem; }
+.lvd-name { font-size: 1.35rem; font-weight: 700; color: #f0c674; text-shadow: 0 2px 6px #000c, 0 0 1rem #f0c67466;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* 줄 — 고르기 판과 같은 붓 획(능력은 그 능력의 색, 책략은 학파의 색) + 획의 모양을 따라 도는 얇은 금빛 네온(2026-11-20 기획자).
+   획은 제 층(`::before`)에 깔고 `drop-shadow`를 겹친다 — 그림의 투명도를 따라 빛나므로 붓 끝의 갈라짐까지 금테가 붙는다.
+   글자에는 그림자가 안 번진다(층이 다르다). */
+.lvd-row {
+  position: relative; isolation: isolate;
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .3rem; margin: 0; align-self: stretch;
+  min-height: 2.5rem; box-sizing: border-box; padding: .15rem 1.7em .15rem 1.1em;
+  font-size: .95rem; color: #f6ecd2; text-shadow: 0 1px 2px #000b;
+  --lvd-stroke: url(ui/era-stroke-b-8.png);
+}
+.lvd-row::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  border: 0 solid transparent; border-image: var(--lvd-stroke) 0 34% 0 12% fill / 0 1.6em 0 .9em stretch;
+  filter: drop-shadow(0 0 .5px #fff1b8) drop-shadow(0 0 1.5px #f0c674) drop-shadow(0 0 4px #f0c67499);
+}
+.lvd-row[data-stat="hp"] { --lvd-stroke: url(ui/era-stroke-b-5.png); }
+.lvd-row[data-stat="mp"] { --lvd-stroke: url(ui/era-stroke-b-3.png); }
+.lvd-row[data-stat="at"] { --lvd-stroke: url(ui/era-stroke-b-7.png); }
+.lvd-row[data-school="support"] { --lvd-stroke: url(ui/era-stroke-b-5.png); }
+.lvd-row[data-school="illusion"] { --lvd-stroke: url(ui/era-stroke-b-6.png); }
+.lvd-medal { width: 1.7rem; height: 1.7rem; object-fit: contain; flex: none; }
+.lvd-row b { font-weight: 700; color: #fff4d6; }
+.lvd-row .lvd-next { color: #ffe08a; text-shadow: 0 0 .4rem #f0c674aa; }
+.lvd-arrow { width: 1.6rem; height: 1.6rem; rotate: -90deg; object-fit: contain; }
+.lvd-k { color: #e3cfa4; font-size: .85rem; }
+.lvd-tac { display: inline-flex; align-items: center; gap: .2rem; font-weight: 700; color: #ffe08a; }
+.lvd-tac-icon.tac-icon { width: 1.6rem; height: 1.6rem; }
 
 /* 장수 일람의 캡션 글씨 — 양피지 위 먹색 */
 .scr-officers .cap { color: #5a4128; }

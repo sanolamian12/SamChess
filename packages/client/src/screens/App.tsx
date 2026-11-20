@@ -734,15 +734,14 @@ export function App(): React.JSX.Element {
     return () => clearTimeout(id);
   }, [research?.startedAt, research?.tactic]);
 
-  const [noticeBusy, setNoticeBusy] = useState(false);
   const academyNotice = (profile?.academy?.notice?.length ?? 0) > 0;
   /** [확인] — 서버의 `notice`를 비운다. 못 닿으면 **화면에서만** 비운다(다음 접속에 한 번 더 뜬다) */
   const ackNotice = (): void => {
     if (!profile) return;
-    setNoticeBusy(true);
+    // 축하 화면(`Celebrate`)이 닫힌 뒤에 부른다 — 두 번 눌러도 화면 쪽이 한 번만 부른다
     void ackResearchOnServer().then((next) => {
       setProfileState(next ?? applyAckResearch(profile));
-    }, () => setProfileState(applyAckResearch(profile))).finally(() => setNoticeBusy(false));
+    }, () => setProfileState(applyAckResearch(profile)));
   };
 
   /** 부대를 저장하기 전 — 파수꾼이 끼어 있으면 묻는다 (병영 쪽의 편의, GDD §5.11) */
@@ -1062,7 +1061,7 @@ export function App(): React.JSX.Element {
 
       {/* 도적떼 알림이 떠 있으면 기다린다 — 둘이 겹치면 어느 [확인]이 무엇인지 모른다 */}
       {academyNotice && profile && !raidAlert && !NO_ALERT.includes(screen.name) && (
-        <AcademyNotice profile={profile} busy={noticeBusy} onOk={ackNotice} />
+        <AcademyNotice profile={profile} onOk={ackNotice} />
       )}
 
       {/* 수비군 방침에 새 책략(GDD §8.8 단계 6) — 다른 알림이 없을 때만, 방침 화면에서는 안 띄운다 */}

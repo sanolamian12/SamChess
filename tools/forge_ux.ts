@@ -54,8 +54,9 @@ const dismissDonePopups = async (): Promise<void> => {
   for (let i = 0; i < 12; i += 1) {
     const ack = await page.$('[data-action="ackDone"]');
     if (!ack) break;
+    if (i === 0) { await page.waitForTimeout(1_500); await page.screenshot({ path: `${SHOTS}/forge-done.png` }); }   // 축하 화면(`Celebrate`) 한 장
     await ack.click();
-    await page.waitForTimeout(150);
+    await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 닫히는 화면이 사라질 때까지 — 다음 것은 곧장 뜬다
   }
 };
 

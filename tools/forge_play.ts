@@ -300,6 +300,7 @@ try {
   if (afterDone!.gold !== paidAtOrder) fail(`완성했더니 금화가 ${paidAtOrder} → ${afterDone!.gold}로 바뀌었다`);
   ok(`완성 — 금화 ${afterDone!.gold} 그대로(돌아오지 않는다)`);
   await page.click('[data-action="ackDone"]');
+  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
   await page.waitForTimeout(500);
 
   // ── 지급 ───────────────────────────────────────────────────

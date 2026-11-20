@@ -216,6 +216,8 @@ try {
   const count = await page.getAttribute('[data-modal="academyNotice"] [data-field="apply"]', 'data-count');
   if (count !== '1') fail(`「일괄 적용」 인원이 1이 아니다 — ${count}`);
   ok(`축하 팝업 — ${await page.textContent('[data-modal="academyNotice"] [data-field="apply"]')}`);
+  await page.waitForTimeout(1_500);   // 축하 화면(`Celebrate`)의 섬광 · 엠블럼 쾅이 끝난 뒤
+  await shot('academy-notice');
   await page.click('[data-action="academyNoticeOk"]');
   await page.waitForSelector('[data-modal="academyNotice"]', { state: 'detached', timeout: 10_000 });
   const server2 = (await getProfile(uid))!;
