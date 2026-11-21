@@ -115,9 +115,32 @@ try {
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  await page.click('.city-gate rect');
+
+  /* 대장간 완성 부름(2026-11-22) — 완성됐는데 대장간에 안 온 병기가 있으면 메인에서 대장장이가 한 번 부른다.
+     새 계정이라 메인 첫 안내가 먼저 설 수 있다 — 그것을 ✔로 넘긴 뒤 부름이 선다(두 사람이 한꺼번에 서지 않는다) */
+  step('메인 — 대장장이가 「대장간으로 와 주세요」를 한 번 부르는가');
+  for (let i = 0; i < 20; i += 1) {
+    if (await page.$('.stw[data-say="forgeReady"][data-phase="in"]')) break;
+    const other = await page.$('.stw:not([data-say="forgeReady"])[data-phase="in"] [data-action="guideNext"]');
+    if (other) await other.click();
+    await page.waitForTimeout(500);
+  }
+  const call = await page.waitForSelector('.stw[data-say="forgeReady"][data-phase="in"]', { timeout: 5_000 });
+  const speaker = await call.$eval('[data-action="guideSkip"]', (el) => el.getAttribute('data-speaker'));
+  if (speaker !== 'blacksmith') throw new Error(`부름에 선 사람이 대장장이가 아니다: ${speaker}`);
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${SHOTS}/forge-call-main.png` });
+  ok('대장장이가 메인 오른쪽 아래에 섰다');
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.scr-main', { timeout: 20_000 });
+  await page.waitForTimeout(4_000);
+  if (await page.$('.stw[data-say="forgeReady"]')) throw new Error('새로고침 뒤 메인에서 또 불렀다 — 한 번만 불러야 한다');
+  ok('다시 메인에 와도 또 부르지 않는다');
+
+  // 배경이 천천히 흐르며 문도 함께 움직여 Playwright가 「멈춰 있지 않다」로 기다린다 — 몇 초 머문 뒤라 force로 누른다
+  await page.click('.city-gate rect', { force: true });
   await page.waitForSelector('[data-place="forge"]');
-  await page.click('[data-place="forge"]');
+  await page.click('[data-place="forge"]', { force: true });
   await page.waitForSelector('[data-action="assign"]');
   await dismissDonePopups();
 
@@ -413,7 +436,7 @@ try {
   step('궁궐 → 장수 관리에서 그 장수를 직접 열어 본다');
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  await page.click('[data-place="palace"]');
+  await page.click('[data-place="palace"]', { force: true });
   await page.waitForSelector('[data-action="officers"], .ofc-row', { timeout: 10_000 });
   if (await page.$('[data-action="officers"]')) await page.click('[data-action="officers"]');
   await page.waitForSelector('.ofc-row', { timeout: 10_000 });
@@ -509,9 +532,9 @@ try {
     await page.waitForTimeout(250);
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
-    await page.click('.city-gate rect');
+    await page.click('.city-gate rect', { force: true });
     await page.waitForSelector('[data-place="forge"]');
-    await page.click('[data-place="forge"]');
+    await page.click('[data-place="forge"]', { force: true });
     await page.waitForSelector('[data-action="assign"]');
     await dismissDonePopups();
     await page.click('[data-action="assign"]');
@@ -547,9 +570,9 @@ try {
   const loreOf = async (): Promise<string> => {
     await page.goto(BASE, { waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
-    await page.click('.city-gate rect');
+    await page.click('.city-gate rect', { force: true });
     await page.waitForSelector('[data-place="forge"]');
-    await page.click('[data-place="forge"]');
+    await page.click('[data-place="forge"]', { force: true });
     await page.waitForSelector('[data-action="craft"]');
     await dismissDonePopups();
     await page.click('[data-action="craft"]');

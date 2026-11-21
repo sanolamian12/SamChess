@@ -48,6 +48,7 @@ import {
   pickEquipLore, pickEquipName, pickEquipText, pickOfficerNameById,
 } from '../i18n/story.ts';
 import { Say } from './Steward.tsx';
+import { loadCelebrated, saveCelebrated, unseenForged } from './forgeSeen.ts';
 import { buildingBackdrop } from './backdrop.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { GlowLayer, ItemThumb } from './EquipThumb.tsx';
@@ -115,33 +116,6 @@ function LevelBadge({ level, className }: { level: number; className?: string })
       aria-label={`Lv${level}`}
     />
   );
-}
-
-/**
- * 완성 알림을 「봤다」는 표시 — 게임 판정이 아니라 이 브라우저에서 한 번
- * 봤는지만 기억하는 화면 편의값이라 `PlayerProfile`이 아니라 `localStorage`에
- * 둔다(계정 저장 형식에 끼워 넣으면 「환영 문구를 봤는가」 같은 것까지 서버
- * 왕복을 타게 된다). 못 읽거나 못 쓰면 조용히 매번 다시 보여줄 뿐이다 —
- * 판정에 영향이 없는 값이라 실패해도 게임이 안 죽는다.
- */
-const CELEBRATED_KEY = 'samchess.forge.celebrated';
-function loadCelebrated(): Set<string> {
-  try {
-    const raw = window.localStorage.getItem(CELEBRATED_KEY);
-    // v5까지는 병기 id를 적었다 — 키가 자루(`{id}#{n}`)가 되며(v6) 옛 기록은 `#1`로 읽는다.
-    // 안 그러면 이미 본 완성 알림이 되접기 뒤에 한 번씩 다시 뜬다
-    const ids = raw ? (JSON.parse(raw) as string[]) : [];
-    return new Set(ids.map((k) => (k.includes('#') ? k : `${k}#1`)));
-  } catch {
-    return new Set();
-  }
-}
-function saveCelebrated(ids: Set<string>): void {
-  try {
-    window.localStorage.setItem(CELEBRATED_KEY, JSON.stringify([...ids]));
-  } catch {
-    /* 못 쓰면 다음에도 다시 뜰 뿐 — 판정에 안 쓰는 값이다 */
-  }
 }
 
 /**
@@ -249,16 +223,8 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * `collectForgeOrder`)은 이미 `App.tsx`가 분마다 해 두므로, 여기서는
    * **미지급 상태로 남은 것 중 아직 안 본 것**을 찾기만 한다.
    */
-  const justDone = useMemo(() => {
-    // 키는 **자루**다(`{id}#{n}`, v6) — 알림은 자루마다 한 번씩, 그림·이름은 그 병기의 것
-    for (const [key, holder] of Object.entries(profile.forgeOwned)) {
-      if (holder === null && !celebrated.has(key)) {
-        const item = equipmentById.get(equipmentIdOfKey(key));
-        if (item) return { key, item };
-      }
-    }
-    return null;
-  }, [profile.forgeOwned, celebrated]);
+  // 키는 **자루**다(`{id}#{n}`, v6) — 알림은 자루마다 한 번씩, 그림·이름은 그 병기의 것
+  const justDone = useMemo(() => unseenForged(profile, celebrated)[0] ?? null, [profile.forgeOwned, celebrated]);
 
   const acknowledgeDone = (id: string): void => {
     const next = new Set(celebrated);

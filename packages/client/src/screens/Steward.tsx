@@ -116,7 +116,7 @@ function dodgeSay(frame: HTMLElement, bubble: HTMLElement | null, target: Elemen
   return f.height - head - h;
 }
 
-export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone, speaker: who, say, sayCode, leaving }: {
+export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone, speaker: who, say, sayCode, leaving, waitPopups }: {
   /** 어느 안내인가 — 화면에는 안 쓰고 `data-guide`로만 단다(눈 확인 도구가 건다) */
   id?: GuideId;
   tier: StewardTier;
@@ -137,6 +137,11 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone,
   sayCode?: string | undefined;
   /** 말할 까닭이 사라졌다 — 물러난다(아직 안 들어왔으면 그대로 끝난다) */
   leaving?: boolean;
+  /**
+   * 한 마디 안내인데도 팝업 · 다른 사람을 다 기다린다(`HOLD_SELECTOR`) — 팝업 안의 일을 말하는 것이 아니라 **스스로 찾아온 알림**
+   * (메인의 대장간 완성 부름, 2026-11-22)이라 도적떼 · 연구 완료 팝업 밑에 깔리면 아무도 못 읽는다
+   */
+  waitPopups?: boolean;
 }): React.JSX.Element | null {
   const [phase, setPhase] = useState<'wait' | 'in' | 'out'>('wait');
   const [idx, setIdx] = useState(0);
@@ -154,7 +159,7 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone,
     let timer = 0;
     const tryIn = (): void => {
       const extra = id ? GUIDE_HOLD[id] : undefined;
-      if (document.querySelector(say ? SAY_HOLD_SELECTOR : HOLD_SELECTOR) || (extra && document.querySelector(extra))) timer = window.setTimeout(tryIn, 300);
+      if (document.querySelector(say && !waitPopups ? SAY_HOLD_SELECTOR : HOLD_SELECTOR) || (extra && document.querySelector(extra))) timer = window.setTimeout(tryIn, 300);
       else {
         setPhase('in');
         // 미끄러져 들어오기 시작하는 그 순간 — 기다리는 동안(입장 하늘)에 부르면 아무도 없는 데서 말한다

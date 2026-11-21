@@ -999,6 +999,7 @@
   "forge.kind.weapon": "무기",
   "forge.kind.armor": "방어구",
   "forge.done.title": "제작 완료",
+  "forge.readyNotice": "제작이 완료되었습니다. 대장간으로 와 주세요.",
   "forge.done.hint": "병기구 지급 관리 메뉴에서 확인 가능합니다.",
   "forge.done.confirm": "확인",
   "forge.time.d": "{d}일 {h}시간",

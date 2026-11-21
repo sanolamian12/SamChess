@@ -779,6 +779,7 @@
   "forge.kind.weapon": "武器",
   "forge.kind.armor": "防具",
   "forge.done.title": "製作完了",
+  "forge.readyNotice": "製作が完了しました。鍛冶場へお越しください。",
   "forge.done.hint": "武具支給管理メニューで確認できます。",
   "forge.done.confirm": "確認",
   "forge.time.d": "{d}日{h}時間",

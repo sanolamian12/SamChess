@@ -83,6 +83,9 @@ import { useLang } from '../i18n/useLang.ts';
 import { useEffect, useState } from 'react';
 import { GameIcon } from './GameIcon.tsx';
 import { CityRenameButton } from './CityRename.tsx';
+import { Steward } from './Steward.tsx';
+import { forgeCallKeys, markForgeCalled } from './forgeSeen.ts';
+import { stewardTier } from '@samchess/meta';
 
 /** 그림(`main-*.jpg`)의 실제 픽셀 크기. `preserveAspectRatio`가 `cover`와 같은
     규칙으로 자르려면 SVG `viewBox`가 이 크기와 같아야 한다. */
@@ -547,6 +550,40 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
         </div>
       )}
       {guide.node}
+      {/* 대장간 완성 부름 — 화면 안내가 다 끝난 뒤에(두 사람이 한꺼번에 서지 않게) */}
+      {!guide.node && <ForgeCall profile={profile} />}
     </ScreenChrome>
   );
 }
+
+/**
+ * **대장간 완성 부름** (2026-11-22 기획자) — 병기 제작이 끝났는데 아직 대장간에서 축하를 못 봤으면, 메인(성 안이든 산 너머든)에서
+ * 대장장이가 오른쪽 아래로 나와 「제작이 완료되었습니다. 대장간으로 와 주세요.」라고 **자루마다 한 번** 부른다.
+ * 메인에 있는 동안 끝나도 부른다 — 정산은 `App.tsx`의 분 단위 tick이 하고, 그때 `forgeOwned`가 바뀌어 여기 잡힌다.
+ * 「불렀다」는 말풍선이 펴지는 순간 적는다(`forgeSeen.ts` — 화면 편의값이라 `localStorage`). 대장간에서 축하를 보면 그 자루는 아예 안 부른다.
+ * 도적떼 · 연구 완료 팝업이 떠 있으면 걷힐 때까지 기다린다(`waitPopups`).
+ */
+function ForgeCall({ profile }: { profile: PlayerProfile }): React.JSX.Element | null {
+  const [, bump] = useState(0);
+  const [calling, setCalling] = useState<string[] | null>(null);
+  const pending = forgeCallKeys(profile);
+  const sig = pending.join('|');
+  useEffect(() => {
+    if (!calling && pending.length > 0) setCalling(pending);
+  }, [sig, calling]);
+  if (!calling) return null;
+  return (
+    <Steward
+      key={calling.join('|')}
+      tier={stewardTier(profile.cityLevel)}
+      speaker="blacksmith"
+      say="forgeReady"
+      waitPopups
+      lines={[{ text: t('forge.readyNotice') }]}
+      delayMs={700}
+      onRead={() => markForgeCalled(calling)}
+      onDone={() => { setCalling(null); bump((n) => n + 1); }}
+    />
+  );
+}
+

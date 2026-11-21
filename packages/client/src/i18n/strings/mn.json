@@ -779,6 +779,7 @@
   "forge.kind.weapon": "Зэвсэг",
   "forge.kind.armor": "Хуяг",
   "forge.done.title": "Бүтээлээ!",
+  "forge.readyNotice": "Бүтээл бэлэн боллоо. Дархны газар ирнэ үү.",
   "forge.done.hint": "Зэвсэг олголтыг удирдах цэснээс шалгаж болно.",
   "forge.done.confirm": "Тийм",
   "forge.time.d": "{d} өдөр {h} цаг",

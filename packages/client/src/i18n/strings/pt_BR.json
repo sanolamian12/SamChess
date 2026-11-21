@@ -779,6 +779,7 @@
   "forge.kind.weapon": "Arma",
   "forge.kind.armor": "Armadura",
   "forge.done.title": "Forjado!",
+  "forge.readyNotice": "Sua encomenda está pronta. Venha à forja, por favor.",
   "forge.done.hint": "Você pode conferir em Gerenciar atribuição de armas.",
   "forge.done.confirm": "OK",
   "forge.time.d": "{d}d {h}h",

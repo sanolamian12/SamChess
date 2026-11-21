@@ -779,6 +779,7 @@
   "forge.kind.weapon": "武器",
   "forge.kind.armor": "防具",
   "forge.done.title": "製作完成",
+  "forge.readyNotice": "製作已完成，請到鐵匠鋪來。",
   "forge.done.hint": "可在兵器分配管理選單中查看。",
   "forge.done.confirm": "確認",
   "forge.time.d": "{d}天{h}小時",
