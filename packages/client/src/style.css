@@ -8164,20 +8164,28 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   position: absolute; left: 8.44%; top: -40.7%; width: 116%; height: auto; max-width: none;
   transform-origin: 96.6% 46.7%; animation: cin-hammer 5s linear both;
 }
-/* 치켜들기는 천천히(ease-in-out), 내리치기는 빠르게(ease-in) — 맞으면 살짝 튕긴다 */
+/* 들기는 천천히(1.2초, 끝에서 느려진다), 내리치기는 빠르게(0.13초) — 맞으면 살짝 튕긴다 (2026-11-22 기획자).
+   들 때는 손잡이 축째 위로 떠오르고(`translate` — 팔을 드는 몸짓) 내리치며 제자리로 돌아온다 — 맞는 순간(30 · 60 · 90%)은 언제나 (0, 0) · −20°라
+   칼날에 닿는 자리가 그대로다. 높이는 망치 그림 높이의 비율이다 */
 @keyframes cin-hammer {
-  0% { rotate: 15deg; opacity: 0; animation-timing-function: ease-out; }
-  10% { rotate: 15deg; opacity: 1; animation-timing-function: ease-in-out; }
-  22% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
-  30% { rotate: -20deg; animation-timing-function: ease-out; }
-  33% { rotate: -14deg; animation-timing-function: ease-in-out; }
-  52% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
-  60% { rotate: -20deg; animation-timing-function: ease-out; }
-  63% { rotate: -14deg; animation-timing-function: ease-in-out; }
-  82% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
-  90% { rotate: -20deg; animation-timing-function: ease-out; }
-  93% { rotate: -15deg; }
-  100% { rotate: -16deg; opacity: 1; }
+  0% { rotate: 12deg; translate: 0 0; opacity: 0; animation-timing-function: ease-out; }
+  6% { rotate: 6deg; translate: 0 0; opacity: 1; animation-timing-function: cubic-bezier(.3, .1, .3, 1); }
+  27% { rotate: 21deg; translate: 0 -13%; animation-timing-function: ease-in-out; }
+  27.6% { rotate: 22deg; translate: 0 -14%; animation-timing-function: cubic-bezier(.7, 0, 1, .6); }
+  30% { rotate: -20deg; translate: 0 0; animation-timing-function: ease-out; }
+  31.4% { rotate: -13deg; translate: 0 -4%; animation-timing-function: ease-in; }
+  33% { rotate: -16deg; translate: 0 0; animation-timing-function: cubic-bezier(.3, .1, .3, 1); }
+  57% { rotate: 21deg; translate: 0 -13%; animation-timing-function: ease-in-out; }
+  57.6% { rotate: 22deg; translate: 0 -14%; animation-timing-function: cubic-bezier(.7, 0, 1, .6); }
+  60% { rotate: -20deg; translate: 0 0; animation-timing-function: ease-out; }
+  61.4% { rotate: -13deg; translate: 0 -4%; animation-timing-function: ease-in; }
+  63% { rotate: -16deg; translate: 0 0; animation-timing-function: cubic-bezier(.3, .1, .3, 1); }
+  87% { rotate: 21deg; translate: 0 -13%; animation-timing-function: ease-in-out; }
+  87.6% { rotate: 22deg; translate: 0 -14%; animation-timing-function: cubic-bezier(.7, 0, 1, .6); }
+  90% { rotate: -20deg; translate: 0 0; animation-timing-function: ease-out; }
+  91.4% { rotate: -13deg; translate: 0 -4%; animation-timing-function: ease-in; }
+  93% { rotate: -16deg; translate: 0 0; }
+  100% { rotate: -16deg; translate: 0 0; opacity: 1; }
 }
 /* 빛은 검정 바탕 그림을 「더하기」로 겹친다 — 오린 것이 없다 */
 .cin-hit { position: absolute; inset: 0; pointer-events: none; }
