@@ -309,9 +309,16 @@ FRINGE_PURE_REACH = 6
 
 
 # 테두리가 두꺼운 원본 — 투명 곁 · 몸까지 거리를 이만큼 넓혀 고치고, 몸 곁(`reach`)의 옅은 순 마젠타 안개는 지운다
-# 여상(2026-11-20, 기획자): 어두운 윤곽 밖에 마젠타 줄이 4~6px 두께로 남아 몸 둘레가 분홍으로 떴다
-FRINGE_WIDE = {"여상": 7}
+# 여상(2026-11-20) · 왕보~왕충(11-21, 기획자): 어두운 윤곽 밖에 마젠타 줄이 4~6px 두께로 남아 몸 둘레가 분홍으로 떴다.
+# 왕평 · 요화 · 우금~유현은 받기 전에 훑어 넣었다 — 참고 그림 몸 가장자리의 마젠타 비율이 2% 넘는 24명(나머지는 1% 아래)
+FRINGE_WIDE = {n: 7 for n in (
+    "여상", "왕보", "왕위", "왕찬", "왕철", "왕충", "왕평", "우금", "우번", "우칙", "원소", "원술", "원윤", "위속", "위연",
+    "유괴", "유기", "유대", "유도", "유벽", "유봉", "유비", "유선", "유순", "유엽", "유장", "유종", "유표", "유현", "요화",
+)}
 FRINGE_HAZE_A = 110   # 〃 이보다 옅은 순 마젠타(`FRINGE_PURE`)는 바탕이 번진 안개다
+FRINGE_FEET = 0.85    # 〃 그림 세로의 이 아래(발치)에서는 투명 곁이 아니어도 고친다 —
+FRINGE_FEET_TINT = 100  #   마젠타 기운(min(R, B) − G)이 이만큼 짙은 것만(어두운 보라 그늘은 남긴다)
+FRINGE_POCKET_TINT = 130  # 〃 어디서든 이만큼 짙은 마젠타는 투명 곁이 아니어도 고친다(몸 안에 갇힌 바탕)
 
 
 def defringe_wide(rgb: np.ndarray, alpha: np.ndarray, reach: int) -> tuple[np.ndarray, np.ndarray]:
@@ -325,8 +332,12 @@ def defringe_wide(rgb: np.ndarray, alpha: np.ndarray, reach: int) -> tuple[np.nd
         return rgb, alpha
     d, (iy, ix) = ndimage.distance_transform_edt(~body, return_indices=True)
     near_clear = ndimage.binary_dilation(~visible, iterations=reach)
-    haze = mag & (tint >= FRINGE_PURE) & (alpha < FRINGE_HAZE_A) & (d <= reach * 2)
-    fix = mag & near_clear & (d <= reach) & ~haze
+    haze = mag & (tint >= FRINGE_PURE) & (alpha < FRINGE_HAZE_A) & (d <= reach * 4)
+    # 발치의 신발 사이 — 바탕이 불투명하게 갇혀 투명 곁이 아니다(왕위). 책략 칸의 분홍 글자가 내려오지 않는 맨 아래 띠에서만
+    feet = np.zeros_like(mag)
+    feet[int(alpha.shape[0] * FRINGE_FEET):] = True
+    # 몸 안에 갇힌 바탕 주머니(왕찬 — 손과 죽간 사이) — 순 마젠타에 가까울 만큼 짙은 것만. 꽃잎 · 글자 효과는 이보다 옅은 분홍이다
+    fix = mag & (d <= reach) & ~haze & (near_clear | (feet & (tint >= FRINGE_FEET_TINT)) | (tint >= FRINGE_POCKET_TINT))
     out = rgb.copy()
     out[fix] = rgb[iy[fix], ix[fix]]
     return out, np.where(haze, 0.0, alpha)
