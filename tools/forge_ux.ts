@@ -52,6 +52,8 @@ page.on('dialog', (d) => { dialogs.push(d.message()); void d.accept(); });
    [지급 관리] 클릭을 가로채 30초를 기다리다 죽는다(실제로 그랬다). */
 const dismissDonePopups = async (): Promise<void> => {
   for (let i = 0; i < 12; i += 1) {
+    // 모음(도입부 5초) 동안은 누름 칸이 없다 — 무대가 열릴 때까지 기다린다(안 기다리면 없는 것으로 보고 지나친다)
+    if (await page.$('.cel-back[data-phase="charge"]')) await page.waitForSelector('.cel-back[data-phase="show"]', { timeout: 10_000 });
     const ack = await page.$('[data-action="ackDone"]');
     if (!ack) break;
     if (i === 0) { await page.waitForTimeout(1_500); await page.screenshot({ path: `${SHOTS}/forge-done.png` }); }   // 축하 화면(`Celebrate`) 한 장

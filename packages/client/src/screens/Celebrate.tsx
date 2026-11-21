@@ -13,6 +13,10 @@
  * | 글 | 제목(`title`) · 큰 글씨(`big`) · 아래 줄(`children`), 끝에 「화면을 터치해주세요.」가 숨 쉬듯 |
  * | 닫힘 | **화면 아무 데나 누르거나 아무 키나** — 무대가 커지며 번쩍 사라지고(`data-leaving`, .36초) 그 뒤 `onClose`. **배경 음악은 이 화면이 다 사라진 뒤에** 다시 돈다 |
  *
+ * **도입부(`intro`)는 갈래마다 바꿀 수 있다** (2026-11-21 기획자) — 기본은 위의 세 빛 나선(`swirl`), 대장간 제작 완료는
+ * 모루 위 망치질 세 번(`forge` — 1.5 · 3.0 · 4.5초에 「깡」, 앞의 둘은 맞는 자리에서 화면 절반까지 번쩍, 셋째는 끝까지 커져 하얘진다).
+ * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
+ *
  * 모으는 동안은 눌러도 · 키를 눌러도 안 닫힌다(소리와 맞춘 연출이다). **`data-modal`은 무대가 열린 뒤에야 붙는다** — 검사가
  * 「축하 화면이 떴다」를 기다리면 모음이 끝날 때까지 저절로 기다린다(모으는 중은 `.cel-back[data-phase="charge"]`).
  *
@@ -41,6 +45,15 @@ const LEAVE_MS = 360;
  * CSS의 `cel-swirl` · `cel-flare` · `cel-whiteout`(5초)과 같은 값이다 — 바꾸면 셋을 함께.
  */
 const CHARGE_MS = 5000;
+/** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
+export type CelebrateIntro = 'swirl' | 'forge';
+/**
+ * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
+ * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
+ */
+const FORGE_STRIKES_MS = [1500, 3000, 4500] as const;
+/** 「깡」 — 망치가 칼날을 맞는 소리(`assets/Audio/new/망치질.mp3`) */
+const FORGE_CLANG: SfxId = 'forge_clang';
 /** 흰 · 보라 · 금 — 삼각형 꼭짓점 셋(120°씩) */
 const FLARES = ['white', 'purple', 'gold'] as const;
 
@@ -54,7 +67,7 @@ const FLAKES = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel', tone = 'plain', okAction = 'doneOk',
-  sound = 'celebrate', onClose, className = '', children }: {
+  sound = 'celebrate', intro = 'swirl', onClose, className = '', children }: {
   /** `data-modal` — 검사가 이 화면을 찾는 이름 */
   modal: string;
   /** 큰 제목(「강화 완료」) — 언제나 한 줄, 안 들면 그 글만 줄인다(`FitLine`) */
@@ -72,6 +85,8 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   okAction?: string;
   /** 열릴 때 소리 — 기본은 전용 축하음(`celebrate`, 2026-11-20 기획자) */
   sound?: SfxId | null;
+  /** 모으는 5초의 도입부 — 기본은 세 빛 나선 */
+  intro?: CelebrateIntro;
   onClose: () => void;
   /** 갈래 클래스(글자 꼴 · 크기) — 예: 도시 증축의 `cty-done` */
   className?: string;
@@ -101,6 +116,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
 
   useEffect(() => {
     if (sound) playSfx(sound);
+    const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms)) : [];
     const shown = window.setTimeout(() => { chargingRef.current = false; setCharging(false); }, CHARGE_MS);
     // 아무 키나 — 무대가 열리고 한 박자 뒤부터 듣는다(열리는 순간 눌려 있던 키는 넘긴다)
     let on = false;
@@ -111,8 +127,33 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
       leave();
     };
     window.addEventListener('keydown', onKey);
-    return () => { window.clearTimeout(shown); window.clearTimeout(arm); window.removeEventListener('keydown', onKey); };
-  }, [sound, leave]);
+    return () => {
+      window.clearTimeout(shown); window.clearTimeout(arm); clangs.forEach((c) => window.clearTimeout(c));
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [sound, intro, leave]);
+
+  if (charging && intro === 'forge') {
+    return (
+      <div className="modal-back cel-back" data-phase="charge" data-intro="forge" aria-hidden>
+        <div className="cel-charge cin-forge">
+          <div className="cin-stage">
+            <div className="cin-rig">
+              <img className="cin-anvil" src="ui/intro-forge-anvil.png" alt="" />
+              <img className="cin-hammer" src="ui/intro-forge-hammer.png" alt="" />
+            </div>
+            {FORGE_STRIKES_MS.map((_, i) => (
+              <i key={i} className="cin-hit" data-n={i + 1}>
+                <img className="cin-sparks" src="ui/intro-forge-sparks.jpg" alt="" />
+                <img className="cin-flash" src={`ui/intro-forge-flash-${i + 1}.jpg`} alt="" />
+              </i>
+            ))}
+          </div>
+          <span className="cin-whiteout" />
+        </div>
+      </div>
+    );
+  }
 
   if (charging) {
     return (

@@ -713,7 +713,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
         // 공용 축하 화면(`Celebrate`, 2026-11-20 기획자 「제작 완료」 예시) — 모루(대장간 [병기구 제작] 그림) 위에 만든 병기가 비스듬히
         // 내려찍힌다. 빛줄기는 그 병기의 레벨 색. 큰 글씨는 「Lv3 청룡언월도」, 아래는 어디서 보는지
         // `key` — 미지급이 여럿이면 닫자마자 다음 것이 이어 뜬다. 열쇠가 없으면 React가 「닫히는 중」인 화면을 재사용해 다음 것이 안 보였다
-        <Celebrate key={justDone.key} modal="forgeDone" className="frg-done" title={t('forge.done.title')}
+        <Celebrate key={justDone.key} modal="forgeDone" intro="forge" className="frg-done" title={t('forge.done.title')}
           art={<img className="cel-art-img" src="ui/cel-forge.png" alt="" />}
           badge={<img className="frg-cel-weapon" src={`blacksmith/${justDone.item.id}.png`} alt="" />}
           tone={equipBlink(justDone.item.unlockLevel)}

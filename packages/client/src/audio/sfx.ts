@@ -43,7 +43,9 @@ export type SfxId =
   // 축하 화면이 닫히는 소리 (2026-11-20, `Celebrate.tsx`) — 받아 두기만 했던 소리
   | 'woong'
   // 축하 화면이 열리는 소리 (2026-11-20 기획자 — 원본 `assets/Audio/new/축하.mp3`를 `effects/celebrate.mp3`로 옮겼다)
-  | 'celebrate';
+  | 'celebrate'
+  // 대장간 축하 도입부의 「깡」(2026-11-21 기획자 — 원본 `assets/Audio/new/망치질.mp3`를 `effects/forge_clang.mp3`로 옮겼다)
+  | 'forge_clang';
 
 const VOLUME = 0.8;
 

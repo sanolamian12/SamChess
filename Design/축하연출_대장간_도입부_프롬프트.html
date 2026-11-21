@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대장간 축하 도입부 프롬프트</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 .4rem; }
+  .lead { color: #5b4a36; margin: 0 0 1rem; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .warn { border-left: 4px solid var(--accent); }
+  .tip { border-left: 4px solid var(--jade); }
+  ol, ul { margin: .3rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  code { background: #efe4cc; padding: 0 .3rem; border-radius: .2rem; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .cards { display: grid; gap: .9rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+  .card header { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .5rem .8rem; background: #efe4cc; flex-wrap: wrap; }
+  .card header b { font-size: 1rem; }
+  .card header span { color: #6d5a45; font-size: .85rem; }
+  .card .why { padding: .5rem .8rem 0; font-size: .9rem; color: #4a3a28; }
+  .card pre { margin: 0; padding: .8rem; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "D2Coding", monospace; font-size: .82rem; line-height: 1.5; }
+  .copy { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 0; border-radius: .3rem; background: var(--jade); color: #fff; cursor: pointer; white-space: nowrap; }
+  .copy.done { background: #4a7a3a; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .tag { display: inline-block; font-size: .78rem; padding: 0 .45rem; border-radius: 1rem; background: var(--gold); color: #fff; margin-left: .3rem; }
+  .tag.opt { background: #8f8068; }
+  .ref { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .ref img { width: 160px; height: 160px; background: #fff; border: 1px solid var(--line); border-radius: .4rem; }
+
+  /* 타임라인 */
+  .tl { position: relative; height: 3.4rem; margin: 1.2rem 0 2.2rem; background: linear-gradient(90deg, #1b1410, #3a2614 60%, #fff 100%); border-radius: .3rem; }
+  .tl .mk { position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; background: var(--gold); }
+  .tl .mk span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: .8rem; white-space: nowrap; color: var(--ink); padding-top: .2rem; }
+  .tl .mk.big { width: 4px; background: #fff; box-shadow: 0 0 6px #ffcf5c; }
+
+  /* 미리 듣기 */
+  .stage { position: relative; width: 100%; max-width: 420px; aspect-ratio: 9 / 14; margin: 0 auto; background: #000; border-radius: .5rem; overflow: hidden; }
+  .stage .bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 60%, #3a1d0c 0%, #120a06 55%, #000 100%); opacity: 0; transition: opacity .6s; }
+  .stage .anv { position: absolute; left: 50%; top: 55%; width: 92%; transform: translate(-50%, -50%) scale(.85); opacity: 0; transition: transform .6s ease-out, opacity .6s; }
+  .stage.run .bg, .stage.run .anv { opacity: 1; }
+  .stage.run .anv { transform: translate(-50%, -50%) scale(1); }
+  .stage .anv.hit { animation: shake .22s; }
+  @keyframes shake { 25% { margin-left: 6px; } 50% { margin-left: -5px; } 75% { margin-left: 3px; } }
+  .stage .fl { position: absolute; left: 63%; top: 42%; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%) scale(0);
+    background: radial-gradient(circle, #fff 0%, #fff8d8 18%, #ffc24a 40%, #ff7a1a80 60%, transparent 72%); mix-blend-mode: screen; pointer-events: none; }
+  .stage .fl.half { animation: flHalf .45s ease-out forwards; }
+  .stage .fl.full { animation: flFull .5s ease-in forwards; }
+  @keyframes flHalf { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 25% { transform: translate(-50%, -50%) scale(55); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(60); opacity: 0; } }
+  @keyframes flFull { 0% { transform: translate(-50%, -50%) scale(0); } 100% { transform: translate(-50%, -50%) scale(260); } }
+  .stage .white { position: absolute; inset: 0; background: #fff; opacity: 0; }
+  .stage .white.on { opacity: 1; transition: opacity .15s .35s; }
+  .stage .after { position: absolute; inset: 0; display: grid; place-items: center; color: #6a4a12; font-size: 1.1rem; opacity: 0; text-align: center; padding: 1rem; }
+  .stage .after.on { opacity: 1; transition: opacity .7s; background: radial-gradient(circle, #fff 0%, #ffe9b0 100%); }
+  .stage .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #c9b38b; z-index: 3; }
+  .play { display: block; margin: .8rem auto 0; font: inherit; padding: .5rem 1.4rem; border: 0; border-radius: 2rem; background: var(--accent); color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>대장간 제작 완료 — 도입부 「깡 · 깡 · 깡」 이미지 프롬프트</h1>
+  <p class="lead">지금의 「세 빛이 나선으로 돌며 하얘지는」 5초 도입부를, 대장간 제작 완료에서만 「모루 위 망치질 세 번」으로 바꾸기 위한 그림 주문서입니다.
+    세 번째 「깡」에서 화면이 하얘지는 순간(5.0초)이 축하음의 「쾅」과 맞고, 그 뒤는 지금 축하 화면 그대로입니다.</p>
+
+  <h2>1. 어떤 방식으로 만드나 — 추천: 낱장 그림을 받아 제가 움직인다</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>방식</th><th>받는 것</th><th>좋은 점</th><th>걸리는 점</th></tr>
+    <tr><td><b>A. 낱장 층 (추천)</b></td><td>모루+검 1장 · 망치 1장 · 섬광 2~3장 (+ 배경 1장)</td>
+      <td>망치 각도 · 타격 시각을 제가 ms 단위로 맞춥니다 — 소리와 정확히 맞고, 박자를 바꾸고 싶을 때 그림을 다시 뽑지 않아도 됩니다. 섬광은 검정 바탕이라 오려 낼 필요도 없습니다.</td>
+      <td>망치 움직임이 「회전」 한 가지라 손맛은 영상보다 단순합니다(흔들림 · 불꽃 · 검 달아오름으로 채웁니다).</td></tr>
+    <tr><td>B. 열쇠 장면 3장</td><td>같은 장면의 「치켜듦 · 내리치는 중 · 맞는 순간」</td>
+      <td>망치에 그림자 · 흔들림까지 그려져 손맛이 있습니다.</td>
+      <td>생성 AI가 세 장의 모루 · 검 모양을 똑같이 못 지켜 장면이 바뀔 때 「떨림」이 보이기 쉽습니다.</td></tr>
+    <tr><td>C. 영상 (이미지→영상)</td><td>5초 클립 하나</td>
+      <td>가장 자연스럽습니다.</td>
+      <td>타격 박자를 AI가 정합니다 — 소리에 맞추려면 프레임을 잘라 늘이고 줄여야 하고, 세 번을 정확히 치는 영상이 잘 안 나옵니다. 용량도 큽니다.</td></tr>
+  </table>
+  </div>
+  <div class="box tip">A로 시작하기를 권합니다. 받은 그림으로 먼저 움직여 보여 드리고, 손맛이 모자라면 그때 B의 「맞는 순간」 한 장만 더해 섞는 길이 있습니다. B · C 프롬프트도 아래 5 · 6절에 함께 적어 두었습니다.</div>
+
+  <h2>2. 박자 — 소리에 맞춘 시간표</h2>
+  <p>축하음(<code>celebrate.mp3</code>, 7.4초)은 4.5초부터 차오르고 5.0초 즈음 「쾅」입니다. 타격은 1.5초 간격으로 세 번, 세 번째가 차오름의 시작에 떨어지고 5.0초에 화면이 하얗게 꽉 찹니다.</p>
+  <div class="tl">
+    <div class="mk" style="left:0%"><span>0.0 어둠 · 모루로 다가감</span></div>
+    <div class="mk" style="left:30%"><span>1.5 깡①</span></div>
+    <div class="mk" style="left:60%"><span>3.0 깡②</span></div>
+    <div class="mk" style="left:90%"><span>4.5 깡③</span></div>
+    <div class="mk big" style="left:100%"><span>5.0 하얗게 · 쾅</span></div>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>시각</th><th>화면</th></tr>
+    <tr><td>0.0 – 0.6</td><td>배경이 어두워지며 모루 · 검 · 망치가 크게 다가와 화면 가운데에 섭니다(나머지는 검게).</td></tr>
+    <tr><td>0.6 – 1.5</td><td>망치가 천천히 치켜들렸다가 빠르게 내리칩니다.</td></tr>
+    <tr><td>1.5 깡①</td><td>맞는 자리에서 섬광이 <b>화면 절반</b>까지 번쩍 · 불꽃이 튐 · 화면이 짧게 흔들림 · 검이 한 단계 더 밝게 달아오름.</td></tr>
+    <tr><td>3.0 깡②</td><td>①과 같되 다른 섬광 그림(같아 보이지 않게).</td></tr>
+    <tr><td>4.5 깡③</td><td>섬광이 멈추지 않고 커져 <b>5.0초에 화면 전체가 흰색</b>.</td></tr>
+    <tr><td>5.0 –</td><td>지금 축하 화면 그대로(흰빛이 걷히며 무대 · 「제작 완료!」 · 병기 배지 쾅).</td></tr>
+  </table>
+  </div>
+  <p>소리: 축하음은 그대로, 여기에 「깡」을 1.5 · 3.0 · 4.5초에 얹습니다. 배경 음악 멈춤 · 재개도 지금과 같습니다.
+    「깡」 소리를 구해 주시기 전까지는 이미 있는 <code>assets/Audio/effects/hammar.mp3</code>를 임시로 씁니다.</p>
+
+  <h3>타이밍 미리 듣기 (지금 있는 그림 · 소리로 박자만 흉내)</h3>
+  <p class="file">모루 그림 · 소리는 이 저장소의 assets에서 읽습니다. 망치가 움직이지 않는 것은 그림이 한 장이라서입니다 — 박자와 섬광 크기만 보세요.</p>
+  <div class="stage" id="stage">
+    <div class="bg"></div>
+    <img class="anv" id="anv" src="../assets/icons/ui/facility/ic_forge_craft.png" alt="">
+    <div class="fl" id="fl"></div>
+    <div class="white" id="white"></div>
+    <div class="after" id="after">(여기서부터 지금의 축하 화면)<br>「제작 완료!」</div>
+    <div class="clock" id="clock">0.0s</div>
+  </div>
+  <button class="play" id="play">▶ 재생</button>
+
+  <h2>3. 참조 그림 — 모든 프롬프트에 함께 넣는다</h2>
+  <div class="ref">
+    <img src="../assets/icons/ui/facility/ic_forge_craft.png" alt="">
+    <div>
+      <p class="file">assets/icons/ui/facility/ic_forge_craft.png</p>
+      <p>대장간 [병기구 제작] 그림이자 지금 축하 화면의 모루입니다. <b>이 그림을 첨부(이미지 참조)하고</b> 프롬프트를 넣으면 三國 각인 모루 · 붉게 달궈진 검 · 쇠망치가 같은 화풍으로 나옵니다.
+      Gemini라면 그림을 올리고 프롬프트를 붙여 넣으면 됩니다.</p>
+    </div>
+  </div>
+  <div class="box warn">
+    <b>바탕색 두 가지를 지켜 주세요.</b>
+    <ul>
+      <li><b>모루 · 망치</b>는 <b>순수 초록(#00FF00)</b> 바탕 — 제가 프로그램으로 오려 냅니다. 꼬마 그림처럼 자홍색을 쓰지 않는 이유는 달궈진 검의 붉은 빛과 자홍이 가까워 가장자리가 함께 깎이기 때문입니다.</li>
+      <li><b>섬광 · 불꽃</b>은 <b>순수 검정(#000000)</b> 바탕 — 오리지 않고 「빛 더하기」로 겹칩니다. 검정이 아닌 회색 기가 돌면 화면 전체가 뿌옇게 됩니다.</li>
+      <li>바닥 그림자 · 그라데이션 · 글자 · 사람 손이 들어간 것은 다시 뽑아 주세요.</li>
+    </ul>
+  </div>
+
+  <h2>4. A안 프롬프트 (추천)</h2>
+  <p>받은 그림은 <code>assets/icons/ui/celebrate_intro/forge/</code>에 아래 파일 이름으로 넣어 주세요. 여러 장 뽑았으면 마음에 드는 것만 넣으면 됩니다.</p>
+  <div class="cards">
+
+    <div class="card">
+      <header><b>A1. 모루 + 달궈진 검 (망치 없음)<span class="tag">필수</span></b><span class="file">forge_anvil.png</span><button class="copy">복사</button></header>
+      <p class="why">망치를 뺀 모루입니다. 망치는 따로 받아 제가 움직입니다. 검의 칼끝 쪽이 망치가 맞는 자리가 됩니다.</p>
+      <pre>Use the attached image as the exact reference for art style, materials, colors and lighting (painterly semi-realistic game art, ancient Chinese Three Kingdoms era).
+Redraw the SAME blacksmith's anvil with the same cloud-pattern engraving and the "三國" seal on its side, and the SAME red-hot sword blade lying flat across the top of the anvil, tip pointing to the left toward the anvil horn, hilt to the right.
+REMOVE THE HAMMER COMPLETELY — nothing rests on the anvil except the sword.
+Three-quarter view from slightly above, the whole anvil fully visible and centered, filling about 80% of the image width, with clear margin on every side.
+The blade glows bright orange-yellow along its front half and cools to dark red and grey toward the hilt. A faint heat shimmer only — no flames, no smoke, no flying sparks.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no floor, no cast shadow, no green tint or reflections on the metal.
+No text other than the anvil engraving, no watermark, no hands, no people.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>A2. 망치 단독<span class="tag">필수</span></b><span class="file">forge_hammer.png</span><button class="copy">복사</button></header>
+      <p class="why">완전히 가로로 누운 옆모습이 중요합니다 — 손잡이 끝을 축으로 돌려 치켜들고 내리칩니다. 비스듬하면 회전할 때 머리가 엉뚱한 곳을 칩니다.</p>
+      <pre>Use the attached image as the exact reference for art style, materials and lighting (painterly semi-realistic game art, ancient Chinese Three Kingdoms era).
+Draw ONLY the blacksmith's forging hammer from the reference, same design: a heavy dark iron rectangular head with worn chipped edges, and a long wooden handle.
+Pure side view, perfectly horizontal and straight: the hammer head at the LEFT end with its flat striking face pointing straight DOWN, the handle extending straight to the RIGHT.
+The whole hammer fully visible, filling about 85% of the image width, with clear margin on every side.
+Warm orange rim light on the underside of the head, as if lit from below by glowing hot steel; otherwise even lighting.
+No hand, no arm, no person, no anvil, no sword.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no cast shadow, no green tint on the metal or wood.
+No text, no watermark.
+Wide 2:1, 2048 x 1024.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>A3. 타격 섬광 (2~3장, 서로 다르게)<span class="tag">필수</span></b><span class="file">forge_flash_1.png · forge_flash_2.png · forge_flash_3.png</span><button class="copy">복사</button></header>
+      <p class="why">깡①②는 이 그림이 화면 절반까지 번쩍했다 사라지고, 깡③은 같은 그림이 끝까지 커져 화면을 덮습니다. 같은 프롬프트로 2~3번 뽑아 모양이 다른 것을 골라 주세요. 참조 그림은 안 넣어도 됩니다.</p>
+      <pre>A single intense impact flash from a forging hammer striking red-hot steel, seen head-on.
+A blinding pure-white core, surrounded by a ring of golden-yellow and orange light, with short sharp radial light rays, and a burst of many tiny bright sparks and glowing embers flying outward in all directions — more sparks spraying upward and to both sides, a few falling.
+Pure black background (#000000). Nothing else in the image: no hammer, no anvil, no sword, no smoke, no ground.
+The flash is centered, and all the glow fades smoothly to pure black well before the edges of the image.
+Painterly semi-realistic game effect art. No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>A4. 튀는 불꽃 줄기<span class="tag opt">있으면 좋음</span></b><span class="file">forge_sparks.png</span><button class="copy">복사</button></header>
+      <p class="why">섬광이 꺼진 뒤 잠깐 남아 떨어지는 불티입니다. 없으면 CSS 점으로 그립니다.</p>
+      <pre>A spray of glowing forge sparks and hot embers flying outward and upward from a single point at the bottom center of the image, with motion-blurred bright streaks, golden-orange and white-hot, some sparks arcing and falling back down.
+Pure black background (#000000). Nothing else: no flash core, no tools, no smoke.
+The sparks fade out before reaching the edges.
+Painterly semi-realistic game effect art. No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>A5. 어두운 대장간 배경<span class="tag opt">있으면 좋음</span></b><span class="file">forge_bg.jpg</span><button class="copy">복사</button></header>
+      <p class="why">「배경을 어둡게」의 그 배경입니다. 거의 검정이라 없으면 어둠 그라데이션으로 대신합니다. 세로 화면에 깔리므로 세로로 받습니다.</p>
+      <pre>The dark interior of an ancient Chinese blacksmith's forge at night, Three Kingdoms era, painterly semi-realistic game art.
+Almost completely dark: about 85% of the image is near-black.
+A dim deep-orange glow from a furnace far away in the blurred background, slightly left of center; a few floating embers; faint silhouettes of hanging tools and wooden beams barely visible.
+Very shallow depth of field, everything out of focus. The center of the image is empty and dark (an anvil will be placed there later).
+No anvil, no hammer, no sword, no people, no text, no watermark.
+Portrait 9:16, 1080 x 1920.</pre>
+    </div>
+  </div>
+
+  <h2>5. B안 — 열쇠 장면 3장 (참고)</h2>
+  <p>A1 결과(또는 원래 참조 그림)를 첨부하고, 세 장을 <b>같은 대화 안에서 차례로</b> 뽑으면 모양이 덜 흔들립니다. 바탕은 셋 다 초록입니다.</p>
+  <div class="cards">
+    <div class="card">
+      <header><b>B1. 망치를 치켜든 순간</b><span class="file">forge_key_1_raised.png</span><button class="copy">복사</button></header>
+      <pre>Keep the attached image's anvil and red-hot sword EXACTLY the same — same position, size, angle, engraving and colors. Only add the hammer.
+The blacksmith's iron hammer from the reference is raised high above the right side of the anvil, tilted back about 45 degrees, ready to strike, no hand or arm visible (the handle leaves the frame at the top right).
+Background: perfectly flat solid pure green (#00FF00), no shadow. Square 1:1, 2048 x 2048. No text, no watermark.</pre>
+    </div>
+    <div class="card">
+      <header><b>B2. 내리치는 중</b><span class="file">forge_key_2_swing.png</span><button class="copy">복사</button></header>
+      <pre>Same image as before: keep the anvil and red-hot sword EXACTLY the same.
+The hammer is now halfway down in a fast downward swing, about 15 degrees above the blade, with a strong motion blur trail behind its head. No hand or arm visible (the handle leaves the frame at the right).
+Background: perfectly flat solid pure green (#00FF00), no shadow. Square 1:1, 2048 x 2048. No text, no watermark.</pre>
+    </div>
+    <div class="card">
+      <header><b>B3. 맞는 순간</b><span class="file">forge_key_3_impact.png</span><button class="copy">복사</button></header>
+      <pre>Same image as before: keep the anvil and red-hot sword EXACTLY the same.
+The hammer head is now striking the glowing front half of the blade, flat face pressed onto the steel. The blade at the contact point glows brighter, almost yellow-white. No flash and no sparks (they are added separately). No hand or arm visible.
+Background: perfectly flat solid pure green (#00FF00), no shadow. Square 1:1, 2048 x 2048. No text, no watermark.</pre>
+    </div>
+  </div>
+
+  <h2>6. C안 — 영상 한 편 (참고)</h2>
+  <p>Veo · Kling · Runway 같은 이미지→영상 도구에 A1 결과(또는 참조 그림)를 첫 장면으로 넣습니다. 받은 영상에서 제가 타격 프레임을 찾아 1.5 · 3.0 · 4.5초에 맞게 늘이고 줄입니다.</p>
+  <div class="cards">
+    <div class="card">
+      <header><b>C1. 망치질 세 번 영상</b><span class="file">forge_strikes.mp4</span><button class="copy">복사</button></header>
+      <pre>Locked-off static camera, close-up on the anvil and red-hot sword from the start image, which stay perfectly still in the dark forge.
+A heavy iron forging hammer (no visible person, the handle enters from the top right) strikes the glowing blade exactly three times, evenly spaced: raise, strike, raise, strike, raise, strike.
+On the first two strikes a bright white-gold flash and a burst of sparks bursts from the contact point, briefly lighting half of the frame. On the third strike the flash keeps growing until the entire frame is pure white.
+The blade glows a little brighter after every strike. Dark background, dramatic orange forge light, painterly semi-realistic game art, ancient Chinese style.
+No camera movement, no text, no people. 5 seconds, 24 fps.</pre>
+    </div>
+  </div>
+
+  <h2>7. 받은 뒤 제가 하는 일</h2>
+  <ol>
+    <li>초록 바탕 오리기 · 크기 맞추기 → <code>public/ui/</code>로 굽기(<code>npm run ui</code> 길).</li>
+    <li>망치가 검의 어디를 맞는지 재서 회전축 · 각도 · 섬광 자리를 잡기.</li>
+    <li><code>Celebrate</code>에 「도입부 종류」 자리를 만들어 대장간만 이 장면을 쓰게 하기 — 나머지 축하는 지금의 세 빛 나선 그대로. 다른 유형도 같은 자리에 하나씩 더할 수 있게.</li>
+    <li>「깡」 소리 파일을 받으면 1.5 · 3.0 · 4.5초에 얹고(그전엔 <code>hammar.mp3</code>), 열 언어 사진첩으로 찍어 보여 드리기.</li>
+  </ol>
+</main>
+
+<script>
+  // 복사 단추
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.closest('.card').querySelector('pre').innerText;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      btn.textContent = '복사됨'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 1400);
+    });
+  });
+
+  // 박자 미리 듣기
+  const STRIKES = [1500, 3000, 4500], WHITE_MS = 5000;
+  const stage = document.getElementById('stage'), anv = document.getElementById('anv'), fl = document.getElementById('fl');
+  const white = document.getElementById('white'), after = document.getElementById('after'), clock = document.getElementById('clock');
+  let timers = [], raf = 0;
+  function reset() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    stage.classList.remove('run'); fl.className = 'fl'; white.className = 'white'; after.className = 'after'; anv.style.filter = '';
+    clock.textContent = '0.0s';
+  }
+  document.getElementById('play').addEventListener('click', () => {
+    reset();
+    const bang = new Audio('../assets/Audio/effects/celebrate.mp3');
+    bang.play().catch(() => {});
+    void stage.offsetWidth; stage.classList.add('run');
+    const t0 = performance.now();
+    const tick = () => { clock.textContent = ((performance.now() - t0) / 1000).toFixed(1) + 's'; if (performance.now() - t0 < 7000) raf = requestAnimationFrame(tick); };
+    tick();
+    STRIKES.forEach((ms, i) => timers.push(setTimeout(() => {
+      new Audio('../assets/Audio/effects/hammar.mp3').play().catch(() => {});
+      anv.classList.remove('hit'); void anv.offsetWidth; anv.classList.add('hit');
+      anv.style.filter = `brightness(${1 + 0.15 * (i + 1)}) saturate(${1 + 0.1 * (i + 1)})`;
+      fl.className = 'fl'; void fl.offsetWidth;
+      fl.classList.add(i === 2 ? 'full' : 'half');
+      if (i === 2) white.classList.add('on');
+    }, ms)));
+    timers.push(setTimeout(() => after.classList.add('on'), WHITE_MS + 150));
+  });
+</script>
+</body>
+</html>

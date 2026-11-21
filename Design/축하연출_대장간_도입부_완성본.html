@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대장간 도입부 완성본</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  .lead { color: #5b4a36; margin: 0 0 1.2rem; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .wrap { display: flex; gap: 1.6rem; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+  .side { flex: 1 1 300px; max-width: 460px; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+
+  /* 게임의 #frame과 같은 1:2 세로 판 */
+  .frame { position: relative; width: min(360px, 100%); aspect-ratio: 1 / 2; background: #1b1410; border-radius: .6rem; overflow: hidden;
+    box-shadow: 0 6px 24px #0005; container-type: size; }
+  .frame .idle { position: absolute; inset: 0; display: grid; place-items: center; color: #c9b38b; font-size: .95rem; text-align: center; padding: 1rem; }
+  .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #c9b38b; z-index: 9; mix-blend-mode: difference; }
+  .ctl { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-top: .9rem; }
+  .ctl button { font: inherit; padding: .45rem 1.1rem; border: 0; border-radius: 2rem; background: #8f8068; color: #fff; cursor: pointer; }
+  .ctl button.play { background: var(--accent); padding: .5rem 1.5rem; }
+  .ctl button.on { background: var(--jade); }
+  .note { font-size: .85rem; color: #6d5a45; text-align: center; margin: .4rem 0 0; }
+
+  /* 무대(5초 뒤) — 지금 축하 화면의 자리 표시. 실제 화면은 게임의 Celebrate 무대다 */
+  .after { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .6rem;
+    background: radial-gradient(circle at 50% 45%, #fff 0%, #ffe9b0 55%, #e0b25a 100%); color: #6a4a12; text-align: center;
+    animation: aft-in .8s ease-out both; }
+  .after img { width: 46%; animation: aft-pop .5s .25s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .after b { font-size: 1.5rem; }
+  .after small { font-size: .82rem; color: #8a6a32; }
+  @keyframes aft-in { from { filter: brightness(1.6); } }
+  @keyframes aft-pop { from { scale: 2.2; opacity: 0; } }
+
+  /* ↓↓ 여기부터 packages/client/src/style.css의 .cin-* 블록 그대로 (2026-11-21) ↓↓ */
+  .cel-charge { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .cin-forge { background: #000; animation: cin-dark .6s ease-out both; }
+  @keyframes cin-dark { from { background-color: #0000; } }
+  .cin-stage {
+    /* 게임은 58vh(화면 높이) — 여기서는 판 높이(cqh)로 같은 비율 */
+    position: absolute; left: 50%; top: 54%; width: min(88%, 58cqh); aspect-ratio: 1; transform: translate(-50%, -50%);
+    animation: cin-in .7s cubic-bezier(.2, .7, .3, 1) both;
+  }
+  @keyframes cin-in { from { scale: .72; opacity: 0; } }
+  .cin-rig { position: absolute; inset: 0; animation: cin-shake 5s linear both; }
+  @keyframes cin-shake {
+    0%, 29.9%, 33%, 59.9%, 63%, 89.9%, 93%, 100% { translate: 0 0; }
+    30.4%, 60.4%, 90.4% { translate: -1.4% 1.2%; }
+    31.2%, 61.2%, 91.2% { translate: 1.1% -.8%; }
+    32%, 62%, 92% { translate: -.5% .4%; }
+  }
+  .cin-anvil { position: absolute; inset: 0; width: 100%; height: 100%; animation: cin-heat 5s linear both; }
+  @keyframes cin-heat {
+    0%, 29.9% { filter: brightness(1); }
+    30% { filter: brightness(1.9) saturate(1.2); }
+    38%, 59.9% { filter: brightness(1.1) saturate(1.08); }
+    60% { filter: brightness(2) saturate(1.25); }
+    68%, 89.9% { filter: brightness(1.2) saturate(1.15); }
+    90% { filter: brightness(2.2) saturate(1.3); }
+    100% { filter: brightness(1.6) saturate(1.3); }
+  }
+  .cin-hammer {
+    position: absolute; left: 8.44%; top: -40.7%; width: 116%; height: auto; max-width: none;
+    transform-origin: 96.6% 46.7%; animation: cin-hammer 5s linear both;
+  }
+  @keyframes cin-hammer {
+    0% { rotate: 15deg; opacity: 0; animation-timing-function: ease-out; }
+    10% { rotate: 15deg; opacity: 1; animation-timing-function: ease-in-out; }
+    22% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
+    30% { rotate: -20deg; animation-timing-function: ease-out; }
+    33% { rotate: -14deg; animation-timing-function: ease-in-out; }
+    52% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
+    60% { rotate: -20deg; animation-timing-function: ease-out; }
+    63% { rotate: -14deg; animation-timing-function: ease-in-out; }
+    82% { rotate: 24deg; animation-timing-function: cubic-bezier(.6, 0, 1, .5); }
+    90% { rotate: -20deg; animation-timing-function: ease-out; }
+    93% { rotate: -15deg; }
+    100% { rotate: -16deg; opacity: 1; }
+  }
+  .cin-hit { position: absolute; inset: 0; pointer-events: none; }
+  .cin-hit img { position: absolute; left: 34.2%; top: 36.3%; height: auto; max-width: none; mix-blend-mode: screen; opacity: 0; }
+  .cin-flash { width: 112%; translate: -50% -50%; animation: cin-flash .7s ease-out forwards; }
+  .cin-sparks { width: 78%; translate: -50% -93%; transform-origin: 50% 93%; animation: cin-sparks 1.1s ease-out forwards; }
+  .cin-hit[data-n="1"] img { animation-delay: 1.5s; }
+  .cin-hit[data-n="2"] img { animation-delay: 3s; }
+  .cin-hit[data-n="3"] img { animation-delay: 4.5s; }
+  @keyframes cin-flash {
+    0% { scale: .2; opacity: 1; }
+    18% { scale: 1; opacity: 1; }
+    100% { scale: 1.12; opacity: 0; }
+  }
+  @keyframes cin-sparks {
+    0% { scale: .35; opacity: 1; }
+    100% { scale: 1.25; opacity: 0; }
+  }
+  .cin-hit[data-n="3"] .cin-flash { animation: cin-flash-all .5s cubic-bezier(.5, 0, .9, .6) 4.5s forwards; }
+  @keyframes cin-flash-all {
+    0% { scale: .2; opacity: 1; }
+    100% { scale: 9; opacity: 1; }
+  }
+  .cin-whiteout { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cin-whiteout 5s ease-in both; }
+  @keyframes cin-whiteout { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }
+  /* ↑↑ 여기까지 ↑↑ */
+</style>
+</head>
+<body>
+<main>
+  <h1>대장간 제작 완료 — 도입부 「깡 · 깡 · 깡」 완성본</h1>
+  <p class="lead">게임에 붙인 그대로의 그림 · 움직임 · 소리입니다. 그림은 <span class="file">packages/client/public/ui/intro-forge-*</span>,
+    소리는 <span class="file">packages/client/public/effects/</span>(축하음 <code>celebrate</code> · 망치 <code>forge_clang</code>)에서 읽고,
+    움직임은 <span class="file">style.css</span>의 <code>.cin-*</code> 블록을 그대로 옮겼습니다. 5초 뒤의 무대는 자리 표시입니다(실제는 지금 축하 화면).</p>
+
+  <div class="wrap">
+    <div>
+      <div class="frame" id="frame">
+        <div class="idle" id="idle">▶ 재생을 누르세요</div>
+        <div class="clock" id="clock">0.00s</div>
+      </div>
+      <div class="ctl">
+        <button class="play" id="play">▶ 재생</button>
+      </div>
+      <div class="ctl" id="speeds">
+        <button data-rate="1" class="on">1배</button>
+        <button data-rate="0.5">0.5배</button>
+        <button data-rate="0.25">0.25배</button>
+      </div>
+      <p class="note">느리게 볼 때는 소리를 끕니다(소리는 늘어나지 않아 박자가 어긋나 보이므로).</p>
+    </div>
+
+    <div class="side">
+      <table>
+        <tr><th>시각</th><th>화면 · 소리</th></tr>
+        <tr><td>0.0 – 0.7</td><td>검게 깔리며 모루 · 달궈진 검 · 망치가 다가온다. 축하음 시작.</td></tr>
+        <tr><td>0.5 – 1.5</td><td>망치가 천천히 치켜들렸다가 빠르게 내리친다.</td></tr>
+        <tr><td>1.5 깡①</td><td>맞는 자리에서 섬광 1이 화면 절반까지 · 불티 · 흔들림 · 검이 한 단계 달아오름 · 「깡」.</td></tr>
+        <tr><td>3.0 깡②</td><td>같은 흐름, 섬광 2(다른 그림) · 「깡」.</td></tr>
+        <tr><td>4.5 깡③</td><td>섬광 3이 멈추지 않고 커져 · 「깡」.</td></tr>
+        <tr><td>5.0</td><td>화면 전체가 흰색 — 축하음의 「쾅」. 그 뒤 지금 무대.</td></tr>
+      </table>
+      <p class="file" style="margin-top:.8rem">타격 시각은 Celebrate.tsx의 FORGE_STRIKES_MS(1500 · 3000 · 4500)와 CSS 열쇠틀(30 · 60 · 90%)이 같은 값이다.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  const UI = '../packages/client/public/ui/', FX = '../packages/client/public/effects/';
+  const STRIKES_MS = [1500, 3000, 4500], CHARGE_MS = 5000;
+  const frame = document.getElementById('frame'), clock = document.getElementById('clock'), idle = document.getElementById('idle');
+  let rate = 1, timers = [], raf = 0, sounds = [], scene = null;
+
+  function sceneHtml() {
+    const hits = STRIKES_MS.map((_, i) =>
+      `<i class="cin-hit" data-n="${i + 1}"><img class="cin-sparks" src="${UI}intro-forge-sparks.jpg" alt=""><img class="cin-flash" src="${UI}intro-forge-flash-${i + 1}.jpg" alt=""></i>`).join('');
+    return `<div class="cel-charge cin-forge"><div class="cin-stage"><div class="cin-rig">
+      <img class="cin-anvil" src="${UI}intro-forge-anvil.png" alt=""><img class="cin-hammer" src="${UI}intro-forge-hammer.png" alt="">
+      </div>${hits}</div><span class="cin-whiteout"></span></div>`;
+  }
+  function stop() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    sounds.forEach((a) => a.pause()); sounds = [];
+    frame.querySelectorAll('.cel-charge, .after').forEach((n) => n.remove());
+  }
+  function sfx(name) {
+    if (rate !== 1) return;
+    const a = new Audio(FX + name + '.mp3'); sounds.push(a); a.play().catch(() => {});
+  }
+  function play() {
+    stop(); idle.hidden = true;
+    const wrap = document.createElement('div'); wrap.innerHTML = sceneHtml();
+    scene = wrap.firstElementChild; frame.append(scene);
+    scene.getAnimations({ subtree: true }).forEach((an) => (an.playbackRate = rate));
+    sfx('celebrate');
+    STRIKES_MS.forEach((ms) => timers.push(setTimeout(() => sfx('forge_clang'), ms / rate)));
+    timers.push(setTimeout(() => {
+      scene.remove();
+      const after = document.createElement('div'); after.className = 'after';
+      after.innerHTML = `<img src="../assets/icons/ui/facility/ic_forge_craft.png" alt=""><b>제작 완료!</b><small>(여기서부터 지금의 축하 무대)</small>`;
+      frame.append(after);
+    }, CHARGE_MS / rate));
+    const t0 = performance.now();
+    const tick = () => {
+      const s = ((performance.now() - t0) * rate) / 1000;
+      clock.textContent = s.toFixed(2) + 's';
+      if (s < 7) raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  document.getElementById('play').addEventListener('click', play);
+  document.querySelectorAll('#speeds button').forEach((b) => b.addEventListener('click', () => {
+    rate = Number(b.dataset.rate);
+    document.querySelectorAll('#speeds button').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+</script>
+</body>
+</html>
