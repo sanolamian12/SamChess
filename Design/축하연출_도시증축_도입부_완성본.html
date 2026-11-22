@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도시 증축 도입부 완성본</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  .lead { color: #5b4a36; margin: 0 0 1.2rem; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .wrap { display: flex; gap: 1.6rem; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+  .side { flex: 1 1 300px; max-width: 460px; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+
+  /* 게임의 #frame과 같은 1:2 세로 판 */
+  .frame { position: relative; width: min(360px, 100%); aspect-ratio: 1 / 2; background: #1b1410; border-radius: .6rem; overflow: hidden;
+    box-shadow: 0 6px 24px #0005; container-type: size; }
+  .frame .idle { position: absolute; inset: 0; display: grid; place-items: center; color: #c9b38b; font-size: .95rem; text-align: center; padding: 1rem; }
+  .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #c9b38b; z-index: 9; mix-blend-mode: difference; }
+  .ctl { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-top: .9rem; }
+  .ctl button { font: inherit; padding: .45rem 1.1rem; border: 0; border-radius: 2rem; background: #8f8068; color: #fff; cursor: pointer; }
+  .ctl button.play { background: var(--accent); padding: .5rem 1.5rem; }
+  .ctl button.on { background: var(--jade); }
+  .note { font-size: .85rem; color: #6d5a45; text-align: center; margin: .4rem 0 0; }
+
+  /* 무대(5초 뒤) — 지금 축하 화면의 자리 표시. 실제 화면은 게임의 Celebrate 무대다 */
+  .after { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .6rem;
+    background: radial-gradient(circle at 50% 45%, #fff 0%, #ffe9b0 55%, #e0b25a 100%); color: #6a4a12; text-align: center;
+    animation: aft-in .8s ease-out both; }
+  .after img { width: 46%; animation: aft-pop .5s .25s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .after b { font-size: 1.5rem; }
+  .after small { font-size: .82rem; color: #8a6a32; }
+  @keyframes aft-in { from { filter: brightness(1.6); } }
+  @keyframes aft-pop { from { scale: 2.2; opacity: 0; } }
+
+  /* ↓↓ 여기부터 packages/client/src/style.css의 .cic-* 블록 그대로 (2026-11-22) ↓↓ */
+  .cel-charge { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+/* ── 도시 증축 도입부(`intro="city"`, 2026-11-22 기획자) — 거중기 기어에 바짝(×3.2) 붙어 기어가 돌며 시작 → 1.3~2.3초 궁궐 공사장 전체(×1)로 물러나며
+   밧줄 끝의 짐이 흔들리며 올라온다 → 2.6~3.4초 용마루 오른쪽 끝으로 다가가며(×2) 용머리가 내려와 3.4초 「쿵」 → 3.55초 곧바로 「쨍」 → 햇살이 퍼져 5초 하얗게.
+   ★ 모든 층이 한 「세계」(`.cic-world`)에 있고 카메라는 그 세계를 키우고 미는 것이다(`transform-origin: 0 0` — 점 (cx, cy)를 가운데 두려면
+   translate = (0.5 − z·cx, 0.5 − z·cy) × 판). 좌표는 판(1:2)의 비율이고 단위는 판 크기(`cqw` · `cqh`, 1cqh = 2cqw).
+   ★ 자리는 그림 안의 비율로 잰 값이다(`tools/build_celebrate_intro.py` — 물건 그림은 자르지 않는다):
+   · 배경(941×1672)은 판 폭의 112.5%로 오른쪽에 붙인다(왼쪽 12.5%가 판 밖) — 용마루 오른쪽 끝의 빈 받침이 그림 (792, 612)px → 판 (0.822, 0.366).
+   · 용머리(정사각)의 받침은 그림 가로 19~89%, 밑면 93.5% — **좌우를 뒤집어**(머리가 오른쪽, 2026-11-22 기획자) 받침이 가로 11~81%가 된다. 판 폭 17%로 두고
+     받침의 오른쪽 끝(81%)을 용마루 끝 블록 뒤로 삐죽 나온 턱까지(825px → 0.861) 덮게 맞추고, 밑면은 받침 블록의 아래 끝(640px → 0.383)에 — 블록을 덮고 기와에 착 붙는다(블록 위 0.366에 두면 올려놓은 것처럼 떠 보였다).
+   · 거중기(2:3)는 판 높이 55%, 왼쪽 −9cqw — 도르래 밑(92.5%, 14%) → 판 (0.588, 0.523), 권양기 축(38.5%, 79.5%) → 판 (0.192, 0.883)에 기어(판 폭 19%)를 끼운다.
+   · 짐(정사각, 판 폭 15%)의 고리 꼭대기는 그림 (50%, 2%) — 밧줄 끝에 단다. 그림을 같은 구도로 다시 받으면 그대로 맞고, 바뀌면 이 값을 다시 잰다. */
+.cin-city { background: #000; container-type: size; }
+.cic-world { position: absolute; inset: 0; transform-origin: 0 0; animation: cic-cam 5s linear both; }
+/* 카메라 — 기어(0.192, 0.844 — 아래 끝에 닿지 않게 세로만 당김) ×3.2 → 조금 더 ×3.4 → 전체 ×1 → 용마루 끝(0.75, 0.33 — 오른쪽 끝에 닿지 않게) ×2 → ×2.08 */
+@keyframes cic-cam {
+  0% { scale: 3.2; translate: -11.44cqw -220.08cqh; opacity: 0; animation-timing-function: linear; }
+  6% { opacity: 1; }
+  26% { scale: 3.4; translate: -15.28cqw -236.96cqh; animation-timing-function: cubic-bezier(.55, 0, .3, 1); }
+  46% { scale: 1; translate: 0 0; animation-timing-function: linear; }
+  52% { scale: 1; translate: 0 0; animation-timing-function: cubic-bezier(.5, 0, .3, 1); }
+  68% { scale: 2; translate: -100cqw -16cqh; animation-timing-function: linear; }
+  100% { scale: 2.08; translate: -106cqw -18.64cqh; opacity: 1; }
+}
+.cic-shake { position: absolute; inset: 0; animation: cic-shake 5s linear both; }
+@keyframes cic-shake {
+  0%, 67.9%, 72%, 100% { translate: 0 0; }
+  68.4% { translate: -.6cqw .5cqh; }
+  69.2% { translate: .5cqw -.3cqh; }
+  70.2% { translate: -.3cqw .2cqh; }
+}
+.cic-bg { position: absolute; right: 0; top: 0; width: 112.5cqw; height: 100cqh; max-width: none; }
+.cic-crane { position: absolute; left: -9cqw; top: 44.6cqh; height: 55cqh; width: auto; max-width: none; }
+.cic-gear {
+  position: absolute; left: calc(19.2cqw - 9.5cqw); top: calc(88.3cqh - 9.5cqw); width: 19cqw; height: 19cqw; max-width: none;
+  transform-origin: 50% 49.5%; animation: cic-gear 5s linear both;
+}
+/* 기어 — 묵직하게 천천히(초당 약 90°, 2026-11-22 기획자), 짐이 닿을 무렵(2.4초) 더 느려져 멈춘다 */
+@keyframes cic-gear { 0% { rotate: 0deg; animation-timing-function: linear; } 34% { rotate: -150deg; animation-timing-function: ease-out; } 48%, 100% { rotate: -195deg; } }
+/* 짐 — 도르래 밑에 매단 진자. 밧줄 길이(53 → 9.7cqh)가 줄며 올라오고, 흔들림은 도르래를 축으로 */
+.cic-hang { position: absolute; left: 58.8cqw; top: 52.3cqh; width: 0; height: 0; animation: cic-sway 5s linear both; }
+@keyframes cic-sway {
+  0%, 16% { rotate: 0deg; }
+  24% { rotate: 3.5deg; } 32% { rotate: -3deg; } 40% { rotate: 2.4deg; } 47% { rotate: -1.6deg; } 53% { rotate: .8deg; } 58%, 100% { rotate: 0deg; }
+}
+.cic-rope { position: absolute; left: -.2cqw; top: 0; width: .4cqw; height: 53cqh; background: linear-gradient(90deg, #8a6a3c, #d8b27a, #8a6a3c);
+  animation: cic-rope 5s linear both; }
+@keyframes cic-rope { 0%, 16% { height: 53cqh; animation-timing-function: cubic-bezier(.45, 0, .3, 1); } 48%, 100% { height: 9.7cqh; } }
+.cic-load { position: absolute; left: -7.5cqw; top: calc(53cqh - .15cqw); width: 15cqw; max-width: none; animation: cic-load 5s linear both; }
+@keyframes cic-load { 0%, 16% { top: calc(53cqh - .15cqw); animation-timing-function: cubic-bezier(.45, 0, .3, 1); } 48%, 100% { top: calc(9.7cqh - .15cqw); } }
+/* 용머리 — 밧줄째 위에서 내려와 받침에 앉는다(끝에서 느려진다) · 살짝 튐 */
+.cic-drop { position: absolute; left: 72.35cqw; top: 30.33cqh; width: 17cqw; height: 17cqw; animation: cic-drop 5s linear both; }
+@keyframes cic-drop {
+  0%, 50% { translate: 0 -40cqh; animation-timing-function: cubic-bezier(.2, .6, .35, 1); }
+  68% { translate: 0 0; animation-timing-function: ease-out; }
+  69.5% { translate: 0 -.9cqh; animation-timing-function: ease-in; }
+  71%, 100% { translate: 0 0; }
+}
+.cic-dragon { position: absolute; inset: 0; width: 100%; height: 100%; scale: -1 1; animation: cic-shine 5s linear both; }
+/* 햇빛을 받아 금빛이 확 밝아진다 */
+@keyframes cic-shine { 0%, 70.5% { filter: brightness(1); } 73% { filter: brightness(1.8) saturate(1.2); } 80% { filter: brightness(1.4) saturate(1.15); } 100% { filter: brightness(2.2); } }
+.cic-drop-rope { position: absolute; left: calc(50% - .2cqw); bottom: 85%; width: .4cqw; height: 60cqh; background: linear-gradient(90deg, #8a6a3c, #d8b27a, #8a6a3c);
+  animation: cic-drop-rope 5s linear both; }
+@keyframes cic-drop-rope { 0%, 69% { opacity: 1; translate: 0 0; } 75%, 100% { opacity: 0; translate: 0 -6cqh; } }
+.cic-dust { position: absolute; left: 74cqw; top: 37.1cqh; width: 13cqw; height: 4cqw; border-radius: 50%; opacity: 0;
+  background: radial-gradient(ellipse, #f4ead2cc 0%, #e6d8b688 45%, #e6d8b600 72%); animation: cic-dust 5s linear both; }
+@keyframes cic-dust { 0%, 67.9% { opacity: 0; scale: .4; } 69.5% { opacity: 1; scale: 1; } 80%, 100% { opacity: 0; scale: 1.7; } }
+/* 쨍 — 용머리 머리 위에서 반짝, 햇살 — 용머리 가운데에서 퍼져 화면을 덮는다(검정 바탕 그림을 「더하기」로) */
+.cic-glint { position: absolute; left: 85.1cqw; top: 33.7cqh; width: 12cqw; max-width: none; translate: -50% -50%; mix-blend-mode: screen; opacity: 0;
+  animation: cic-glint 5s linear both; }
+@keyframes cic-glint { 0%, 70.9% { opacity: 0; scale: .2; rotate: 0deg; } 72.6% { opacity: 1; scale: 1.5; rotate: 20deg; } 80% { opacity: .9; scale: 1.1; rotate: 35deg; } 100% { opacity: 1; scale: 2.4; rotate: 50deg; } }
+.cic-rays { position: absolute; left: 80.9cqw; top: 34cqh; width: 40cqw; max-width: none; translate: -50% -50%; mix-blend-mode: screen; opacity: 0;
+  animation: cic-rays 5s cubic-bezier(.5, 0, .9, .7) both; }
+@keyframes cic-rays { 0%, 73.9% { opacity: 0; scale: .2; rotate: 0deg; } 76% { opacity: 1; scale: .6; } 100% { opacity: 1; scale: 9; rotate: 25deg; } }
+.cic-sun { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+  background: radial-gradient(ellipse 80% 55% at 64% 40%, #fffbe8 0%, #ffe9a8 40%, #ffd76a66 70%, #ffd76a00 100%); animation: cic-sun 5s linear both; }
+@keyframes cic-sun { 0%, 74% { opacity: 0; } 86% { opacity: .55; } 100% { opacity: 1; } }
+.cin-whiteout { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cin-whiteout 5s ease-in both; }
+@keyframes cin-whiteout { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }
+  /* ↑↑ 여기까지 ↑↑ */
+</style>
+</head>
+<body>
+<main>
+  <h1>도시 증축 완료 — 도입부 「용머리를 올리다」 완성본</h1>
+  <p class="lead">게임에 붙인 그대로의 그림 · 움직임입니다. 그림은 <span class="file">packages/client/public/ui/intro-city-*</span>,
+    움직임은 <span class="file">style.css</span>의 <code>.cic-*</code> 블록을 그대로 옮겼습니다. 소리는 축하음뿐입니다. 5초 뒤의 무대는 자리 표시입니다(실제는 지금 「도시 증축 완료」 축하 화면).</p>
+
+  <div class="wrap">
+    <div>
+      <div class="frame" id="frame">
+        <div class="idle" id="idle">▶ 재생을 누르세요</div>
+        <div class="clock" id="clock">0.00s</div>
+      </div>
+      <div class="ctl">
+        <button class="play" id="play">▶ 재생</button>
+      </div>
+      <div class="ctl" id="speeds">
+        <button data-rate="1" class="on">1배</button>
+        <button data-rate="0.5">0.5배</button>
+        <button data-rate="0.25">0.25배</button>
+      </div>
+      <p class="note">느리게 볼 때는 소리를 끕니다(소리는 늘어나지 않아 박자가 어긋나 보이므로).</p>
+    </div>
+
+    <div class="side">
+      <table>
+        <tr><th>시각</th><th>화면</th></tr>
+        <tr><td>0.0 – 1.3</td><td>거중기 밑동의 기어에 바짝(×3.2) — 톱니바퀴가 돌며 밧줄이 감긴다.</td></tr>
+        <tr><td>1.3 – 2.3</td><td>궁궐 공사장 전체로 물러난다 — 밧줄 끝의 짐이 흔들리며 올라온다.</td></tr>
+        <tr><td>2.4</td><td>짐이 도르래 밑에 닿아 흔들림이 잦아들고 기어가 멈춘다.</td></tr>
+        <tr><td>2.6 – 3.4</td><td>용마루 오른쪽 끝으로 다가간다(×2) — 용머리가 밧줄째 내려온다.</td></tr>
+        <tr><td>3.4</td><td>「쿵」 — 받침에 앉아 살짝 튀고 먼지, 화면이 흔들린다.</td></tr>
+        <tr><td>3.55</td><td>곧바로 「쨍」 — 용머리 머리 위 반짝임, 금빛이 확 밝아진다.</td></tr>
+        <tr><td>3.7 – 5.0</td><td>햇살이 퍼지며 화면을 채워 5.0초 하얗게 · 쾅.</td></tr>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  const UI = '../packages/client/public/ui/', FX = '../packages/client/public/effects/';
+  const CHARGE_MS = 5000;
+  const frame = document.getElementById('frame'), clock = document.getElementById('clock'), idle = document.getElementById('idle');
+  let rate = 1, timers = [], raf = 0, sounds = [], scene = null;
+
+  function sceneHtml() {
+    return `<div class="cel-charge cin-city"><div class="cic-world"><div class="cic-shake">
+      <img class="cic-bg" src="${UI}intro-city-bg.jpg" alt="">
+      <div class="cic-drop"><i class="cic-drop-rope"></i><img class="cic-dragon" src="${UI}intro-city-dragon.png" alt=""></div>
+      <i class="cic-dust"></i>
+      <img class="cic-crane" src="${UI}intro-city-crane.png" alt="">
+      <img class="cic-gear" src="${UI}intro-city-gear.png" alt="">
+      <div class="cic-hang"><i class="cic-rope"></i><img class="cic-load" src="${UI}intro-city-load.png" alt=""></div>
+      <img class="cic-glint" src="${UI}intro-city-glint.jpg" alt="">
+      <img class="cic-rays" src="${UI}intro-city-rays.jpg" alt="">
+    </div></div><span class="cic-sun"></span><span class="cin-whiteout"></span></div>`;
+  }
+  function stop() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    sounds.forEach((a) => a.pause()); sounds = [];
+    frame.querySelectorAll('.cel-charge, .after').forEach((n) => n.remove());
+  }
+  function sfx(name) {
+    if (rate !== 1) return;
+    const a = new Audio(FX + name + '.mp3'); sounds.push(a); a.play().catch(() => {});
+  }
+  function play() {
+    stop(); idle.hidden = true;
+    const wrap = document.createElement('div'); wrap.innerHTML = sceneHtml();
+    scene = wrap.firstElementChild; frame.append(scene);
+    scene.getAnimations({ subtree: true }).forEach((an) => (an.playbackRate = rate));
+    sfx('celebrate');
+    timers.push(setTimeout(() => {
+      scene.remove();
+      const after = document.createElement('div'); after.className = 'after';
+      after.innerHTML = `<img src="${UI}cel-build.png" alt=""><b>도시 증축 완료</b><small>(여기서부터 지금의 축하 무대)</small>`;
+      frame.append(after);
+    }, CHARGE_MS / rate));
+    const t0 = performance.now();
+    const tick = () => {
+      const s = ((performance.now() - t0) * rate) / 1000;
+      clock.textContent = s.toFixed(2) + 's';
+      if (s < 7) raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  document.getElementById('play').addEventListener('click', play);
+  document.querySelectorAll('#speeds button').forEach((b) => b.addEventListener('click', () => {
+    rate = Number(b.dataset.rate);
+    document.querySelectorAll('#speeds button').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+</script>
+</body>
+</html>

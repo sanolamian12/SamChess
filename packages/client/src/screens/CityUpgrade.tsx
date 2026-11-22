@@ -199,7 +199,7 @@ function UpgradeDoneModal({ profile, level, onClose }: {
   return (
     // 판 · 연출은 공용 축하 판(`Celebrate`, 2026-11-20) — 글만 넘긴다. 크기 · 글자 꼴은 `.cty-done`
     // 비계 탑 위에 도시 레벨 배지 — 배지는 Lv1~10뿐이라 황궁(Lv11)에서는 글만
-    <Celebrate modal="upgradeDone" className="cty-done" title={t('city.done.title')}
+    <Celebrate modal="upgradeDone" intro="city" className="cty-done" title={t('city.done.title')}
       art={<img className="cel-art-img" src="ui/cel-build.png" alt="" />}
       badge={level <= LEVEL_BADGE_MAX ? <LevelBadge level={level} className="cel-badge-img" /> : undefined}
       big={t('city.done.level', { lv: level })} onClose={onClose}>

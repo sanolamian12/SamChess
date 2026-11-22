@@ -17,6 +17,8 @@
  * 모루 위 망치질 세 번(`forge` — 1.5 · 3.0 · 4.5초에 「깡」, 앞의 둘은 맞는 자리에서 화면 절반까지 번쩍, 셋째는 끝까지 커져 하얘진다),
  * 태학 연구 완료는 별의 번짐(`academy`, 2026-11-22 — 뒷짐 진 선비가 밤하늘을 올려다보고, 시선이 치솟아 칠성의 별이 하나둘 이어지다
  * 급속히 번져 거의 다 이어지며 화면이 확 밝아진다). 먼저 만든 북두칠성(`academyDipper`) · 거미줄(`academyWeb`)은 기획자가 백업으로 남겼다(쓰는 자리 없음).
+ * 도시 증축은 용머리 올리기(`city`, 2026-11-22 — 거중기 기어에 바짝 붙어 시작해 궁궐 공사장 전체로 물러나며 짐이 올라가고, 용마루 끝으로 다가가
+ * 용머리가 「쿵」 놓이자 곧바로 햇빛에 「쨍」 빛나 화면이 빛으로 찬다).
  * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
  *
  * 모으는 동안은 눌러도 · 키를 눌러도 안 닫힌다(소리와 맞춘 연출이다). **`data-modal`은 무대가 열린 뒤에야 붙는다** — 검사가
@@ -48,7 +50,7 @@ const LEAVE_MS = 360;
  */
 const CHARGE_MS = 5000;
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
-export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb';
+export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city';
 /**
  * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
  * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
@@ -326,6 +328,36 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
               </i>
             ))}
           </div>
+          <span className="cin-whiteout" />
+        </div>
+      </div>
+    );
+  }
+
+  if (charging && intro === 'city') {
+    // 자리 · 시각은 전부 CSS(`.cic-*`)에 있다 — 그림 안의 비율로 잰 값이라 그쪽 주석에 함께 적었다
+    return (
+      <div className="modal-back cel-back" data-phase="charge" data-intro="city" aria-hidden>
+        <div className="cel-charge cin-city">
+          <div className="cic-world">
+            <div className="cic-shake">
+              <img className="cic-bg" src="ui/intro-city-bg.jpg" alt="" />
+              <div className="cic-drop">
+                <i className="cic-drop-rope" />
+                <img className="cic-dragon" src="ui/intro-city-dragon.png" alt="" />
+              </div>
+              <i className="cic-dust" />
+              <img className="cic-crane" src="ui/intro-city-crane.png" alt="" />
+              <img className="cic-gear" src="ui/intro-city-gear.png" alt="" />
+              <div className="cic-hang">
+                <i className="cic-rope" />
+                <img className="cic-load" src="ui/intro-city-load.png" alt="" />
+              </div>
+              <img className="cic-glint" src="ui/intro-city-glint.jpg" alt="" />
+              <img className="cic-rays" src="ui/intro-city-rays.jpg" alt="" />
+            </div>
+          </div>
+          <span className="cic-sun" />
           <span className="cin-whiteout" />
         </div>
       </div>

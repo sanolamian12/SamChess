@@ -39,6 +39,14 @@ ITEMS: dict[tuple[str, str], tuple[str, int, str]] = {
     ("academy", "academy_star_1.png"): ("intro-academy-star-1.jpg", 400, "black"),
     ("academy", "academy_star_2.png"): ("intro-academy-star-2.jpg", 400, "black"),
     ("academy", "academy_flash.png"): ("intro-academy-flash.jpg", 900, "black"),
+    # 도시 증축(2026-11-22) — 카메라가 거중기 기어에 바짝 다가가므로 거중기 · 기어는 원본 크기 그대로
+    ("city", "city_bg.png"): ("intro-city-bg.jpg", 1672, "photo"),
+    ("city", "city_crane.png"): ("intro-city-crane.png", 1536, "green"),
+    ("city", "city_gear.png"): ("intro-city-gear.png", 900, "green"),
+    ("city", "city_load.png"): ("intro-city-load.png", 700, "green"),
+    ("city", "city_dragon.png"): ("intro-city-dragon.png", 900, "green"),
+    ("city", "city_glint.png"): ("intro-city-glint.jpg", 500, "black"),
+    ("city", "city_rays.png"): ("intro-city-rays.jpg", 900, "black"),
 }
 
 # 초록이 이만큼 이하로 섞였으면 불투명, 이만큼 이상이면 투명(바탕 실측 g − max(r,b) ≈ 237)

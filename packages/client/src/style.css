@@ -8302,8 +8302,87 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .cia-star[data-size="0"] { width: 15%; }
 .cia-star[data-size="1"] { width: 12%; }
 .cia-star[data-size="2"] { width: 18%; }
+/* ── 도시 증축 도입부(`intro="city"`, 2026-11-22 기획자) — 거중기 기어에 바짝(×3.2) 붙어 기어가 돌며 시작 → 1.3~2.3초 궁궐 공사장 전체(×1)로 물러나며
+   밧줄 끝의 짐이 흔들리며 올라온다 → 2.6~3.4초 용마루 오른쪽 끝으로 다가가며(×2) 용머리가 내려와 3.4초 「쿵」 → 3.55초 곧바로 「쨍」 → 햇살이 퍼져 5초 하얗게.
+   ★ 모든 층이 한 「세계」(`.cic-world`)에 있고 카메라는 그 세계를 키우고 미는 것이다(`transform-origin: 0 0` — 점 (cx, cy)를 가운데 두려면
+   translate = (0.5 − z·cx, 0.5 − z·cy) × 판). 좌표는 판(1:2)의 비율이고 단위는 판 크기(`cqw` · `cqh`, 1cqh = 2cqw).
+   ★ 자리는 그림 안의 비율로 잰 값이다(`tools/build_celebrate_intro.py` — 물건 그림은 자르지 않는다):
+   · 배경(941×1672)은 판 폭의 112.5%로 오른쪽에 붙인다(왼쪽 12.5%가 판 밖) — 용마루 오른쪽 끝의 빈 받침이 그림 (792, 612)px → 판 (0.822, 0.366).
+   · 용머리(정사각)의 받침은 그림 가로 19~89%, 밑면 93.5% — **좌우를 뒤집어**(머리가 오른쪽, 2026-11-22 기획자) 받침이 가로 11~81%가 된다. 판 폭 17%로 두고
+     받침의 오른쪽 끝(81%)을 용마루 끝 블록 뒤로 삐죽 나온 턱까지(825px → 0.861) 덮게 맞추고, 밑면은 받침 블록의 아래 끝(640px → 0.383)에 — 블록을 덮고 기와에 착 붙는다(블록 위 0.366에 두면 올려놓은 것처럼 떠 보였다).
+   · 거중기(2:3)는 판 높이 55%, 왼쪽 −9cqw — 도르래 밑(92.5%, 14%) → 판 (0.588, 0.523), 권양기 축(38.5%, 79.5%) → 판 (0.192, 0.883)에 기어(판 폭 19%)를 끼운다.
+   · 짐(정사각, 판 폭 15%)의 고리 꼭대기는 그림 (50%, 2%) — 밧줄 끝에 단다. 그림을 같은 구도로 다시 받으면 그대로 맞고, 바뀌면 이 값을 다시 잰다. */
+.cin-city { background: #000; container-type: size; }
+.cic-world { position: absolute; inset: 0; transform-origin: 0 0; animation: cic-cam 5s linear both; }
+/* 카메라 — 기어(0.192, 0.844 — 아래 끝에 닿지 않게 세로만 당김) ×3.2 → 조금 더 ×3.4 → 전체 ×1 → 용마루 끝(0.75, 0.33 — 오른쪽 끝에 닿지 않게) ×2 → ×2.08 */
+@keyframes cic-cam {
+  0% { scale: 3.2; translate: -11.44cqw -220.08cqh; opacity: 0; animation-timing-function: linear; }
+  6% { opacity: 1; }
+  26% { scale: 3.4; translate: -15.28cqw -236.96cqh; animation-timing-function: cubic-bezier(.55, 0, .3, 1); }
+  46% { scale: 1; translate: 0 0; animation-timing-function: linear; }
+  52% { scale: 1; translate: 0 0; animation-timing-function: cubic-bezier(.5, 0, .3, 1); }
+  68% { scale: 2; translate: -100cqw -16cqh; animation-timing-function: linear; }
+  100% { scale: 2.08; translate: -106cqw -18.64cqh; opacity: 1; }
+}
+.cic-shake { position: absolute; inset: 0; animation: cic-shake 5s linear both; }
+@keyframes cic-shake {
+  0%, 67.9%, 72%, 100% { translate: 0 0; }
+  68.4% { translate: -.6cqw .5cqh; }
+  69.2% { translate: .5cqw -.3cqh; }
+  70.2% { translate: -.3cqw .2cqh; }
+}
+.cic-bg { position: absolute; right: 0; top: 0; width: 112.5cqw; height: 100cqh; max-width: none; }
+.cic-crane { position: absolute; left: -9cqw; top: 44.6cqh; height: 55cqh; width: auto; max-width: none; }
+.cic-gear {
+  position: absolute; left: calc(19.2cqw - 9.5cqw); top: calc(88.3cqh - 9.5cqw); width: 19cqw; height: 19cqw; max-width: none;
+  transform-origin: 50% 49.5%; animation: cic-gear 5s linear both;
+}
+/* 기어 — 묵직하게 천천히(초당 약 90°, 2026-11-22 기획자), 짐이 닿을 무렵(2.4초) 더 느려져 멈춘다 */
+@keyframes cic-gear { 0% { rotate: 0deg; animation-timing-function: linear; } 34% { rotate: -150deg; animation-timing-function: ease-out; } 48%, 100% { rotate: -195deg; } }
+/* 짐 — 도르래 밑에 매단 진자. 밧줄 길이(53 → 9.7cqh)가 줄며 올라오고, 흔들림은 도르래를 축으로 */
+.cic-hang { position: absolute; left: 58.8cqw; top: 52.3cqh; width: 0; height: 0; animation: cic-sway 5s linear both; }
+@keyframes cic-sway {
+  0%, 16% { rotate: 0deg; }
+  24% { rotate: 3.5deg; } 32% { rotate: -3deg; } 40% { rotate: 2.4deg; } 47% { rotate: -1.6deg; } 53% { rotate: .8deg; } 58%, 100% { rotate: 0deg; }
+}
+.cic-rope { position: absolute; left: -.2cqw; top: 0; width: .4cqw; height: 53cqh; background: linear-gradient(90deg, #8a6a3c, #d8b27a, #8a6a3c);
+  animation: cic-rope 5s linear both; }
+@keyframes cic-rope { 0%, 16% { height: 53cqh; animation-timing-function: cubic-bezier(.45, 0, .3, 1); } 48%, 100% { height: 9.7cqh; } }
+.cic-load { position: absolute; left: -7.5cqw; top: calc(53cqh - .15cqw); width: 15cqw; max-width: none; animation: cic-load 5s linear both; }
+@keyframes cic-load { 0%, 16% { top: calc(53cqh - .15cqw); animation-timing-function: cubic-bezier(.45, 0, .3, 1); } 48%, 100% { top: calc(9.7cqh - .15cqw); } }
+/* 용머리 — 밧줄째 위에서 내려와 받침에 앉는다(끝에서 느려진다) · 살짝 튐 */
+.cic-drop { position: absolute; left: 72.35cqw; top: 30.33cqh; width: 17cqw; height: 17cqw; animation: cic-drop 5s linear both; }
+@keyframes cic-drop {
+  0%, 50% { translate: 0 -40cqh; animation-timing-function: cubic-bezier(.2, .6, .35, 1); }
+  68% { translate: 0 0; animation-timing-function: ease-out; }
+  69.5% { translate: 0 -.9cqh; animation-timing-function: ease-in; }
+  71%, 100% { translate: 0 0; }
+}
+.cic-dragon { position: absolute; inset: 0; width: 100%; height: 100%; scale: -1 1; animation: cic-shine 5s linear both; }
+/* 햇빛을 받아 금빛이 확 밝아진다 */
+@keyframes cic-shine { 0%, 70.5% { filter: brightness(1); } 73% { filter: brightness(1.8) saturate(1.2); } 80% { filter: brightness(1.4) saturate(1.15); } 100% { filter: brightness(2.2); } }
+.cic-drop-rope { position: absolute; left: calc(50% - .2cqw); bottom: 85%; width: .4cqw; height: 60cqh; background: linear-gradient(90deg, #8a6a3c, #d8b27a, #8a6a3c);
+  animation: cic-drop-rope 5s linear both; }
+@keyframes cic-drop-rope { 0%, 69% { opacity: 1; translate: 0 0; } 75%, 100% { opacity: 0; translate: 0 -6cqh; } }
+.cic-dust { position: absolute; left: 74cqw; top: 37.1cqh; width: 13cqw; height: 4cqw; border-radius: 50%; opacity: 0;
+  background: radial-gradient(ellipse, #f4ead2cc 0%, #e6d8b688 45%, #e6d8b600 72%); animation: cic-dust 5s linear both; }
+@keyframes cic-dust { 0%, 67.9% { opacity: 0; scale: .4; } 69.5% { opacity: 1; scale: 1; } 80%, 100% { opacity: 0; scale: 1.7; } }
+/* 쨍 — 용머리 머리 위에서 반짝, 햇살 — 용머리 가운데에서 퍼져 화면을 덮는다(검정 바탕 그림을 「더하기」로) */
+.cic-glint { position: absolute; left: 85.1cqw; top: 33.7cqh; width: 12cqw; max-width: none; translate: -50% -50%; mix-blend-mode: screen; opacity: 0;
+  animation: cic-glint 5s linear both; }
+@keyframes cic-glint { 0%, 70.9% { opacity: 0; scale: .2; rotate: 0deg; } 72.6% { opacity: 1; scale: 1.5; rotate: 20deg; } 80% { opacity: .9; scale: 1.1; rotate: 35deg; } 100% { opacity: 1; scale: 2.4; rotate: 50deg; } }
+.cic-rays { position: absolute; left: 80.9cqw; top: 34cqh; width: 40cqw; max-width: none; translate: -50% -50%; mix-blend-mode: screen; opacity: 0;
+  animation: cic-rays 5s cubic-bezier(.5, 0, .9, .7) both; }
+@keyframes cic-rays { 0%, 73.9% { opacity: 0; scale: .2; rotate: 0deg; } 76% { opacity: 1; scale: .6; } 100% { opacity: 1; scale: 9; rotate: 25deg; } }
+.cic-sun { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+  background: radial-gradient(ellipse 80% 55% at 64% 40%, #fffbe8 0%, #ffe9a8 40%, #ffd76a66 70%, #ffd76a00 100%); animation: cic-sun 5s linear both; }
+@keyframes cic-sun { 0%, 74% { opacity: 0; } 86% { opacity: .55; } 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .cia-sky, .cia-ground, .cia-star, .cia-star img, .cia-lines, .cia-lines line, .ciw-lines, .ciw-lines line, .ciw-glow { animation: none; }
+  .cin-city *, .cic-world { animation: none !important; }
+  .cic-drop-rope, .cic-glint, .cic-rays, .cic-dust { display: none; }
+  .cic-rope { height: 9.7cqh; }
+  .cic-load { top: calc(9.7cqh - .15cqw); }
   .cia-sky { top: 0; }
   .cia-ground { translate: 0 105%; }
   .cia-star { opacity: 1; scale: 1; }

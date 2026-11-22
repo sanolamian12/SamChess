@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도시 증축 도입부 프롬프트</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 .4rem; }
+  .lead { color: #5b4a36; margin: 0 0 1rem; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .warn { border-left: 4px solid var(--accent); }
+  .tip { border-left: 4px solid var(--jade); }
+  ol, ul { margin: .3rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  code { background: #efe4cc; padding: 0 .3rem; border-radius: .2rem; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .cards { display: grid; gap: .9rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+  .card header { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .5rem .8rem; background: #efe4cc; flex-wrap: wrap; }
+  .card header b { font-size: 1rem; }
+  .card .why { padding: .5rem .8rem 0; font-size: .9rem; color: #4a3a28; }
+  .card pre { margin: 0; padding: .8rem; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "D2Coding", monospace; font-size: .82rem; line-height: 1.5; }
+  .copy { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 0; border-radius: .3rem; background: var(--jade); color: #fff; cursor: pointer; white-space: nowrap; }
+  .copy.done { background: #4a7a3a; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .tag { display: inline-block; font-size: .78rem; padding: 0 .45rem; border-radius: 1rem; background: var(--gold); color: #fff; margin-left: .3rem; }
+  .tag.opt { background: #8f8068; }
+  .ref { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .ref img { width: 160px; height: auto; background: #fff; border: 1px solid var(--line); border-radius: .4rem; }
+
+  .tl { position: relative; height: 3.4rem; margin: 1.2rem 0 2.6rem; background: linear-gradient(90deg, #6f9fd6, #a8c8ea 55%, #ffe7a0 85%, #fff 100%); border-radius: .3rem; }
+  .tl .mk { position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; background: var(--accent); }
+  .tl .mk span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: .8rem; white-space: nowrap; color: var(--ink); padding-top: .2rem; }
+  .tl .mk.alt span { top: auto; bottom: 100%; padding: 0 0 .2rem; }
+  .tl .mk.big { width: 4px; background: #fff; box-shadow: 0 0 6px #ffcf5c; }
+
+  .stage { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1 / 2; margin: 0 auto; background: #000; border-radius: .5rem; overflow: hidden; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #2a3a5a; z-index: 3; }
+  .stage .white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .stage .after { position: absolute; inset: 0; display: grid; place-items: center; color: #6a4a12; font-size: 1.1rem; opacity: 0; text-align: center; padding: 1rem;
+    background: radial-gradient(circle, #fff 0%, #ffe9b0 100%); }
+  .play { display: block; margin: .8rem auto 0; font: inherit; padding: .5rem 1.4rem; border: 0; border-radius: 2rem; background: var(--accent); color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>도시 증축 완료 — 도입부 「용머리를 올리다」 이미지 프롬프트</h1>
+  <p class="lead">대장간 「깡 · 깡 · 깡」 · 태학 「별의 번짐」과 같은 길로, <b>도시 레벨 증축</b>(건물 관리 맨 아래 [도시 증축]) 축하의 5초 도입부를 바꾸기 위한 그림 주문서입니다.
+    <b>거중기의 기어가 돌아가는 모습에 바짝 붙어</b> 시작해 → 한낮의 궁궐 공사장 전체로 물러나며 짐이 끌려 올라가는 것을 보이고 →
+    다시 <b>용마루 끝으로 다가가</b> 용머리가 「쿵」 놓이는 순간 → 곧바로 햇빛에 「쨍」 빛나며 빛이 화면을 채워 5.0초에 하얘집니다. 그 뒤는 지금의 「도시 증축 완료」 축하 화면 그대로입니다. (건물 짓기 · 건물 증축의 축하는 이번 범위가 아닙니다.)</p>
+
+  <h2>1. 어떤 방식으로 — 낱장 층을 받아 제가 움직인다 (앞의 둘과 같이)</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>층</th><th>움직임</th></tr>
+    <tr><td><b>카메라</b> (층 전체)</td><td>기어에 바짝(약 3배) → 풍경 전체(1배) → 용마루 끝으로(약 2배). 모든 층이 함께 움직여 한 장면 안에서 다가가고 물러나는 것처럼 보입니다.</td></tr>
+    <tr><td>궁궐 지붕 배경 (한 장)</td><td>가만히 — 용머리가 앉을 때 한 번 흔들린다.</td></tr>
+    <tr><td>거중기 (오린 것)</td><td>제자리. 팔 끝 도르래에서 <b>밧줄은 제가 그립니다</b>(올라가는 짐을 따라 길이가 줄어든다). 카메라가 바짝 다가가므로 <b>크게</b> 받습니다.</td></tr>
+    <tr><td>기어 바퀴 (오린 것)</td><td>거중기 밑동의 축에 끼워 <b>돌립니다</b> — 처음 1.3초 화면의 주인공. 돌아야 하므로 거중기와 따로 받습니다.</td></tr>
+    <tr><td>건축 재료 짐 (오린 것)</td><td>화면 아래에서 밧줄에 매달려 흔들리며 올라와 지붕 위 비계에 내려앉는다.</td></tr>
+    <tr><td>용머리 (오린 것)</td><td>위에서 밧줄에 매달려 천천히 내려와 용마루 끝에 앉는다 — 살짝 튀고 먼지.</td></tr>
+    <tr><td>반짝임 · 햇살 (검정 바탕)</td><td>용머리 위를 「쨍」 하고 스치는 반짝임 → 거기서 햇살이 뻗어 화면을 채운다.</td></tr>
+  </table>
+  </div>
+  <div class="box tip">영상 한 편으로 받으면 짐 → 용머리 순서와 「쿵」 · 「쨍」 박자를 맞추기 어렵습니다. 낱장으로 받아 제가 ms 단위로 맞추는 것을 권합니다(영상 안은 아래 5절에 참고로).</div>
+
+  <h2>2. 박자 — 축하음에 맞춘 시간표</h2>
+  <div class="tl">
+    <div class="mk" style="left:0%"><span>0.0 기어에 바짝</span></div>
+    <div class="mk alt" style="left:26%"><span>1.3 물러남</span></div>
+    <div class="mk" style="left:46%"><span>2.3 풍경 전체</span></div>
+    <div class="mk alt" style="left:52%"><span>2.6 용머리로</span></div>
+    <div class="mk" style="left:68%"><span>3.4 쿵</span></div>
+    <div class="mk alt" style="left:71%"><span>3.55 쨍</span></div>
+    <div class="mk big" style="left:100%"><span>5.0 하얗게 · 쾅</span></div>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>시각</th><th>화면</th></tr>
+    <tr><td>0.0 – 1.3</td><td><b>거중기 밑동의 기어에 바짝 붙은 화면</b> — 나무 톱니바퀴가 돌며 밧줄이 감긴다(삐걱). 카메라는 아주 조금 더 다가간다.</td></tr>
+    <tr><td>1.3 – 2.3</td><td><b>풍경 전체로 물러난다</b> — 거중기 · 궁궐 지붕 · 하늘이 드러나고, 밧줄 끝의 <b>건축 재료 짐</b>이 흔들리며 올라가고 있다.</td></tr>
+    <tr><td>2.4 – 2.7</td><td>짐이 지붕 옆 비계에 내려앉는다. 기어가 멈춘다.</td></tr>
+    <tr><td>2.6 – 3.4</td><td><b>용마루 오른쪽 끝으로 다가간다</b>(약 2배) — 그 사이 금빛 <b>용머리</b>가 위에서 밧줄에 매달려 내려와 끝에서 느려진다.</td></tr>
+    <tr><td>3.4 쿵</td><td>용머리가 자리에 앉는다 — 살짝 튀고, 기와 먼지, 화면이 짧게 흔들린다.</td></tr>
+    <tr><td>3.55 쨍</td><td><b>곧바로</b> 햇빛이 용머리를 스치며 반짝임이 터진다.</td></tr>
+    <tr><td>3.7 – 5.0</td><td>그 자리에서 햇살이 뻗어 커지며 화면을 채우고 5.0초에 흰색. 그 뒤 지금 축하 화면.</td></tr>
+  </table>
+  </div>
+  <p>소리: 축하음 · 배경 음악 멈춤/재개는 그대로입니다. <b>있으면 좋은 것</b> 셋 — 기어 · 도르래 삐걱(0~2.3초, 나무 톱니가 도는 소리) · 「쿵」(3.4초, 묵직한 돌 · 도자기 소리) · 「쨍」(3.55초, 맑고 높은 금속성 반짝임).
+    구해 주시면 얹고, 없으면 축하음만으로 갑니다.</p>
+
+  <h3>박자 미리 보기 (그림 없이 SVG로 흉내)</h3>
+  <p class="file">지붕 · 거중기 · 짐 · 용머리는 단순한 도형입니다 — 카메라가 기어 → 풍경 → 용머리로 옮겨 가는 빠르기, 용머리가 앉는 박자, 「쨍」 뒤 빛이 차는 빠르기를 보세요. 소리는 축하음만.</p>
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 100 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d93d4"/><stop offset=".6" stop-color="#a9cdee"/><stop offset="1" stop-color="#e9f2f8"/></linearGradient>
+        <radialGradient id="sun"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#fff6d0"/><stop offset=".7" stop-color="#ffd76a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd76a" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="world">
+        <rect x="-10" y="-10" width="120" height="220" fill="url(#sky)"/>
+        <!-- 궁궐 지붕 -->
+        <path d="M4 126 Q20 112 22 96 L78 96 Q80 112 96 126 Z" fill="#3b4a5c"/>
+        <path d="M2 128 L98 128 L96 132 L4 132 Z" fill="#2a3442"/>
+        <rect x="20" y="92" width="60" height="5" rx="1" fill="#26303c"/>
+        <rect x="14" y="132" width="72" height="70" fill="#8a2b1a"/>
+        <g fill="#5a1d12"><rect x="20" y="140" width="6" height="62"/><rect x="47" y="140" width="6" height="62"/><rect x="74" y="140" width="6" height="62"/></g>
+        <!-- 비계 -->
+        <g stroke="#8b6a3e" stroke-width="1.2"><line x1="30" y1="200" x2="30" y2="104"/><line x1="44" y1="200" x2="44" y2="104"/><line x1="28" y1="106" x2="46" y2="106"/><line x1="28" y1="150" x2="46" y2="150"/></g>
+        <!-- 거중기 -->
+        <g stroke="#6b4a26" stroke-width="2.2" stroke-linecap="round"><line x1="10" y1="205" x2="10" y2="44"/><line x1="7" y1="70" x2="40" y2="34"/><line x1="4" y1="186" x2="24" y2="186"/></g>
+        <rect x="12" y="170" width="12" height="7" rx="2" fill="#7a5a34"/>
+        <g id="gear" transform="translate(18 180)"><circle r="6" fill="#8b6a3e" stroke="#4a3218" stroke-width=".8"/><g stroke="#4a3218" stroke-width="1.2"><line x1="-7.5" y1="0" x2="7.5" y2="0"/><line x1="0" y1="-7.5" x2="0" y2="7.5"/><line x1="-5.3" y1="-5.3" x2="5.3" y2="5.3"/><line x1="-5.3" y1="5.3" x2="5.3" y2="-5.3"/></g><circle r="1.6" fill="#4a3218"/></g>
+        <line x1="18" y1="172" x2="10" y2="60" stroke="#c9a46a" stroke-width=".5"/>
+        <circle cx="40" cy="34" r="2.4" fill="#4a3218"/>
+        <line id="rope1" x1="40" y1="34" x2="40" y2="190" stroke="#c9a46a" stroke-width=".7"/>
+        <g id="load"><rect x="-6" y="0" width="12" height="9" rx="1" fill="#7a5a34"/><rect x="-6" y="2" width="12" height="2" fill="#3b4a5c"/><rect x="-6" y="6" width="12" height="2" fill="#3b4a5c"/></g>
+        <!-- 용머리 -->
+        <line id="rope2" x1="74" y1="-10" x2="74" y2="0" stroke="#c9a46a" stroke-width=".7"/>
+        <g id="dragon"><path d="M-6 0 L6 0 L5 -9 Q8 -14 4 -18 Q0 -14 -2 -10 Q-7 -9 -6 0 Z" fill="#d6a531" stroke="#8a6414" stroke-width=".5"/></g>
+        <g id="dust" fill="#e9dcc0" opacity="0"><circle cx="68" cy="94" r="2"/><circle cx="80" cy="94" r="2.4"/><circle cx="74" cy="96" r="1.6"/></g>
+        <circle id="glint" cx="76" cy="80" r="0" fill="url(#sun)"/>
+        <circle id="rays" cx="74" cy="84" r="0" fill="url(#sun)"/>
+      </g>
+    </svg>
+    <div class="white" id="white"></div>
+    <div class="after" id="after">(여기서부터 지금의 축하 화면)<br>「도시 증축 완료」</div>
+    <div class="clock" id="clock">0.00s</div>
+  </div>
+  <button class="play" id="play">▶ 재생</button>
+
+  <h2>3. 참조 그림 — 화풍을 맞춘다</h2>
+  <div class="ref">
+    <img src="../assets/icons/ui/celebrate_build.png" alt="">
+    <div>
+      <p class="file">assets/icons/ui/celebrate_build.png</p>
+      <p>지금 「도시 증축 완료」 축하 화면의 비계 탑입니다. <b>거중기 · 건축 재료 짐</b>을 뽑을 때 첨부하면 같은 나무 · 밧줄 · 도르래 화풍이 나옵니다.</p>
+    </div>
+  </div>
+  <div class="ref" style="margin-top:.8rem">
+    <img src="../assets/Backgrounds/mainBackground_big.jpg" alt="">
+    <div>
+      <p class="file">assets/Backgrounds/mainBackground_big.jpg</p>
+      <p>메인 도시 그림입니다. <b>궁궐 지붕 배경 · 용머리</b>를 뽑을 때 첨부하면 같은 궁궐 지붕 · 기와 · 단청 화풍이 나옵니다(밤 그림이어도 프롬프트가 한낮으로 바꿉니다).</p>
+    </div>
+  </div>
+  <div class="box warn">
+    <b>바탕색 — 앞의 둘과 같습니다.</b>
+    <ul>
+      <li><b>거중기 · 짐 · 용머리</b>는 <b>순수 초록(#00FF00)</b> 바탕 — 제가 오립니다. 초록 기와 · 초록 단청이 들어가면 함께 깎이니 <b>초록색을 쓰지 말라</b>고 적었습니다.</li>
+      <li><b>반짝임 · 햇살</b>은 <b>순수 검정(#000000)</b> 바탕 — 「빛 더하기」로 겹칩니다.</li>
+      <li><b>궁궐 지붕 배경</b>은 그 자체가 바탕이라 오리지 않습니다 — 대신 <b>거중기 · 용머리 · 사람이 없어야</b> 합니다(따로 받아 움직이므로). 용마루 오른쪽 끝이 <b>비어 있어야</b> 용머리가 앉습니다.</li>
+      <li>밧줄은 그리지 않습니다 — 제가 그려 길이가 변하게 합니다. 거중기에 밧줄이 길게 늘어져 나오면 다시 뽑아 주세요(도르래에 감긴 짧은 부분만은 괜찮습니다).</li>
+    </ul>
+  </div>
+
+  <h2>4. 프롬프트</h2>
+  <p>받은 그림은 <code>assets/icons/ui/celebrate_intro/city/</code>에 아래 파일 이름으로 넣어 주세요.</p>
+  <div class="cards">
+
+    <div class="card">
+      <header><b>D1. 궁궐 지붕 공사장 배경 (한낮)<span class="tag">필수</span></b><span class="file">city_bg.png</span><button class="copy">복사</button></header>
+      <p class="why">메인 도시 그림을 첨부해 주세요. 세로로 받습니다. <b>용마루의 오른쪽 끝이 비어 있는 것</b>이 중요합니다 — 거기에 용머리가 내려와 앉습니다.</p>
+      <pre>Use the attached image only as the reference for the architecture and art style (painterly semi-realistic game art, ancient Chinese Three Kingdoms era palace).
+A grand palace hall under its final stage of construction, seen from the front and slightly below, in bright clear midday sunlight with a deep blue sky and a few soft white clouds.
+The hipped-gable roof with dark grey glazed tiles fills the middle of the image: its long straight main ridge runs horizontally at about 42% from the top, from about 20% to 80% of the image width. The LEFT end of the ridge has a finished ornament, but the RIGHT end of the ridge is BARE and flat — an empty stone socket waiting for a dragon-head ornament (nothing on it).
+Below the eaves, red lacquered columns and bracket sets; wooden bamboo-and-timber scaffolding with ladders stands against the LEFT half of the building and reaches up to the roof edge.
+Warm sunlight from the upper right, crisp shadows under the eaves.
+NO crane, NO hanging ropes, NO dragon head on the right end, NO people, NO green colors anywhere (no green tiles, no green paint, no trees), no text, no watermark.
+Portrait 9:16, 1152 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D2. 거중기 (나무 기중기 — 기어 바퀴 없이)<span class="tag">필수</span></b><span class="file">city_crane.png</span><button class="copy">복사</button></header>
+      <p class="why">비계 탑 그림(celebrate_build.png)을 첨부해 주세요. 화면 왼쪽에 서서 팔을 오른쪽 위로 뻗습니다. 장면이 <b>밑동의 권양기에 바짝 붙어</b> 시작하므로
+        밑동이 크고 자세해야 하고, <b>큰 톱니바퀴는 빼고</b> 축(굴대 머리)만 그립니다 — 톱니바퀴는 D2b로 따로 받아 그 축에 끼워 돌립니다. 가장 큰 크기로 받아 주세요.</p>
+      <pre>Use the attached image as the exact reference for the art style, wood, rope and pulley design (painterly semi-realistic game art, ancient Chinese construction).
+Draw ONLY a tall wooden construction crane (an ancient Chinese timber derrick), seen exactly from the side: a thick vertical wooden mast standing on a heavy braced timber base at the bottom, with a long wooden boom that rises diagonally from the mast toward the UPPER RIGHT, held by rope stays. At the very tip of the boom hangs one large wooden pulley wheel.
+At the foot of the mast, a sturdy wooden winch: a horizontal rope drum with thick rope wound on it, mounted between two timber side posts, and in FRONT of the drum a bare round wooden AXLE HUB sticking out toward the viewer (a large gear wheel will be attached there later — do NOT draw any gear or cogwheel). The winch area is large and richly detailed (wood grain, iron bands, rope fibers), because it will be shown in close-up.
+The rope runs from the drum up along the mast and the boom to the pulley at the tip; NOTHING hangs down from the pulley (no hanging rope, no hook, no load).
+The whole crane fully visible, the base at the bottom-left, the pulley near the top-right corner, filling about 90% of the image height, with clear margin on every side.
+Warm midday sunlight from the upper right.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no ground, no cast shadow, no green tint on the wood.
+No people, no buildings, no gears, no text, no watermark.
+Portrait 2:3, the largest size available (at least 1366 x 2048).</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D2b. 기어 바퀴 (정면)<span class="tag">필수</span></b><span class="file">city_gear.png</span><button class="copy">복사</button></header>
+      <p class="why">처음 1.3초 화면의 주인공입니다. 거중기 축에 끼워 제가 돌립니다 — 돌려도 어색하지 않게 <b>정면에서 본 완전한 원</b>이어야 합니다(비스듬하면 돌 때 찌그러져 보입니다).</p>
+      <pre>Use the attached image as the reference for the art style and wood (painterly semi-realistic game art, ancient Chinese construction machinery).
+Draw ONLY one large wooden cogwheel (gear wheel) of an ancient crane winch, seen PERFECTLY FACE-ON (a perfect circle, no perspective, no tilt): a thick wooden rim with evenly spaced square wooden teeth all around, eight straight wooden spokes, a round iron-banded hub with a square axle hole in the exact center, iron rivets and nails, worn wood grain.
+Even, flat lighting from the front with only soft shading (so it still looks right when rotated); no strong directional shadow, no motion blur.
+The wheel exactly centered, filling about 90% of the image, with clear margin on every side.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no cast shadow, no green tint on the wood.
+No rope, no other parts, no people, no text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D3. 건축 재료 짐<span class="tag">필수</span></b><span class="file">city_load.png</span><button class="copy">복사</button></header>
+      <p class="why">밧줄에 매달려 올라오는 짐입니다. 맨 위 가운데의 매듭 고리에 제가 밧줄을 잇습니다.</p>
+      <pre>Use the attached image as the reference for the art style, wood and rope (painterly semi-realistic game art, ancient Chinese construction).
+Draw ONLY a bundle of building materials hanging from a single rope loop: a wooden pallet tray carrying neatly stacked dark grey curved roof tiles and a few short square timber beams, all bound tightly with ropes. Four ropes rise from the corners of the tray and meet in one knotted loop at the TOP CENTER (the hanging point). Nothing above the loop.
+Seen from the front and slightly below, the whole bundle fully visible and centered, filling about 70% of the image width, with clear margin on every side.
+Warm midday sunlight from the upper right.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no ground, no cast shadow, no green tint, no green tiles.
+No people, no crane, no text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D4. 용머리 장식 (용마루 끝)<span class="tag">필수</span></b><span class="file">city_dragon.png</span><button class="copy">복사</button></header>
+      <p class="why">용마루 오른쪽 끝에 앉는 장식입니다. <b>밑면이 평평하고 그림의 맨 아래에 닿아야</b> 지붕에 딱 맞게 앉습니다. 햇빛에 「쨍」 하도록 금빛 유약입니다.</p>
+      <pre>Use the attached image only as the reference for the art style (painterly semi-realistic game art, ancient Chinese palace).
+Draw ONLY a single roof-ridge dragon-head ornament (a chiwen / dragon finial that sits on the end of a palace roof ridge), made of glossy GOLDEN-YELLOW glazed ceramic with deep amber shading and a few bright specular highlights: a fierce dragon head with an open mouth facing LEFT, curling whiskers and mane, and its tail sweeping up and curling backward high above the head, with flame-like scales.
+Seen exactly from the side. Its base is a FLAT rectangular block at the very bottom (where it sits on the ridge), perfectly horizontal.
+The whole ornament fully visible and centered, filling about 80% of the image height, with clear margin on every side; nothing above it (no rope, no hook).
+Bright midday sunlight from the upper right making the golden glaze shine.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no roof, no cast shadow, no green tint or green glaze.
+No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D5. 햇빛 반짝임 「쨍」<span class="tag">필수</span></b><span class="file">city_glint.png</span><button class="copy">복사</button></header>
+      <p class="why">용머리 금빛 위에 「쨍」 하고 터지는 반짝임입니다. 별 빛망울과 비슷하지만 따뜻한 금빛 · 렌즈 빛입니다.</p>
+      <pre>A single sharp sunlight glint reflecting off polished gold, seen head-on, painterly game effect art.
+A tiny blinding pure-white core, a warm golden-white glow, four long razor-thin light spikes (up, down, left, right) and two shorter diagonal spikes, plus a faint small rainbow-tinted lens-flare ring around the core.
+Warm white-gold colors.
+Pure black background (#000000). Nothing else in the image.
+The glint is centered, and all the glow and spikes fade smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 1024 x 1024.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>D6. 햇살 (빛이 화면을 채운다)<span class="tag opt">있으면 좋음</span></b><span class="file">city_rays.png</span><button class="copy">복사</button></header>
+      <p class="why">「쨍」 바로 뒤(3.7초)부터 용머리에서 뻗어 화면을 덮는 햇살입니다. 없으면 반짝임을 키우고 둥근 빛으로 대신합니다.</p>
+      <pre>A radiant burst of sunlight god-rays, seen head-on, painterly semi-realistic game effect art.
+A huge bright white-gold core with many long straight sunbeams of different widths radiating outward in all directions, warm golden-yellow fading to soft amber, with a gentle glow between the beams and a few tiny floating golden light motes.
+Pure black background (#000000). Nothing else: no sky, no clouds, no buildings.
+The burst is centered, and the rays fade smoothly to pure black before the edges of the image.
+No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+  </div>
+
+  <h2>5. 영상 안 (참고)</h2>
+  <p>영상으로 받는다면 D1 배경에 D2 · D4를 합친 장면을 첫 장면으로 넣습니다. 다만 짐 → 용머리 순서와 「쿵」 · 「쨍」 박자는 맞추기 어려워 낱장을 권합니다.</p>
+  <div class="cards">
+    <div class="card">
+      <header><b>V1. 용머리 올리기 영상</b><span class="file">city_raise.mp4</span><button class="copy">복사</button></header>
+      <pre>Start in an extreme close-up of the wooden cogwheel of the crane winch turning and winding rope, then the camera pulls back smoothly to reveal the whole palace roof under construction from the start image, bright midday sun, clear blue sky.
+A wooden crane on the left hauls a rope-bound bundle of roof tiles and timber up from below; it swings gently and lands on the scaffolding by the roof. Then the camera moves in toward the bare right end of the main ridge while a golden glazed dragon-head roof ornament is slowly lowered on a rope from above and settles onto the bare right end of the main ridge with a small bounce and a puff of dust.
+Immediately the sunlight catches the golden dragon head: a sharp bright glint flashes, and warm golden sunbeams burst out from it, growing until the whole frame is pure white.
+No people, no text. Painterly semi-realistic game art, ancient Chinese style. 5 seconds, 24 fps, portrait 9:16.</pre>
+    </div>
+  </div>
+
+  <h2>6. 받은 뒤 제가 하는 일 (같은 길)</h2>
+  <ol>
+    <li><code>tools/build_celebrate_intro.py</code>에 도시 그림을 더해 굽기 — 거중기 · 짐 · 용머리는 오려 PNG로, 배경은 JPG로, 반짝임 · 햇살은 검정 바탕 그대로.</li>
+    <li>도르래 끝 · 권양기 축 · 짐 고리 · 용머리 밑면 · 용마루 빈자리를 <b>그림 안의 비율</b>로 재서 밧줄 · 기어 · 짐 · 용머리 자리와 카메라가 머무는 곳(기어 · 용마루 끝)을 맞추기.</li>
+    <li><code>Celebrate</code>의 도입부 종류에 <code>city</code>를 더하고 도시 증축 축하(<code>CityUpgrade</code>)만 쓰게 하기.</li>
+    <li>완성본 재생 페이지(<code>Design/축하연출_도시증축_도입부_완성본.html</code>)를 만들어 시각마다 멈춰 찍어 확인하고, 게임 안에서도 확인하기.</li>
+  </ol>
+</main>
+
+<script>
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.closest('.card').querySelector('pre').innerText;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      btn.textContent = '복사됨'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 1400);
+    });
+  });
+
+  // 박자 미리 보기
+  const $ = (id) => document.getElementById(id);
+  const world = $('world'), rope1 = $('rope1'), load = $('load'), rope2 = $('rope2'), dragon = $('dragon'), dust = $('dust');
+  const glint = $('glint'), rays = $('rays'), white = $('white'), after = $('after'), clock = $('clock');
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const ease = (v) => v < .5 ? 2 * v * v : 1 - Math.pow(-2 * v + 2, 2) / 2;
+  const easeOut = (v) => 1 - Math.pow(1 - v, 3);
+  const SEAT = 92;   // 용머리 밑면이 앉는 용마루 높이
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const gear = $('gear');
+  /** 카메라 — [배율, 가운데 x, 가운데 y]: 기어 바짝 → 풍경 전체 → 용마루 끝 */
+  function camera(s) {
+    const CLOSE = [3.2, 18, 178], WIDE = [1, 50, 100], DRAGON = [2.0, 72, 86];
+    if (s < 1.3) { const t = s / 1.3; return [CLOSE[0] * (1 + .06 * t), CLOSE[1], CLOSE[2]]; }
+    if (s < 2.3) { const t = ease((s - 1.3) / 1); const z0 = CLOSE[0] * 1.06; return [lerp(z0, WIDE[0], t), lerp(CLOSE[1], WIDE[1], t), lerp(CLOSE[2], WIDE[2], t)]; }
+    if (s < 2.6) return WIDE;
+    const t = ease(clamp((s - 2.6) / .8)); return [lerp(WIDE[0], DRAGON[0], t), lerp(WIDE[1], DRAGON[1], t), lerp(WIDE[2], DRAGON[2], t)];
+  }
+  function draw(ms) {
+    const s = ms / 1000;
+    world.style.opacity = clamp(s / .4);
+    // 기어 — 2.4초까지 돈다(처음 빠르게, 짐이 닿을 무렵 멈춘다)
+    gear.setAttribute('transform', `translate(18 180) rotate(${(Math.min(s, 2.4) * 240 - Math.max(0, s - 2.0) ** 2 * 120).toFixed(1)})`);
+    // 짐: 0.8 → 2.4초 올라옴(흔들림 — 물러나는 동안 보인다), 2.4 → 2.7 비계로 옆걸음 · 내려앉음
+    const up = ease(clamp((s - .8) / 1.6));
+    const side = ease(clamp((s - 2.4) / .3));
+    const sway = Math.sin(s * 5) * 2.2 * (1 - side);
+    const ly = 205 - up * 105 + side * 2, lx = 40 + sway - side * 3;
+    load.setAttribute('transform', `translate(${lx} ${ly})`);
+    rope1.setAttribute('x2', lx); rope1.setAttribute('y2', ly);
+    // 용머리: 2.5 → 3.4초 내려옴(끝에서 느려짐), 3.4 쿵 · 살짝 튐
+    const down = easeOut(clamp((s - 2.5) / .9));
+    const bounce = s > 3.4 ? Math.sin(clamp((s - 3.4) / .22) * Math.PI) * 1.4 : 0;
+    const dy = -30 + down * (SEAT + 30) - bounce;
+    dragon.setAttribute('transform', `translate(74 ${dy})`);
+    rope2.setAttribute('y2', dy - 18);
+    rope2.style.opacity = 1 - clamp((s - 3.45) / .25);
+    dust.style.opacity = s > 3.4 ? Math.max(0, 1 - (s - 3.4) / .6) : 0;
+    const shake = s > 3.4 && s < 3.62 ? Math.sin(s * 120) * .6 : 0;
+    const [z, cx, cy] = camera(s);
+    world.setAttribute('transform', `translate(50 100) scale(${z}) translate(${-cx + shake} ${-cy})`);
+    // 쨍(곧바로) · 햇살
+    const g = clamp((s - 3.55) / .1) * (1 - clamp((s - 3.85) / .3));
+    glint.setAttribute('r', (g * 9).toFixed(2));
+    const r = clamp((s - 3.7) / 1.3);
+    rays.setAttribute('r', (r * r * 140).toFixed(2));
+    white.style.opacity = clamp((s - 4.8) / .2);
+  }
+  let raf = 0, bang = null;
+  function reset() { cancelAnimationFrame(raf); after.style.transition = 'none'; after.style.opacity = 0; white.style.transition = 'none'; if (bang) { bang.pause(); bang = null; } draw(0); clock.textContent = '0.00s'; }
+  reset();
+  $('play').addEventListener('click', () => {
+    reset();
+    bang = new Audio('../assets/Audio/effects/celebrate.mp3'); bang.play().catch(() => {});
+    const t0 = performance.now();
+    const tick = () => {
+      const ms = performance.now() - t0;
+      clock.textContent = (ms / 1000).toFixed(2) + 's';
+      if (ms < 5000) { draw(ms); raf = requestAnimationFrame(tick); }
+      else { draw(5000); after.style.transition = 'opacity .7s'; after.style.opacity = 1; white.style.transition = 'opacity .7s'; white.style.opacity = 0; }
+    };
+    tick();
+  });
+</script>
+</body>
+</html>
