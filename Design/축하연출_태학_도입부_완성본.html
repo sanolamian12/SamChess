@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>태학 도입부 완성본</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  .lead { color: #5b4a36; margin: 0 0 1.2rem; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .wrap { display: flex; gap: 1.6rem; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+  .side { flex: 1 1 300px; max-width: 460px; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+
+  /* 게임의 #frame과 같은 1:2 세로 판 */
+  .frame { position: relative; width: min(360px, 100%); aspect-ratio: 1 / 2; background: #1b1410; border-radius: .6rem; overflow: hidden;
+    box-shadow: 0 6px 24px #0005; container-type: size; }
+  .frame .idle { position: absolute; inset: 0; display: grid; place-items: center; color: #c9b38b; font-size: .95rem; text-align: center; padding: 1rem; }
+  .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #c9b38b; z-index: 9; mix-blend-mode: difference; }
+  .ctl { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-top: .9rem; }
+  .ctl button { font: inherit; padding: .45rem 1.1rem; border: 0; border-radius: 2rem; background: #8f8068; color: #fff; cursor: pointer; }
+  .ctl button.play { background: var(--accent); padding: .5rem 1.5rem; }
+  .ctl button.on { background: var(--jade); }
+  .note { font-size: .85rem; color: #6d5a45; text-align: center; margin: .4rem 0 0; }
+
+  /* 무대(5초 뒤) — 지금 축하 화면의 자리 표시. 실제 화면은 게임의 Celebrate 무대다 */
+  .after { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: .6rem;
+    background: radial-gradient(circle at 50% 45%, #fff 0%, #ffe9b0 55%, #e0b25a 100%); color: #6a4a12; text-align: center;
+    animation: aft-in .8s ease-out both; }
+  .after img { width: 46%; animation: aft-pop .5s .25s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .after b { font-size: 1.5rem; }
+  .after small { font-size: .82rem; color: #8a6a32; }
+  @keyframes aft-in { from { filter: brightness(1.6); } }
+  @keyframes aft-pop { from { scale: 2.2; opacity: 0; } }
+
+  /* ↓↓ 여기부터 packages/client/src/style.css의 .cia-* · .ciw-* 블록 그대로 (2026-11-22) ↓↓ */
+  .cel-charge { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+/* ── 태학 도입부(`intro="academy"`, 2026-11-22 기획자) — 누대 위의 선비가 뒷짐을 지고 밤하늘을 올려다본다 → 0.7~1.6초 시선이 치솟는다
+   (땅 · 선비는 빠르게 빠지고 하늘은 천천히 내려오며 커진다 — 시차) → 별이 뜨고 빛줄이 하나씩 이어지며 이어진 별이 밝아진다 → 칠성이 완성되면
+   한 번 맥동하고 모든 별이 터져 5초에 하얘진다. 별 자리 · 빛줄의 시각은 `Celebrate.tsx`의 `ACADEMY_STARS` · `ACADEMY_T`(늦춤을 style로 준다).
+   ★ 별 그림은 검정 바탕이라 **별 상자(`.cia-star`) 자신이 「더하기」로 겹친다** — 별을 감싸는 상자에 opacity · filter를 걸면 그 상자가 따로
+   그려져 검은 네모가 드러난다. 그래서 별들의 부모에는 아무 효과도 걸지 않고, 맥동은 별 그림 하나하나에 건다. */
+.cin-academy { background: #000; }
+.cia-scene { position: absolute; inset: 0; animation: cia-in .7s ease-out both; }
+@keyframes cia-in { from { opacity: 0; } }
+.cia-sky {
+  position: absolute; left: -20%; width: 140%; height: auto; max-width: none; top: -24%;
+  transform-origin: 50% 30%; animation: cia-sky 5s linear both;
+}
+@keyframes cia-sky {
+  0% { top: -24%; scale: 1; animation-timing-function: linear; }
+  14% { top: -22%; scale: 1; animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+  34% { top: 0%; scale: 1.06; animation-timing-function: linear; }
+  100% { top: 1%; scale: 1.08; }
+}
+.cia-ground { position: absolute; inset: 0; animation: cia-ground 5s linear both; }
+@keyframes cia-ground {
+  0% { translate: 0 0; animation-timing-function: linear; }
+  14% { translate: 0 -1%; animation-timing-function: cubic-bezier(.5, 0, .75, .4); }
+  32%, 100% { translate: 0 105%; }
+}
+/* 누대(16:9)는 처마 끝이 양옆에 걸리게 넓게, 선비는 그 바닥 가운데에 — 발이 바닥 돌 위에 선다 */
+.cia-terrace { position: absolute; left: -17.5%; bottom: 0; width: 135%; height: auto; max-width: none; }
+.cia-scholar { position: absolute; left: 50%; bottom: 1.5%; height: 36%; width: auto; translate: -50% 0; }
+/* 빛줄 — 시각(늦춤 · 길이)은 줄마다 style로 */
+.cia-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 3px #8fb4ffcc); animation: cia-lines-pulse 5s linear both; }
+.cia-lines line { stroke: #dce8ff; stroke-width: .7; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation-name: cia-draw; animation-timing-function: ease-out; animation-fill-mode: forwards; }
+@keyframes cia-draw { to { stroke-dashoffset: 0; } }
+@keyframes cia-lines-pulse {
+  0%, 83% { filter: drop-shadow(0 0 3px #8fb4ffcc); }
+  89% { filter: drop-shadow(0 0 7px #cfe0ff) brightness(1.6); }
+  95%, 100% { filter: drop-shadow(0 0 10px #fff) brightness(2); }
+}
+.cia-star {
+  position: absolute; width: 17%; aspect-ratio: 1; translate: -50% -50%; mix-blend-mode: screen; opacity: 0; scale: .3;
+  animation-name: cia-star-on, cia-star-lit; animation-duration: .35s, .45s; animation-timing-function: ease-out, cubic-bezier(.2, 1.6, .4, 1);
+  animation-fill-mode: forwards, forwards;
+}
+.cia-star[data-dipper] { width: 22%; }
+.cia-star img { display: block; width: 100%; height: 100%; animation: cia-twinkle 1.3s ease-in-out infinite alternate, cia-star-pulse 5s linear both; }
+.cia-star:nth-child(odd of .cia-star) img { animation-duration: 1.7s, 5s; }
+@keyframes cia-star-on { to { opacity: 1; scale: 1; } }
+/* 이어진 별 — 한 단계 커지고 밝아진 채 남는다 */
+@keyframes cia-star-lit { from { opacity: 1; scale: 1; filter: brightness(1); } to { opacity: 1; scale: 1.45; filter: brightness(1.5); } }
+@keyframes cia-twinkle { from { opacity: .72; rotate: -4deg; } to { opacity: 1; rotate: 4deg; } }
+/* 칠성 완성(4.15초) — 다 함께 한 번 크게 맥동 */
+@keyframes cia-star-pulse {
+  0%, 82% { filter: brightness(1); scale: 1; }
+  87% { filter: brightness(2.2); scale: 1.35; }
+  92% { filter: brightness(1.7); scale: 1.15; }
+  100% { filter: brightness(2.6); scale: 1.6; }
+}
+/* 마지막 — 칠성 하나하나에서 별빛이 터져 화면을 덮는다(늦춤은 별마다 style로) */
+.cia-burst {
+  position: absolute; width: 50%; height: auto; max-width: none; translate: -50% -50%; mix-blend-mode: screen; opacity: 0; scale: .1;
+  animation: cia-burst .55s cubic-bezier(.5, 0, .9, .6) forwards;
+}
+@keyframes cia-burst { 0% { opacity: 1; scale: .1; } 100% { opacity: 1; scale: 7; } }
+/* 거미줄(`academy` — 북두칠성 `academyDipper`는 백업, 2026-11-22 기획자) — 별 서른 사이 빛줄 약 240이 가운데에서 바깥으로 세 물결로 번지고,
+   줄이 늘수록 빛이 짙어지며 화면 가운데부터 빛이 차오른다(`ciw-glow`). 줄마다 늦춤 · 길이 · 옅기는 `Celebrate.tsx`의 계획(`StarPlan`)이 style로 준다. 지금 쓰는 번짐(`academy`)도 이 줄 꼴(`ciw-lines`)이다 */
+.ciw-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: ciw-lines-glow 5s linear both; }
+.ciw-lines line { stroke: #dce8ff; stroke-width: .36; stroke-linecap: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation-name: cia-draw; animation-timing-function: ease-out; animation-fill-mode: forwards; }
+@keyframes ciw-lines-glow {
+  0%, 50% { filter: drop-shadow(0 0 2px #8fb4ffcc); }
+  75% { filter: drop-shadow(0 0 4px #b8d0ff) brightness(1.2); }
+  90% { filter: drop-shadow(0 0 8px #e6f0ff) brightness(1.6); }
+  100% { filter: drop-shadow(0 0 12px #fff) brightness(2.2); }
+}
+.ciw-glow {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+  background: radial-gradient(ellipse 70% 45% at 61% 50%, #fff 0%, #d8e6ff 35%, #8fb4ff55 65%, #8fb4ff00 100%);
+  animation: ciw-glow 5s linear both;
+}
+@keyframes ciw-glow { 0%, 54% { opacity: 0; } 72% { opacity: .18; } 86% { opacity: .45; } 100% { opacity: 1; } }
+/* 번짐(`academy`) — 줄이 몰아치기 시작한 뒤(3.3초)부터 가파르게: 「확 밝아진다」 */
+.ciw-glow[data-ramp="late"] { animation-name: ciw-glow-late; }
+@keyframes ciw-glow-late { 0%, 66% { opacity: 0; } 76% { opacity: .3; } 86% { opacity: .7; } 100% { opacity: 1; } }
+.ciw-lines[data-weight="bold"] line { stroke-width: .55; }
+.cia-star[data-size="0"] { width: 15%; }
+.cia-star[data-size="1"] { width: 12%; }
+.cia-star[data-size="2"] { width: 18%; }
+.cin-whiteout { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cin-whiteout 5s ease-in both; }
+@keyframes cin-whiteout { 0%, 92% { opacity: 0; } 100% { opacity: 1; } }
+  /* ↑↑ 여기까지 ↑↑ */
+</style>
+</head>
+<body>
+<main>
+  <h1>태학 책략 개량 완료 — 도입부 완성본 · 번짐(지금) · 북두칠성 · 거미줄(백업)</h1>
+  <p class="lead">게임에 붙인 그대로의 그림 · 움직임입니다. 그림은 <span class="file">packages/client/public/ui/intro-academy-*</span>,
+    움직임은 <span class="file">style.css</span>의 <code>.cia-*</code> 블록을 그대로 옮겼고, 별 자리 · 빛줄 시각은 <span class="file">Celebrate.tsx</span>의
+    <code>ACADEMY_STARS</code> · <code>ACADEMY_T</code>와 같은 값입니다. 소리는 축하음뿐입니다. 5초 뒤의 무대는 자리 표시입니다(실제는 지금 「연구 완료」 축하 화면).</p>
+
+  <div class="wrap">
+    <div>
+      <div class="frame" id="frame">
+        <div class="idle" id="idle">▶ 재생을 누르세요</div>
+        <div class="clock" id="clock">0.00s</div>
+      </div>
+      <div class="ctl">
+        <button class="play" id="play">▶ 재생</button>
+      </div>
+      <div class="ctl" id="kinds">
+        <button data-kind="academy" class="on">번짐 (지금)</button>
+        <button data-kind="academyDipper">북두칠성 (백업)</button>
+        <button data-kind="academyWeb">거미줄 (백업)</button>
+      </div>
+      <div class="ctl" id="speeds">
+        <button data-rate="1" class="on">1배</button>
+        <button data-rate="0.5">0.5배</button>
+        <button data-rate="0.25">0.25배</button>
+      </div>
+      <p class="note">느리게 볼 때는 소리를 끕니다.</p>
+    </div>
+
+    <div class="side">
+      <table>
+        <tr><th>시각</th><th>화면</th></tr>
+        <tr><td>0.0 – 0.7</td><td>어둠에서 떠오른다 — 누대 위 선비가 뒷짐을 지고 하늘을 올려다본다. 축하음 시작.</td></tr>
+        <tr><td>0.7 – 1.6</td><td>시선이 치솟는다 — 선비 · 누대는 아래로 빠르게, 하늘은 천천히 내려오며 커진다.</td></tr>
+        <tr><td colspan="2"><b>번짐 (지금)</b> — 별 열넷(칠성 일곱 + 흩어진 넷 + 셋)이 1.4초부터 뜬다. 처음 세 줄은 칠성을 따라 천천히(2.0 · 2.42 · 2.78초),
+          3.05초부터 나머지 58줄이 점점 좁아지는 간격으로 천권 둘레부터 몰아쳐 4.3초쯤 거의 다 이어진다. 빛은 3.3초부터 가파르게 차오른다 → 4.45초 별 열에서 터져 5.0초 하얗게.</td></tr>
+        <tr><td colspan="2"><b>북두칠성 (백업)</b> — 별 열하나, 빛줄 일곱이 0.31초마다 하나씩 칠성을 그린다(요광 → … → 천추 → 천권). 4.1초 완성 맥동 → 칠성에서 터져 하얗게.</td></tr>
+        <tr><td colspan="2"><b>거미줄 (백업)</b> — 별 서른, 빛줄 약 240이 세 물결(2.0 · 2.7 · 3.4초~)로 가운데에서 바깥으로 번지고, 2.7초부터 빛이 차오른다.</td></tr>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+  const UI = '../packages/client/public/ui/', FX = '../packages/client/public/effects/';
+  const CHARGE_MS = 5000, STAR_ON = 1400;
+  // ── Celebrate.tsx의 계획(StarPlan) 셋을 그대로 옮긴 것 — 그쪽을 고치면 여기도
+  const dist = (s, a, b) => Math.hypot(s[a][0] - s[b][0], s[a][1] - s[b][1]);
+  const DIPPER_STARS = [[16, 74], [31, 83], [45, 89], [58, 98], [60, 117], [84, 124], [87, 102], [22, 52], [74, 60], [30, 144], [80, 156]];
+  const DIPPER_PLAN = {
+    stars: DIPPER_STARS,
+    edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]].map(([a, b], i) => ({ a, b, at: 2000 + i * 310, dur: 260, op: 1 })),
+    onMs: (i) => STAR_ON + i * 50, big: (i) => i < 7, bursts: [0, 1, 2, 3, 4, 5, 6], lines: 'cia-lines',
+  };
+  const SPREAD_STARS = [...DIPPER_STARS, [48, 40], [12, 118], [56, 162]];
+  const SPREAD_EDGES = (() => {
+    const S = SPREAD_STARS;
+    const first = [[0, 1], [1, 2], [2, 3]].map(([a, b], i) => ({ a, b, at: [2000, 2420, 2780][i], dur: 300, op: 1 }));
+    const taken = new Set(first.map((e) => `${e.a}-${e.b}`));
+    const hub = 3, rest = [];
+    for (let a = 0; a < S.length; a += 1) for (let b = a + 1; b < S.length; b += 1) {
+      const d = dist(S, a, b);
+      if (d >= 70 || taken.has(`${a}-${b}`)) continue;
+      const near = dist(S, hub, a) <= dist(S, hub, b);
+      const mid = Math.hypot((S[a][0] + S[b][0]) / 2 - S[hub][0], (S[a][1] + S[b][1]) / 2 - S[hub][1]);
+      rest.push({ a: near ? a : b, b: near ? b : a, d, from: mid + d * 0.35 });
+    }
+    rest.sort((x, y) => x.from - y.from);
+    const n = rest.length;
+    return [...first, ...rest.map((r, k) => ({ a: r.a, b: r.b, at: Math.round(3050 + 1250 * Math.sqrt(k / n)), dur: Math.round(300 - 140 * (k / n)), op: r.d < 40 ? 0.95 : r.d < 55 ? 0.7 : 0.45 }))];
+  })();
+  const SPREAD_PLAN = { stars: SPREAD_STARS, edges: SPREAD_EDGES, onMs: (i) => STAR_ON + i * 45, big: (i) => i < 7, bursts: [0, 1, 2, 3, 4, 5, 6, 7, 9, 13], lines: 'ciw-lines', glow: 'late', weight: 'bold' };
+  const WEB_STARS = [[15, 156], [89, 39], [7, 41], [73, 119], [86, 148], [35, 62], [36, 39], [82, 65], [88, 171], [33, 126],
+    [53, 138], [17, 112], [89, 83], [61, 101], [55, 48], [33, 96], [84, 103], [61, 170], [18, 82], [70, 80],
+    [11, 176], [39, 157], [9, 62], [91, 128], [6, 139], [37, 179], [53, 69], [53, 118], [69, 35], [67, 152]];
+  const WEB_WAVES = [{ max: 30, start: 2000, span: 1000, dur: 320, op: 0.95 }, { max: 45, start: 2700, span: 1000, dur: 360, op: 0.55 }, { max: 70, start: 3400, span: 900, dur: 380, op: 0.28 }];
+  const WEB_PLAN = {
+    stars: WEB_STARS,
+    edges: (() => {
+      const o = 13, [ox, oy] = WEB_STARS[o];
+      const far = Math.max(...WEB_STARS.map(([x, y]) => Math.hypot(x - ox, y - oy)));
+      const out = [];
+      for (let a = 0; a < WEB_STARS.length; a += 1) for (let b = a + 1; b < WEB_STARS.length; b += 1) {
+        const w = WEB_WAVES.find((v) => dist(WEB_STARS, a, b) < v.max);
+        if (!w) continue;
+        const near = dist(WEB_STARS, o, a) <= dist(WEB_STARS, o, b);
+        const mid = Math.hypot((WEB_STARS[a][0] + WEB_STARS[b][0]) / 2 - ox, (WEB_STARS[a][1] + WEB_STARS[b][1]) / 2 - oy);
+        out.push({ a: near ? a : b, b: near ? b : a, at: Math.round(w.start + (mid / far) * w.span), dur: w.dur, op: w.op });
+      }
+      return out;
+    })(),
+    onMs: (i) => STAR_ON + i * 25, big: () => false, size: (i) => i % 3, bursts: [13, 5, 3, 11, 7, 17, 25, 1], lines: 'ciw-lines', glow: 'early', weight: 'thin',
+  };
+  const PLANS = { academy: SPREAD_PLAN, academyDipper: DIPPER_PLAN, academyWeb: WEB_PLAN };
+  const litMs = (plan, k) => { let at = null; for (const e of plan.edges) { const w = k === e.a ? e.at : k === e.b ? e.at + e.dur : null; if (w !== null && (at === null || w < at)) at = w; } return at; };
+
+  function sceneHtml(plan) {
+    const S = plan.stars;
+    const lines = plan.edges.map((e) => `<line x1="${S[e.a][0]}" y1="${S[e.a][1]}" x2="${S[e.b][0]}" y2="${S[e.b][1]}" pathLength="1" style="opacity:${e.op};animation-delay:${e.at}ms;animation-duration:${e.dur}ms"/>`).join('');
+    const stars = S.map(([x, y], i) => {
+      const lit = litMs(plan, i);
+      const size = plan.size ? ` data-size="${plan.size(i)}"` : '';
+      return `<i class="cia-star"${plan.big(i) ? ' data-dipper' : ''}${size} style="left:${x}%;top:${y / 2}%;animation-delay:${plan.onMs(i)}ms, ${lit === null ? '9999s' : lit + 'ms'}"><img src="${UI}intro-academy-star-${(i % 2) + 1}.jpg" alt="" style="animation-delay:${-(i * 0.37).toFixed(2)}s, 0s"></i>`;
+    }).join('');
+    const bursts = plan.bursts.map((k, i) => `<img class="cia-burst" src="${UI}intro-academy-flash.jpg" alt="" style="left:${S[k][0]}%;top:${S[k][1] / 2}%;animation-delay:${4450 + i * 30}ms">`).join('');
+    return `<div class="cel-charge cin-academy"><div class="cia-scene"><img class="cia-sky" src="${UI}intro-academy-sky.jpg" alt="">
+      <div class="cia-ground"><img class="cia-terrace" src="${UI}intro-academy-terrace.png" alt=""><img class="cia-scholar" src="${UI}intro-academy-scholar.png" alt=""></div></div>
+      <svg class="${plan.lines}"${plan.weight ? ` data-weight="${plan.weight}"` : ''} viewBox="0 0 100 200" preserveAspectRatio="none">${lines}</svg>
+      ${plan.glow ? `<span class="ciw-glow" data-ramp="${plan.glow}"></span>` : ''}${stars}${bursts}<span class="cin-whiteout"></span></div>`;
+  }
+
+  const frame = document.getElementById('frame'), clock = document.getElementById('clock'), idle = document.getElementById('idle');
+  let rate = 1, kind = 'academy', timers = [], raf = 0, sounds = [], scene = null;
+  function stop() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    sounds.forEach((a) => a.pause()); sounds = [];
+    frame.querySelectorAll('.cel-charge, .after').forEach((n) => n.remove());
+  }
+  function sfx(name) {
+    if (rate !== 1) return;
+    const a = new Audio(FX + name + '.mp3'); sounds.push(a); a.play().catch(() => {});
+  }
+  function play() {
+    stop(); idle.hidden = true;
+    const wrap = document.createElement('div'); wrap.innerHTML = sceneHtml(PLANS[kind]);
+    scene = wrap.firstElementChild; frame.append(scene);
+    scene.getAnimations({ subtree: true }).forEach((an) => (an.playbackRate = rate));
+    sfx('celebrate');
+    timers.push(setTimeout(() => {
+      scene.remove();
+      const after = document.createElement('div'); after.className = 'after';
+      after.innerHTML = `<img src="${UI}cel-scroll.png" alt=""><b>연구 완료</b><small>(여기서부터 지금의 축하 무대)</small>`;
+      frame.append(after);
+    }, CHARGE_MS / rate));
+    const t0 = performance.now();
+    const tick = () => {
+      const s = ((performance.now() - t0) * rate) / 1000;
+      clock.textContent = s.toFixed(2) + 's';
+      if (s < 7) raf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  document.getElementById('play').addEventListener('click', play);
+  document.querySelectorAll('#kinds button').forEach((b) => b.addEventListener('click', () => {
+    kind = b.dataset.kind;
+    document.querySelectorAll('#kinds button').forEach((x) => x.classList.toggle('on', x === b));
+    play();
+  }));
+  document.querySelectorAll('#speeds button').forEach((b) => b.addEventListener('click', () => {
+    rate = Number(b.dataset.rate);
+    document.querySelectorAll('#speeds button').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+</script>
+</body>
+</html>

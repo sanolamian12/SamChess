@@ -14,7 +14,9 @@
  * | 닫힘 | **화면 아무 데나 누르거나 아무 키나** — 무대가 커지며 번쩍 사라지고(`data-leaving`, .36초) 그 뒤 `onClose`. **배경 음악은 이 화면이 다 사라진 뒤에** 다시 돈다 |
  *
  * **도입부(`intro`)는 갈래마다 바꿀 수 있다** (2026-11-21 기획자) — 기본은 위의 세 빛 나선(`swirl`), 대장간 제작 완료는
- * 모루 위 망치질 세 번(`forge` — 1.5 · 3.0 · 4.5초에 「깡」, 앞의 둘은 맞는 자리에서 화면 절반까지 번쩍, 셋째는 끝까지 커져 하얘진다).
+ * 모루 위 망치질 세 번(`forge` — 1.5 · 3.0 · 4.5초에 「깡」, 앞의 둘은 맞는 자리에서 화면 절반까지 번쩍, 셋째는 끝까지 커져 하얘진다),
+ * 태학 연구 완료는 별의 번짐(`academy`, 2026-11-22 — 뒷짐 진 선비가 밤하늘을 올려다보고, 시선이 치솟아 칠성의 별이 하나둘 이어지다
+ * 급속히 번져 거의 다 이어지며 화면이 확 밝아진다). 먼저 만든 북두칠성(`academyDipper`) · 거미줄(`academyWeb`)은 기획자가 백업으로 남겼다(쓰는 자리 없음).
  * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
  *
  * 모으는 동안은 눌러도 · 키를 눌러도 안 닫힌다(소리와 맞춘 연출이다). **`data-modal`은 무대가 열린 뒤에야 붙는다** — 검사가
@@ -46,7 +48,7 @@ const LEAVE_MS = 360;
  */
 const CHARGE_MS = 5000;
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
-export type CelebrateIntro = 'swirl' | 'forge';
+export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb';
 /**
  * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
  * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
@@ -54,6 +56,181 @@ export type CelebrateIntro = 'swirl' | 'forge';
 const FORGE_STRIKES_MS = [1500, 3000, 4500] as const;
 /** 「깡」 — 망치가 칼날을 맞는 소리(`assets/Audio/new/망치질.mp3`) */
 const FORGE_CLANG: SfxId = 'forge_clang';
+/**
+ * 태학 도입부 — 별과 빛줄의 계획. 좌표는 화면 비율(가로 0~100 · 세로 0~200, 세로 판 1:2)이고, 별 그림은 퍼센트 자리 · 빛줄은 같은 좌표의 SVG라
+ * 둘이 같은 자리에 선다. 빛줄마다 언제(`at`) · 얼마 동안(`dur`) 그어지고 얼마나 옅은지(`op`)를 적고, 별은 처음 빛줄에 닿는 순간 한 단계 밝아진다.
+ * 세 벌이다 — 지금 쓰는 **번짐**(`academy`)과 기획자가 백업으로 남긴 **북두칠성**(`academyDipper`) · **거미줄**(`academyWeb`).
+ */
+type StarEdge = { a: number; b: number; at: number; dur: number; op: number };
+type StarPlan = {
+  stars: readonly (readonly [number, number])[];
+  edges: readonly StarEdge[];
+  /** 별이 뜨는 시각 */
+  onMs: (i: number) => number;
+  /** 별 크기 — `data-dipper`(큰 별) · `data-size`(0~2) */
+  big: (i: number) => boolean;
+  size?: (i: number) => number;
+  /** 마지막에 별빛이 터지는 별 */
+  bursts: readonly number[];
+  /** 빛줄 꼴 — `cia-lines`(북두칠성, 맥동) · `ciw-lines`(가는 줄, 차오르는 번짐) */
+  lines: 'cia-lines' | 'ciw-lines';
+  /** 화면 가운데에서 빛이 차오르는가 — 언제부터(`early` 2.7초 · `late` 3.3초) */
+  glow?: 'early' | 'late';
+  /** 빛줄 굵기 — `ciw-lines`일 때 */
+  weight?: 'thin' | 'bold';
+};
+const dist = (s: readonly (readonly [number, number])[], a: number, b: number): number =>
+  Math.hypot(s[a]![0] - s[b]![0], s[a]![1] - s[b]![1]);
+/** 별 k가 처음 빛줄에 닿는 시각 — 줄이 떠나는 별은 떠날 때, 닿는 별은 다 그어졌을 때 */
+const litMs = (plan: StarPlan, k: number): number | null => {
+  let at: number | null = null;
+  for (const e of plan.edges) {
+    const when = k === e.a ? e.at : k === e.b ? e.at + e.dur : null;
+    if (when !== null && (at === null || when < at)) at = when;
+  }
+  return at;
+};
+const ms = (n: number): string => `${n}ms`;
+const STAR_ON = 1400;
+
+/** 북두칠성(백업) — 앞의 일곱이 칠성(국자 손잡이 끝부터 요광 · 개양 · 옥형 · 천권 · 천기 · 천선 · 천추), 뒤의 넷은 흩어진 별 */
+const DIPPER_STARS: readonly (readonly [number, number])[] = [
+  [16, 74], [31, 83], [45, 89], [58, 98], [60, 117], [84, 124], [87, 102],
+  [22, 52], [74, 60], [30, 144], [80, 156],
+];
+/** 칠성의 빛줄 일곱 — 마지막 줄(천추 → 천권)이 국자의 바닥을 닫는다 */
+const DIPPER_EDGES: readonly (readonly [number, number])[] = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]];
+const DIPPER_PLAN: StarPlan = {
+  stars: DIPPER_STARS,
+  edges: DIPPER_EDGES.map(([a, b], i) => ({ a, b, at: 2000 + i * 310, dur: 260, op: 1 })),
+  onMs: (i) => STAR_ON + i * 50,
+  big: (i) => i < 7,
+  bursts: [0, 1, 2, 3, 4, 5, 6],
+  lines: 'cia-lines',
+};
+
+/**
+ * 번짐(지금, 2026-11-22 기획자 — 「칠성 별에 두세 개만 더해, 처음엔 하나둘 이어지다 급속히 번지며 화면이 확 밝아지게」).
+ * 별 열넷(칠성 + 흩어진 넷 + 셋). 처음 세 줄은 칠성을 따라 천천히(2.0 · 2.42 · 2.78초) — 그 뒤 거리 70 미만의 나머지 58줄이 3.05초부터
+ * **점점 좁아지는 간격**(√ 꼴)으로 천권에서 가까운 것부터 몰아쳐 4.3초쯤 거의 다 이어진다. 빛은 3.3초부터 가파르게 차오른다.
+ */
+const SPREAD_STARS: readonly (readonly [number, number])[] = [...DIPPER_STARS, [48, 40], [12, 118], [56, 162]];
+const SPREAD_EDGES = ((): StarEdge[] => {
+  const first: StarEdge[] = [[0, 1], [1, 2], [2, 3]].map(([a, b], i) => ({ a: a!, b: b!, at: [2000, 2420, 2780][i]!, dur: 300, op: 1 }));
+  const taken = new Set(first.map((e) => `${e.a}-${e.b}`));
+  const hub = 3;   // 천권 — 처음 세 줄이 닿은 자리에서 번져 나간다
+  const rest: { a: number; b: number; d: number; from: number }[] = [];
+  for (let a = 0; a < SPREAD_STARS.length; a += 1) {
+    for (let b = a + 1; b < SPREAD_STARS.length; b += 1) {
+      const d = dist(SPREAD_STARS, a, b);
+      if (d >= 70 || taken.has(`${a}-${b}`)) continue;
+      const near = dist(SPREAD_STARS, hub, a) <= dist(SPREAD_STARS, hub, b);
+      const mid = Math.hypot((SPREAD_STARS[a]![0] + SPREAD_STARS[b]![0]) / 2 - SPREAD_STARS[hub]![0], (SPREAD_STARS[a]![1] + SPREAD_STARS[b]![1]) / 2 - SPREAD_STARS[hub]![1]);
+      rest.push({ a: near ? a : b, b: near ? b : a, d, from: mid + d * 0.35 });
+    }
+  }
+  rest.sort((x, y) => x.from - y.from);
+  const n = rest.length;
+  return [...first, ...rest.map((r, k) => ({
+    a: r.a, b: r.b,
+    at: Math.round(3050 + 1250 * Math.sqrt(k / n)),
+    dur: Math.round(300 - 140 * (k / n)),
+    op: r.d < 40 ? 0.95 : r.d < 55 ? 0.7 : 0.45,
+  }))];
+})();
+const SPREAD_PLAN: StarPlan = {
+  stars: SPREAD_STARS,
+  edges: SPREAD_EDGES,
+  onMs: (i) => STAR_ON + i * 45,
+  big: (i) => i < 7,
+  bursts: [0, 1, 2, 3, 4, 5, 6, 7, 9, 13],
+  lines: 'ciw-lines',
+  glow: 'late',
+  weight: 'bold',
+};
+
+/**
+ * 거미줄(백업) — 별 서른(서로 19 이상 떨어지게 한 번 뽑아 적은 고정 값). 빛줄은 거리로 세 물결 — 30 미만(2.0초~) · 45 미만(2.7초~) · 70 미만(3.4초~) —
+ * 이고 물결마다 가운데 별(13번)에서 바깥으로 번진다(줄의 가운데가 멀수록 늦게). 먼 줄일수록 옅다. 약 240줄.
+ */
+const WEB_STARS: readonly (readonly [number, number])[] = [
+  [15, 156], [89, 39], [7, 41], [73, 119], [86, 148], [35, 62], [36, 39], [82, 65], [88, 171], [33, 126],
+  [53, 138], [17, 112], [89, 83], [61, 101], [55, 48], [33, 96], [84, 103], [61, 170], [18, 82], [70, 80],
+  [11, 176], [39, 157], [9, 62], [91, 128], [6, 139], [37, 179], [53, 69], [53, 118], [69, 35], [67, 152],
+];
+const WEB_WAVES = [
+  { max: 30, start: 2000, span: 1000, dur: 320, op: 0.95 },
+  { max: 45, start: 2700, span: 1000, dur: 360, op: 0.55 },
+  { max: 70, start: 3400, span: 900, dur: 380, op: 0.28 },
+] as const;
+const WEB_PLAN: StarPlan = {
+  stars: WEB_STARS,
+  edges: ((): StarEdge[] => {
+    const o = 13;
+    const [ox, oy] = WEB_STARS[o]!;
+    const far = Math.max(...WEB_STARS.map(([x, y]) => Math.hypot(x - ox, y - oy)));
+    const out: StarEdge[] = [];
+    for (let a = 0; a < WEB_STARS.length; a += 1) {
+      for (let b = a + 1; b < WEB_STARS.length; b += 1) {
+        const w = WEB_WAVES.find((v) => dist(WEB_STARS, a, b) < v.max);
+        if (!w) continue;
+        // 가운데 별에 가까운 끝에서 그어 나간다 — 거미줄이 바깥으로 자라는 것처럼
+        const near = dist(WEB_STARS, o, a) <= dist(WEB_STARS, o, b);
+        const mid = Math.hypot((WEB_STARS[a]![0] + WEB_STARS[b]![0]) / 2 - ox, (WEB_STARS[a]![1] + WEB_STARS[b]![1]) / 2 - oy);
+        out.push({ a: near ? a : b, b: near ? b : a, at: Math.round(w.start + (mid / far) * w.span), dur: w.dur, op: w.op });
+      }
+    }
+    return out;
+  })(),
+  onMs: (i) => STAR_ON + i * 25,
+  big: () => false,
+  size: (i) => i % 3,
+  bursts: [13, 5, 3, 11, 7, 17, 25, 1],
+  lines: 'ciw-lines',
+  glow: 'early',
+  weight: 'thin',
+};
+const STAR_PLANS = { academy: SPREAD_PLAN, academyDipper: DIPPER_PLAN, academyWeb: WEB_PLAN } as const;
+
+/** 태학 도입부 — 선비 · 하늘(같은 그림)에 계획대로 별 · 빛줄 · 빛을 얹는다 */
+function StarIntro({ intro, plan }: { intro: keyof typeof STAR_PLANS; plan: StarPlan }): React.JSX.Element {
+  const { stars } = plan;
+  return (
+    <div className="modal-back cel-back" data-phase="charge" data-intro={intro} aria-hidden>
+      <div className="cel-charge cin-academy">
+        <div className="cia-scene">
+          <img className="cia-sky" src="ui/intro-academy-sky.jpg" alt="" />
+          <div className="cia-ground">
+            <img className="cia-terrace" src="ui/intro-academy-terrace.png" alt="" />
+            <img className="cia-scholar" src="ui/intro-academy-scholar.png" alt="" />
+          </div>
+        </div>
+        <svg className={plan.lines} data-weight={plan.weight} viewBox="0 0 100 200" preserveAspectRatio="none">
+          {plan.edges.map((e, i) => (
+            <line key={i} x1={stars[e.a]![0]} y1={stars[e.a]![1]} x2={stars[e.b]![0]} y2={stars[e.b]![1]}
+              pathLength={1} style={{ opacity: e.op, animationDelay: ms(e.at), animationDuration: ms(e.dur) }} />
+          ))}
+        </svg>
+        {plan.glow && <span className="ciw-glow" data-ramp={plan.glow} />}
+        {stars.map(([x, y], i) => {
+          const lit = litMs(plan, i);
+          return (
+            <i key={i} className="cia-star" data-dipper={plan.big(i) ? '' : undefined} data-size={plan.size?.(i)}
+              style={{ left: `${x}%`, top: `${y / 2}%`, animationDelay: `${ms(plan.onMs(i))}, ${lit === null ? '9999s' : ms(lit)}` }}>
+              <img src={`ui/intro-academy-star-${(i % 2) + 1}.jpg`} alt="" style={{ animationDelay: `${-(i * 0.37).toFixed(2)}s, 0s` }} />
+            </i>
+          );
+        })}
+        {plan.bursts.map((k, i) => (
+          <img key={`b${k}`} className="cia-burst" src="ui/intro-academy-flash.jpg" alt=""
+            style={{ left: `${stars[k]![0]}%`, top: `${stars[k]![1] / 2}%`, animationDelay: ms(4450 + i * 30) }} />
+        ))}
+        <span className="cin-whiteout" />
+      </div>
+    </div>
+  );
+}
+
 /** 흰 · 보라 · 금 — 삼각형 꼭짓점 셋(120°씩) */
 const FLARES = ['white', 'purple', 'gold'] as const;
 
@@ -153,6 +330,10 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
         </div>
       </div>
     );
+  }
+
+  if (charging && (intro === 'academy' || intro === 'academyDipper' || intro === 'academyWeb')) {
+    return <StarIntro intro={intro} plan={STAR_PLANS[intro]} />;
   }
 
   if (charging) {

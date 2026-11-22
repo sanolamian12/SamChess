@@ -32,6 +32,7 @@ export function AcademyNotice({ profile, onOk }: {
     <Celebrate
       key={items.map((d) => d.id).join('+')}   // 다른 알림이 이어 오면 새로 그린다(닫히는 중인 화면을 재사용하지 않게)
       modal="academyNotice"
+      intro="academy"
       okAction="academyNoticeOk"
       className="acd-cel"
       tone="plain"

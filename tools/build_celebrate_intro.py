@@ -32,6 +32,13 @@ ITEMS: dict[tuple[str, str], tuple[str, int, str]] = {
     ("forge", "forge_flash_2.png"): ("intro-forge-flash-2.jpg", 900, "black"),
     ("forge", "forge_flash_3.png"): ("intro-forge-flash-3.jpg", 900, "black"),
     ("forge", "forge_sparks.png"): ("intro-forge-sparks.jpg", 900, "black"),
+    # 태학(2026-11-22) — 선비 · 누대는 오리고, 하늘은 그 자체가 바탕(JPG), 별 · 섬광은 검정 바탕 그대로
+    ("academy", "academy_scholar.png"): ("intro-academy-scholar.png", 1100, "green"),
+    ("academy", "academy_terrace.png"): ("intro-academy-terrace.png", 1600, "green"),
+    ("academy", "academy_sky.png"): ("intro-academy-sky.jpg", 1672, "photo"),
+    ("academy", "academy_star_1.png"): ("intro-academy-star-1.jpg", 400, "black"),
+    ("academy", "academy_star_2.png"): ("intro-academy-star-2.jpg", 400, "black"),
+    ("academy", "academy_flash.png"): ("intro-academy-flash.jpg", 900, "black"),
 }
 
 # 초록이 이만큼 이하로 섞였으면 불투명, 이만큼 이상이면 투명(바탕 실측 g − max(r,b) ≈ 237)
@@ -40,9 +47,9 @@ SPILL_LO, SPILL_HI = 24.0, 200.0
 
 def key_green(rgb: np.ndarray) -> np.ndarray:
     p = rgb.astype(np.float32)
-    border = np.concatenate([p[0], p[-1], p[:, 0], p[:, -1]])
-    bg = np.median(border, axis=0)
     spill = p[:, :, 1] - np.maximum(p[:, :, 0], p[:, :, 2])
+    # 바탕색은 **초록이 짙은 칸**에서 잰다 — 누대처럼 물건이 가장자리에 닿는 그림은 테두리 중앙값이 초록이 아니다
+    bg = np.median(p[spill > SPILL_HI], axis=0)
     a = 1.0 - np.clip((spill - SPILL_LO) / (SPILL_HI - SPILL_LO), 0, 1)
     safe = np.maximum(a, 1e-3)[:, :, None]
     fg = np.clip(bg + (p - bg) / safe, 0, 255)

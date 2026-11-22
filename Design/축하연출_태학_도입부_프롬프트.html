@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>태학 축하 도입부 프롬프트</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; --night: #0b1430; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 .4rem; }
+  .lead { color: #5b4a36; margin: 0 0 1rem; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .warn { border-left: 4px solid var(--accent); }
+  .tip { border-left: 4px solid var(--jade); }
+  ol, ul { margin: .3rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  code { background: #efe4cc; padding: 0 .3rem; border-radius: .2rem; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .cards { display: grid; gap: .9rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+  .card header { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .5rem .8rem; background: #efe4cc; flex-wrap: wrap; }
+  .card header b { font-size: 1rem; }
+  .card .why { padding: .5rem .8rem 0; font-size: .9rem; color: #4a3a28; }
+  .card pre { margin: 0; padding: .8rem; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "D2Coding", monospace; font-size: .82rem; line-height: 1.5; }
+  .copy { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 0; border-radius: .3rem; background: var(--jade); color: #fff; cursor: pointer; white-space: nowrap; }
+  .copy.done { background: #4a7a3a; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .tag { display: inline-block; font-size: .78rem; padding: 0 .45rem; border-radius: 1rem; background: var(--gold); color: #fff; margin-left: .3rem; }
+  .tag.opt { background: #8f8068; }
+  .ref { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .ref img { width: 160px; height: auto; background: #000; border: 1px solid var(--line); border-radius: .4rem; }
+
+  /* 타임라인 */
+  .tl { position: relative; height: 3.4rem; margin: 1.2rem 0 2.6rem; background: linear-gradient(90deg, #05070f, #0b1430 30%, #1b2b5a 80%, #fff 100%); border-radius: .3rem; }
+  .tl .mk { position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; background: var(--gold); }
+  .tl .mk span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: .8rem; white-space: nowrap; color: var(--ink); padding-top: .2rem; }
+  .tl .mk.alt span { top: auto; bottom: 100%; padding: 0 0 .2rem; }
+  .tl .mk.big { width: 4px; background: #fff; box-shadow: 0 0 6px #9cc8ff; }
+
+  /* 미리 보기 — 1:2 세로 판(게임의 #frame과 같은 비율) */
+  .stage { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1 / 2; margin: 0 auto; background: #000; border-radius: .5rem; overflow: hidden; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #9fb3d9; z-index: 3; }
+  .stage .white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .stage .after { position: absolute; inset: 0; display: grid; place-items: center; color: #6a4a12; font-size: 1.1rem; opacity: 0; text-align: center; padding: 1rem;
+    background: radial-gradient(circle, #fff 0%, #ffe9b0 100%); }
+  .play { display: block; margin: .8rem auto 0; font: inherit; padding: .5rem 1.4rem; border: 0; border-radius: 2rem; background: var(--accent); color: #fff; cursor: pointer; }
+  .names { font-size: .85rem; color: #5b4a36; text-align: center; margin: .4rem 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>태학 책략 개량 완료 — 도입부 「북두칠성」 이미지 프롬프트</h1>
+  <p class="lead">대장간의 「깡 · 깡 · 깡」과 같은 길로, 태학 연구(책략 개량) 완료 축하의 5초 도입부를 바꾸기 위한 그림 주문서입니다.
+    선비가 뒷짐을 지고 밤하늘을 올려다보고 → 시선이 하늘로 치솟고 → 밝은 별들이 하나둘 선으로 이어지며 더 밝아지고 →
+    북두칠성이 완성되는 순간 모든 별이 번쩍여 5.0초에 화면이 하얘집니다. 그 뒤는 지금의 「연구 완료」 축하 화면(두루마리 · 책략 엠블럼) 그대로입니다.</p>
+
+  <h2>1. 어떤 방식으로 만드나 — 대장간과 같이: 낱장 그림을 받아 제가 움직인다</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>방식</th><th>받는 것</th><th>좋은 점</th><th>걸리는 점</th></tr>
+    <tr><td><b>A. 낱장 층 (추천)</b></td><td>선비 뒷모습 · 밤하늘 · 앞쪽 누대(땅) · 별 빛망울 · 마지막 섬광</td>
+      <td><b>별의 자리와 잇는 선은 그림이 아니라 제가 그립니다</b>(SVG 빛줄) — 북두칠성 모양이 정확하고, 선이 이어지는 순서 · 박자를 ms 단위로 맞추며,
+        이어질 때마다 두 별이 더 밝아지는 것도 따로 조절됩니다. 선비 · 땅 · 하늘을 다른 빠르기로 밀어 「시선이 치솟는」 깊이감(시차)이 납니다.</td>
+      <td>선비는 움직이지 않는 한 장입니다(서서 올려다보는 장면이라 움직일 일이 거의 없습니다).</td></tr>
+    <tr><td>B. 영상 (이미지→영상)</td><td>5초 클립 하나</td>
+      <td>카메라 이동이 가장 자연스럽습니다.</td>
+      <td>생성 영상은 별자리 모양 · 선이 이어지는 순서를 거의 못 지킵니다(북두칠성이 아닌 아무 모양이 나오기 쉽다). 박자도 AI가 정합니다.
+        쓴다면 「선비 → 하늘로 치솟는 카메라」 앞 1.5초만 영상으로 받고 별은 A로 그리는 섞기가 현실적입니다.</td></tr>
+  </table>
+  </div>
+  <div class="box tip">A로 시작하기를 권합니다. 하늘 · 별 · 선은 이미 아래 미리 보기처럼 제가 그릴 수 있어서, 생성 AI가 꼭 그려야 하는 것은 <b>선비 뒷모습 · 밤하늘 · 누대</b> 셋이고 나머지(별 빛망울 · 섬광)는 있으면 더 좋아지는 것입니다.</div>
+
+  <h2>2. 박자 — 축하음에 맞춘 시간표</h2>
+  <p>축하음(<code>celebrate.mp3</code>)의 「쾅」이 5.0초라 마지막 섬광이 거기에 맞습니다. 대장간과 같은 5초 틀입니다.</p>
+  <div class="tl">
+    <div class="mk" style="left:0%"><span>0.0 선비 뒷모습</span></div>
+    <div class="mk alt" style="left:14%"><span>0.7 시선이 치솟음</span></div>
+    <div class="mk" style="left:32%"><span>1.6 별이 뜸</span></div>
+    <div class="mk alt" style="left:40%"><span>2.0 첫 선</span></div>
+    <div class="mk" style="left:80%"><span>4.0 칠성 완성</span></div>
+    <div class="mk alt" style="left:90%"><span>4.5 모든 별 번쩍</span></div>
+    <div class="mk big" style="left:100%"><span>5.0 하얗게 · 쾅</span></div>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>시각</th><th>화면</th></tr>
+    <tr><td>0.0 – 0.7</td><td>어둠에서 떠오른다 — 화면 아래쪽에 누대 위의 선비가 <b>등을 보이고 뒷짐을 진 채</b> 고개를 들어 하늘을 본다. 위로는 짙은 남색 밤하늘.</td></tr>
+    <tr><td>0.7 – 1.6</td><td><b>시선이 하늘로 치솟는다</b> — 선비 · 누대는 아래로 빠르게 빠져나가고, 하늘은 천천히 내려오며 커진다(시차). 끝에는 하늘만 화면에 가득.</td></tr>
+    <tr><td>1.4 – 1.9</td><td>밝은 별 10개가 하나씩 반짝이며 또렷해진다(북두칠성 일곱 + 흩어진 별 셋).</td></tr>
+    <tr><td>2.0 – 4.0</td><td>별 사이에 빛줄이 <b>하나씩</b> 그어진다(약 0.33초 간격, 일곱 줄). 이어진 두 별은 한 단계 더 밝아지고 빛줄은 은은히 빛난다.
+      순서: 요광 → 개양 → 옥형 → 천권 → 천기 → 천선 → 천추 → 천권(국자의 바닥이 닫힌다).</td></tr>
+    <tr><td>4.0 – 4.5</td><td>칠성 완성 — 그림 전체가 한 번 크게 맥동하고, 흩어진 별들도 함께 밝아진다.</td></tr>
+    <tr><td>4.5 – 5.0</td><td>모든 별에서 빛이 터지며 커져 <b>5.0초에 화면 전체가 흰색</b>. 그 뒤는 지금 「연구 완료」 축하 화면 그대로.</td></tr>
+  </table>
+  </div>
+  <p>소리: 축하음 · 배경 음악 멈춤/재개는 그대로입니다. <b>있으면 좋은 것</b> — 선이 이어질 때마다 짧고 맑은 소리(풍경 · 작은 종 · 「띵」)를 얹으면 「하나둘 이어진다」가 귀로도 셉니다.
+    구해 주시면 일곱 번(2.0 ~ 4.0초) 얹고, 없으면 축하음만으로 갑니다.</p>
+
+  <h3>박자 미리 보기 (지금 그림 없이 SVG로 흉내)</h3>
+  <p class="file">선비 · 누대 자리는 회색 그림자로만 둡니다 — 카메라가 치솟는 빠르기, 별이 뜨고 이어지는 박자, 마지막 섬광의 크기를 보세요. 소리는 축하음만.</p>
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 100 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#03050d"/><stop offset=".55" stop-color="#0b1430"/><stop offset="1" stop-color="#1b2b5a"/>
+        </linearGradient>
+        <radialGradient id="glow"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#e6f0ff"/><stop offset=".55" stop-color="#8fb4ff" stop-opacity=".45"/><stop offset="1" stop-color="#8fb4ff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="burst"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#fff"/><stop offset=".7" stop-color="#cfe0ff" stop-opacity=".8"/><stop offset="1" stop-color="#cfe0ff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <!-- 하늘(크고 천천히) · 땅과 선비(빠르게) 두 층 — 시차 -->
+      <g id="skyLayer">
+        <rect x="-20" y="-60" width="140" height="360" fill="url(#sky)"/>
+        <g id="faint" fill="#c9d6ff"></g>
+        <g id="lines" stroke="#cfe0ff" stroke-width=".7" stroke-linecap="round" fill="none" style="filter: drop-shadow(0 0 1.2px #8fb4ff)"></g>
+        <g id="stars"></g>
+      </g>
+      <g id="groundLayer">
+        <path d="M-10 168 L28 158 L72 158 L110 168 L110 210 L-10 210 Z" fill="#05060b"/>
+        <path d="M-10 160 Q10 150 30 156 L30 160 Z M110 156 Q92 148 74 154 L74 158 Z" fill="#090b14"/>
+        <!-- 선비 뒷모습 자리(그림자) — 뒷짐 · 고개를 든 모습 -->
+        <g fill="#2a2f40">
+          <ellipse cx="50" cy="128" rx="4.2" ry="4.6"/>
+          <path d="M46 122 L54 122 L53 118 L47 118 Z" fill="#1b1e2a"/>
+          <path d="M43 134 Q50 131 57 134 L61 160 L39 160 Z"/>
+        </g>
+      </g>
+    </svg>
+    <div class="white" id="white"></div>
+    <div class="after" id="after">(여기서부터 지금의 축하 화면)<br>「연구 완료」</div>
+    <div class="clock" id="clock">0.00s</div>
+  </div>
+  <button class="play" id="play">▶ 재생</button>
+  <p class="names">국자 손잡이 끝부터: 요광 · 개양 · 옥형 · 천권 · 천기 · 천선 · 천추</p>
+
+  <h2>3. 참조 그림 — 선비 프롬프트에 함께 넣는다</h2>
+  <div class="ref">
+    <img src="../assets/Backgrounds/태학.png" alt="">
+    <div>
+      <p class="file">assets/Backgrounds/태학.png</p>
+      <p>태학 화면에 서는 학사(안내 인물)입니다. <b>이 그림을 첨부하고</b> B1 프롬프트를 넣으면 같은 관(冠) · 같은 남색 깃 장식 도포의 사람이 <b>뒤돌아선 모습</b>으로 나옵니다.
+        하늘 · 누대 · 별 · 섬광은 참조 그림 없이 뽑아도 됩니다(화풍 문구가 프롬프트에 들어 있습니다).</p>
+    </div>
+  </div>
+  <div class="box warn">
+    <b>바탕색 두 가지를 지켜 주세요 — 대장간과 같습니다.</b>
+    <ul>
+      <li><b>선비 · 누대</b>는 <b>순수 초록(#00FF00)</b> 바탕 — 제가 오려 냅니다. 옷 · 누대에 초록 물이 들거나 초록 소품(풀 · 나무)이 있으면 다시 뽑아 주세요.</li>
+      <li><b>별 빛망울 · 마지막 섬광</b>은 <b>순수 검정(#000000)</b> 바탕 — 「빛 더하기」로 겹칩니다. 회색 기가 돌면 하늘 전체가 뿌옇게 됩니다.</li>
+      <li><b>밤하늘</b>은 그 자체가 바탕이라 오리지 않습니다 — 대신 <b>밝은 별을 그리지 말아 달라</b>고 적었습니다(밝은 별은 제가 북두칠성 자리에 놓습니다). 큰 별이 그려져 나오면 다시 뽑아 주세요.</li>
+      <li>글자 · 낙관 · 테두리가 들어간 것도 다시 뽑아 주세요.</li>
+    </ul>
+  </div>
+
+  <h2>4. 프롬프트</h2>
+  <p>받은 그림은 <code>assets/icons/ui/celebrate_intro/academy/</code>에 아래 파일 이름으로 넣어 주세요(대장간은 옆의 <code>forge/</code>). 여러 장 뽑았으면 마음에 드는 것만 넣으면 됩니다.</p>
+  <div class="cards">
+
+    <div class="card">
+      <header><b>B1. 선비 뒷모습 (뒷짐 · 하늘을 올려다봄)<span class="tag">필수</span></b><span class="file">academy_scholar.png</span><button class="copy">복사</button></header>
+      <p class="why">태학 학사 그림을 첨부해 주세요. 등을 보이고 서서 고개를 들어 위를 보는 모습입니다. 발끝까지 다 나와야 누대 위에 세울 수 있습니다.</p>
+      <pre>Use the attached image as the exact reference for the character's costume, hat and art style (painterly semi-realistic game art, ancient Chinese Three Kingdoms era scholar).
+Draw the SAME scholar seen FROM BEHIND, full body from head to feet: he stands upright and still, both hands clasped behind his back at the small of his back (the wide sleeves hanging down), his head tilted back, gazing up at the night sky. We see the back of his black scholar's hat with its two hanging ribbons, the back of his cream-white robe with the dark navy embroidered borders, and his wide sleeves.
+His face is NOT visible (at most a hint of the beard line at the side).
+Cool moonlight from above and slightly behind: soft blue-silver rim light on his shoulders, hat and sleeves; the rest of the figure in calm deep shadow tones.
+The whole figure fully visible and centered, feet at about 92% of the image height, filling about 70% of the image height, with clear margin on every side.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no floor, no cast shadow, no green tint or reflections on the robe.
+No text, no seal, no watermark, no other people, no props in his hands.
+Portrait 2:3, 1366 x 2048.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>B2. 밤하늘 (밝은 별 없이)<span class="tag">필수</span></b><span class="file">academy_sky.png</span><button class="copy">복사</button></header>
+      <p class="why">카메라가 치솟는 동안 내려오며 커지는 바탕입니다. 세로로 길수록 좋습니다. 북두칠성 별은 제가 놓으므로 <b>큰 별이 없어야</b> 합니다.</p>
+      <pre>A vast clear night sky over ancient China, painterly semi-realistic game art, seen straight up, NO ground, NO horizon, NO buildings, NO moon.
+Deep indigo-navy at the bottom fading to almost pure black at the top. A very faint, soft band of the Milky Way crossing diagonally, with subtle hints of deep blue and violet nebula haze.
+Only countless TINY, dim, pin-point stars — evenly scattered, all small and faint. Absolutely NO bright stars, NO large stars, NO star glints or crosses, NO constellations, NO lines.
+Calm, deep, quiet atmosphere; low contrast; slightly soft and painterly, not photographic.
+No text, no watermark, no border.
+Portrait 9:16, 1152 x 2048 (taller is better if your tool allows, e.g. 1:2).</pre>
+    </div>
+
+    <div class="card">
+      <header><b>B3. 누대와 처마 (선비가 서는 땅)<span class="tag">필수</span></b><span class="file">academy_terrace.png</span><button class="copy">복사</button></header>
+      <p class="why">화면 맨 아래 띠입니다. 선비가 그 위 가운데에 섭니다. 카메라가 치솟을 때 가장 빨리 아래로 빠져나갑니다.</p>
+      <pre>The foreground of an ancient Chinese academy courtyard at night, Three Kingdoms era, painterly semi-realistic game art, seen from slightly behind and below eye level.
+A wide stone terrace across the whole width with a low carved stone balustrade at the front edge; on both the far left and the far right, the dark upswept tiled roof eaves of academy halls frame the image, their tips curling upward toward the sky. The middle of the terrace is open and empty (a person will stand there later).
+Everything is in deep blue-black moonlit silhouette with faint silver-blue rim light on the roof edges and the balustrade top; a single warm paper lantern glows dimly under the left eave.
+The structures fill only the BOTTOM 45% of the image; everything above them is perfectly flat solid pure green (#00FF00) chroma key, no gradient, no sky, no stars, no moon, no green tint on the stone or roofs.
+No people, no trees, no plants, no text, no watermark.
+Wide 16:9, 2048 x 1152.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>B4. 별 빛망울 (2장, 조금 다르게)<span class="tag opt">있으면 좋음</span></b><span class="file">academy_star_1.png · academy_star_2.png</span><button class="copy">복사</button></header>
+      <p class="why">북두칠성 일곱과 흩어진 별에 하나씩 놓는 밝은 별입니다. 없으면 제가 둥근 빛으로 그립니다(위 미리 보기처럼). 그림이 있으면 십자 빛살이 반짝여 훨씬 별답습니다.</p>
+      <pre>A single bright twinkling star, seen head-on, painterly game effect art.
+A small blinding pure-white core with a soft blue-white glow around it, and four long thin diffraction light spikes (a cross shape: up, down, left, right) plus four shorter fainter diagonal spikes, all tapering to nothing.
+Cool white with a slight icy-blue tint; a very faint hint of gold at the core.
+Pure black background (#000000). Nothing else in the image: no other stars, no nebula, no sky texture.
+The star is centered, and all the glow and spikes fade smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 1024 x 1024.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>B5. 마지막 섬광 (별빛 폭발)<span class="tag opt">있으면 좋음</span></b><span class="file">academy_flash.png</span><button class="copy">복사</button></header>
+      <p class="why">4.5초부터 모든 별에서 터져 화면을 하얗게 덮는 빛입니다. 대장간의 금빛 섬광과 달리 푸르스름한 흰빛입니다. 없으면 둥근 빛으로 대신합니다.</p>
+      <pre>A brilliant celestial light burst, seen head-on, painterly semi-realistic game effect art.
+A huge blinding pure-white core, surrounded by soft layers of pale icy-blue and faint silver-gold light, with many fine sharp radial light rays of different lengths, and a scattering of tiny glittering star sparkles flying outward in all directions.
+Pure black background (#000000). Nothing else: no stars field, no sky, no clouds, no ground.
+The burst is centered, and all the glow fades smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+    </div>
+  </div>
+
+  <h2>5. B안 — 영상 (참고)</h2>
+  <p>쓴다면 <b>앞 1.5초(선비 → 하늘로 치솟는 카메라)만</b> 영상으로 받고, 별 · 선 · 섬광은 A로 그 위에 그리기를 권합니다. B1 · B3을 합친 장면(또는 그 위의 하늘까지 한 장)을 첫 장면으로 넣습니다.</p>
+  <div class="cards">
+    <div class="card">
+      <header><b>V1. 선비 → 하늘 틸트 영상</b><span class="file">academy_tilt.mp4</span><button class="copy">복사</button></header>
+      <pre>Start on the scholar from the start image, seen from behind, standing still on a moonlit stone terrace with his hands clasped behind his back, gazing up at the night sky; dark academy roof eaves frame both sides.
+The camera smoothly tilts and rises upward, leaving the scholar and the roofs sliding out of the bottom of the frame, until only the deep indigo night sky full of faint tiny stars fills the frame. Ease-in-out camera move, no cuts.
+The scholar does not move. No bright stars, no constellation lines, no moon, no text.
+Painterly semi-realistic game art, ancient Chinese style, calm and mysterious. 2 seconds, 24 fps, portrait 9:16.</pre>
+    </div>
+  </div>
+
+  <h2>6. 받은 뒤 제가 하는 일 (대장간과 같은 길)</h2>
+  <ol>
+    <li><code>tools/build_celebrate_intro.py</code>의 목록에 태학 그림을 더해 굽기 — 선비 · 누대는 초록 바탕을 오려 PNG로, 별 · 섬광은 검정 바탕 그대로, 하늘은 JPG로.</li>
+    <li><code>Celebrate</code>의 도입부 종류에 <code>academy</code>를 더하고, 연구 완료 축하(<code>AcademyNotice</code>)만 이 장면을 쓰게 하기. 별 자리 · 선은 SVG로 그리고, 선이 이어지는 박자는 코드의 시각 표 하나에 둡니다.</li>
+    <li>대장간처럼 완성본 재생 페이지(<code>Design/축하연출_태학_도입부_완성본.html</code>)를 만들어 시각마다 멈춰 찍어 확인하고 보여 드리기.</li>
+    <li>선이 이어질 때의 맑은 소리를 주시면 일곱 번 얹기.</li>
+  </ol>
+</main>
+
+<script>
+  // 복사 단추
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.closest('.card').querySelector('pre').innerText;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      btn.textContent = '복사됨'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 1400);
+    });
+  });
+
+  // 박자 미리 보기 — 하늘 좌표(viewBox 0 0 100 200, 치솟은 뒤 기준)
+  const NS = 'http://www.w3.org/2000/svg';
+  const DIPPER = [ // 요광 · 개양 · 옥형 · 천권 · 천기 · 천선 · 천추
+    [16, 58], [31, 67], [45, 73], [58, 82], [60, 101], [84, 108], [87, 86],
+  ];
+  const EXTRA = [[22, 36], [74, 44], [30, 128], [80, 140]];
+  const EDGES = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]];
+  const T = { rise: [700, 1600], starsIn: 1400, starGap: 50, line0: 2000, lineGap: 330, lineMs: 260, done: 4000, burst: 4500, white: 5000 };
+  const stars = [...DIPPER, ...EXTRA];
+
+  const skyLayer = document.getElementById('skyLayer'), groundLayer = document.getElementById('groundLayer');
+  const faint = document.getElementById('faint'), lines = document.getElementById('lines'), starsG = document.getElementById('stars');
+  const white = document.getElementById('white'), after = document.getElementById('after'), clock = document.getElementById('clock');
+  // 희미한 잔별(고정 시드)
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 140; i += 1) {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', (rnd() * 140 - 20).toFixed(1)); c.setAttribute('cy', (rnd() * 360 - 60).toFixed(1));
+    c.setAttribute('r', (0.12 + rnd() * 0.22).toFixed(2)); c.setAttribute('opacity', (0.25 + rnd() * 0.5).toFixed(2));
+    faint.append(c);
+  }
+  const starEls = stars.map(([x, y]) => {
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('fill', 'url(#glow)');
+    starsG.append(c); return c;
+  });
+  const lineEls = EDGES.map(([a, b]) => {
+    const l = document.createElementNS(NS, 'line');
+    const [x1, y1] = stars[a], [x2, y2] = stars[b];
+    l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+    const len = Math.hypot(x2 - x1, y2 - y1); l.dataset.len = len;
+    lines.append(l); return l;
+  });
+
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const ease = (v) => v < .5 ? 2 * v * v : 1 - Math.pow(-2 * v + 2, 2) / 2;
+  function draw(ms) {
+    // 카메라: 0.7 → 1.6초 치솟음. 하늘은 위에서 내려오며 커지고(느리게), 땅 · 선비는 아래로 빠르게 빠진다
+    const r = ease(clamp((ms - T.rise[0]) / (T.rise[1] - T.rise[0])));
+    skyLayer.setAttribute('transform', `translate(50 100) scale(${0.8 + 0.2 * r}) translate(-50 ${-100 - 60 * (1 - r)})`);
+    groundLayer.setAttribute('transform', `translate(0 ${r * 120})`);
+    const fadeIn = clamp(ms / 600);
+    skyLayer.style.opacity = groundLayer.style.opacity = fadeIn;
+    // 별: 뜨기 · 이어지면 밝아짐 · 완성 맥동 · 폭발
+    const lit = stars.map(() => 0);
+    EDGES.forEach(([a, b], i) => {
+      const t0 = T.line0 + i * T.lineGap;
+      const p = clamp((ms - t0) / T.lineMs);
+      const l = lineEls[i]; const len = +l.dataset.len;
+      l.setAttribute('stroke-dasharray', len); l.setAttribute('stroke-dashoffset', len * (1 - p));
+      l.setAttribute('opacity', p > 0 ? 0.85 : 0);
+      if (ms >= t0) lit[a] += 1;
+      if (ms >= t0 + T.lineMs) lit[b] += 1;
+    });
+    const pulse = ms >= T.done ? Math.sin(clamp((ms - T.done) / 500) * Math.PI) : 0;
+    const burst = clamp((ms - T.burst) / (T.white - T.burst));
+    starEls.forEach((c, i) => {
+      const on = clamp((ms - T.starsIn - i * T.starGap) / 300);
+      const tw = 1 + 0.12 * Math.sin(ms / 140 + i * 1.7);
+      const dipper = i < DIPPER.length;
+      const base = dipper ? 2.6 : 2.0;
+      const r = (base + 1.1 * Math.min(lit[i], 2) + 2.2 * pulse) * tw * on + burst * burst * 140;
+      c.setAttribute('r', r.toFixed(2));
+      c.setAttribute('opacity', (on * (dipper || ms > T.done ? 1 : .8)).toFixed(2));
+      if (burst > 0) c.setAttribute('fill', 'url(#burst)');
+    });
+    lines.style.opacity = 1 + 0.6 * pulse;
+    lines.setAttribute('stroke-width', (0.7 + 0.5 * pulse + burst * 3).toFixed(2));
+    white.style.opacity = clamp((ms - 4800) / 200);
+  }
+
+  let raf = 0, timer = 0, bang = null;
+  function reset() {
+    cancelAnimationFrame(raf); clearTimeout(timer); after.style.transition = 'none'; after.style.opacity = 0;
+    starEls.forEach((c) => c.setAttribute('fill', 'url(#glow)'));
+    if (bang) { bang.pause(); bang = null; }
+    draw(0); clock.textContent = '0.00s';
+  }
+  reset();
+  document.getElementById('play').addEventListener('click', () => {
+    reset();
+    bang = new Audio('../assets/Audio/effects/celebrate.mp3'); bang.play().catch(() => {});
+    const t0 = performance.now();
+    const tick = () => {
+      const ms = performance.now() - t0;
+      clock.textContent = (ms / 1000).toFixed(2) + 's';
+      if (ms < T.white) { draw(ms); raf = requestAnimationFrame(tick); }
+      else { draw(T.white); after.style.transition = 'opacity .7s'; after.style.opacity = 1; white.style.transition = 'opacity .7s'; white.style.opacity = 0; }
+    };
+    white.style.transition = 'none';
+    tick();
+  });
+</script>
+</body>
+</html>

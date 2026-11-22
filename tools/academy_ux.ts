@@ -211,6 +211,12 @@ try {
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
   }
+  // 도입부(북두칠성, 2026-11-22) — 모으는 5초 동안은 태학 장면이다. 빛줄이 반쯤 이어진 때를 한 장
+  // 실제 시계로 기다리면 사진이 늦게 찍혀 무대가 나온다 — 장면의 움직임을 3.9초(번지는 한가운데)에 세워 찍고 다시 돌린다(무대가 열리는 시각은 그대로 5초)
+  await page.waitForSelector('.cel-back[data-phase="charge"][data-intro="academy"]', { timeout: 15_000 });
+  await page.evaluate(() => document.querySelector('.cin-academy')!.getAnimations({ subtree: true }).forEach((a) => { a.pause(); a.currentTime = 3_900; }));
+  await shot('acd-05a-intro');
+  await page.evaluate(() => document.querySelector('.cin-academy')?.getAnimations({ subtree: true }).forEach((a) => a.play()));
   await page.waitForSelector('[data-modal="academyNotice"]', { timeout: 15_000 });
   await shot('acd-05-notice');
   const count = await page.getAttribute('[data-modal="academyNotice"] [data-field="apply"]', 'data-count');
