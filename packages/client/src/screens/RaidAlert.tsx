@@ -82,18 +82,26 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
 
   return (
     <div className="modal-back raid-alert" data-modal="raidAlert" data-kind={kind}>
-      <div className="modal frg-confirm raid-alert-box">
+      <div className={`modal frg-confirm raid-alert-box${kind === 'settled' && !raidAbandoned(raid) ? ' raid-alert-loot' : ''}`}>
         {kind === 'settled' ? (
           <>
             {/* 끊긴 판이 60분을 넘겨 정산됐으면 그 까닭을 말한다 (2026-10-15) — 응전 마감을 넘긴 것과 다르다 */}
             <p className="modal-ttl" data-abandoned={raidAbandoned(raid) ? '1' : '0'}>
               {t(raidAbandoned(raid) ? 'raid.abandoned.title' : 'raid.surrendered.title')}
             </p>
-            <p className="frg-confirm-body" data-field="loot" data-loot={raid.loot ?? 0}>
-              {raidAbandoned(raid)
-                ? t('raid.abandoned.body', { loot: raid.loot ?? 0, min: RAID_ABANDON_MS / 60_000 })
-                : t('raid.surrendered.body', { loot: raid.loot ?? 0 })}
-            </p>
+            {/* 항복 정산은 문장 없이 「(군량) −N」 큰 글씨 — 숫자는 붉게, 뜨는 순간 한 번 커졌다 돌아온다 (2026-11-23 기획자).
+                끊긴 판은 까닭을 말해야 해서 문장 그대로 */}
+            {raidAbandoned(raid) ? (
+              <p className="frg-confirm-body" data-field="loot" data-loot={raid.loot ?? 0}>
+                {t('raid.abandoned.body', { loot: raid.loot ?? 0, min: RAID_ABANDON_MS / 60_000 })}
+              </p>
+            ) : (
+              <p className="raid-loot-big" data-field="loot" data-loot={raid.loot ?? 0}>
+                <img className="raid-loot-grain" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
+                {/* 빼기는 붙임표(-) — 명조(Song Myung)의 「−」(U+2212)는 가늘고 길어 숫자와 떨어져 보인다 */}
+                <span className="raid-loot-n">-{raid.loot ?? 0}</span>
+              </p>
+            )}
             {/* [확인]도 [지금 전투]와 같은 옥색 판이다(2026-09-22 지정) */}
             <div className="frg-confirm-acts raid-acts">
               <button className="btn wide raid-btn-fight" data-action="raidOk" onClick={onClose}>

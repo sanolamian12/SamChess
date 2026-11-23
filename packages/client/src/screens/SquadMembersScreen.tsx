@@ -505,7 +505,7 @@ function HeldThumb({ profile, officer }: { profile: PlayerProfile; officer: Offi
  * 병기 · 아이템 그림 + 뒤의 후광 — 대장간 · 장터와 같은 섬광(`equipBlink` · `itemBlink`, 레벨이 높을수록 자주 · 금).
  * 부대원 줄 · 고르기 팝업의 칸 · 고정 칸이 같은 것을 쓴다. 상자(`.sqe-item` · `.sqh-tile`)가 크기 · 자르기를 정한다.
  */
-function HeldArt({ id }: { id: string }): React.JSX.Element | null {
+export function HeldArt({ id }: { id: string }): React.JSX.Element | null {
   const item = marketItemById.get(id);
   const equip = item ? undefined : equipmentById.get(id);
   if (!item && !equip) return null;

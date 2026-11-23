@@ -377,7 +377,24 @@ export interface CardAction {
  * 필요해졌는데, 가리개를 감싸는 마크업까지 두 화면이 각자 베끼면 한쪽만
  * `onClick={(e) => e.stopPropagation()}`을 빠뜨리는 식으로 갈릴 수 있다.
  */
-export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsCards, levelsEligible, levelsNote, equip, injury, action }: {
+/**
+ * [아이템] 단추의 모양 — 왼쪽 둥근 금테 배지(지닌 것의 그림, 빈손이면 회수 그림) · 가운데 글(지닌 것의 이름, 빈손이면 「아이템 지급」)
+ * (2026-11-23 기획자). 카드는 프로필을 모르므로 caller(`OfficerDetailModal`)가 그림 · 글을 만들어 넘긴다
+ */
+export interface ItemsLook {
+  /** 지닌 것의 id — 빈손이면 '' (`data-held`) */
+  held: string;
+  badge: React.ReactNode;
+  label: string;
+}
+
+/**
+ * [아이템] 배지의 모양 — `square`: 아이템 설정 화면의 네모 칸(`.sqh-tile`, 가는 금테 · 검은 바탕) 그대로,
+ * `round`: 둥근 금테 배지(쓰는 것). 네모는 줄인 설정 칸이 안 예뻐 둥근 것으로 돌아왔고, 금테를 얇게 · 배지를 조금 작게 해 단추의 금빛 테 안에 들였다 (2026-11-23 기획자)
+ */
+const HELD_BADGE: 'square' | 'round' = 'round';
+
+export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, levelsCards, levelsEligible, levelsNote, equip, injury, action }: {
   row: OfficerRankRow; onClose: () => void;
   /** 있으면 카드 맨 아래, [뒤로 가기] 밑에 그 자리의 한 수 (2026-11-16 기획자, 농지 보초병) —
       고르는 팝업에서는 옥색 [선택하기], 세운 보초병 · 부대원에서는 붉은 [해제하기] */
@@ -387,6 +404,8 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsCards,
   onLevels?: () => void;
   /** 있으면 [강화] 위에 [아이템] — 병기 · 아이템 고르기(2026-11-19 기획자, 병영 부대 편집과 같은 단추). 내 장수일 때만 */
   onItems?: () => void;
+  /** [아이템] 단추의 배지 · 글 — 없으면 「아이템」 글자만 */
+  itemsLook?: ItemsLook;
   /** [강화] 오른쪽 끝의 「{have} / {need} (카드 그림)」 — `need`가 `null`이면 최대 레벨. caller(`OfficerDetailModal`)가 넘긴다 —
       카드 수는 `profile.cards`에서 나오는데, 이 카드는 `OfficerRankRow`만 받아 프로필을 모른다. */
   levelsCards?: { have: number; need: number | null };
@@ -421,6 +440,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsCards,
           row={row} onClose={onClose}
           {...(onLevels ? { onLevels } : {})}
           {...(onItems ? { onItems } : {})}
+          {...(itemsLook ? { itemsLook } : {})}
           {...(levelsCards ? { levelsCards } : {})}
           {...(levelsNote ? { levelsNote } : {})}
           {...(equip ? { equip } : {})}
@@ -483,11 +503,11 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, levelsCards,
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onItems, levelsCards, levelsEligible, levelsNote, equip, injury, action, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, levelsEligible, levelsNote, equip, injury, action, onOpenSkill, onOpenTactic }: {
   row: OfficerRankRow; onClose: () => void;
   /** `OfficerCardModal`의 같은 이름 */
   action?: CardAction;
-  onLevels?: () => void; onItems?: () => void; levelsCards?: { have: number; need: number | null }; levelsEligible?: boolean; levelsNote?: string | null;
+  onLevels?: () => void; onItems?: () => void; itemsLook?: ItemsLook; levelsCards?: { have: number; need: number | null }; levelsEligible?: boolean; levelsNote?: string | null;
   /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsCards`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
       알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
@@ -662,8 +682,13 @@ function OfficerCard({ row, onClose, onLevels, onItems, levelsCards, levelsEligi
           [아이템] · [레벨/스킬 관리]는 내 장수일 때만 — 랭킹의 다른 계정 장수는 [X]만(그 계정을 관리할 수 없다).
           예전의 [전적 보기](기물 · 모드별 전적 판)는 걷었다 — 전적은 맨 윗줄의 출전 · 승 · 무 · 패 · 격파뿐이다 */}
       {onItems && (
-        <button className="btn wide ofcard-lead" data-action="heldOpen" onClick={onItems}>
-          <span className="lbl">{t('squad.cmd.items')}</span>
+        /* 왼쪽 정렬 — 둥근 금테 배지 + 글 (2026-11-23 기획자). 글은 배지 몫만큼 오른쪽에도 비워 단추 가운데에 선다 */
+        <button className={`btn wide ofcard-lead${itemsLook ? ' ofcard-held' : ''}`} data-action="heldOpen" data-held={itemsLook?.held}
+          onClick={onItems}>
+          {itemsLook && (HELD_BADGE === 'round'
+            ? <span className="ofcard-held-badge" data-field="heldBadge" data-shape="round"><span className="ofcard-held-in">{itemsLook.badge}</span></span>
+            : <span className="ofcard-held-badge sqh-tile" data-field="heldBadge" data-shape="square">{itemsLook.badge}</span>)}
+          <span className="lbl" data-field="heldLabel">{itemsLook?.label ?? t('squad.cmd.items')}</span>
         </button>
       )}
       {onLevels && (

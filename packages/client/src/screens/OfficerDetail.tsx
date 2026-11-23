@@ -16,16 +16,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canLevelUp, cardsToLevelUp, equippedBy, freeRooms, hospitalRooms, injuryHealsAt, isHealing, isInjured, nextRoomFreeAt, officerLevelCap,
+  canLevelUp, cardsToLevelUp, freeRooms, heldFor, hospitalRooms, injuryHealsAt, isHealing, isInjured, nextRoomFreeAt, officerLevelCap,
   officerRankRows, pendingGuide,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { OfficerCardModal } from './RankingCommon.tsx';
-import type { CardAction, CardInjury } from './RankingCommon.tsx';
+import type { CardAction, CardInjury, ItemsLook } from './RankingCommon.tsx';
 import { LevelUpPanel } from './LevelUpPanel.tsx';
-import { HeldPicker, applyHeld } from './SquadMembersScreen.tsx';
+import { HeldArt, HeldPicker, applyHeld } from './SquadMembersScreen.tsx';
+import { GameIcon } from './GameIcon.tsx';
+import { heldButtonName } from './heldName.ts';
 import type { HeldOp } from './SquadMembersScreen.tsx';
 import { formatHealLeft } from './healTime.ts';
 import { CityActionRejected, healOnServer } from '../meta/city.ts';
@@ -105,8 +107,15 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
       },
     } : {}),
   } : undefined;
-  // 낀 병기 — 없으면 줄째로 사라진다. **부대 편집(초안)에서는 안 싣는다** — 지닌 것은 [아이템]을 눌러 보는 한 곳에만(2026-11-17 기획자)
-  const equip = held ? undefined : equippedBy(profile, officer);
+  // 지닌 것(병기 · 장터 아이템)은 [아이템] 단추가 보여 준다 — 왼쪽 둥근 금테 배지에 그림, 가운데 이름. 빈손이면 회수 그림 + 「아이템 지급」
+  // (2026-11-23 기획자). 예전의 능력치 밑 「낀 병기」 줄은 걷었다 — 장터 아이템은 안 보였고, 그 줄만큼 장수 열전이 줄었다.
+  // 부대 편집(초안)에서는 초안을 얹은 계정으로 낸다(저장하면 이렇게 된다는 값)
+  const heldId = heldFor(held?.profile ?? profile, officer) ?? '';
+  const itemsLook: ItemsLook = {
+    held: heldId,
+    badge: heldId ? <HeldArt id={heldId} /> : <GameIcon name="equip-revoke" label="" />,
+    label: heldId ? heldButtonName(heldId) : t('officer.held.give'),
+  };
   // [강화] 오른쪽 「{보유} / {필요} (카드)」 — `cardsToLevelUp()`이 단일 출처
   const need = cardsToLevelUp(row.level);
   const have = profile.cards[officer] ?? 0;
@@ -122,11 +131,11 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
         row={row}
         onClose={onClose}
         onItems={() => setPicking(true)}
+        itemsLook={itemsLook}
         onLevels={() => setManaging(true)}
         levelsCards={{ have, need }}
         levelsEligible={eligible}
         levelsNote={managing ? null : levelsNote}
-        {...(equip ? { equip } : {})}
         {...(injury ? { injury } : {})}
         {...(action ? { action } : {})}
       />
