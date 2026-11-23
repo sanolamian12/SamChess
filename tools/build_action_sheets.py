@@ -534,18 +534,19 @@ def assign_pixels(alpha: np.ndarray, bodies: list[dict]) -> np.ndarray:
 # 5. 잔디 · 자갈 · 그림자
 # ────────────────────────────────────────────────────────────────
 
-def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float, top: int | None = None, gr: int | None = None) -> np.ndarray:
+def strip_ground(rgb: np.ndarray, fg: np.ndarray, foot: float, top: int | None = None, gr: int | None = None,
+                 gb: int | None = None) -> np.ndarray:
     """발밑 잔디와 자갈을 전경에서 뺀다. `top`이 있으면 발에서 그만큼(px) 위보다 높은 곳은 잔디로 안 본다(`GRASS_TOP`).
-    `gr`이 있으면 G − R 문턱을 그 값으로 올린다(`GRASS_GR_FOR`)."""
+    `gr` · `gb`가 있으면 G − R · G − B 문턱을 그 값으로 올린다(`GRASS_GR_FOR` · `GRASS_GB_FOR`)."""
     h = rgb.shape[0]
     a = rgb.astype(int)
     zone = np.zeros(fg.shape, bool)
     zone[max(int(h * GRASS_ZONE), int(foot) - top if top else 0):] = True
 
-    grass = ((a[..., 1] - a[..., 2] >= GRASS_GB) & (a[..., 1] - a[..., 0] >= (gr or GRASS_GR))
+    grass = ((a[..., 1] - a[..., 2] >= max(GRASS_GB, gb or 0)) & (a[..., 1] - a[..., 0] >= (gr or GRASS_GR))
              & (a[..., 1] >= GRASS_MIN_V) & zone & fg)
     core = grass.copy()
-    loose = (a[..., 1] - a[..., 0] >= max(GROUND_GREEN_R, gr or 0)) & (a[..., 1] - a[..., 2] >= GROUND_GREEN) & zone & fg
+    loose = (a[..., 1] - a[..., 0] >= max(GROUND_GREEN_R, gr or 0)) & (a[..., 1] - a[..., 2] >= max(GROUND_GREEN, gb or 0)) & zone & fg
     if grass.any():
         # 그늘진 풀 — 문턱(`GRASS_GB`)에 못 미치는 칙칙한 초록이 잔디판 아래쪽에 띠로 남았다(2026-11-13, 왕충). 잡힌 잔디에서
         # **이어진** 초록 기운만 따라 넓힌다 — 잔디에 닿지 않은 초록 옷(관우 · 장비)은 그대로다
@@ -664,6 +665,20 @@ GRASS_TOP = {"관우": 32, "동량": 36}  # 동량: 걸음 칸 앞다리 · 평�
 # 연두(노란 초록) 도포가 잔디판까지 내려오는 장수(2026-11-22, 유도 — 기획자): 도포의 그늘이 G − R 문턱(`GRASS_GR`)을 넘어 잔디로 잡히고
 # 도포 아랫단이 통째로 따라 지워졌다. 도포는 R ≈ G, 잔디판은 G − R ≈ 20이라 이 장수만 문턱을 올린다
 GRASS_GR_FOR = {"유도": 12, "유봉": 20, "육손": 18}
+# 〃 G − R로는 못 가르는 초록 갑옷(2026-11-23, 장막 — 갑옷 G − R 15~24 · 잔디판 27~31로 겹친다): 갑옷은 G − B ≈ 40, 잔디판은 ≈ 73이라 G − B 문턱을 올린다
+GRASS_GB_FOR = {"장막": 60, "장비": 50}
+# 〃 다리 사이로 비치는 모래 언덕(베이지 삼각형) — 이 줄(원본 px)부터 아래의 모래 색만 뺀다(장막 — 두건 띠의 같은 색은 위에 있다)
+SAND_DROP = {"장막": 260}
+
+
+def drop_sand(rgb: np.ndarray, fg: np.ndarray, row: int) -> np.ndarray:
+    a = rgb.astype(int)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    sand = (r > 190) & (g > 165) & (b > 100) & (b < 205) & (r - b > 35)
+    sand[:row] = False
+    # JPG 가장자리의 덜 밝은 테두리까지 — 모래에 닿은 밝은 픽셀만 한 겹 넓힌다
+    sand |= ndimage.binary_dilation(sand, EIGHT) & (a.mean(-1) > 150) & (r - b > 25)
+    return fg & ~sand
 
 # 원본에 **처음부터 구멍이 난** 칸(2026-11-17, 뇌동 공격 칸의 왼쪽 허벅지 갑옷판 — 기획자): 생성 때 흰 바탕으로 잘려 투명이다.
 # 원본은 두고, 그 칸에서 몸에 갇힌 구멍 가운데 이 넓이(원본 px) 이하만 바로 아래 몸을 끌어올려 메운다 —
@@ -692,7 +707,8 @@ HOLE_PINK_REACH = 4  # 〃 구멍에서 이만큼(px) 안쪽만
 GROUND_CUT = {"마량": {0: [(20, 262, 72, 300)], 1: [(335, 258, 384, 300)], 2: [(630, 258, 677, 300)],
                        4: [(1285, 258, 1346, 300)]},
               "유도": {0: [(195, 280, 232, 296)]}, "유봉": {2: [(772, 283, 790, 300)]},
-              "육손": {0: [(41, 268, 78, 298)], 1: [(344, 267, 378, 294)], 3: [(968, 266, 1000, 295), (1139, 282, 1166, 302)]}}  # 유도 · 유봉(2026-11-22) · 육손(11-23): 발 옆 자갈
+              "육손": {0: [(41, 268, 78, 298)], 1: [(344, 267, 378, 294)], 3: [(968, 266, 1000, 295), (1139, 282, 1166, 302)]},
+              "장막": {1: [(528, 272, 572, 302)]}, "장비": {0: [(60, 262, 80, 292)]}}  # 유도 · 유봉(2026-11-22) · 육손 · 장막 · 장비(11-23): 발 옆 자갈
 # 〃 바닥 연출(책략 칸의 물웅덩이) 위에 앉은 것은 빼면 구멍이 난다 — 그 네모는 웅덩이로 다시 칠한다(`patch_boxes`)
 GROUND_PATCH = {"마량": {3: [(970, 260, 1016, 294)]}}
 PATCH_TEAL = 28   # 〃 바닥 색 = G − R 이 이만큼 넘는 것(물웅덩이는 청록, 돌은 푸른 회색이라 G − R이 작다)
@@ -828,7 +844,10 @@ def build_one(path: Path, sizes: tuple[int, ...]) -> tuple[list[Image.Image], bo
         if k in GROUND_PATCH.get(path.stem, {}):
             cell_rgb, fg = patch_boxes(rgb, fg, GROUND_PATCH[path.stem][k])
         if path.stem not in GRASS_FREE:
-            fg = strip_ground(cell_rgb, fg, body["foot"], GRASS_TOP.get(path.stem), GRASS_GR_FOR.get(path.stem))
+            fg = strip_ground(cell_rgb, fg, body["foot"], GRASS_TOP.get(path.stem), GRASS_GR_FOR.get(path.stem),
+                                 GRASS_GB_FOR.get(path.stem))
+        if path.stem in SAND_DROP:
+            fg = drop_sand(cell_rgb, fg, SAND_DROP[path.stem])
         if k in HOLE_FILL.get(path.stem, {}):
             cell_rgb, fg, cell_alpha = fill_holes(cell_rgb, fg, alpha, HOLE_FILL[path.stem][k])
         if k in HOLE_FILL_NEAR.get(path.stem, {}):
