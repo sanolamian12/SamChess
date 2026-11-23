@@ -16,7 +16,7 @@ import type {
 } from '@samchess/data';
 import type { BattleMode, BattlePhase, OfficerId } from '@samchess/rules';
 import type {
-  ADJUST_BATCH_MAX, AI_BATTLES_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
+  ADJUST_BATCH_MAX, AI_BATTLES_MAX, DELETE_BATCH_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   LiveRoomSeat, MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
   ProcessHealth, ServiceId, TrafficRecent, TrafficWindow,
 } from '@samchess/meta';
@@ -34,6 +34,8 @@ export type BanDaysMax = typeof BAN_DAYS_MAX;
 export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
 /** 일괄 지급 한 번의 줄 수 상한 — 리터럴 `50`(2026-11-13). 화면이 같은 값을 적고 `satisfies`로 묶는다 */
 export type AdjustBatchMax = typeof ADJUST_BATCH_MAX;
+/** 시험 계정 일괄 삭제 한 번의 계정 수 상한 — 리터럴 `200`(2026-11-23). 화면이 이 크기로 나눠 보낸다 */
+export type DeleteBatchMax = typeof DELETE_BATCH_MAX;
 /** AI 대전 결과 등록 한 번에 칸(승 · 무 · 패)마다 적을 수 있는 판 수 — 리터럴 `100`(2026-11-23). 화면이 `satisfies`로 묶는다 */
 export type AiBattlesMax = typeof AI_BATTLES_MAX;
 /** 도시 이름 최대 길이 — 게임의 이름 변경과 같은 값(리터럴 `12`) */
@@ -678,6 +680,17 @@ export interface MarketUnitsResponse {
  */
 export interface DeleteAccountResponse {
   auditId: number;
+}
+
+/**
+ * `POST /admin/users/delete-batch` — **시험 계정 일괄 삭제** (2026-11-23 기획자). 본문 `{ uids, reason, confirm }`, 관리자만(`delete`).
+ * `uids`는 1 ~ `DeleteBatchMax`개 · 겹침 없음, `confirm`은 `삭제 {uids 수}`(meta `deleteBatchConfirm`). **시험 계정(`@samchess.test`)만 지운다** —
+ * 실제 계정이 섞이면 그 줄만 거절한다. 한 계정 = 한 트랜잭션 · 감사 로그 `account.delete` 한 줄(한 계정씩 지울 때와 같다) —
+ * 하나가 실패해도 나머지는 지운다.
+ */
+export interface DeleteBatchResponse {
+  deleted: { uid: string; email: string | null; auditId: number }[];
+  failed: { uid: string; reason: string }[];
 }
 
 // ── 전투 현황 (2026-11-13) ──────────────────────────────────────────

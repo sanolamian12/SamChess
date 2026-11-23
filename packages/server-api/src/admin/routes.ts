@@ -16,12 +16,12 @@ import {
 import {
   BAN_DAYS_MAX, CS_BAN_DAYS_MAX, CS_DAILY_LIMITS, CS_LIMITS, ROLE_PERMISSIONS, adjustPermission, applyAdjustment, applyResolution, batchPermissions,
   banPermission, hasPermission, isAdminRole, isGrant, isGrantCapped, mailPermission, parseAdjustment, parseAdjustmentBatch, parseMailDraft, parseResolution,
-  roleForbiddenMessage,
+  roleForbiddenMessage, DELETE_BATCH_MAX, deleteBatchConfirm,
 } from '@samchess/meta';
 import type { AdminPermission } from '@samchess/meta';
 import { verifyAdmin } from './auth.ts';
 import type {
-  AdjustResponse, AdminDefenseResponse, AdminGameData, DeleteAccountResponse, AnomalyKind, AnomalyListResponse, GrantsResponse, LedgerResponse, MarketUnitsResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
+  AdjustResponse, AdminDefenseResponse, AdminGameData, DeleteAccountResponse, DeleteBatchResponse, AnomalyKind, AnomalyListResponse, GrantsResponse, LedgerResponse, MarketUnitsResponse, ResolveAnomalyResponse, AdminMe, AdminUser, AuditRow, BanResponse, MailAudience, MailListResponse, MailResponse, MailStatus,
   RenameResponse, RoleForbiddenError, UsersResponse,
 } from './types.ts';
 import {
@@ -379,9 +379,36 @@ export function registerAdminRoutes(app: FastifyInstance): void {
     if (typeof reason !== 'string') return reply.code(400).send(reason);
     const confirm = body?.['confirm'];
     if (typeof confirm !== 'string' || !confirm.trim()) return reply.code(400).send({ error: '확인 글자(confirm)가 없다 — 그 계정의 이메일을 적는다' });
-    const r = await deleteAccount(uid, admin, reason, confirm);
+    const r = await deleteAccount(uid, admin, reason, { confirm });
     if (!r.ok) return refuse(reply, r);
     return { auditId: r.auditId } satisfies DeleteAccountResponse;
+  });
+
+  /**
+   * 시험 계정 일괄 삭제 (2026-11-23 기획자) — 관리자만(`delete`). 본문 `{ uids, reason, confirm }`(`confirm` = `삭제 {수}`).
+   * **시험 계정만** 지우고, 한 계정씩 제 트랜잭션 · 감사 로그로(한 계정 삭제와 같은 함수) — 실패한 줄은 이유와 함께 돌려준다
+   */
+  app.post('/admin/users/delete-batch', async (req, reply) => {
+    const admin = await requireAdmin(req, reply, 'delete');
+    if (!admin) return;
+    const body = req.body as Record<string, unknown> | undefined;
+    const reason = parseReason(body);
+    if (typeof reason !== 'string') return reply.code(400).send(reason);
+    const uids = body?.['uids'];
+    if (!Array.isArray(uids) || uids.length === 0) return reply.code(400).send({ error: 'uids가 비어 있다' });
+    if (uids.length > DELETE_BATCH_MAX) return reply.code(400).send({ error: `한 번에 ${DELETE_BATCH_MAX}개까지` });
+    if (!uids.every((u): u is string => typeof u === 'string' && UUID.test(u))) return reply.code(400).send({ error: 'invalid uid' });
+    if (new Set(uids).size !== uids.length) return reply.code(400).send({ error: '같은 계정이 두 번 있다' });
+    if (body?.['confirm'] !== deleteBatchConfirm(uids.length)) {
+      return reply.code(400).send({ error: `확인 글자가 다르다 — 「${deleteBatchConfirm(uids.length)}」를 적는다` });
+    }
+    const out: DeleteBatchResponse = { deleted: [], failed: [] };
+    for (const uid of uids) {
+      const r = await deleteAccount(uid, admin, reason, { testOnly: true });
+      if (r.ok) out.deleted.push({ uid, email: r.email, auditId: r.auditId });
+      else out.failed.push({ uid, reason: r.reason });
+    }
+    return out;
   });
 
   // ── 이상 징후 (2026-11-12, `../anomaly.ts`) — 보기는 `view`, 닫기는 `anomaly`(관리자 · CS) ──

@@ -68,6 +68,14 @@ const marketItemIds = new Set(MARKET_ITEMS.map((m) => m.id));
 export const ADJUST_BATCH_MAX = 50;
 
 /**
+ * 시험 계정 일괄 삭제 한 번에 담을 수 있는 계정 수 (2026-11-23 기획자) — 스모크 · `*_ux` 도구가 시험 계정을 쌓아,
+ * 남길 것만 빼고 한 번에 지운다. 더 많으면 화면이 이 크기로 나눠 보낸다. 리터럴(화면이 `satisfies DeleteBatchMax`로 묶는다)
+ */
+export const DELETE_BATCH_MAX = 200;
+/** 일괄 삭제의 확인 글자 — 지울 수를 그대로 적게 한다(잘못 누른 단추 하나로 수백 계정이 사라지지 않게). 화면 · 서버가 같은 꼴 */
+export const deleteBatchConfirm = (count: number): string => `삭제 ${count}`;
+
+/**
  * 일괄 지급 본문(`{ adjustments: [...] }`) → `Adjustment[]`. **주는 쪽 · 건물 올리기만 받는다** — 거두기는 한 줄씩(`/adjust`)이다.
  * 줄마다 권한이 다를 수 있다(건물은 `city`) — 라우트가 `batchPermissions()`로 전부 본다.
  * 같은 대상이 두 줄이면 거절한다(화면이 한 줄로 합쳐 보낸다 — 검토 문장과 실제가 갈리지 않게).

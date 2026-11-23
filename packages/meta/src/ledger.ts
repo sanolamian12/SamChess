@@ -187,6 +187,7 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /admin/anomalies/:id/resolve': [],
   // 계정을 지운다 — 늘릴 것이 없다(장부 줄도 함께 지워진다)
   'POST /admin/users/:uid/delete': [],
+  'POST /admin/users/delete-batch': [],
 };
 
 /** 운영에서는 쓰이면 안 되는 길 */

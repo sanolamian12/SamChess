@@ -706,6 +706,30 @@ try {
   assert.equal((await call('GET', `/admin/users/${victim.uid}`, admin.token)).status, 404);
   ok('계정 삭제 — CS · 평범한 사용자 403, 사유 · 이메일 확인 · 자기 · CS 계정 400(안 지워짐), 관리자는 지운다(계정 · 도시) · 감사 로그에 지우기 전 계정');
 
+  // ── 시험 계정 일괄 삭제 (2026-11-23) — 확인 글자 「삭제 {수}」, 시험 계정만, 한 계정씩 제 트랜잭션 · 감사 로그 ──
+  const v1 = await makeUser();
+  const v2 = await makeUser();
+  made.push(v1.uid, v2.uid);
+  await saveProfileTrusted(v1.uid, createProfile(`스모크일괄${randomUUID().slice(0, 6)}`, 3));
+  const batchDel = (token: string, body: object) => call('POST', '/admin/users/delete-batch', token, body);
+  const ghost = randomUUID();
+  const four = [v1.uid, v2.uid, cs.uid, ghost];
+  assert.equal((await batchDel(cs.token, { uids: four, reason: 'x', confirm: '삭제 4' })).status, 403, 'CS는 못 지운다');
+  assert.equal((await batchDel(admin.token, { uids: four, confirm: '삭제 4' })).status, 400, '사유 필수');
+  assert.equal((await batchDel(admin.token, { uids: four, reason: 'x', confirm: '삭제 3' })).status, 400, '확인 글자의 수가 다르면 400');
+  assert.equal((await batchDel(admin.token, { uids: [v1.uid, v1.uid], reason: 'x', confirm: '삭제 2' })).status, 400, '겹치면 400');
+  assert.equal((await pool.query('select 1 from auth.users where id = any($1)', [[v1.uid, v2.uid]])).rowCount, 2, '거절됐는데 지워졌다');
+  const batch = await batchDel(admin.token, { uids: four, reason: '스모크 — 일괄 삭제', confirm: '삭제 4' });
+  assert.equal(batch.status, 200, JSON.stringify(batch.body));
+  const bb = batch.body as { deleted: { uid: string; auditId: number }[]; failed: { uid: string; reason: string }[] };
+  assert.deepEqual(bb.deleted.map((d) => d.uid), [v1.uid, v2.uid], '시험 계정 둘을 지운다');
+  assert.deepEqual(bb.failed.map((f) => f.uid), [cs.uid, ghost], 'CS 계정 · 없는 계정은 그 줄만 거절');
+  assert.equal((await pool.query('select 1 from auth.users where id = any($1)', [[v1.uid, v2.uid]])).rowCount, 0, '계정이 남았다');
+  assert.equal((await pool.query('select 1 from auth.users where id = $1', [cs.uid])).rowCount, 1, 'CS 계정이 지워졌다');
+  const batchLogs = await pool.query<{ action: string; target_uid: string }>('select action, target_uid from admin_audit_log where id = any($1)', [bb.deleted.map((d) => d.auditId)]);
+  assert.deepEqual(batchLogs.rows.map((r) => r.action), ['account.delete', 'account.delete'], '계정마다 감사 로그 한 줄');
+  ok('시험 계정 일괄 삭제 — CS 403, 사유 · 확인 글자 · 겹침 400(안 지워짐), 시험 계정 둘 지움 · CS · 없는 계정은 그 줄만 거절, 계정마다 감사 로그');
+
   // 역할을 cs → admin으로 — 다음 요청부터 바로 관리자로 판정한다(서버가 매 요청 app_metadata를 다시 읽는다)
   const promote = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${cs.uid}`, { method: 'PUT', headers: adminHeaders, body: JSON.stringify({ app_metadata: { role: 'admin' } }) });
   assert.ok(promote.ok);
