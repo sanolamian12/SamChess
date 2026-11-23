@@ -164,9 +164,9 @@ test('다중 피격 — 포커스가 대상 사이를 옮겨 다닌다 (장료�
   ]);
   assert.equal(dir.camera.length, 2, '대상마다 큐가 하나씩 있어야 한다');
   assert.deepEqual(dir.camera.at(0)!.cell, { x: 2, y: 4 });
-  assert.deepEqual(dir.camera.at(4099)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
-  // 줌인 0.6 + 공격 3.5(사이 두 칸 1.2 + 2.3) = 4.1초 뒤에 둘째 대상으로 옮겨 간다
-  assert.deepEqual(dir.camera.at(4100)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
+  assert.deepEqual(dir.camera.at(3499)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
+  // 줌인 0.6 + 공격 2.9 = 3.5초 뒤에 둘째 대상으로 옮겨 간다
+  assert.deepEqual(dir.camera.at(3500)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
 });
 
 test('책략·명상·고유기술은 포커스로 **시전자**를 비춘다', () => {
@@ -223,14 +223,14 @@ test('고유기술 뒤에 공격이 오면 **맞는 쪽**으로 옮겨 간다', 
 
 test('이동 뒤 공격 — 카메라도 자세와 **같은 커서** 위에 놓인다', () => {
   // 카메라만 따로 0에서 세면 때리는 그림이 뜬 뒤에야 화면이 따라간다.
-  // 줌아웃 큐(0) → 0.6초 뒤 걷기 1.8초(칸마다 0.6 — 2026-11-17) → 2.4초에 줌인 큐.
+  // 줌아웃 큐(0) → 0.6초 뒤 걷기 0.9초 → 1.5초에 줌인 큐.
   const dir = plan([
     { e: 'moved', unit: 'P1-Rock', from: { x: 6, y: 15 }, to: { x: 6, y: 12 } },
     { e: 'attacked', unit: 'P1-Rock', target: 'P2-Rock', damage: 3, critical: false },
   ]);
-  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 2400]);
-  assert.equal(dir.camera.at(2399)!.scale, SCALE_FIT, '아직 걷는 중 — 판 전체');
-  assert.equal(dir.camera.at(2400)!.scale, SCALE_FOCUS, '도착하고서 대상으로 줌인');
+  assert.deepEqual(dir.camera.all.map((c) => c.from), [0, 1500]);
+  assert.equal(dir.camera.at(1499)!.scale, SCALE_FIT, '아직 걷는 중 — 판 전체');
+  assert.equal(dir.camera.at(1500)!.scale, SCALE_FOCUS, '도착하고서 대상으로 줌인');
 });
 
 test('연출이 없으면 큐도 없다 — 화면이 알아서 정한다', () => {
