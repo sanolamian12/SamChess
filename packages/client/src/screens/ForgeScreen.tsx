@@ -224,7 +224,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
    * **미지급 상태로 남은 것 중 아직 안 본 것**을 찾기만 한다.
    */
   // 키는 **자루**다(`{id}#{n}`, v6) — 알림은 자루마다 한 번씩, 그림·이름은 그 병기의 것
-  const justDone = useMemo(() => unseenForged(profile, celebrated)[0] ?? null, [profile.forgeOwned, celebrated]);
+  const justDone = useMemo(() => unseenForged(profile, celebrated)[0] ?? null, [profile.forgeOwned, profile.forgeMadeAt, celebrated]);
 
   const acknowledgeDone = (id: string): void => {
     const next = new Set(celebrated);
@@ -683,8 +683,12 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           art={<img className="cel-art-img" src="ui/cel-forge.png" alt="" />}
           badge={<img className="frg-cel-weapon" src={`blacksmith/${justDone.item.id}.png`} alt="" />}
           tone={equipBlink(justDone.item.unlockLevel)}
-          big={equipLabel(justDone.item)} bigField="doneItem"
           okAction="ackDone" onClose={() => acknowledgeDone(justDone.key)}>
+          {/* 큰 글씨 대신 강화 완료 · 도시 증축과 같은 옥색 붓 획 한 줄 — 둥근 병기 배지 + 「Lv1 대감도」, 그 밑에 어디서 보는지 (2026-11-23 기획자) */}
+          <p className="lvd-row frg-done-row" data-field="doneItem" data-item={justDone.item.id}>
+            <span className="frg-done-medal"><img src={`blacksmith/${justDone.item.id}.png`} alt="" /></span>
+            <b>{equipLabel(justDone.item)}</b>
+          </p>
           <p className="row dim">{t('forge.done.hint')}</p>
         </Celebrate>
       )}

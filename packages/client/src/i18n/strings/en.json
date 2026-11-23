@@ -784,7 +784,7 @@
   "forge.kind.armor": "Armor",
   "forge.done.title": "Crafted!",
   "forge.readyNotice": "Your order is ready. Please come to the forge.",
-  "forge.done.hint": "You can check it in Manage Weapon Assignments.",
+  "forge.done.hint": "Check it in Manage Weapon Assignments.",
   "forge.done.confirm": "OK",
   "forge.time.d": "{d}d {h}h",
   "forge.time.h": "{h}h {m}m",

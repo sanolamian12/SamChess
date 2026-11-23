@@ -274,6 +274,9 @@ function extHotspots(profile: PlayerProfile, onPick: (id: ExtBuildingId) => void
  * 아니라 되풀이가 안 된다. 남은 시간은 시작 + 60분까지이고, 넘기면 서버가 항복으로 정산한다.
  * 옛 [항복] 단추는 걷었다 — 항복은 판 안에서 할 수 있다.
  */
+/** 메인의 병기 제작 단추 — 남은 시간은 `App.tsx`가 잰다(시계를 넣는 자리) */
+export interface MainForge { status: 'crafting' | 'done'; remainingMs: number; onGo: () => void }
+
 export interface MainRaid {
   status: 'pending' | 'fighting';
   /** `pending`이면 응전 마감까지, `fighting`이면 버려진 판으로 정산되기까지 */
@@ -283,7 +286,7 @@ export interface MainRaid {
   onFight: () => void;
 }
 
-export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid }: {
+export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onReset, onDeleteCity, initialView, raid, forge }: {
   profile: PlayerProfile;
   /** 서버가 고친 계정으로 갈아 끼운다 — 우편 받기 뒤 */
   onChange: (next: PlayerProfile) => void;
@@ -298,6 +301,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
   /** 산 너머 건물에서 돌아왔을 때 — 성 안이 아니라 산 너머로 돌아간다 */
   initialView?: CityView | undefined;
   raid?: MainRaid | null;
+  /** 병기 제작 — 도적떼 단추 밑의 초록 두루마리 [병기구 제작 m:ss] / [제작 완료] (2026-11-23 기획자). 없으면 안 그린다 */
+  forge?: MainForge | null;
 }): React.JSX.Element {
   useLang();
   const [band] = useState(currentBand);
@@ -490,6 +495,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
             <span className="stat" data-field="officers"><i><GameIcon name="tab-officer" label={t('main.officers')} /></i><b>{poolUsed(profile)}/{poolCap(profile)}</b></span>
             <span className="stat" data-field="grain"><i><GameIcon name="res-grain" label={t('main.grain')} /></i><b>{profile.grain}</b></span>
           </div>
+          {(raid || forge) && (
+          <div className="city-alerts">
           {raid && (
             <div className="city-raid" data-field="raid" data-raid={raid.status}>
               {raid.status === 'pending' ? (
@@ -505,6 +512,16 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
                 </button>
               )}
             </div>
+          )}
+          {/* 병기 제작 — 도적떼 밑(둘이 함께면 도적떼가 위). 다 되면 [제작 완료] — 누르면 대장간으로 가 축하를 본다 */}
+          {forge && (
+            <button className="city-forge-btn" data-field="forgeTimer" data-forge={forge.status}
+              data-action={forge.status === 'done' ? 'forgeGo' : 'forgeTimer'} onClick={forge.onGo}>
+              <span className="lbl">{t(forge.status === 'done' ? 'forge.done.title' : 'forge.craft')}</span>
+              {forge.status === 'crafting' && <span className="sub" data-field="forgeLeft">{formatCountdown(forge.remainingMs)}</span>}
+            </button>
+          )}
+          </div>
           )}
         </div>
       </div>
@@ -550,20 +567,18 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
         </div>
       )}
       {guide.node}
-      {/* 대장간 완성 부름 — 화면 안내가 다 끝난 뒤에(두 사람이 한꺼번에 서지 않게) */}
-      {!guide.node && <ForgeCall profile={profile} />}
     </ScreenChrome>
   );
 }
 
 /**
- * **대장간 완성 부름** (2026-11-22 기획자) — 병기 제작이 끝났는데 아직 대장간에서 축하를 못 봤으면, 메인(성 안이든 산 너머든)에서
+ * **대장간 완성 부름** (2026-11-22 기획자 · 2026-11-23 — 메인만이 아니라 **어느 화면에서든**. `App.tsx`가 전투 · 대장간 밖의 화면에 세운다) — 병기 제작이 끝났는데 아직 대장간에서 축하를 못 봤으면, 메인(성 안이든 산 너머든)에서
  * 대장장이가 오른쪽 아래로 나와 「제작이 완료되었습니다. 대장간으로 와 주세요.」라고 **자루마다 한 번** 부른다.
  * 메인에 있는 동안 끝나도 부른다 — 정산은 `App.tsx`의 분 단위 tick이 하고, 그때 `forgeOwned`가 바뀌어 여기 잡힌다.
  * 「불렀다」는 말풍선이 펴지는 순간 적는다(`forgeSeen.ts` — 화면 편의값이라 `localStorage`). 대장간에서 축하를 보면 그 자루는 아예 안 부른다.
  * 도적떼 · 연구 완료 팝업이 떠 있으면 걷힐 때까지 기다린다(`waitPopups`).
  */
-function ForgeCall({ profile }: { profile: PlayerProfile }): React.JSX.Element | null {
+export function ForgeCall({ profile }: { profile: PlayerProfile }): React.JSX.Element | null {
   const [, bump] = useState(0);
   const [calling, setCalling] = useState<string[] | null>(null);
   const pending = forgeCallKeys(profile);

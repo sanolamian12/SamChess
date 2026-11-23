@@ -44,6 +44,10 @@ const page = await browser.newPage({
 });
 // 확인창은 **받되 문구를 적어 둔다** — 「교체를 알려 주는가」가 이 검사의 요점이라
 // 조용히 accept만 하면 뜬 적이 없어도 통과한다
+// 도시 Lv11 · 농지가 있는 계정이라 도적떼가 나올 수 있고, 그 알림은 새로고침마다 다시 뜬다(닫은 것은 메모리에만) — 뜨면 언제든 닫는다 (2026-11-23)
+await page.addLocatorHandler(page.locator('[data-modal="raidAlert"]'), async () => {
+  await page.click('[data-modal="raidAlert"] [data-action="raidClose"]').catch(() => {});
+});
 const dialogs: string[] = [];
 page.on('dialog', (d) => { dialogs.push(d.message()); void d.accept(); });
 
@@ -123,6 +127,14 @@ try {
     if (await page.$('.stw[data-say="forgeReady"][data-phase="in"]')) break;
     const other = await page.$('.stw:not([data-say="forgeReady"])[data-phase="in"] [data-action="guideNext"]');
     if (other) await other.click();
+    // 도시 Lv11 · 농지가 있는 계정이라 도적떼가 나올 수 있다 — 그 알림이 걷혀야 부름이 선다(`waitPopups`)
+    const raidClose = await page.$('[data-modal="raidAlert"] [data-action="raidClose"]');
+    if (raidClose) {
+      await raidClose.click();
+      await page.waitForTimeout(600);
+      // 도적떼 · 병기 제작 단추가 함께 서는 드문 장면 — 도적떼가 위다(2026-11-23 기획자)
+      await page.locator('.city-alerts').screenshot({ path: `${SHOTS}/alerts-stack.png` }).catch(() => {});
+    }
     await page.waitForTimeout(500);
   }
   const call = await page.waitForSelector('.stw[data-say="forgeReady"][data-phase="in"]', { timeout: 5_000 });

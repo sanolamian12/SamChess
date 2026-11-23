@@ -215,12 +215,16 @@ export function collectForgeOrder(profile: PlayerProfile, nowMs: number): Player
   if (!order) return profile;
   if (forgeOrderRemainingMs(profile, nowMs) > 0) return profile;
   const key = forgeItemKey(order.equipmentId, nextCopy(profile, order.equipmentId));
+  const item = equipmentById.get(order.equipmentId);
+  // 제작일은 **거둔 시각이 아니라 다 된 시각**(시작 + 제작 기간)이다 (2026-11-23). 거둔 시각을 적으면 화면(로컬 정산)과 서버가 각자 「지금」을 찍어
+  // 같은 자루의 제작일이 갈렸다 — 대장간 완성 알림의 「봤다」 열쇠가 그 값을 쓰므로(`client/forgeSeen.ts`) 대장장이가 같은 자루를 두 번 불렀다
+  const madeAt = item ? order.startedAt + forgeDurationMs(profile, item.unlockLevel, order.startedAt) : nowMs;
   const { forgeOrder: _drop, ...rest } = profile;
   return {
     ...rest,
     forgeOwned: { ...profile.forgeOwned, [key]: null },
     // 제작일은 **여기 한 번만** 찍힌다 — 지급·해제는 이 값을 안 건드린다
-    forgeMadeAt: { ...profile.forgeMadeAt, [key]: nowMs },
+    forgeMadeAt: { ...profile.forgeMadeAt, [key]: madeAt },
   };
 }
 

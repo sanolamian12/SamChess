@@ -784,7 +784,7 @@
   "forge.kind.armor": "Armatura",
   "forge.done.title": "Forgiato!",
   "forge.readyNotice": "Il lavoro è pronto. Vieni alla forgia, per favore.",
-  "forge.done.hint": "Può verificarlo in Gestisci assegnazione armi.",
+  "forge.done.hint": "Lo trovi in Gestisci assegnazione armi.",
   "forge.done.confirm": "OK",
   "forge.time.d": "{d}g {h}h",
   "forge.time.h": "{h}h {m}min",

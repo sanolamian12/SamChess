@@ -8514,6 +8514,17 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .cel-badge .frg-cel-weapon { width: min(17rem, 78vw); height: auto; rotate: -14deg; translate: 0 -12%;
   filter: drop-shadow(0 0 .6rem #fff6) drop-shadow(0 .4rem .6rem #000c); }
 .frg-done .cel-stage .cel-art { inset: 14% 2% 2%; }
+/* 모루는 어둡게 — 쇠빛이 만든 병기와 같은 색이라 병기가 묻혔다 (2026-11-23 기획자) */
+.frg-done .cel-stage .cel-art-img { filter: brightness(.38) saturate(.6) drop-shadow(0 .4rem 1rem #000c); }
+/* 병기 한 줄 — 옥색 붓 획(`.lvd-row`) 위에 둥근 병기 배지 + 이름 */
+.frg-done .frg-done-row { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .45rem; font-size: 1.05rem; }
+.frg-done-medal {
+  position: relative; flex: none; width: 2.6rem; height: 2.6rem; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #fbf1d8 0%, #e6cf9c 60%, #b8925a 100%);
+  box-shadow: 0 0 0 .12rem #e2bd6a, 0 0 0 .2rem #5a3c14, 0 .15rem .35rem #000b;
+}
+.frg-done-medal img { position: absolute; inset: 3%; width: 94%; height: 94%; object-fit: contain;
+  filter: drop-shadow(0 .05rem .1rem #0008); }
 
 /* 연구 완료(`AcademyNotice`) — 두루마리 위에 개량된 책략의 엠블럼, 아래에 이름 · MP · 효과 · 「몇 명에게 적용」 */
 .cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
@@ -9380,8 +9391,10 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-main .city-head .title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 도적떼 단추는 통계 줄의 오른쪽 끝 — 위 끝을 도시 Lv 줄(첫 줄)에 맞춘다 (2026-11-20 기획자, 옛 자리는 이름 오른쪽) */
 .scr-main .city-row { display: flex; align-items: flex-start; gap: .5rem; }
-.scr-main .city-row .city-raid { margin-left: auto; }
+.scr-main .city-row .city-alerts { margin-left: auto; }
 .scr-main .city-raid { flex: none; }
+/* 오른쪽 끝의 알림 단추 묶음 — 도적떼가 위, 병기 제작이 밑 (2026-11-23 기획자) */
+.scr-main .city-alerts { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: .3rem; }
 .city-raid-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   min-width: 8.6rem; height: 3.3rem; padding: 0 .3rem; cursor: pointer;
@@ -9400,6 +9413,21 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .city-raid-btn:hover:not(:disabled) { filter: brightness(1.1); }
 .city-raid-btn:disabled { opacity: .6; cursor: default; animation: none; }
 @media (prefers-reduced-motion: reduce) { .city-raid-btn { animation: none; } }
+/* 병기 제작 — 도적떼와 같은 꼴의 옥색 두루마리(`btn-primary.png`, 같은 틀 12% 11%). 만드는 중은 조용히, 다 되면 금빛으로 숨 쉰다 */
+.city-forge-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  /* 폭은 언어와 상관없이 하나 — 가장 긴 영어 「Craft Weapons」(10.9rem)에 맞춘다(언어마다 단추 크기가 출렁이지 않게) */
+  width: 11rem; height: 3.3rem; padding: 0 .3rem; cursor: pointer;
+  font: inherit; line-height: 1.1; background: transparent;
+  border-style: solid; border-color: transparent; border-width: .5rem 1.35rem; border-radius: 0;
+  border-image: url(ui/btn-primary.png) 12% 11% fill;
+  color: #f6ecd2; text-shadow: 0 1px 2px #000a;
+}
+.city-forge-btn .lbl { font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
+.city-forge-btn .sub { font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: #ffe08a; }
+.city-forge-btn[data-forge="done"] { animation: frm-alert-glow 1.6s ease-in-out infinite; }
+.city-forge-btn:hover { filter: brightness(1.1); }
+@media (prefers-reduced-motion: reduce) { .city-forge-btn { animation: none; } }
 
 /* 도적떼 알림 — 프레임 전체를 덮는다(`#frame.meta`가 기준) */
 #frame > .modal-back { z-index: 60; }

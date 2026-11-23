@@ -41,7 +41,7 @@ import type {
   AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView, RankBoard,
 } from '@samchess/meta';
 import {
-  PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs,
+  PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs, forgeOrderRemainingMs,
   raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, squadById, squadSlot, syncCity, pendingGuide,
 } from '@samchess/meta';
@@ -69,7 +69,8 @@ import { BoardScreen } from './BoardScreen.tsx';
 import { CollectionScreen } from './CollectionScreen.tsx';
 import { EnterLoading, type EnterPhase } from './EnterLoading.tsx';
 import { NewGameScreen } from './NewGameScreen.tsx';
-import { MainScreen } from './MainScreen.tsx';
+import { MainScreen, ForgeCall } from './MainScreen.tsx';
+import { hasUnseenForged } from './forgeSeen.ts';
 import { PlaceScreen } from './PlaceScreen.tsx';
 import { BuildingScreen } from './BuildingScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
@@ -757,6 +758,28 @@ export function App(): React.JSX.Element {
     return () => clearTimeout(id);
   }, [research?.startedAt, research?.tactic]);
 
+  /*
+   * ── 병기 제작 (2026-11-23 기획자) ─────────────────────────────────
+   *
+   * 연구와 같이 **끝나는 순간에 한 번 더 정산한다** — 1분 시계만 믿으면 대장간 밖에 있는 동안 완성이 최대 1분 늦게 잡혀,
+   * 메인의 [병기구 제작] 단추가 0:00에 멈춰 있고 대장장이도 늦게 온다. 정산은 여전히 `syncCity()` 하나다.
+   * 메인에 있는 동안만 1초마다 다시 그린다(남은 시간 단추).
+   */
+  const forgeOrder = profile?.forgeOrder;
+  useEffect(() => {
+    if (!forgeOrder) return;
+    const left = profile ? forgeOrderRemainingMs(profile, Date.now()) : 0;
+    const id = setTimeout(() => setProfileState((p) => (p ? syncCity(p, Date.now()) : p)), left + 300);
+    return () => clearTimeout(id);
+  }, [forgeOrder?.startedAt, forgeOrder?.equipmentId]);
+  const [forgeNow, setForgeNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!forgeOrder || screen.name !== 'main') return;
+    setForgeNow(Date.now());
+    const id = setInterval(() => setForgeNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [forgeOrder?.startedAt, screen.name]);
+
   const academyNotice = (profile?.academy?.notice?.length ?? 0) > 0;
   /** [확인] — 서버의 `notice`를 비운다. 못 닿으면 **화면에서만** 비운다(다음 접속에 한 번 더 뜬다) */
   const ackNotice = (): void => {
@@ -827,6 +850,10 @@ export function App(): React.JSX.Element {
             busy: raidBusy,
             onFight: fightRaid,
           } : null}
+          // 병기 제작 — 만드는 중이면 남은 시간, 다 됐는데 대장간에서 축하를 못 봤으면 [제작 완료]. 누르면 대장간으로(거기서 7초 축하가 뜬다)
+          forge={profile.forgeOrder
+            ? { status: 'crafting', remainingMs: forgeOrderRemainingMs(profile, forgeNow), onGo: () => setScreen({ name: 'building', building: 'forge' }) }
+            : hasUnseenForged(profile) ? { status: 'done', remainingMs: 0, onGo: () => setScreen({ name: 'building', building: 'forge' }) } : null}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {
             // **실패를 무시하지 않는다** (2026-09-04). 예전에는 결과와 상관없이
@@ -1049,6 +1076,11 @@ export function App(): React.JSX.Element {
         />
       )}
       </HeadToolsLayer>
+
+      {/* 대장간 완성 부름 — 어느 화면에서든(전투 · 매칭 · 결과 · 대장간 안은 빼고) 대장장이가 아래에서 한 번 부른다 (2026-11-23 기획자) */}
+      {profile && !booting && !TOOLS_OFF.includes(screen.name) && !(screen.name === 'building' && screen.building === 'forge') && (
+        <ForgeCall profile={profile} />
+      )}
 
       {/* 아이콘 말풍선 — 누르면 그 아이콘의 이름이 2초 뜬다(휴대폰엔 마우스 올리기가 없다, 2026-11-23 기획자) */}
       <TapTip />

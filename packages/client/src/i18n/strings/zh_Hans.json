@@ -784,7 +784,7 @@
   "forge.kind.armor": "防具",
   "forge.done.title": "制作完成",
   "forge.readyNotice": "制作已完成，请到铁匠铺来。",
-  "forge.done.hint": "可在兵器分配管理菜单中查看。",
+  "forge.done.hint": "请在兵器分配管理菜单中查看。",
   "forge.done.confirm": "确认",
   "forge.time.d": "{d}天{h}小时",
   "forge.time.h": "{h}小时{m}分钟",
