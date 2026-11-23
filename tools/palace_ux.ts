@@ -190,10 +190,9 @@ try {
   await page.screenshot({ path: `${SHOTS}/palace-04-city-short.png` });
   if (upg.disabled !== true) fail('자재가 5인데 [도시 증축]이 눌린다');
   if (upg.oldLine) fail('막힌 이유가 아직 판 안의 줄로 뜬다');
-  if (upg.why && !upg.whyCode) fail('막힌 이유에 번역 코드가 없다');
-  // 한국어가 아닌 화면에서 한국어 원문이 새지 않는가
-  if (LANG && LANG !== 'ko' && /[가-힣]/.test(upg.why)) fail(`${LANG} 화면에 한국어 이유가 뜬다 — "${upg.why}"`);
-  ok(`자재가 모자라면 — 자재 칸 채움 아님 · [도시 증축] 막힘 · 이유 「${upg.why || '(자재 — 조건 칸이 말한다)'}」`);
+  // 막힌 이유는 말하지 않는다(2026-11-23 기획자) — 모자란 조건은 조건 칸이 붉게 보여 준다
+  if (upg.why || upg.whyCode) fail(`막힌 이유를 내관이 말한다(말하지 않기로 했다): "${upg.why}"`);
+  ok('자재가 모자라면 — 자재 칸 채움 아님 · [도시 증축] 막힘 · 막힌 이유는 말하지 않는다');
 
   if (errors.length) fail(`콘솔 오류 — ${errors.join(' | ')}`);
   console.log('\n✓ 궁궐 현황 판 완주');

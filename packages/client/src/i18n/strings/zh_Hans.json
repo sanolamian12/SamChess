@@ -242,6 +242,7 @@
   "guide.building.hospital.2": "一小时即可痊愈，\n在这里治疗只需{n}分钟。",
   "guide.building.forge.1": "在这里打造兵器，配给武将。",
   "guide.building.forge.2": "一名武将只能携带兵器\n或道具其中之一。",
+  "guide.city.intro.0": "{honor}，这里是发展城市的地方。\n每次扩建，城市等级提升，\n并可新建或升级{n}座建筑。",
   "guide.city.intro.1": "要扩建，上方的条件栏必须全部达成。\n未达成的栏以红字标示。",
   "guide.city.intro.2": "武将可从集市的[佣兵市场]与奖励获得，\n建筑资材从[城市物资]与胜利获得，\n战斗胜利则在军营的[出征]中累积。",
   "guide.palace.box.1": "{honor}！宫阙已满，新获得的\n武将已放入仓库。",

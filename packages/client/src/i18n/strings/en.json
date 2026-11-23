@@ -242,6 +242,7 @@
   "guide.building.hospital.2": "They heal in an hour,\nbut treatment here takes {n} min.",
   "guide.building.forge.1": "Here weapons are crafted for officers.",
   "guide.building.forge.2": "Each officer carries either\na weapon or an item, not both.",
+  "guide.city.intro.0": "{honor}, this is where the city grows.\nEach upgrade raises the city level and lets you\nbuild or raise {n} buildings.",
   "guide.city.intro.1": "To upgrade, every requirement above must\nbe met. Unmet ones are shown in red.",
   "guide.city.intro.2": "Officers: [Mercenary Market] and rewards. Materials: [City Supplies] and victories, won via [Set Out] in the Barracks.",
   "guide.palace.box.1": "{honor}! The Palace is full, so newly gained\nofficers have gone to storage.",

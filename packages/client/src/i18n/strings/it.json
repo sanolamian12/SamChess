@@ -242,6 +242,7 @@
   "guide.building.hospital.2": "Guariscono in un'ora,\nma qui la cura richiede {n} minuti.",
   "guide.building.forge.1": "Qui si forgiano armi per gli ufficiali.",
   "guide.building.forge.2": "Ogni ufficiale porta un'arma\no un oggetto, non entrambi.",
+  "guide.city.intro.0": "{honor}, qui si fa crescere la città.\nOgni ampliamento alza il livello della città\ne costruisce o migliora {n} edifici.",
   "guide.city.intro.1": "Per ampliare devono essere soddisfatti tutti\ni requisiti in alto. Quelli mancanti sono in rosso.",
   "guide.city.intro.2": "Ufficiali: [Mercato dei mercenari] e ricompense. Materiali: [Rifornimenti della città] e vittorie, da [Parti in battaglia].",
   "guide.palace.box.1": "{honor}! Il Palazzo è pieno: i nuovi\nufficiali sono andati nel deposito.",

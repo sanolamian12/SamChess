@@ -9632,6 +9632,16 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 .clx-row:hover { background: #ffffff33; }
+/* 지금 가진 것으로 채울 수 있는 줄 — 금빛으로 천천히 숨쉰다 (2026-11-23 기획자). 줄이 `overflow: hidden`이라 바깥 빛은 잘린다 —
+   안쪽 빛 · 금빛 테 · 옅은 금빛 바탕으로 */
+.clx-row[data-beckon] { animation: clx-beckon 1.8s ease-in-out infinite; }
+@keyframes clx-beckon {
+  0%, 100% { background-color: #f0c67400; box-shadow: inset 0 0 0 0 #d9a52f00, inset 0 0 0 0 #e0a82e00; }
+  50% { background-color: #f0c67438; box-shadow: inset 0 0 0 2px #d9a52fcc, inset 0 0 .7rem .15rem #e0a82eaa; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clx-row[data-beckon] { animation: none; background-color: #f0c67430; box-shadow: inset 0 0 0 2px #d9a52fcc; }
+}
 /* 라벨 그림 워터마크 (2026-10-14 지정) — 두루마리의 `.clx-watermark`와 같은 그림 · 같은 곱하기. 줄이 그림(3:1)보다
  * 납작해 위아래가 잘린다(`object-position`으로 말 · 사람이 있는 아래쪽으로 조금 내린다). 양 끝을 흐려 네모 경계가 안 보이게 한다.
  * **줄에 `isolation` · `z-index`를 걸지 않는다** — 쌓임 맥락이 생기면 곱하기가 줄 안의 투명한 바탕하고만 섞여 라벨의 미색 바탕이

@@ -114,7 +114,30 @@ function dodgeSay(frame: HTMLElement, bubble: HTMLElement | null, target: Elemen
   const head = f.width * 0.18;
   if (top - DODGE_GAP - h >= head) return f.height - (top - DODGE_GAP);
   if (f.height - (bottom + DODGE_GAP + h) >= 0) return f.height - (bottom + DODGE_GAP + h);
-  return f.height - head - h;
+  return besideSteward(f, bubble, target, homeBottom, h, head);
+}
+
+/**
+ * 팝업이 거의 화면을 다 덮어 위아래 어디에도 안 들어갈 때 — **내관 곁(제자리)에 서되 팝업의 단추만 비킨다** (2026-11-23 기획자).
+ * 예전에는 머리 줄 바로 밑으로 올라가 장수 카드의 「레벨 상한」이 내관과 화면 반대 끝에 떴다. 제자리에서 덮는 단추가 있으면
+ * 그 단추 바로 위까지만 올라가고(덮는 것이 없을 때까지 되풀이), 그래도 머리 줄에 닿으면 옛 자리(머리 줄 밑)다.
+ * 제자리(`null`)를 먼저 보는 것은 바닥의 [뒤로]를 가렸던 일(2026-11-19 raid_play) 때문 — 단추를 덮지 않는 한 내관 곁이다.
+ */
+function besideSteward(f: DOMRect, bubble: HTMLElement, target: Element, homeBottom: number, h: number, head: number): number | null {
+  const b = bubble.getBoundingClientRect();
+  const buttons = [...target.querySelectorAll('button')]
+    .map((e) => e.getBoundingClientRect())
+    .filter((r) => r.width > 0 && r.height > 0 && r.right > b.left && r.left < b.right);
+  let bottomPx = homeBottom;
+  for (let i = 0; i < buttons.length + 1; i++) {
+    const bubTop = f.height - bottomPx - h;
+    const bubBottom = f.height - bottomPx;
+    const hit = buttons.filter((r) => r.bottom - f.top > bubTop && r.top - f.top < bubBottom);
+    if (hit.length === 0) break;
+    bottomPx = f.height - (Math.min(...hit.map((r) => r.top - f.top)) - DODGE_GAP);
+  }
+  if (f.height - bottomPx - h < head) return f.height - head - h;
+  return bottomPx === homeBottom ? null : bottomPx;
 }
 
 export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone, speaker: who, say, sayCode, leaving, waitPopups }: {

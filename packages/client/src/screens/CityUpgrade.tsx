@@ -53,12 +53,6 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
 
   const cost = upgradeCost(profile.cityLevel);
   const can = canUpgradeCity(profile);
-  /*
-   * **자재가 모자란 것은 안 적는다** — 증축 조건표(같은 화면 위 판)가 이미 말한다. 자재를 무한으로 두고 물으면 남는 것이 곧 「화면에 없는 이유」다
-   * (2026-09-14).
-   */
-  const why = canUpgradeCity({ ...profile, materials: Number.MAX_SAFE_INTEGER });
-  const whyShown = !why.ok;
 
   /*
    * 팝업 · 가리개는 **화면(`.scr`)에** 띄운다 — 단추가 바닥 명령 판 안에 있어 그 자리에 그리면 판을 기준으로 앉아 화면 가운데에서
@@ -120,8 +114,10 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
             </>
           )}
       </button>
-      {/* 왜 안 되는지는 내관이 말한다(2026-11-19 기획자 — 판 안 글씨는 판 크기를 출렁여 걷었다). 자재가 모자란 이유만은 안 말한다 */}
-      <Say text={whyShown ? reasonText(why) : null} level={profile.cityLevel} name="why" code={whyShown ? why.code : undefined} />
+      {/*
+        * 왜 안 되는지는 **말하지 않는다** (2026-11-23 기획자 — 처음 온 도시의 첫 말이 「보유 장수가 모자랍니다」였고, 모자란 것은 그것만도 아니었다).
+        * 모자란 조건은 위의 증축 조건 칸이 붉게 보여 주고, 무엇을 하는 곳인지 · 어디서 채우는지는 대본 안내(`city.intro`)가 말한다
+        */}
       <Say text={refused} level={profile.cityLevel} name="refused" repeat />
 
       {layer(<>

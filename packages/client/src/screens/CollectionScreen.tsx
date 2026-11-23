@@ -124,6 +124,15 @@ export function CollectionScreen({ profile, onBack, onChange }: {
     : ranking?.mine ? t('collection.sum.rankN', { n: ranking.mine.rank }) : t('collection.sum.rankNone');
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   useEffect(() => { setPage(0); }, [query, sort]);
+  /*
+   * **지금 가진 것으로 채울 수 있는 컬렉션으로 데려간다** (2026-11-23 기획자) — 대자보의 「채울 수 있는 컬렉션이 있습니다」(`board.collection`)를
+   * 듣고 들어오면 그 줄이 24쪽 중 어디 있는지 몰랐다. 들어오는 순간 첫 그런 줄의 쪽으로 넘기고, 그런 줄은 금빛으로 천천히 깜빡인다(`data-beckon`).
+   * 쪽 넘기기는 **들어올 때 한 번**(위의 「쪽 0으로」 뒤에 선언해 그것보다 늦게 돈다) — 그 뒤 사람이 넘긴 쪽을 빼앗지 않는다
+   */
+  useEffect(() => {
+    const i = rows.findIndex((r) => r.ready > 0);
+    if (i >= 0) setPage(Math.floor(i / PAGE_SIZE));
+  }, []);
   // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
   const listRef = useRef<HTMLElement>(null);
   const shown = useSteadyPage(listRef, page, pageCount, [rows.map((r) => r.collection.id).join()]);
@@ -245,6 +254,8 @@ function CollectionLine({ row, onOpen }: { row: CollectionRow; onOpen: () => voi
       className="clx-row"
       data-state={row.status}
       data-collection={c.id}
+      // 지금 가진 것으로 채울 칸이 있다 — 금빛으로 천천히 깜빡인다(`style.css`의 `.clx-row[data-beckon]`)
+      data-beckon={row.ready > 0 ? '' : undefined}
       onClick={onOpen}
     >
       {/* 라벨 그림을 줄 바탕에 워터마크로 (2026-10-14 지정) — 상세 판과 같은 그림. 아직 안 그린 컬렉션은 404 → 그냥 뺀다 */}

@@ -324,6 +324,8 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
     // ── 첫 판 점검으로 채운 빈자리 (2026-11-14) ──
     case 'city.intro':
       return [
+        // 먼저 이곳이 무엇을 하는 곳인지 — 증축 · 새 건물 · 건물 올리기 (2026-11-23 기획자 — 첫 말이 「장수가 모자랍니다」였다)
+        { text: t('guide.city.intro.0', { honor, n: UPGRADE_PICKS }) },
         { text: t('guide.city.intro.1'), spot: 'upgradeNeeds' },
         { text: t('guide.city.intro.2') },
       ];
