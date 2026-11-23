@@ -4,7 +4,9 @@
     "lines": 15,
     "voice": "Iapetus",
     "profile": "Cao Cao, chancellor of Wei and the most feared man under heaven, in his forties to fifties. A crisp, sharp-edged voice with heavy gravitas: low-to-mid pitch, every consonant clean, every word weighed. Charismatic and domineering; he never sounds excited, giddy or eager. He speaks slowly and deliberately, with long confident pauses, as if the whole room must wait for him. His smile is cold and knowing; even his anger is controlled, and even in alarm he barks like a commander, not a frightened man. Think of a ruthless emperor-in-waiting, not a cheerful host.",
-    "ko": "위 승상 · 지침: 카랑카랑하되 조조 특유의 카리스마 — 들뜨지 않는다, 느긋하고 무게 있는 패왕의 말투"
+    "ko": "위 승상 · 지침: 카랑카랑하되 조조 특유의 카리스마 — 들뜨지 않는다, 느긋하고 무게 있는 패왕의 말투",
+    "profile_CA": "Cao Cao, chancellor of Wei and the most feared man under heaven, in his forties to fifties, burning with ambition. A heavy, weighty voice that is also sharp, ringing and metallic: a hard, bright edge on every word that cuts across the room. Not polite, not gentle, not a refined scholar: he is a hungry, domineering warlord who means to swallow the whole realm, and you can hear the ambition and arrogance in his voice. Forceful and commanding, with sharp, clipped consonants and a proud, cutting bite on the key words; his laugh is short and cold. Still controlled and never giddy or excited — the weight stays — but he speaks with ferocity and appetite, not courtesy.",
+    "ko_CA": "CA만: 무게는 그대로, 더 카랑카랑하고 야망 있게 — 점잖지 않게(11-22 기획자)"
   },
   "yu-bi": {
     "name": "유비",
@@ -39,7 +41,9 @@
     "lines": 5,
     "voice": "Alnilam",
     "profile": "Guan Yu, the god of war with the long beard, in his forties, standing on a battlefield. The deepest, thickest, heaviest voice in the cast: a low chest voice with a rough, iron edge and a big, open resonance. He speaks out loud across the field, not softly indoors; his words carry over the noise of battle. Relaxed and unhurried, supremely sure no one can stand against him, yet hungry for the fight: a warrior who enjoys combat. Slow, weighty delivery with a confident, belligerent bite on the key words. Never whispering, never mumbling, never flat; proud and dominant, like a war general calling to his enemy.",
-    "ko": "촉 장수 · 지침: 더 묵직하고 굵은 목소리, 여유롭지만 호전적 — 전쟁터에서 말하는 무장"
+    "ko": "촉 장수 · 지침: 더 묵직하고 굵은 목소리, 여유롭지만 호전적 — 전쟁터에서 말하는 무장",
+    "ko_CA": "CA만: 목소리 Charon(Alnilam이 가벼웠다 — 11-23 기획자) · 설명은 다른 언어와 같음",
+    "voice_CA": "Charon"
   },
   "seo-seo": {
     "name": "서서",

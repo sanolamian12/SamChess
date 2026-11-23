@@ -184,7 +184,7 @@ def build_prompt(speaker: str, dub: str, lines: list, cast: dict, notes: dict) -
 Read each transcript line exactly once, in order, then stop. Never repeat the transcript or any line of it.
 
 # AUDIO PROFILE
-{c['profile'].strip()}
+{c.get(f'profile_{dub}', c['profile']).strip()}
 
 ## THE SCENE
 {BASE_SCENE} The transcript has {len(lines)} lines.
@@ -205,7 +205,7 @@ def build_style(speaker: str, dub: str, lines: list, cast: dict, notes: dict) ->
     notes_txt = "\n".join(f"{i}. {ln.get('note') or notes[ln['key']]}" for i, ln in enumerate(lines, 1) if ln.get("note") or notes.get(ln["key"]))
     return f"""Read the text aloud exactly as written, in {LANG_NAME[dub]}, as a voice actor playing this character. Do not add, change or improvise any words.
 
-Character: {c['profile'].strip()}
+Character: {c.get(f'profile_{dub}', c['profile']).strip()}
 
 Scene: {BASE_SCENE}
 Language: {LANG_STYLE[dub]}
@@ -479,7 +479,7 @@ def cmd_run(args):
             prompt = build_prompt(sp, dub, lines, cast, notes)
             print(f"[{dub}] {name} ({cast[sp]['voice']}, {len(lines)}줄)")
             try:
-                pcm = generate(client, types, cast[sp]["voice"], prompt)
+                pcm = generate(client, types, cast[sp].get(f"voice_{dub}", cast[sp]["voice"]), prompt)
             except DailyQuotaExceeded:
                 log.write("- (하루 한도 초과로 중단)\n")
                 print("\n하루 한도를 다 썼다. 같은 명령을 다시 돌리면 받은 것은 건너뛰고 이어 간다.")
@@ -1089,7 +1089,7 @@ def cmd_auto(args):
         t0 = time.time()
         try:
             client = genai.Client(api_key=keys[k], http_options=types.HttpOptions(api_version=API_VERSION, timeout=TTS_TIMEOUT_MS))
-            pcm = generate(client, types, cast[sp]["voice"], build_prompt(sp, dub, lines, cast, notes), retries=1)
+            pcm = generate(client, types, cast[sp].get(f"voice_{dub}", cast[sp]["voice"]), build_prompt(sp, dub, lines, cast, notes), retries=1)
             if not pcm:
                 raise RuntimeError("소리 없이 돌아왔다")
         except DailyQuotaExceeded as e:
