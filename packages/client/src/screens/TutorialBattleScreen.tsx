@@ -41,6 +41,7 @@ import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { BattleStage } from './BattleStage.tsx';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
+import { playTutorialVoice, stopTutorialVoice } from '../audio/tutorialVoice.ts';
 import { guideVoicePrefix } from './guideScript.ts';
 import type { GuideSpeaker } from './guideScript.ts';
 import { TutorialSteward } from './TutorialSteward.tsx';
@@ -359,6 +360,13 @@ export function TutorialBattleScreen({ id, onDone, onExit, save = completeTutori
     }, FOCUS_POLL_MS);
     return () => { clearInterval(timer); if (later) clearTimeout(later); };
   }, [line]);
+  // 등장인물의 대사 창이 떠 있는 동안 그 줄의 녹음을 튼다 — 넘기거나 닫으면 그 자리에서 끊는다(2026-11-23 기획자)
+  const sayKey = guide && focusReady && line !== undefined && isSay(line) ? line.say : null;
+  useEffect(() => {
+    if (!sayKey) return;
+    playTutorialVoice(sayKey);
+    return stopTutorialVoice;
+  }, [sayKey, page]);
   const next = (): void => { if (guide) { if (lastPage) guide.then(); else setPage((n) => n + 1); } };
   const speaker = TUTORIAL_SPEAKER[id];
   /** 사람이 이 장을 말하는가 — 안내 장이고, 단추가 둘인 마지막 장이 아니다 */

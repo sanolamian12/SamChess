@@ -39,6 +39,7 @@ packages/client/public/bgm/
 packages/client/public/effects/
 packages/client/public/skillvoice/
 packages/client/public/turnvoice/
+packages/client/public/tutorialvoice/
 packages/client/public/cityvoice/
 packages/client/public/duelvoice/
 packages/client/public/duel/

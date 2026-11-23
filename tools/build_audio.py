@@ -31,6 +31,9 @@
 `packages/data/generated/uniqueSkills.json`의 `name`과 대조해 `기술id.LANG.확장자`로 옮긴다.
 지금 18종만 녹음돼 있다 — 나머지는 대조에 안 걸려 그대로 건너뛴다.
 
+튜토리얼 대사 음성 (`tutorialvoice/`, 2026-11-23) — S급 튜토리얼의 대사 창마다 그 줄을 튼다. `voice/tutorial/{LANG}/{판}.say{n}.wav` →
+`tutorialvoice/{판}.say{n}.{LANG}.mp3`(24kHz · 64k), 트는 자리는 `client/src/audio/tutorialVoice.ts`.
+
 차례 음성 (`turnvoice/`, 2026-10-20) — 전투에서 **내 장수가 차례를 받았을 때** 한 번 튼다.
 | 원본 | 출력 |
 |---|---|
@@ -79,6 +82,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -277,6 +281,7 @@ def main() -> int:
     sync_effects(args.force)
     sync_skillvoice(args.force)
     sync_turnvoice(args.force)
+    sync_tutorialvoice(args.force)
     sync_cityvoice(args.force)
     sync_duelvoice(args.force)
     return 0
@@ -389,7 +394,7 @@ def copy_if_changed(src: Path, dst: Path, force: bool) -> str | None:
     return f"{dst.stem}(갈아끼움)" if had else dst.stem
 
 
-def encode_if_newer(src: Path, dst: Path, force: bool) -> str | None:
+def encode_if_newer(src: Path, dst: Path, force: bool, quality: tuple[str, ...] = ("-ar", "44100", "-ac", "1", "-b:a", "128k")) -> str | None:
     """wav → mp3(ffmpeg). 굽기는 바이트가 매번 같다는 보장이 없어 내용 대신 **원본 해시**로 판단한다 —
     원본 곁의 `{원본}.built`에 구운 원본의 해시와 **구워 낸 파일의 해시**를 적어 두고 둘 다 같으면 건너뛴다(public/에 표지를 두면 빌드에 딸려 나간다).
     구워 낸 쪽도 보는 까닭: 그 사이 다른 길(옛 음성 고르기 `TURNVOICE_DUB_KEEP_OLD`)이 출력을 덮었으면 다시 구워야 한다."""
@@ -398,7 +403,7 @@ def encode_if_newer(src: Path, dst: Path, force: bool) -> str | None:
     if not force and dst.exists() and mark.exists() and mark.read_text(encoding="utf-8").split() == [h, digest(dst)]:
         return None
     had = dst.exists()
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-ar", "44100", "-ac", "1", "-b:a", "128k", str(dst)], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), *quality, str(dst)], check=True)
     mark.write_text(f"{h} {digest(dst)}", encoding="utf-8")
     return f"{dst.stem}(갈아끼움)" if had else dst.stem
 
@@ -472,6 +477,39 @@ def sync_turnvoice(force: bool) -> None:
             print(f"  ! {lang}: 없는 B~D급 목소리 — {' '.join(lack_t)}")
     if unmatched:
         print(f"  ! 매칭 못한 차례 음성: {' · '.join(unmatched)}")
+
+TUTORIALVOICE_OUT = CLIENT_PUBLIC / "tutorialvoice"
+TUTORIALVOICE_CLIP = re.compile(r"([a-z-]+\.say\d+)\.wav")
+TUTORIALVOICE_QUALITY = ("-ar", "24000", "-ac", "1", "-b:a", "64k")
+"""S급 튜토리얼의 대사 음성 (2026-11-23) — `voice/tutorial/{LANG}/{판}.say{n}.wav`(← `tutorial_dub_generate.py split`)를
+`public/tutorialvoice/{판}.say{n}.{LANG}.mp3`로. 대본 키 `tut.s.{판}.say{n}`과 이름이 같다(`client/src/audio/tutorialVoice.ts`).
+말소리뿐이라 24kHz · 64k로 굽는다(다섯 언어 760조각 · 약 64분). 손질한 조각(`_edit`)은 split이 이미 `{조각}.wav`로 놓았다.
+`turn.*`(차례 음성)는 `sync_turnvoice`가 따로 다룬다."""
+
+
+def sync_tutorialvoice(force: bool) -> None:
+    if not TURNVOICE_DUB.is_dir():
+        print(f"{TURNVOICE_DUB} 가 없어 건너뛴다 — 튜토리얼 대사 음성 없이도 빌드는 정상이다")
+        return
+    TUTORIALVOICE_OUT.mkdir(parents=True, exist_ok=True)
+    made: list[str] = []
+    want: set[str] = set()
+    for lang_dir in sorted(p for p in TURNVOICE_DUB.iterdir() if p.is_dir()):
+        lang = lang_dir.name
+        for src in sorted(lang_dir.iterdir()):
+            m = TUTORIALVOICE_CLIP.fullmatch(src.name)
+            if not m:
+                continue
+            dst = TUTORIALVOICE_OUT / f"{m.group(1)}.{lang}.mp3"
+            want.add(dst.name)
+            name = encode_if_newer(src, dst, force, TUTORIALVOICE_QUALITY)
+            if name:
+                made.append(name)
+    # 원본이 없어진 조각(대본에서 빠진 줄)은 출력에서도 뺀다 — 남기면 옛 목소리가 그 키로 계속 나온다
+    gone = [p for p in TUTORIALVOICE_OUT.glob("*.mp3") if p.name not in want]
+    for p in gone:
+        p.unlink()
+    print(f"  · tutorialvoice/ {len(want)}개" + (f" (새로 구움 {len(made)}개)" if made else "") + (f" (뺌 {len(gone)}개)" if gone else ""))
 
 
 def sync_cityvoice(force: bool) -> None:
