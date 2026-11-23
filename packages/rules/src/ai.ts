@@ -60,7 +60,7 @@ import { autoDuel, chooseChallenge } from './duelAi.ts';
 import { attackCells, getPiece, legalMoves } from './pieces.ts';
 import {
   aliveUnits, boardQuery, chebyshev, controllingSide, effectiveAt, hasStatus, isOver,
-  legalMovesFor, legalTargetsFor, officerStats, other, samePos, spMaxBonus, supplyDepotOf, threatRangeFor,
+  legalMovesFor, legalTargetsFor, officerStats, other, samePos, supplyDepotOf, threatRangeFor,
   uniqueSkillCost, unitAt,
 } from './state.ts';
 import type {
@@ -171,7 +171,7 @@ export function takeTurn(state: BattleState, opts: { duels?: boolean } = {}): { 
     act({ t: 'move', to: theirDepot });
     return done();
   }
-  if (theirKing && theirKing.hp <= effectiveAt(me) + spMaxBonus(s, me.side)) {
+  if (theirKing && theirKing.hp <= effectiveAt(me)) {
     const only = new Set([theirKing.id]);
     if (strike(only)) return done();
     const spot = findAttackingSpot(s, unitId, only);
@@ -185,7 +185,7 @@ export function takeTurn(state: BattleState, opts: { duels?: boolean } = {}): { 
   const watch = watchOf(s, me.side, unitId);
   let holdGround = false;
   if (watch.intruders.size > 0) {
-    const damage = effectiveAt(me) + spMaxBonus(s, me.side);
+    const damage = effectiveAt(me);
     const lethal = new Set([...watch.intruders].filter((id) => s.units[id]!.hp <= damage));
     if (lethal.size > 0 && strike(lethal)) return done();
 
@@ -526,7 +526,7 @@ export function pickTargets(state: BattleState, unitId: UnitId, only?: ReadonlyS
   const legal = legalTargetsFor(state, unitId).filter((id) => !only || only.has(id));
   if (legal.length === 0) return [];
 
-  const damage = effectiveAt(unit) + spMaxBonus(state, unit.side);
+  const damage = effectiveAt(unit);
   const rank = (u: UnitState): number => {
     const lethal = u.hp <= damage;
     const king = u.piece === 'King';

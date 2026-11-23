@@ -605,7 +605,7 @@ export function attackRange(state: BattleState, unitId: UnitId): { min: number; 
   if (!unit) return { min: 0, max: 0 };
   const fear = hasStatus(unit, 'outgoingDamageHalf')
     || aurasOn(state, unitId).some((a) => a.status === 'auraOutgoingHalf');
-  const at = effectiveAt(unit) + spMaxBonus(state, unit.side);
+  const at = effectiveAt(unit);
   return {
     min: FORMULA.damage(at, false, false, fear),
     max: FORMULA.damage(at, true, false, fear),
@@ -692,12 +692,12 @@ export function wtBaseOf(leadership: number, held: string | undefined): number {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 일기토 · 설전이 켜진 판 · SP MAX 버프 (GDD §3.11 R15 · R20)
+// 일기토 · 설전이 켜진 판 · 이긴 쪽의 효과 (GDD §3.11 R12 · R20)
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 이 판에 일기토 · 설전 · SP MAX 버프가 있는가 — **대전(AI · 온라인)과 공성전**만이다. 도적떼 · 튜토리얼에는 없다.
- * ★ 대결 단추와 버프가 **이 함수 하나**를 읽는다 — 따로 판정하면 「대결은 없는데 버프는 붙는」 판이 조용히 생긴다.
+ * 이 판에 일기토 · 설전(과 SP 상한 15)이 있는가 — **대전(AI · 온라인)과 공성전**만이다. 도적떼 · 튜토리얼에는 없다.
+ * ★ 대결 단추와 SP 상한이 **이 함수 하나**를 읽는다.
  */
 export function duelRulesOn(state: Pick<BattleState, 'scenario' | 'duels'>): boolean {
   // 튜토리얼은 대결을 가르치는 판(`ScenarioSetup.duels`)만 켠다 (2026-11-12)
@@ -705,12 +705,17 @@ export function duelRulesOn(state: Pick<BattleState, 'scenario' | 'duels'>): boo
 }
 
 /**
- * SP MAX 버프 — 진영 SP가 상한이면 그 진영 장수의 공격 AT `+spMaxAtBonus` (R15). **저장하지 않고 공격하는 순간 본다.**
- * 공격(`resolveAttack`) · 확인창(`forecastAttack`) · 공격치 범위(`attackRange`)가 이것 하나를 지난다.
- * 크리티컬은 `(AT + 1) × 2`다 — 더한 뒤에 곱한다.
+ * **크리티컬이 확정인가** — 「증폭」 · 「일당백」 · 「일격필살」(`critical100`) 또는 일기토 효과(`duelBoon`, 2026-11-23).
+ * 공격(`resolveAttack`)과 확인창(`forecastAttack`)이 이것 하나를 본다. 횟수를 깎는 것은 `critical100`만이다(일기토 효과는 시간으로 끝난다).
  */
-export function spMaxBonus(state: BattleState, side: Side): number {
-  return duelRulesOn(state) && state.sp[side] >= state.spCap[side] ? FORMULA.spMaxAtBonus : 0;
+export function critSure(unit: UnitState): boolean {
+  return findStatus(unit, 'critical100') !== undefined || hasStatus(unit, 'duelBoon');
+}
+
+/** **받는 공격 피해가 절반인가** — 「반감」 · 「용맹전진」(`incomingDamageHalf`) · 허저 오라 · 일기토 효과(`duelBoon`). 맞는 쪽(대신받기 뒤)을 넣는다 */
+export function halvesIncoming(state: BattleState, victim: UnitState): boolean {
+  return findStatus(victim, 'incomingDamageHalf') !== undefined || hasStatus(victim, 'duelBoon')
+    || auraApplies(state, victim, 'auraIncomingHalf', 'ally');
 }
 
 /**
@@ -758,13 +763,11 @@ export function uniqueSkillCost(unit: UnitState): number | null {
 export function attackDamage(
   attacker: UnitState, victim: UnitState,
   critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean,
-  /** SP MAX 버프 몫(`spMaxBonus`) — 상태를 안 받는 함수라 부르는 쪽이 넣는다 */
-  atBonus = 0,
 ): number {
   if (hasStatus(victim, 'incomingDamageZero')) return 0;
   const gear = heldOf(attacker);
   const base = FORMULA.damage(
-    effectiveAt(attacker) + (gear.attack ?? 0) + atBonus, critical, halveIncoming, fearOnAttacker,
+    effectiveAt(attacker) + (gear.attack ?? 0), critical, halveIncoming, fearOnAttacker,
   );
   const withCrit = base + (critical ? gear.criticalDamage ?? 0 : 0);
   return applyFinalDamage(withCrit, attacker, victim);
@@ -796,15 +799,13 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   }
 
   const victim = redirectTarget(state, target);
-  const halved = findStatus(victim, 'incomingDamageHalf') !== undefined
-    || auraApplies(state, victim, 'auraIncomingHalf', 'ally');
+  const halved = halvesIncoming(state, victim);
   const feared = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const buff = spMaxBonus(state, attacker.side);
-  const normal = attackDamage(attacker, victim, false, halved, feared, buff);
-  const critical = attackDamage(attacker, victim, true, halved, feared, buff);
-  const criticalRate = findStatus(attacker, 'critical100')
+  const normal = attackDamage(attacker, victim, false, halved, feared);
+  const critical = attackDamage(attacker, victim, true, halved, feared);
+  const criticalRate = critSure(attacker)
     ? 100
     : criticalRateOf(attacker, target);
 
@@ -906,7 +907,7 @@ export function resolveAttack(
   // 주유 「고육지책」 — 짝을 치는 것은 **평타 한 대**다(크리 · 반격 · 대신 맞기 없음, 2026-11-10 기획자). 맞은 짝은 1일 동안
   // 크리 100% · 적의 공격 대상 안 됨 — 다시 맞으면 1일이 새로 시작한다. 난수를 안 쓴다
   if (findStatus(attacker, 'bitterBond')?.sourceUnit === target.id) {
-    const damage = attackDamage(attacker, target, false, false, false, 0);
+    const damage = attackDamage(attacker, target, false, false, false);
     events.push({ e: 'attacked', unit: attacker.id, target: target.id, damage, critical: false });
     damageUnit(state, target, damage, 'attack', events);
     if (target.alive) {
@@ -923,8 +924,9 @@ export function resolveAttack(
   const defOfficer = officerStats(target);
 
   const amplify = findStatus(attacker, 'critical100');
-  const critical = amplify ? true : roll(state, criticalRateOf(attacker, target));
-  if (amplify) consumeCharge(attacker, amplify, events);
+  const critical = critSure(attacker) ? true : roll(state, criticalRateOf(attacker, target));
+  // 일기토 효과가 이미 크리를 확정하면 「증폭」의 횟수는 아낀다 — 반감도 같다
+  if (amplify && !hasStatus(attacker, 'duelBoon')) consumeCharge(attacker, amplify, events);
 
   // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King이면 그대로 승리다 (GDD §12 A5, 2026-10-16 개정)
   const execute = findStatus(attacker, 'instantKillNext');
@@ -937,12 +939,12 @@ export function resolveAttack(
 
   const victim = redirectTarget(state, target);
   const halve = findStatus(victim, 'incomingDamageHalf');
-  const halveIncoming = halve !== undefined || auraApplies(state, victim, 'auraIncomingHalf', 'ally');
+  const halveIncoming = halvesIncoming(state, victim);
   const fear = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear, spMaxBonus(state, attacker.side));
-  if (halve) consumeCharge(victim, halve, events);
+  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear);
+  if (halve && !hasStatus(victim, 'duelBoon')) consumeCharge(victim, halve, events);
 
   events.push({ e: 'attacked', unit: attacker.id, target: victim.id, damage, critical });
   damageUnit(state, victim, damage, 'attack', events);

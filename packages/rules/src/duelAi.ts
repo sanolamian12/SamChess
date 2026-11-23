@@ -6,20 +6,20 @@
  *
  * | 결말 | 일기토 | 설전 |
  * |---|---|---|
- * | 이김 | 내 SP +n · 적 SP −n (상한 · 바닥에서 잘린 만큼만) + 버프가 켜지거나 적 버프가 꺼지면 `buff` | 우리 전원 MP +2 · 적 전원 −2 (잘린 만큼, 책략을 아는 장수만 값이 크다) |
- * | 짐 | 그 반대 | 그 반대 |
+ * | 이김 | 우리 전원 일기토 효과 1일(크리 100% · 받는 피해 절반) — 산 장수마다 `duelBoon` | 우리 전원 설전 효과 1일(책략 MP 0 · 반드시 걸림) — 책략을 아는 장수마다 `debateBoon` |
+ * | 짐 | 적 전원이 그 효과 | 같다 |
  * | 0이 되어 짐 | + 진 장수의 부상 값(`wound`) | 같다 |
- * | 결판 없음 | 양쪽 SP +1 | 양쪽 전원 MP +1 |
+ * | 결판 없음 | 아무 일도 없다 (0) | 같다 |
+ *
+ * (2026-11-23 기획자 — 예전의 SP ± · MP ± · SP MAX 버프를 이긴 쪽의 효과로 바꿨다.)
  *
  * - **신청**: 걸 수 있는 (종류, 대상)마다 기대값을 재 가장 큰 것이 `keepRight`(신청권을 남겨 둘 값)보다 크면 건다.
  * - **수락**: 거절은 「확실한 패배, 부상 없음」이다 — 수락의 기대값이 그보다 작지 않으면 받는다.
  * - **도망**: 매 합 공개 전에 「지금 지는 것(부상 없음)」과 「계속」을 견준다.
  * - **패**는 AI가 안 낸다 — 판정 주체가 채운다(R16). AI 대 AI 측정(`autoDuel`)만 시드 난수로 채운다.
  *
- * 값의 단위는 **SP 1**이다. 가중치는 `DUEL_AI`에 모았다 — `npm run balance:duel`이 잰다.
+ * 값의 단위는 **SP 1**쯤이다(옛 표의 단위를 그대로 둔다). 가중치는 `DUEL_AI`에 모았다 — `npm run balance:duel`이 잰다.
  *
- * **「SP 상한에서 고유기술을 아낄까」는 안 넣었다** (2026-11-05 측정) — 고유기술은 장수마다 한 번이고 AI는 비용이 모이면 바로 써서,
- * SP가 상한에 닿는 것은 **기술을 다 쓴 뒤**뿐이다. 아끼는 판단을 켜 봐도 2000판이 한 판도 안 달라졌다.
  * 시계 · `Math.random()`을 안 쓴다(룰 엔진의 규약). 같은 상태 → 같은 판단.
  */
 
@@ -35,12 +35,10 @@ import {
 
 /** 판단의 가중치 — 단위는 SP 1. **측정 도구만 바꾼다**(`balance:duel`). 판 안에서는 상수다 */
 export const DUEL_AI = {
-  /** 내 버프가 켜지거나 · 적 버프가 꺼지는 값 (한 번에) */
-  buff: 2,
-  /** 책략을 아는 장수의 MP 1 */
-  mpTactician: 0.5,
-  /** 책략이 없는 장수의 MP 1 — 명상을 아끼는 정도 */
-  mpPlain: 0.1,
+  /** 일기토 효과(1일 크리 100% · 받는 피해 절반)가 산 장수 하나에 걸리는 값 */
+  duelBoon: 1,
+  /** 설전 효과(1일 책략 MP 0 · 반드시 걸림)가 책략을 아는 장수 하나에 걸리는 값 — 책략이 없으면 0이다 */
+  debateBoon: 1,
   /** 0이 되어 다치는 값 — 무 · 지 · 통이 깎이고 WT가 늦어진다 */
   wound: 3,
   /** King이 다치는 값에 더한다 */
@@ -53,29 +51,15 @@ export const DUEL_AI = {
 // 결말의 값
 // ═══════════════════════════════════════════════════════════════
 
-const clampDelta = (now: number, delta: number, max: number): number => Math.max(0, Math.min(max, now + delta)) - now;
-
-/** 진영 SP를 `delta`만큼 움직인 값 — 잘린 만큼만, 상한에 닿거나 상한에서 떨어지면 버프 값 */
-function spValue(state: BattleState, side: Side, delta: number, mine: Side): number {
-  const now = state.sp[side];
-  const cap = state.spCap[side];
-  const real = clampDelta(now, delta, cap);
-  const was = now >= cap;
-  const will = now + real >= cap;
-  const toggle = was === will ? 0 : will ? DUEL_AI.buff : -DUEL_AI.buff;
-  // 내 진영이면 오르는 것이 좋고, 적 진영이면 내리는 것이 좋다
-  return (side === mine ? 1 : -1) * (real + toggle);
-}
-
-/** 진영 전원의 MP를 `delta`만큼 — 책략을 아는 장수일수록 값이 크다 */
-function mpValue(state: BattleState, side: Side, delta: number, mine: Side): number {
+/** 이 진영이 그 종류의 효과를 받는 값 — 산 장수마다(설전은 책략을 아는 장수만) */
+function boonValue(state: BattleState, side: Side, kind: DuelKind): number {
   let v = 0;
   for (const u of aliveUnits(state)) {
     if (u.side !== side) continue;
-    const real = clampDelta(u.mp, delta, u.maxMp);
-    v += real * (u.tactics.length > 0 ? DUEL_AI.mpTactician : DUEL_AI.mpPlain);
+    if (kind === 'duel') v += DUEL_AI.duelBoon;
+    else if (u.tactics.length > 0) v += DUEL_AI.debateBoon;
   }
-  return side === mine ? v : -v;
+  return v;
 }
 
 /** 0이 되어 지면 붙는 부상의 값 — 안 다치는 장수(헌제 · 청낭서)는 0, 이미 그 종류로 다쳤으면 빠짐만 남아 작다 */
@@ -90,22 +74,7 @@ function woundValue(unit: UnitState, kind: DuelKind): number {
 interface Stakes { win: number; lose: number; draw: number }
 
 function stakes(state: BattleState, me: UnitState, foe: UnitState, kind: DuelKind): Stakes {
-  const mine = me.side;
-  const theirs = foe.side;
-  if (kind === 'duel') {
-    const n = FORMULA.duelWinSp[state.mode];
-    return {
-      win: spValue(state, mine, n, mine) + spValue(state, theirs, -n, mine),
-      lose: spValue(state, mine, -n, mine) + spValue(state, theirs, n, mine),
-      draw: spValue(state, mine, FORMULA.duelDrawSp, mine) + spValue(state, theirs, FORMULA.duelDrawSp, mine),
-    };
-  }
-  const n = FORMULA.debateWinMp;
-  return {
-    win: mpValue(state, mine, n, mine) + mpValue(state, theirs, -n, mine),
-    lose: mpValue(state, mine, -n, mine) + mpValue(state, theirs, n, mine),
-    draw: mpValue(state, mine, FORMULA.debateDrawMp, mine) + mpValue(state, theirs, FORMULA.debateDrawMp, mine),
-  };
+  return { win: boonValue(state, me.side, kind), lose: -boonValue(state, foe.side, kind), draw: 0 };
 }
 
 /**

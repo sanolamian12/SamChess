@@ -27,7 +27,7 @@ import {
   type ValidationResult,
 } from './types.ts';
 import { heldEffectOf } from './held.ts';
-import { SIDES, aliveUnits, baseStats, controllingSide, duelRulesOn, officerStats, other, unitsOf, wtBaseOf } from './state.ts';
+import { aliveUnits, baseStats, controllingSide, duelRulesOn, officerStats, other, unitsOf, wtBaseOf } from './state.ts';
 
 const ok: ValidationResult = { ok: true };
 const no = (reason: string): ValidationResult => ({ ok: false, reason });
@@ -277,7 +277,7 @@ function setGauge(unit: UnitState, kind: DuelKind, to: number, events: BattleEve
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 대결을 끝낸다 — 보상(R12 ~ R14)을 내고, 게이지 0이면 진 장수를 빼고 다치게 하고(R11), **차례를 신청자에게 돌려준다**(R17).
+ * 대결을 끝낸다 — 이긴 쪽의 효과(R12 ~ R14)를 걸고, 게이지 0이면 진 장수를 빼고 다치게 하고(R11), **차례를 신청자에게 돌려준다**(R17).
  * `winner`는 이긴 진영이고 결판 없음(`cap`)이면 `null`이다.
  */
 export function endDuel(
@@ -286,17 +286,8 @@ export function endDuel(
   const d = s.duel!;
   events.push({ e: 'duelEnded', kind: d.kind, reason, ...(winner ? { winner } : {}) });
 
-  if (winner === null) {
-    if (d.kind === 'duel') for (const side of SIDES) addSp(s, side, FORMULA.duelDrawSp, events);
-    else for (const u of aliveUnits(s)) addMp(u, FORMULA.debateDrawMp, d.kind, events);
-  } else if (d.kind === 'duel') {
-    const n = FORMULA.duelWinSp[s.mode];
-    addSp(s, winner, n, events);
-    addSp(s, other(winner), -n, events);
-  } else {
-    for (const u of unitsOf(s, winner)) if (u.alive) addMp(u, FORMULA.debateWinMp, d.kind, events);
-    for (const u of unitsOf(s, other(winner))) if (u.alive) addMp(u, -FORMULA.debateWinMp, d.kind, events);
-  }
+  // 이긴 쪽의 효과 (R12 · R13, 2026-11-23 기획자) — 결판 없음은 아무 일도 없다(R14)
+  if (winner !== null) grantBoon(s, winner, d.kind, events);
 
   if (reason === 'zero') {
     const loser = s.units[d.challenger]!.side === winner ? d.defender : d.challenger;
@@ -308,18 +299,22 @@ export function endDuel(
   events.push({ e: 'phaseChanged', phase: 'control' });
 }
 
-function addSp(s: BattleState, side: Side, delta: number, events: BattleEvent[]): void {
-  const next = Math.max(0, Math.min(s.spCap[side], s.sp[side] + delta));
-  if (next === s.sp[side]) return;
-  s.sp[side] = next;
-  events.push({ e: 'spChanged', side, to: next });
-}
+/** 종류마다 이긴 쪽에 거는 상태 — 일기토 효과 · 설전 효과 */
+export const BOON_OF: Readonly<Record<DuelKind, 'duelBoon' | 'debateBoon'>> = { duel: 'duelBoon', debate: 'debateBoon' };
 
-function addMp(unit: UnitState, delta: number, kind: DuelKind, events: BattleEvent[]): void {
-  const next = Math.max(0, Math.min(unit.maxMp, unit.mp + delta));
-  if (next === unit.mp) return;
-  events.push({ e: 'mpChanged', unit: unit.id, delta: next - unit.mp, reason: kind });
-  unit.mp = next;
+/**
+ * 이긴 진영의 살아 있는 장수 전원에게 그 종류의 효과를 `duelBoonTime`(1일) 동안 건다. 이미 걸려 있으면 1일이 새로 시작한다.
+ * 거절 · 도망 · 0 셋 다 이긴 쪽이 있다 — 거절도 「신청한 쪽의 승리」다(R12). **조종당하는 장수도 제 진영(`side`)을 따른다.**
+ */
+function grantBoon(s: BattleState, side: Side, kind: DuelKind, events: BattleEvent[]): void {
+  const status = BOON_OF[kind];
+  for (const u of unitsOf(s, side)) {
+    if (!u.alive) continue;
+    u.statuses = u.statuses.filter((x) => x.status !== status);
+    const expiresAt = s.time + FORMULA.duelBoonTime;
+    u.statuses.push({ status, expiresAt });
+    events.push({ e: 'statusApplied', unit: u.id, status, expiresAt });
+  }
 }
 
 /**

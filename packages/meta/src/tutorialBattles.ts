@@ -505,7 +505,8 @@ export function tutorialDuelHold(stage: Pick<TutorialStage, 'duelGuide'>, state:
 /**
  * **일기토** — 1:1. 손견(Knight, 무력 90)이 위에 붙어 선 도적 두목(무력 30 · 전의 130)에게 건다 (2026-11-12 기획자).
  * 걸기 전 안내는 짧게, 규칙은 **대결 안에서** 합마다 멈춰 세워 말한다(`duelGuide`) — 공격권 빼앗기 → 90 → 0의 세 합.
- * 이기면 판의 목표(`duelWon`)로 곧장 판이 끝나고, 끝맺음이 승리의 효과를 말한다 — SP 14 → 15(상한)로 SP MAX 버프 · 적 SP −1 · 두목의 부상.
+ * 이기면 판의 목표(`duelWon`)로 곧장 판이 끝나고, 끝맺음이 승리의 효과를 말한다 — 아군 전원 일기토 효과 1일(크리 100% · 받는 피해 절반) · 두목의 부상
+ * (2026-11-23 기획자 — 예전의 SP ± · SP MAX 버프를 바꿨다).
  */
 const DUEL_SON = U('P1-Knight');
 
@@ -519,13 +520,12 @@ const basicDuel = (): TutorialStage[] => [{
     ['tut.bd.r3', 'tut.bd.r3b'],
   ],
   outro: [
-    { note: 'tut.bd.won', spots: ['sp'] }, { note: 'tut.bd.spmax', spots: ['sp'] }, 'tut.bd.wound', 'tut.bd.done', 'tut.bd.done2',
+    'tut.bd.won', 'tut.bd.boon', 'tut.bd.wound', 'tut.bd.done', 'tut.bd.done2',
   ],
   config: config('basic-duel', { P1: [entry(SON_GYEON, 'Knight')], P2: [bandit('King')] }, {
     board: { x: 7, y: 7 },
     positions: { P1: [{ x: 3, y: 4 }], P2: [{ x: 3, y: 3 }] },
     overrides: { P1: [{ wt: 0 }] },
-    startSp: { P1: 14 },
     duels: true,
     goals: { win: [{ kind: 'duelWon', duel: 'duel' }] },
   }),
@@ -533,7 +533,7 @@ const basicDuel = (): TutorialStage[] => [{
 
 /**
  * **설전** — 1:1. 가후(Bishop, 지력 96, **MP 0**)가 위에 붙어 선 도적 두목(지력 30 · 정신력 130)에게 건다. 일기토 판과 같은 틀 —
- * 합마다 멈춰 세워 말하고(공격권 빼앗기 → 96 → 0), 이기면 곧장 끝나 끝맺음이 효과를 말한다 — 가후 MP 0 → 2(책략을 쓸 수 있다) · 적 MP −2 · 부상.
+ * 합마다 멈춰 세워 말하고(공격권 빼앗기 → 96 → 0), 이기면 곧장 끝나 끝맺음이 효과를 말한다 — 아군 전원 설전 효과 1일(책략 MP 0 · 반드시 걸림 — MP 0인 가후도 책략을 쓴다) · 부상.
  */
 const DEBATE_GA = U('P1-Bishop');
 

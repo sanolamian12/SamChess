@@ -116,7 +116,7 @@ ROADMAP: list[tuple[str, str, list[tuple[str, str, str, str, list[str]]]]] = [
     ("battle", "7. 전투", [
         ("battle-deploy", "배치", "출정 → 매칭 → 전투 (데모: ?demo=1&deploy=1)", "「자동 포커싱」(0.6 → 0.8rem) · 배치 판 · 고유기술 목록", ["80-battle-deploy"]),
         ("battle-3v3", "전투 3v3", "데모: ?demo=1&sp=25", "게임 정보 · 대화창 [...] · 순서 판 · 명령 판", ["81-battle-3v3"]),
-        ("battle-5v5", "전투 5v5", "데모: ?demo=1&mode=5v5&sp=25", "SP MAX 안내 · 맥락 판", ["82-battle-5v5"]),
+        ("battle-5v5", "전투 5v5", "데모: ?demo=1&mode=5v5&sp=25", "맥락 판", ["82-battle-5v5"]),
         ("battle-popup", "전투 — 장수 팝업", "판의 장수를 누름", "레벨 배지(등급 배지 옆) · 능력치 · 책략 칩 — 순회가 못 여는 화면", []),
         ("battle-tip", "전투 — 툴팁 · 정찰 · 책략 확인", "아이콘에 손가락 · [책략 확인]", "툴팁 본문 · 정찰 표 — 순회가 못 여는 화면", []),
         ("battle-siege", "수성전", "데모: ?demo=1&siege=1&mode=3v3", "성채 · 게임 정보", ["83-battle-siege"]),

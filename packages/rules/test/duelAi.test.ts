@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { apply, createBattle } from '../src/battle.ts';
 import { autoBattle, takeTurn } from '../src/ai.ts';
-import { autoDuel, chooseAnswer, chooseChallenge, duelExpectation, shouldFlee } from '../src/duelAi.ts';
+import { DUEL_AI, autoDuel, chooseAnswer, chooseChallenge, duelExpectation, shouldFlee } from '../src/duelAi.ts';
 import { DUEL_CHALLENGER_PIECE, gaugeOf } from '../src/duel.ts';
 import { legalMovesFor } from '../src/state.ts';
 import type { BattleState, DuelKind, Intent, Side } from '../src/types.ts';
@@ -32,8 +32,13 @@ function setup(at: Record<string, { x: number; y: number }> = {}, who = ROCK, ki
 const go = (s: BattleState, side: Side, intent: Intent): BattleState => apply(s, side, intent).state;
 
 test('신청 — 이길 만한 상대에게만 건다 (깎인 적 · 센 나)', () => {
-  // 맞수(2타 대 2타)는 받는 쪽이 유리하다 — 걸지 않는다
-  assert.equal(chooseChallenge(setup()), undefined);
+  // 꽉 찬 관우(3타에 0) 대 장합(2타에 0) — 공격권을 내주고 시작해도 37 : 29로 앞선다. 이기면 아군 셋이 1일 동안
+  // 크리 100% · 피해 절반이라 건다 (2026-11-23 — SP ±1이던 때는 값이 작아 안 걸었다)
+  assert.deepEqual(chooseChallenge(setup()), { t: 'challenge', kind: 'duel', target: BISHOP });
+  // 관우가 깎여 있으면(한 대면 0) 걸지 않는다
+  const weak = setup();
+  weak.units[ROCK]!.morale = 60;
+  assert.equal(chooseChallenge(weak), undefined);
   // 장합의 전의가 깎여 있으면(한 대면 0) 일기토를 건다
   const hurt = setup();
   hurt.units[BISHOP]!.morale = 40;
@@ -48,15 +53,15 @@ test('수락 — 받는 쪽은 공격권을 쥐어 웬만하면 받고, 걸린 �
   const even = go(setup(), 'P1', { t: 'challenge', kind: 'duel', target: BISHOP });
   assert.deepEqual(chooseAnswer(even), { t: 'answerChallenge', accept: true });
 
-  // 장합 전의 40(한 대면 0)이어도 공격권을 쥐고 시작해 41 : 52 — 받는 편이 확실한 SP ±1(값 −2)보다 낫다
+  // 장합 전의 40(한 대면 0)이어도 공격권을 쥐고 시작해 41 : 52 — 받는 편이 확실한 패배(적 셋에게 일기토 효과, 값 −3)보다 낫다
   const hurt = setup();
   hurt.units[BISHOP]!.morale = 40;
   const offered = go(hurt, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP });
   const e = duelExpectation(offered, BISHOP, ROCK, 'duel')!;
-  assert.ok(e.value > -2, `받기 ${e.value.toFixed(2)}`);
+  assert.ok(e.value > -3 * DUEL_AI.duelBoon, `받기 ${e.value.toFixed(2)}`);
   assert.deepEqual(chooseAnswer(offered), { t: 'answerChallenge', accept: true });
 
-  // 설전 — 장합 정신력 40(한 번 맞으면 0), 걸린 것은 Lv1의 MP(책략이 없어 값이 작다) → 거절해 부상을 피한다
+  // 설전 — 장합 정신력 40(한 번 맞으면 0), 걸린 것은 설전 효과인데 Lv1이라 책략을 아는 장수가 없다(값 0) → 거절해 부상을 피한다
   const weak = setup({}, ROCK, 'debate');
   weak.units[BISHOP]!.mental = 40;
   const debate = go(weak, 'P1', { t: 'challenge', kind: 'debate', target: BISHOP });

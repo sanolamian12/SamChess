@@ -48,7 +48,7 @@ DUEL_SRC = ROOT / "assets" / "duel"
 OUT = ROOT / "packages" / "client" / "public" / "duel"
 
 ICONS = [
-    "ic_cmd_duel", "ic_cmd_debate", "ic_stat_morale", "ic_stat_mental", "ic_duel_initiative", "ic_buff_spmax", "ic_duel_fled",
+    "ic_cmd_duel", "ic_cmd_debate", "ic_stat_morale", "ic_stat_mental", "ic_duel_initiative", "ic_duel_fled",
     "ic_rps_rock", "ic_rps_scissors", "ic_rps_paper", "ic_debate_1", "ic_debate_2", "ic_debate_3",
 ]
 WHITE_BG = {"ic_stat_morale"}

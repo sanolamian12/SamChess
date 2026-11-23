@@ -106,22 +106,21 @@ const DUEL_HANDS: { name: string; duel: (DuelPick | null)[]; debate: (DuelPick |
 describe('일기토 — 손견 vs 도적 두목 (대결 안에서 합마다 멈춰 말하고, 이기면 곧장 판이 끝난다)', () => {
   const [stage] = tutorialStages('basic-duel');
 
-  it('대결이 켜진 판이다 — 상한 15 · SP 14로 시작, 첫 차례에 붙어 있어 [일기토]가 켜진다 · 손견은 Knight', () => {
+  it('대결이 켜진 판이다 — 상한 15, 첫 차례에 붙어 있어 [일기토]가 켜진다 · 손견은 Knight', () => {
     const s = untilHuman(createBattle(stage!.config), stage!);
     assert.equal(s.duels, true);
     assert.equal(s.spCap.P1, 15);
-    assert.equal(s.sp.P1, 14);
     assert.equal(s.units[s.activeUnit!]!.piece, 'Knight');
     assert.equal(commandsFor(s, 'P1')!.duel, true);
   });
 
   for (const hand of DUEL_HANDS) {
-    it(`패를 「${hand.name}」 내도 셋째 합에 이기고, 그 순간 판의 목표로 이긴다 — SP 15 · 두목 부상 · 아무도 안 친다`, () => {
+    it(`패를 「${hand.name}」 내도 셋째 합에 이기고, 그 순간 판의 목표로 이긴다 — 손견에게 일기토 효과 · 두목 부상 · 아무도 안 친다`, () => {
       const end = play(stage!, undefined, { ...WEAKEST, duelPicks: hand });
       assert.equal(end.winner, 'P1');
       assert.equal(end.outcome, 'objective');
       assert.deepEqual(end.log.filter((e) => e.e === 'duelRound').map((e) => e.e === 'duelRound' && e.result), ['turnover', 'hit', 'hit']);
-      assert.equal(end.sp.P1, 15);
+      assert.ok(end.units['P1-Knight' as UnitId]!.statuses.some((x) => x.status === 'duelBoon'), '일기토 효과 (2026-11-23)');
       assert.ok(end.log.some((e) => e.e === 'duelWounded' && e.unit === 'P2-King'));
       assert.ok(!end.log.some((e) => e.e === 'attacked' || e.e === 'moved'), '대결 말고는 아무 수도 없다');
     });
@@ -139,7 +138,7 @@ describe('일기토 — 손견 vs 도적 두목 (대결 안에서 합마다 멈�
   });
 });
 
-describe('설전 — 가후(MP 0)가 이기면 곧장 판이 끝나고 MP가 2가 된다', () => {
+describe('설전 — 가후(MP 0)가 이기면 곧장 판이 끝나고 설전 효과가 걸린다(MP 0이어도 책략을 쓴다)', () => {
   const [stage] = tutorialStages('basic-debate');
   const ga = (s: BattleState) => s.units['P1-Bishop' as UnitId]!;
 
@@ -153,12 +152,13 @@ describe('설전 — 가후(MP 0)가 이기면 곧장 판이 끝나고 MP가 2�
   });
 
   for (const hand of DUEL_HANDS) {
-    it(`패를 「${hand.name}」 내도 셋째 합에 이기고 판의 목표로 끝난다 — 가후 MP 2`, () => {
+    it(`패를 「${hand.name}」 내도 셋째 합에 이기고 판의 목표로 끝난다 — 가후에게 설전 효과 · MP는 0 그대로`, () => {
       const end = play(stage!, undefined, { ...WEAKEST, duelPicks: hand });
       assert.equal(end.winner, 'P1');
       assert.equal(end.outcome, 'objective');
       assert.deepEqual(end.log.filter((e) => e.e === 'duelRound').map((e) => e.e === 'duelRound' && e.result), ['turnover', 'hit', 'hit']);
-      assert.equal(ga(end).mp, 2);
+      assert.equal(ga(end).mp, 0);
+      assert.ok(ga(end).statuses.some((x) => x.status === 'debateBoon'), '설전 효과 (2026-11-23)');
       assert.ok(!end.log.some((e) => e.e === 'moved' || e.e === 'attacked' || e.e === 'tacticCast'));
     });
   }

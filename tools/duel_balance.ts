@@ -1,14 +1,13 @@
 /**
- * 일기토 · 설전 밸런스 — 대결 AI · SP MAX 버프 · 「SP 아끼기」가 판을 어떻게 바꾸나 (GDD §3.11, 설계서 §8 단계 2)
+ * 일기토 · 설전 밸런스 — 대결 AI와 이긴 쪽의 효과(일기토 효과 · 설전 효과)가 판을 어떻게 바꾸나 (GDD §3.11, 설계서 §8 단계 2)
  *
- *   npm run balance:duel -- [시드 수] [--mode 3v3] [--level 1] [--stat mix] [--cells nobuff,off,both,p1]
+ *   npm run balance:duel -- [시드 수] [--mode 3v3] [--level 1] [--stat mix] [--cells off,both,p1]
  *
  * ## 칸
  *
  * | 칸 | 대결을 거는 진영 | 그 밖 |
  * |---|---|---|
- * | `nobuff` | 없음 | SP MAX 버프도 끈다(`FORMULA.spMaxAtBonus = 0`, 이 프로세스 안에서만) — 대결 규칙 전의 판 |
- * | `off` | 없음 | 버프만 있다 |
+ * | `off` | 없음 | 대결 규칙 전의 판 (2026-11-23 — SP MAX 버프가 걷혀 옛 `nobuff` 칸과 같아져 합쳤다) |
  * | `both` | 양쪽 | — 실제 판의 모습 |
  * | `p1` | 남군만 | 북군은 걸지 않는다(받고 · 도망하는 판단은 한다) → **대결 AI가 득인가** |
  *
@@ -22,7 +21,7 @@
  * 패는 판의 시드 난수(균등)다 — 실제 사람도 무작위가 최선이라 같다. AI의 가중치(`DUEL_AI`)는 어림값이고 이 도구가 그 값을 잰다.
  */
 
-import { FORMULA, autoBattle, createBattle } from '@samchess/rules';
+import { autoBattle, createBattle } from '@samchess/rules';
 import type { BattleConfig, BattleState, RosterEntry, Side } from '@samchess/rules';
 import { roster, type StatPick } from './balanceRoster.ts';
 
@@ -38,12 +37,11 @@ const level = Math.max(1, Math.min(9, Number(flag('level', '1'))));
 const statMode = flag('stat', 'mix') as StatPick | 'mix';
 const opts = { perSide, level, statMode };
 
-interface CellDef { key: string; label: string; duels: Partial<Record<Side, boolean>>; buff: boolean }
+interface CellDef { key: string; label: string; duels: Partial<Record<Side, boolean>> }
 const CELLS: CellDef[] = [
-  { key: 'nobuff', label: '대결 없음 · 버프 없음', duels: {}, buff: false },
-  { key: 'off', label: '대결 없음 · 버프만', duels: {}, buff: true },
-  { key: 'both', label: '양쪽이 건다', duels: { P1: true, P2: true }, buff: true },
-  { key: 'p1', label: '남군만 건다', duels: { P1: true }, buff: true },
+  { key: 'off', label: '대결 없음', duels: {} },
+  { key: 'both', label: '양쪽이 건다', duels: { P1: true, P2: true } },
+  { key: 'p1', label: '남군만 건다', duels: { P1: true } },
 ];
 const wanted = flag('cells', '').split(',').filter(Boolean);
 const cells = wanted.length ? CELLS.filter((c) => wanted.includes(c.key)) : CELLS;
@@ -61,30 +59,25 @@ interface Cell {
   p1Won: number;
   p1Asked: number;
   attacks: number;
+  /** 일기토 효과(크리 100% · 받는 피해 절반)를 두른 채 친 공격 */
   buffed: number;
   skills: number;
 }
 
 function play(seed: number, a: RosterEntry[], b: RosterEntry[], def: CellDef): BattleState {
-  const base = FORMULA.spMaxAtBonus;
-  (FORMULA as { spMaxAtBonus: number }).spMaxAtBonus = def.buff ? base : 0;
-  try {
-    return autoBattle(createBattle({ matchId: `duel-bal-${seed}`, seed, mode, rosters: { P1: a, P2: b } }), { duels: def.duels }).state;
-  } finally {
-    (FORMULA as { spMaxAtBonus: number }).spMaxAtBonus = base;
-  }
+  return autoBattle(createBattle({ matchId: `duel-bal-${seed}`, seed, mode, rosters: { P1: a, P2: b } }), { duels: def.duels }).state;
 }
 
-/** 로그를 따라가며 진영 SP를 세어 「상한에서 친 공격」을 센다 */
+/** 로그를 따라가며 「일기토 효과를 두른 채 친 공격」을 센다 */
 function tally(cell: Cell, s: BattleState): void {
-  const sp: Record<Side, number> = { P1: 0, P2: 0 };
+  const boon = new Set<string>();
   let asker: Side | null = null;
   for (const e of s.log) {
-    if (e.e === 'spChanged') sp[e.side] = e.to;
+    if (e.e === 'statusApplied' && e.status === 'duelBoon') boon.add(e.unit);
+    else if (e.e === 'statusExpired' && e.status === 'duelBoon') boon.delete(e.unit);
     else if (e.e === 'attacked') {
       cell.attacks++;
-      const side = s.units[e.unit]!.side;
-      if (sp[side] >= s.spCap[side]) cell.buffed++;
+      if (boon.has(e.unit)) cell.buffed++;
     } else if (e.e === 'uniqueSkillCast') cell.skills++;
     else if (e.e === 'challengeOffered') {
       asker = s.units[e.by]!.side;
@@ -146,8 +139,8 @@ const elapsed = Number(process.hrtime.bigint() - started) / 1e9;
 
 const growthNote = level === 1 ? 'Lv1 (성장 없음)' : `Lv${level} · 능력 ${statMode} · 책략 ${level - 1}종`;
 console.log(`\n일기토 · 설전 ${mode} · ${growthNote} · 시드 ${seeds} × 2방향 = 칸마다 ${seeds * 2}판 — ${elapsed.toFixed(0)}초`);
-console.log(['칸', '남군 승 ±95%', '비교', '남군 승 차 ±SE', '판 길이 차(일) ±SE', '시간 중앙', '90%', '무승부', '대결/판', '남군이 건 것 승률', '버프 공격', '고유기술/판'].join(' | '));
-const compare: Record<string, string> = { off: 'nobuff', both: 'off', p1: 'off' };
+console.log(['칸', '남군 승 ±95%', '비교', '남군 승 차 ±SE', '판 길이 차(일) ±SE', '시간 중앙', '90%', '무승부', '대결/판', '남군이 건 것 승률', '효과 공격', '고유기술/판'].join(' | '));
+const compare: Record<string, string> = { both: 'off', p1: 'off' };
 for (const def of cells) {
   const c = out.get(def.key)!;
   const r = rate(c);

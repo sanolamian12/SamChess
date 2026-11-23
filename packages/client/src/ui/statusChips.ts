@@ -66,6 +66,8 @@ const SKILL_EMBLEMS = new Set([
   'incomingDamageZero', 'untargetable', 'illusionAlways', 'freeMove', 'counterattack', 'zeroMpCost', 'damageRedirect',
   'attackAnywhere', 'attackStacking', 'instantKillNext', 'auraIncomingHalf', 'auraOutgoingHalf', 'convertOnHit', 'deathCurse',
   'convertProgress', 'mustTarget', 'skillSealed', 'burn', 'commandeered',
+  // 일기토 · 설전에 이긴 쪽의 효과(2026-11-23) — `build_ui.py`의 `emblem_duel_boon` · `emblem_debate_boon`
+  'duelBoon', 'debateBoon',
 ]);
 const skillEmblem = (name: string): string | undefined => (SKILL_EMBLEMS.has(name) ? `ui/emblems/${name}.png` : undefined);
 

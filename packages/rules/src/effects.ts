@@ -62,7 +62,7 @@ export function aimingSpec(effects: readonly Effect[]): TargetSpec | undefined {
 export function tacticMpCost(caster: UnitState, tactic: TacticId): number {
   const def = tacticById.get(tactic);
   if (!def) throw new Error(`알 수 없는 책략: ${tactic}`);
-  if (hasStatus(caster, 'zeroMpCost')) return 0;
+  if (hasStatus(caster, 'zeroMpCost') || hasStatus(caster, 'debateBoon')) return 0;   // 명경지수 · 설전 효과
   return Math.max(0, def.mpCost - (heldOf(caster).tacticMpDiscount ?? 0));
 }
 
@@ -474,6 +474,13 @@ function applyEffect(
  *
  * 실패해도 MP는 소모된다 — 호출부가 책임진다.
  */
+/**
+ * **설전 효과**(`debateBoon`, 2026-11-23) — 책략이 갈래(지형 · 지원 · 환술)를 가리지 않고 반드시 걸린다. 판정(`castTactic`)은 이때
+ * **굴리지 않는다**(`rngCursor`가 안 밀린다). 「결계」를 두른 상대에게 거는 환술만은 막힌다 — `illusionSucceeds`가 결계를 먼저 본다.
+ * 표시(`illusionChance`)와 판정이 이것 하나를 본다.
+ */
+export const tacticSure = (caster: UnitState): boolean => hasStatus(caster, 'debateBoon');
+
 export function illusionSucceeds(
   rollFn: (rate: number) => boolean,
   casterIntellect: number,
@@ -566,10 +573,12 @@ export function illusionChance(
   const bonus = (heldOf(caster).tacticChanceBonus ?? 0)
     - (target ? heldOf(target).tacticChanceBonus ?? 0 : 0);
   const withBonus = (rate: number): number => Math.max(0, Math.min(100, rate + bonus));
+  const sure = tacticSure(caster);
 
-  if (isTerrainTactic(def)) return withBonus(FORMULA.terrainRate(casterIntellect));
+  if (isTerrainTactic(def)) return sure ? 100 : withBonus(FORMULA.terrainRate(casterIntellect));
 
   if (def.school === 'support') {
+    if (sure) return 100;
     return withBonus(FORMULA.supportRate(
       casterIntellect,
       target ? officerStats(target).intellect : casterIntellect,
@@ -579,7 +588,7 @@ export function illusionChance(
   // **무조건인 둘은 보정을 안 탄다** — 0과 100은 「반드시」라는 뜻이고,
   // 거기에 ±10을 얹으면 그 뜻이 깨진다
   if (target && hasStatus(target, 'illusionImmune')) return 0;      // 「결계」 — 무조건 실패
-  if (hasStatus(caster, 'illusionAlways')) return 100;              // 「좌도방술」 — 무조건 성공
+  if (hasStatus(caster, 'illusionAlways') || sure) return 100;      // 「좌도방술」 · 설전 효과 — 무조건 성공
   return withBonus(
     FORMULA.illusionRate(casterIntellect, target ? officerStats(target).intellect : 0),
   );

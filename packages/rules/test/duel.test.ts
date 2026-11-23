@@ -65,6 +65,19 @@ function round(s: BattleState, p1: DuelPick, p2: DuelPick): { state: BattleState
   return apply(go(go(s, 'P1', { t: 'duelPick', pick: p1 }), 'P2', { t: 'duelPick', pick: p2 }), 'P1', { t: 'duelReveal' });
 }
 
+/**
+ * 이긴 쪽의 효과 (R12 · R13, 2026-11-23) — `side`의 산 장수 전원에게 `kind`의 효과가 1일, 반대 진영에는 없다.
+ * `side`가 `null`이면 아무에게도 없다(결판 없음).
+ */
+function assertBoon(s: BattleState, side: Side | null, kind: DuelKind, at = s.time): void {
+  const status = kind === 'duel' ? 'duelBoon' : 'debateBoon';
+  for (const u of Object.values(s.units)) {
+    const st = u.statuses.find((x) => x.status === status);
+    if (u.side === side && u.alive) assert.equal(st?.expiresAt, at + FORMULA.duelBoonTime, `${u.id} — ${status} 1일`);
+    else assert.equal(st, undefined, `${u.id} — ${status} 없음`);
+  }
+}
+
 const reason = (s: BattleState, side: Side, intent: Intent): string => {
   const v = validate(s, side, intent);
   return v.ok ? 'ok' : v.reason;
@@ -122,17 +135,18 @@ test('R5 — 진영마다 종류당 한 번, 거절당해도 쓴 것이다. 다�
   assert.equal(reason(theirs, 'P2', { t: 'challenge', kind: 'debate', target: ROCK }), 'ok');
 });
 
-test('R20 — 도적떼 · 튜토리얼 판에는 대결도 SP MAX 버프도 없다. 공성전에는 있다', () => {
+test('R20 — 도적떼 · 튜토리얼 판에는 대결이 없다. 공성전에는 있다 · SP가 상한이어도 공격은 그대로다(SP MAX 버프는 2026-11-23에 걷었다)', () => {
   for (const scenario of ['raid', 'tutorial'] as const) {
     const s = setup();
     (s as { scenario?: string }).scenario = scenario;
     assert.match(reason(s, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), /일기토 · 설전이 없다/);
     assert.equal(commandsFor(s, 'P1')!.duel, false);
-    s.sp.P1 = s.spCap.P1;
-    const f = forecastAttack(s, ROCK, BISHOP)!;
-    s.sp.P1 = 0;
-    assert.deepEqual(forecastAttack(s, ROCK, BISHOP), f, `${scenario}: 상한이어도 버프가 없다`);
   }
+  const full = setup();
+  full.sp.P1 = full.spCap.P1;
+  const f = forecastAttack(full, ROCK, BISHOP)!;
+  full.sp.P1 = 0;
+  assert.deepEqual(forecastAttack(full, ROCK, BISHOP), f, '대전 판에서도 SP 상한이 공격을 안 바꾼다');
   const siege = setup();
   (siege as { scenario?: string }).scenario = 'siege';
   assert.equal(reason(siege, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'ok');
@@ -169,9 +183,12 @@ test('신청하면 대결 단계 — 받는 쪽만 답하고, 그 밖의 수는 
   assert.match(reason(s, 'P2', { t: 'forceSkipTurn' }), /제어 단계가 아니다/);
 });
 
-test('R10 ① 거절 — 건 쪽의 승리, 보상이 나가고 아무도 안 다친다', () => {
+test('R10 ① 거절 — 건 쪽의 승리, 건 진영에 일기토 효과가 걸리고 아무도 안 다친다', () => {
   const r = apply(go(setup(), 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'P2', { t: 'answerChallenge', accept: false });
-  assert.deepEqual(r.state.sp, { P1: 6, P2: 4 });
+  assert.deepEqual(r.state.sp, { P1: 5, P2: 5 }, 'SP는 안 움직인다');
+  assertBoon(r.state, 'P1', 'duel');
+  assertBoon(r.state, null, 'debate');
+  assert.equal(r.events.filter((e) => e.e === 'statusApplied' && e.status === 'duelBoon').length, 3, '산 장수마다 하나');
   assert.ok(r.events.some((e) => e.e === 'duelEnded' && e.reason === 'refused' && e.winner === 'P1'));
   assert.equal(r.state.duel, undefined);
   assert.equal(r.state.units[BISHOP]!.injured, undefined);
@@ -229,13 +246,14 @@ test('일기토 R7 — 공격권 쪽이 이기면 깎고 쥐고, 다른 쪽이 �
   s = r.state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'duel'), 0);
   assert.ok(r.events.some((e) => e.e === 'duelEnded' && e.reason === 'zero' && e.winner === 'P1'));
-  assert.deepEqual(s.sp, { P1: 6, P2: 4 }, '3v3 일기토 승 — SP ±1 (R12)');
+  assert.deepEqual(s.sp, { P1: 5, P2: 5 }, 'SP는 안 움직인다');
+  assertBoon(s, 'P1', 'duel');
   assert.equal(s.phase, 'control');
   assert.equal(s.activeUnit, ROCK);
   assert.equal(gaugeOf(s.units[ROCK]!, 'duel'), GU.duel - 90, '이긴 쪽의 깎인 게이지도 남는다 (R9)');
 });
 
-test('설전 R7 — 맞으면 공격권 쪽이 깎고, 틀리면 공격권이 넘어간다. 이기면 전원 MP ±2 (R13)', () => {
+test('설전 R7 — 맞으면 공격권 쪽이 깎고, 틀리면 공격권이 넘어간다. 이기면 아군 전원 설전 효과 (R13)', () => {
   let s = open('debate');
   for (const u of Object.values(s.units)) u.mp = u.side === 'P1' ? 1 : 3;
   let r = round(s, 2, 2);   // 장합(공격권) 맞힘 → 관우 정신력 − 62
@@ -247,9 +265,11 @@ test('설전 R7 — 맞으면 공격권 쪽이 깎고, 틀리면 공격권이 �
   r = round(r.state, 1, 1); // → 0
   s = r.state;
   assert.equal(gaugeOf(s.units[BISHOP]!, 'debate'), 0);
-  for (const u of Object.values(s.units)) assert.equal(u.mp, u.side === 'P1' ? 3 : 1, `${u.id} MP`);
-  assert.ok(r.events.some((e) => e.e === 'mpChanged' && e.reason === 'debate'));
+  for (const u of Object.values(s.units)) assert.equal(u.mp, u.side === 'P1' ? 1 : 3, `${u.id} MP는 그대로`);
+  assert.ok(!r.events.some((e) => e.e === 'mpChanged'));
   assert.deepEqual(s.sp, { P1: 5, P2: 5 }, '설전은 SP를 안 건드린다');
+  assertBoon(s, 'P1', 'debate');
+  assertBoon(s, null, 'duel');
 });
 
 test('R10 ② 도망 — 언제든, 상대의 승리. 도망한 쪽은 안 다친다', () => {
@@ -257,33 +277,46 @@ test('R10 ② 도망 — 언제든, 상대의 승리. 도망한 쪽은 안 다�
   const r = apply(s, 'P1', { t: 'duelFlee' });
   assert.ok(r.events.some((e) => e.e === 'duelFled' && e.unit === ROCK));
   assert.ok(r.events.some((e) => e.e === 'duelEnded' && e.reason === 'fled' && e.winner === 'P2'));
-  assert.deepEqual(r.state.sp, { P1: 4, P2: 6 });
+  assertBoon(r.state, 'P2', 'duel');
   assert.equal(r.state.units[ROCK]!.injured, undefined);
   assert.equal(gaugeOf(r.state.units[ROCK]!, 'duel'), GU.duel - 90);
 });
 
-test('R8 · R14 — 10합에 결판이 없으면 일기토는 양쪽 SP +1, 설전은 양쪽 전원 MP +1', () => {
+test('R8 · R14 — 10합에 결판이 없으면 아무 일도 없다 (2026-11-23 — 예전에는 SP · MP +1)', () => {
   let s = open('duel');
   for (let i = 0; i < DUEL_ROUNDS; i++) s = round(s, 'rock', 'rock').state;
   assert.equal(s.phase, 'control');
-  assert.deepEqual(s.sp, { P1: 6, P2: 6 });
+  assert.deepEqual(s.sp, { P1: 5, P2: 5 });
   assert.ok(s.log.some((e) => e.e === 'duelEnded' && e.reason === 'cap' && e.winner === undefined));
+  assertBoon(s, null, 'duel');
 
   let d = open('debate');
   for (const u of Object.values(d.units)) u.mp = 2;
   for (let i = 0; i < DUEL_ROUNDS; i++) d = round(d, 1, 2).state;   // 늘 틀린다 → 공격권만 오간다
-  for (const u of Object.values(d.units)) assert.equal(u.mp, 3, `${u.id} MP +1`);
+  for (const u of Object.values(d.units)) assert.equal(u.mp, 2, `${u.id} MP 그대로`);
+  assertBoon(d, null, 'debate');
 });
 
-test('SP · MP는 상한 · 바닥에서 자른다', () => {
+test('R12 — 효과는 1일, 쓰러진 장수에게는 안 걸리고, 또 이기면 1일이 새로 시작한다', () => {
   const s = setup();
-  s.sp = { P1: 15, P2: 0 };
+  s.units[U('P1-Pawn')]!.alive = false;
   const r = go(go(s, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'P2', { t: 'answerChallenge', accept: false });
-  assert.deepEqual(r.sp, { P1: 15, P2: 0 });
-  assert.ok(!r.log.some((e) => e.e === 'spChanged'), '안 바뀐 값은 이벤트도 없다');
+  assertBoon(r, 'P1', 'duel');
+  assert.equal(r.units[U('P1-Pawn')]!.statuses.length, 0);
+
+  // 반나절 뒤에 또 이긴다
+  const later = (t: number): BattleState => { const x = structuredClone(r); x.time = t; return x; };
+  const half = later(r.time + 50);
+  // 또 이기면(다른 종류의 판정이 아니라 같은 종류 — 신청권은 이미 썼으니 상태를 직접 다시 건다) 겹치지 않고 1일이 새로 시작한다
+  half.duelUsed = {};
+  (half.units[ROCK] as { piece: string }).piece = DUEL_CHALLENGER_PIECE.duel;
+  half.activeTurn = { moved: false, acted: false, usedUniqueSkill: false };
+  const again = go(go(half, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'P2', { t: 'answerChallenge', accept: false });
+  assertBoon(again, 'P1', 'duel', half.time);
+  for (const u of Object.values(again.units)) assert.ok(u.statuses.filter((x) => x.status === 'duelBoon').length <= 1, '겹치지 않는다');
 });
 
-test('R12 — 5v5 일기토 승은 SP ±2', () => {
+test('R12 — 5v5도 같다: 이긴 진영 다섯 모두에게', () => {
   const five = createBattle({
     matchId: 't5', seed: 1, mode: '5v5',
     rosters: {
@@ -294,7 +327,8 @@ test('R12 — 5v5 일기토 승은 SP ±2', () => {
   const s = setup({ 'P1-Knight': { x: 2, y: 9 }, 'P1-Bishop': { x: 2, y: 12 }, 'P2-Rock': { x: 22, y: 12 }, 'P2-Pawn': { x: 22, y: 8 } }, five);
   s.sp = { P1: 10, P2: 10 };
   const r = go(go(s, 'P1', { t: 'challenge', kind: 'duel', target: BISHOP }), 'P2', { t: 'answerChallenge', accept: false });
-  assert.deepEqual(r.sp, { P1: 12, P2: 8 });
+  assert.deepEqual(r.sp, { P1: 10, P2: 10 });
+  assertBoon(r, 'P1', 'duel');
 });
 
 // ── 게이지 0 — 빠짐 · 부상 (R11) ─────────────────────────────────
@@ -433,27 +467,6 @@ test('R24 — 대결이 없던 판에는 회복 정산이 아예 없다(로그�
     if (s.phase === 'control') s = go(s, s.units[s.activeUnit!]!.side, { t: 'endTurn' });
   }
   assert.ok(!s.log.some((e) => e.e === 'gaugeChanged'));
-});
-
-// ── SP MAX 버프 (R15) ─────────────────────────────────────────
-
-test('R15 — SP가 상한일 때만 공격 AT +1, 크리티컬은 (AT + 1) × 2 · 확인창과 실제가 같다', () => {
-  const s = setup({ 'P2-Bishop': { x: 11, y: 11 } }, battle(), null);   // 공격만 본다 — 관우는 Rock 그대로
-  const target = legalTargetsFor(s, ROCK).includes(BISHOP) ? BISHOP : legalTargetsFor(s, ROCK)[0]!;
-  s.sp.P1 = s.spCap.P1 - 1;
-  const plain = forecastAttack(s, ROCK, target)!;
-  s.sp.P1 = s.spCap.P1;
-  const buffed = forecastAttack(s, ROCK, target)!;
-  assert.equal(buffed.normal, plain.normal + 1);
-  assert.equal(buffed.critical, (2 + 1) * 2, 'AT 2 → (2 + 1) × 2');
-  assert.equal(plain.critical, 2 * 2);
-
-  const hit = apply(s, 'P1', { t: 'attack', targets: [target] }).events.find((e) => e.e === 'attacked')!;
-  assert.ok(hit.e === 'attacked');
-  assert.equal(hit.damage, hit.critical ? buffed.critical : buffed.normal);
-  // 적의 버프는 내 공격에 안 붙는다
-  s.sp = { P1: 0, P2: s.spCap.P2 };
-  assert.deepEqual(forecastAttack(s, ROCK, target), plain);
 });
 
 // ── 전선 · 재현 ────────────────────────────────────────────────

@@ -108,7 +108,6 @@ export const GAME_ICONS = {
   'stat-morale': 'icons/control/stat-morale.png',
   'stat-mental': 'icons/control/stat-mental.png',
   'duel-initiative': 'icons/control/duel-initiative.png',
-  'buff-spmax': 'icons/control/buff-spmax.png',
   'duel-fled': 'icons/control/duel-fled.png',
   'rps-rock': 'icons/control/rps-rock.png',
   'rps-paper': 'icons/control/rps-paper.png',

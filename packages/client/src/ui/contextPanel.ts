@@ -20,7 +20,7 @@
  */
 
 import {
-  duelForecast, forecastAttack, gaugeOf, illusionChance, meditateGain, officerStats, spMaxBonus, tacticMpCost, uniqueSkillCost, usableItemOf,
+  duelForecast, forecastAttack, gaugeOf, illusionChance, meditateGain, officerStats, tacticMpCost, uniqueSkillCost, usableItemOf,
 } from '@samchess/rules';
 import type { BattleState, DuelKind, Side, TacticId, UnitId, UnitState } from '@samchess/rules';
 import { combatantById, skillById, tacticById } from '@samchess/data';
@@ -125,12 +125,8 @@ export class ContextPanel {
     }
     const c = this.flow.commands(state, side);
     const duels = (['duel', 'debate'] as const).filter((k) => c?.[k]);
-    // SP가 상한이면 고유기술을 쓰는 순간 SP MAX 버프가 꺼진다 — 저울질이 이 규칙의 요점이라 머리에 적는다 (설계서 §4-1).
-    // 그때는 이 경고가 머리 줄을 **대신한다** — 둘 다 세우면 칸이 넘쳐 스크롤이 생겼다(11-06)
-    const buffWarn = c?.unique && spMaxBonus(state, unit.side) > 0;
     // 대결도 쓸 수 있으면 「명령을 선택해주세요.」, 고유기술만이면 예전 물음 — 칸 머리가 비지 않게 (2026-11-06 기획자)
-    out.push(buffWarn ? text('div', 'cx-spend', t('duel.ask.buffWarn'))
-      : text('div', 'cx-q', t(duels.length ? 'duel.ask.q' : 'cx.ask.q')));
+    out.push(text('div', 'cx-q', t(duels.length ? 'duel.ask.q' : 'cx.ask.q')));
 
     const go: HTMLElement[] = [];
     if (c?.unique) {
@@ -329,9 +325,6 @@ export class ContextPanel {
           rate(t('cx.damage'), `${f.normal}-${f.critical}`, 'damage'),
           rate(t('cx.critical'), `${f.criticalRate}%`, 'critical'),
         );
-        // SP MAX 버프 — 데미지 숫자에 이미 들어 있다(`forecastAttack`). 왜 센지를 한 줄로 (GDD §3.11 R15)
-        const buff = spMaxBonus(state, caster.side);
-        if (buff > 0) out.push(text('div', 'cx-buff', t('duel.buff', { n: buff })));
         return;
       }
       case 'cast': {

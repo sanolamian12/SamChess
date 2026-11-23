@@ -53,7 +53,7 @@ import {
 } from './state.ts';
 import { anyGaugeLow, applyDuel, isDuelIntent, regenGauges, validateDuel } from './duel.ts';
 import {
-  applyEffects, illusionSucceeds, isTerrainTactic, resolveTacticTarget, supportSucceeds,
+  applyEffects, illusionSucceeds, isTerrainTactic, resolveTacticTarget, supportSucceeds, tacticSure,
   tacticMpCost, terrainSucceeds,
 } from './effects.ts';
 import { hasSkillScript, runSkillScript } from './scripts.ts';
@@ -908,7 +908,10 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       // 갈래 셋 — 지형 · 지원 · 환술. **지형을 먼저 본다**(지형 책략도 계열은
       // 지원이라 순서를 뒤집으면 지형이 영영 안 걸린다). 표시용 `illusionChance()`가
       // 같은 순서로 갈라져 있어야 확인창의 숫자와 실제 판정이 안 어긋난다.
-      const resisted = isTerrainTactic(def)
+      // 설전 효과(`tacticSure`)면 지형 · 지원은 굴리지 않고 걸린다 — 환술은 결계만 보고 걸린다(`illusionSucceeds`의 「반드시」 자리)
+      const sure = tacticSure(unit);
+      const resisted = sure && def.school === 'support' ? false
+        : isTerrainTactic(def)
         ? !terrainSucceeds((rate) => roll(s, rate), casterIntellect)
         : def.school === 'support'
           ? !supportSucceeds(
@@ -921,7 +924,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
             casterIntellect,
             target,
             target ? officerStats(target).intellect : 0,
-            hasStatus(unit, 'illusionAlways'),
+            hasStatus(unit, 'illusionAlways') || sure,
           );
       events.push({ e: 'tacticCast', unit: unit.id, tactic: intent.tactic, resisted, ...aimedAt(aim.ctx) });
       if (!resisted) actingAs(unit, as, () => applyEffects(s, aim.ctx, effects, `tactic:${def.id}`, events));

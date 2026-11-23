@@ -208,6 +208,16 @@ export type StatusId =
   | 'dot'                  // 탈진/질병/화계 — 주기적 HP 감소
   | 'mustTarget'           // 소패왕전 — 지정 상대만 공격 가능
   | 'bitterBond'           // 고육지책(주유 쪽) — 차례마다 짝(아군)을 칠지 고른다. sourceUnit = 짝 (2026-11-10)
+  /**
+   * **일기토 효과** (2026-11-23 기획자, GDD §3.11 R12) — 일기토에 이긴 진영 전원에게 1일. 크리티컬 100% + 받는 공격 피해 절반.
+   * 두 효과를 따로 걸지 않고 배지 하나로 건다 — 읽는 자리는 `critSure()` · `halvesIncoming()`(`state.ts`)이다.
+   */
+  | 'duelBoon'
+  /**
+   * **설전 효과** (2026-11-23 기획자, GDD §3.11 R13) — 설전에 이긴 진영 전원에게 1일. 책략 MP 소모 0 + 책략이 반드시 걸린다
+   * (지형 · 지원 · 환술 전부 — 「결계」를 두른 상대에게 거는 환술만은 막힌다). 읽는 자리는 `tacticMpCost()` · `tacticSure()`(`effects.ts`)이다.
+   */
+  | 'debateBoon'
   | 'bitterPartner'        // 고육지책(짝 쪽) — 주유에게 맞으면 1일 동안 크리 100% · 적의 공격 대상 안 됨. sourceUnit = 주유
   /**
    * 영웅론(조조) — **게임이 끝날 때까지** 고유기술을 쓸 수 없다 (2026-09-25).
@@ -261,6 +271,8 @@ export const STATUS_META: Readonly<Record<StatusId, {
   mustTarget: { kind: 'debuff', label: '지정 강제', desc: '지정된 상대만 공격할 수 있다.' },
   bitterBond: { kind: 'buff', label: '고육지책', desc: '차례마다 지정한 아군을 칠지 고를 수 있다(거리 무관 · 평타). 맞은 아군은 1일 동안 크리티컬 100% · 적의 공격 대상이 되지 않는다.' },
   bitterPartner: { kind: 'buff', label: '고육지책', desc: '주유에게 맞으면 1일 동안 크리티컬 100% · 적의 공격 대상이 되지 않는다.' },
+  duelBoon: { kind: 'buff', label: '일기토 효과', desc: '일기토에서 이긴 기세 — 공격이 반드시 크리티컬로 들어가고(데미지 ×2), 공격으로 받는 데미지가 절반이 된다.' },
+  debateBoon: { kind: 'buff', label: '설전 효과', desc: '설전에서 이긴 기세 — 책략을 MP 소모 없이 시전하고, 책략이 반드시 걸린다. 「결계」를 두른 상대에게 거는 환술은 막힌다.' },
   skillSealed: { kind: 'debuff', label: '고유기술 봉인', desc: '게임이 끝날 때까지 고유기술을 쓸 수 없다. 시전 중이던 고유기술은 무산됐다. 풀리지 않는다.' },
 };
 
@@ -508,7 +520,7 @@ export interface ScenarioSetup {
   readonly terrain?: readonly { readonly pos: Vec2; readonly terrain: TerrainId; readonly hidden?: boolean }[];
   /**
    * **일기토 · 설전을 켠다** (2026-11-12, 전투 기초의 일기토 · 설전 판) — 튜토리얼에는 대결이 없지만(GDD §3.11 R20) 그것을 가르치는
-   * 판만은 켠다. 켜면 대전과 같이 SP 상한 15 · SP MAX 버프도 붙는다(`duelRulesOn` 하나가 셋을 함께 켠다)
+   * 판만은 켠다. 켜면 대전과 같이 SP 상한 15도 붙는다(`duelRulesOn` 하나가 둘을 함께 켠다)
    */
   readonly duels?: boolean;
 }
@@ -1175,7 +1187,7 @@ export const FORMULA = {
   spPerTime: 100,
   /**
    * 대전 · 공성전의 SP 상한 — 3v3 · 5v5 **같은 값** (2026-11-05 기획자). 예전에는 「인원 × 5」라 5v5가 25였고,
-   * 그러면 SP MAX 버프(GDD §3.11 R15)가 5v5 공격의 1%에만 붙었다(3v3은 10 ~ 15%).
+   * 그러면 SP MAX 버프(GDD §3.11 R15 — 2026-11-23에 걷었다)가 5v5 공격의 1%에만 붙었다(3v3은 10 ~ 15%).
    */
   battleSpCap: 15,
   /** 도적떼 · 튜토리얼의 SP 상한 = 제 진영 인원 × 이 값(바닥 `SP_CAP_FLOOR`) */
@@ -1215,17 +1227,14 @@ export const FORMULA = {
   /** 게이지 회복 (R24) — `duelRegenPeriod`마다 **상한의 `duelRegen`%**(올림). 상한이 장수마다 달라도 0에서 꽉 차기까지 time 200(2일) 이내 */
   duelRegen: 5,
   duelRegenPeriod: 10,
-  /** 일기토 승 — 이긴 진영 SP +, 진 진영 SP − (R12) */
-  duelWinSp: { '3v3': 1, '5v5': 2 } as Readonly<Record<BattleMode, number>>,
-  /** 설전 승 — 이긴 진영 전원 MP +, 진 진영 전원 MP − (R13) */
-  debateWinMp: 2,
-  /** 10합 결판 없음 — 일기토는 양쪽 SP +, 설전은 양쪽 전원 MP + (R14) */
-  duelDrawSp: 1,
-  debateDrawMp: 1,
+  /**
+   * 이긴 쪽의 효과 (R12 · R13, 2026-11-23 기획자) — 이긴 진영의 살아 있는 장수 전원에게 이만큼(time 100 = 1일).
+   * 일기토는 `duelBoon`(크리 100% · 받는 피해 절반), 설전은 `debateBoon`(책략 MP 0 · 반드시 걸림). **결판 없음은 아무 일도 없다**(R14).
+   * 예전의 SP ± · MP ± · SP MAX 버프(R15)는 이것으로 바뀌었다.
+   */
+  duelBoonTime: 100,
   /** 게이지 0 — 일반 부상(−10)에 진 종류의 능력을 이만큼 더 (R11) */
   duelWoundExtra: 10,
-  /** SP MAX 버프 — 진영 SP가 상한이면 그 진영의 공격 AT + (R15) */
-  spMaxAtBonus: 1,
 } as const;
 
 /**

@@ -25,7 +25,7 @@
  */
 
 import { combatantById } from '@samchess/data';
-import { DUEL_COUNT_MS, DUEL_END_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_INTRO_START_MS, DUEL_REVEAL_MS, FORMULA, duelForecast, duelRulesOn, gaugeMaxOf, gaugeOf, officerStats } from '@samchess/rules';
+import { DUEL_COUNT_MS, DUEL_END_MS, DUEL_FIRST_COUNT_MS, DUEL_INTRO_MS, DUEL_INTRO_START_MS, DUEL_REVEAL_MS, FORMULA, duelForecast, gaugeMaxOf, gaugeOf, officerStats } from '@samchess/rules';
 import type { BattleEvent, BattleState, DuelKind, DuelPick, DuelRoundResult, DuelState, Side, UnitId, UnitState } from '@samchess/rules';
 import type { PlaybackPhase } from '../battle/playback.ts';
 import { t } from '../i18n/index.ts';
@@ -188,8 +188,6 @@ export class DuelLayer {
     let d = this.last;
     let held = 0;
     for (const e of events) {
-      // SP가 상한에 닿았다 — SP MAX 버프가 켜진다(GDD §3.11 R15). 소리는 따로 안 받고 `roar2`(기획자 11-05)
-      if (e.e === 'spChanged' && duelRulesOn(state) && e.to >= state.spCap[e.side]) playSfx('roar2');
       if (e.e === 'challengeOffered') {
         // 받는 쪽(AI)이 같은 통에서 곧장 거절하면 `state.duel`은 이미 지워져 있다 — 이벤트로 대결의 모습을 세운다.
         // 안 그러면 그릴 것이 없어(또는 앞 대결이 남아) 거절 끝 장면이 아예 안 떴다 (2026-11-06)
@@ -667,9 +665,8 @@ export class DuelLayer {
       : reason === 'refused' ? t('duel.end.refused', { who: name(loser), j: josaOf(name(loser), '이가') })
       : reason === 'fled' ? t('duel.end.fled', { who: name(loser), j: josaOf(name(loser), '이가') })
       : '';   // 게이지 0으로 난 결판은 「누구의 승리」를 안 쓴다 — 판정 아래 곧장 보상 (2026-11-07 기획자)
-    const reward = reason === 'cap'
-      ? (kind === 'duel' ? t('duel.reward.drawSp', { n: FORMULA.duelDrawSp }) : t('duel.reward.drawMp', { n: FORMULA.debateDrawMp }))
-      : (kind === 'duel' ? t('duel.reward.sp', { n: FORMULA.duelWinSp[state.mode] }) : t('duel.reward.mp', { n: FORMULA.debateWinMp }));
+    // 이긴 쪽의 효과 (2026-11-23 기획자) — 결판 없음은 아무 일도 없다
+    const reward = reason === 'cap' ? t('duel.reward.none') : t(kind === 'duel' ? 'duel.reward.duel' : 'duel.reward.debate');
     // 정보 하나에 한 줄 — 어떻게 끝났나 / 이긴 쪽 / 진 쪽. 보상의 「·」에서도 끊는다 (2026-11-07 기획자: 폭에 아슬아슬하게 걸려 아무 데서나 두 줄이 됐다)
     const detail = [how, ...reward.split(/\s*[·・]\s*/)].filter(Boolean).join('\n');
     return { verdict, tone, detail, text: `${verdict}|${detail}`, ...(loser ? { loser: loser.id } : {}) };

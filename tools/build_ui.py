@@ -571,6 +571,76 @@ def load(path: Path) -> np.ndarray:
         return np.array(im.convert("RGBA"))
 
 
+# **테를 갈아 끼우는 엠블럼** (2026-11-23 기획자) — 생성 AI가 청동 테까지 그려 온 메달에서 **안쪽 그림만** 둥글게 오려,
+# 기존 상태 엠블럼(`REFRAME_RIM`, `magic_skill_pos`에서 구운 것)의 금빛 테 · 보석 밑에 넣는다. 테 밖으로 튀어 나간 것(일기토의 칼끝 불꽃)은
+# 오리면서 떨어지고 금테가 덮는다. 원본 stem → 출력 id. 원본 이름은 「일기토 효과」 · 「설전 효과」(assets/icons/new에서 옮김)
+REFRAMED_EMBLEMS: dict[str, str] = {"emblem_duel_boon": "emblems/duelBoon", "emblem_debate_boon": "emblems/debateBoon"}
+REFRAME_RIM = "emblems/illusionAlways"
+"""테를 빌려 올 엠블럼 — `magic_skill_pos`의 열넷은 테 자리가 같다(안쪽 원 중심 (64, 64.5) · 반지름 48.5, 128² 기준)."""
+REFRAME_CENTER, REFRAME_INNER = (64.0, 64.5), 48.5
+REFRAME_GEM = ((64.0, 114.0), 11.5)
+"""아래 보석 자리 — 마름모 `|x−64| + |y−114| ≤ 11.5`. 안쪽 원과 겹치므로 따로 지킨다."""
+REFRAME_CUT = 0.77
+"""원본의 안쪽 그림 반지름 = 바깥 테 반지름 × 이 값. 두 장 다 안쪽 가장자리가 0.78쯤 — 조금 안으로 잘라 옛 청동 테의 안쪽 턱을 안 들인다."""
+
+
+def fit_medallion(rgb: np.ndarray) -> tuple[float, float, float]:
+    """검은 바탕 위 둥근 메달의 바깥 테 원(중심 x, y, 반지름). 각도마다 가장 먼 밝은 점을 모아 원을 맞추고,
+    어긋난 점(테 밖으로 튄 불꽃)을 덜어 가며 다시 맞춘다."""
+    m = rgb.max(axis=2) > 40
+    ys, xs = np.nonzero(m)
+    c0 = ((xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2)
+    reach = int(max(rgb.shape[:2]))
+    pts = []
+    for t in np.radians(np.arange(0, 360, 1)):
+        rs = np.arange(0, reach)
+        px = (c0[0] + rs * np.cos(t)).astype(int)
+        py = (c0[1] + rs * np.sin(t)).astype(int)
+        ok = (px >= 0) & (px < rgb.shape[1]) & (py >= 0) & (py < rgb.shape[0])
+        hit = np.nonzero(m[py[ok], px[ok]])[0]
+        if len(hit):
+            i = hit.max()
+            pts.append((px[ok][i], py[ok][i]))
+    p = np.array(pts, float)
+    a = np.c_[2 * p[:, 0], 2 * p[:, 1], np.ones(len(p))]
+    b = (p ** 2).sum(axis=1)
+    keep = np.ones(len(p), bool)
+    for _ in range(6):
+        c = np.linalg.lstsq(a[keep], b[keep], rcond=None)[0]
+        cx, cy = c[0], c[1]
+        r = float(np.sqrt(c[2] + cx * cx + cy * cy))
+        res = np.abs(np.hypot(p[:, 0] - cx, p[:, 1] - cy) - r)
+        keep = res <= np.percentile(res, 75)
+    return float(cx), float(cy), r
+
+
+def reframe_emblem(src: Path, rim_path: Path) -> Image.Image:
+    """`REFRAMED_EMBLEMS` 참조 — 원본의 안쪽 원을 테 자리의 안쪽 원에 맞춰 줄이고, 그 위에 빌린 테 · 보석을 얹는다."""
+    rgb = np.asarray(Image.open(src).convert("RGB"))
+    cx, cy, r_out = fit_medallion(rgb)
+    r_in = r_out * REFRAME_CUT
+    rim = Image.open(rim_path).convert("RGBA")
+    size = rim.size[0]
+    (tx, ty), tr = REFRAME_CENTER, REFRAME_INNER
+    art_r = tr + 1.5                     # 테의 안쪽 검은 선 밑까지 깔아 틈이 안 보이게
+    scale = r_in / art_r
+    box = (cx - tx * scale, cy - ty * scale, cx + (size - tx) * scale, cy + (size - ty) * scale)
+    art = Image.open(src).convert("RGBA").resize((size, size), Image.LANCZOS, box=box)
+    yy, xx = np.indices((size, size)).astype(np.float32) + 0.5
+    dist = np.hypot(xx - tx, yy - ty)
+    a = np.asarray(art).copy()
+    a[:, :, 3] = (np.clip(art_r + 0.5 - dist, 0, 1) * 255).astype(np.uint8)
+    # 테 층 — 안쪽 원 밖 + 보석 마름모만 남긴다
+    (gx, gy), gr = REFRAME_GEM
+    # 안쪽 원 가장자리 한 줄(48.5 ~ 49.3)은 빌린 엠블럼의 안쪽 그림 색(보라)이 묻어 있다 — 새 그림이 덮게 테를 그 바깥부터 쓴다
+    keep = (dist >= tr + 0.8) | (np.abs(xx - gx) + np.abs(yy - gy) <= gr)
+    rim_a = np.asarray(rim).copy()
+    rim_a[~keep, 3] = 0
+    out = Image.fromarray(a, "RGBA")
+    out.alpha_composite(Image.fromarray(rim_a, "RGBA"))
+    return out
+
+
 def bbox(alpha: np.ndarray) -> tuple[int, int, int, int]:
     """`(top, left, bottom, right)` — 알파가 있는 최소 사각형. 끝은 배타적이다."""
     rows = np.where(alpha.max(axis=1) > ALPHA_FLOOR)[0]
@@ -1232,6 +1302,21 @@ def main() -> int:
                     continue
                 im.save(OUT_UI / f"{icon_id}.png")
                 made_icons.append((icon_id, im))
+
+    # ── 테를 갈아 끼우는 엠블럼 — 빌릴 테가 위 `GRIDS`에서 이미 구워져 있어야 한다 ──
+    rim_path = OUT_UI / f"{REFRAME_RIM}.png"
+    for stem, icon_id in REFRAMED_EMBLEMS.items():
+        src = SRC / f"{stem}.jpg"
+        if not src.exists() or not rim_path.exists():
+            missing.append(f"{stem}.jpg" if not src.exists() else f"{REFRAME_RIM}.png(빌릴 테)")
+            continue
+        dst = OUT_UI / f"{icon_id}.png"
+        if up_to_date(dst, src) and up_to_date(dst, rim_path):
+            skipped += 1
+            continue
+        im = reframe_emblem(src, rim_path)
+        im.save(dst)
+        made_icons.append((icon_id, im))
 
     # ── 칸 구분선이 그려진 시트(게임 정보 판) ──
     for stem, (rows, cols, ids, groups) in CELL_SHEETS.items():
