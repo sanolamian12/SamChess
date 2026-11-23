@@ -430,6 +430,20 @@ try {
   assert.equal((await call('GET', '/admin/audit/admins', plain.token)).status, 403);
   ok('감사 로그 거르기 — 묶음 · 하나 · 관리자 · 기간, 틀린 값 400, 관리자 목록(평범한 사용자 403)');
 
+  // ── AI 대전 결과 등록 (2026-11-23) — 증축 조건의 누적 승리. 이긴 판만, 전적 · 이력은 그대로 ──
+  const detail0 = (await call('GET', `/admin/users/${target.uid}`, admin.token)).body as { battleWins: number; profile: PlayerProfile };
+  assert.equal((await call('POST', `/admin/users/${target.uid}/adjust`, admin.token, { kind: 'aiBattles', wins: 0, draws: 0, losses: 0, reason: 'x' })).status, 400, '0판은 400');
+  assert.equal((await call('POST', `/admin/users/${target.uid}/adjust`, admin.token, { kind: 'aiBattles', wins: 101, reason: 'x' })).status, 400, '상한 넘으면 400');
+  assert.equal((await call('POST', `/admin/users/${target.uid}/adjust`, plain.token, { kind: 'aiBattles', wins: 1, reason: 'x' })).status, 403);
+  const aiReg = await call('POST', `/admin/users/${target.uid}/adjust`, admin.token, { kind: 'aiBattles', wins: 4, draws: 1, losses: 2, reason: '스모크 AI 대전 등록' });
+  assert.equal(aiReg.status, 200, JSON.stringify(aiReg.body));
+  const detail1 = (await call('GET', `/admin/users/${target.uid}`, admin.token)).body as { battleWins: number; profile: PlayerProfile };
+  assert.equal(detail1.battleWins, detail0.battleWins + 4, '누적 승리 +4');
+  assert.equal((await pool.query<{ w: number }>(`select (data->>'battleWins')::int as w from profiles where uid = $1`, [target.uid])).rows[0]!.w, detail0.battleWins + 4, 'DB까지');
+  assert.deepEqual([detail1.profile.record, detail1.profile.matches.length], [detail0.profile.record, detail0.profile.matches.length], '전적 · 이력은 그대로');
+  assert.deepEqual((await auditQ('action=adjust.aiBattles')).actions, ['adjust.aiBattles'], '감사 로그 한 줄');
+  ok(`AI 대전 결과 등록 — 0판 · 상한 넘김 400, 평범한 사용자 403, 승 4 · 무 1 · 패 2 → 누적 승리 ${detail0.battleWins} → ${detail1.battleWins}(DB까지), 전적 · 이력 그대로, 감사 로그`);
+
   // ── 우편 ── 보내기 → 게임 API에 보인다 → 받기 → 받은 수 → 회수(이미 받은 것은 그대로) · 감사 로그
   const draft = { targetUid: target.uid, title: { ko: '스모크 보상', en: 'Smoke reward' }, body: { ko: '스모크 본문' }, rewards: [{ kind: 'gold', delta: 30 }] };
   const sendMail = (token: string, payload: object) => call('POST', '/admin/mail', token, payload);
@@ -590,6 +604,7 @@ try {
   await roleForbidden(`/admin/users/${target.uid}/unban`, { reason: 'CS 해제' }, 'unban');
   await roleForbidden(`/admin/users/${target.uid}/ban`, { days: 36_500, reason: 'CS 영구 정지' }, 'ban.long');
   await roleForbidden(`/admin/users/${target.uid}/ban`, { days: 8, reason: 'CS 8일 정지' }, 'ban.long');
+  await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'aiBattles', wins: 1, reason: 'CS AI 대전 등록' }, 'battles');
   assert.equal(await goldNow(), gold0, '막힌 요청은 아무것도 안 바꾼다');
   assert.equal((await gameGet('/profile', target.token)).status, 200, '막힌 정지는 걸리지 않았다');
   assert.equal((await csPost(`/admin/users/${admin.uid}/ban`, { days: 3, reason: 'x' })).status, 400, '관리자 계정은 CS도 못 건다');
@@ -605,7 +620,7 @@ try {
   assert.equal((await call('GET', `/admin/users/${target.uid}`, admin.token)).body['bannedUntil'], banned30.body['bannedUntil'], '끝나는 시각은 그대로');
   assert.equal((await call('POST', `/admin/users/${target.uid}/ban`, admin.token, { days: 1, reason: '관리자는 줄일 수 있다' })).status, 200);
   assert.equal((await call('POST', `/admin/users/${target.uid}/unban`, admin.token, { reason: '정리' })).status, 200);
-  ok('CS — 회수 · 병기 회수 · 전체 우편 · 우편 회수 · 해제 · 영구 · 8일 정지는 403 role_forbidden(아무것도 안 바뀜), 7일 정지는 걸린다, 관리자의 30일을 1일로 줄이면 403(need: unban), 관리자는 줄인다');
+  ok('CS — 회수 · 병기 회수 · AI 대전 결과 등록 · 전체 우편 · 우편 회수 · 해제 · 영구 · 8일 정지는 403 role_forbidden(아무것도 안 바뀜), 7일 정지는 걸린다, 관리자의 30일을 1일로 줄이면 403(need: unban), 관리자는 줄인다');
 
   const csLimit = (r: { status: number; body: Record<string, unknown> }, scope: string, kind: string) => {
     assert.deepEqual([r.status, r.body['error'], r.body['scope'], r.body['kind']], [403, 'cs_limit', scope, kind], JSON.stringify(r.body));

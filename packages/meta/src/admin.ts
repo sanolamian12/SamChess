@@ -13,6 +13,7 @@
  * | 들려 보낼 예정(`marketCarry`)인 아이템은 못 거둔다 | 시장 보유 총량 · 하루 매물 |
  * | 장수가 끼고 있는 병기는 못 거둔다 | |
  * | 건물은 **올리기만** · 도시가 짓는 레벨(`BUILD_CITY_LEVEL`) 이상일 때만 · 최대 레벨까지 | 건설 기회(`buildCredits`) — 안 쓴다 |
+ * | AI 대전 결과는 게임의 AI 대전 정산과 같은 칸만(이긴 판 → `battleWins`) | 판을 두는 일 — 보상 · 부상 없이 승리만 |
  *
  * **계정의 권위 자리(meta)에 둔다** — 서버(`server-api/src/admin/`)는 이 함수를 잠긴 행 위에서 부를 뿐이다.
  * 처음(2026-10-20)에는 기존 파일을 못 고치는 사정으로 server-api 안에 있었다.
@@ -26,6 +27,7 @@ import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
 import { addCard, admitFromBox } from './profile.ts';
+import { battleWinsOf } from './wins.ts';
 import { GARRISON_MODES, garrisonOf } from './garrison.ts';
 import { squadLabelKo } from './squads.ts';
 import { BASIC_TUTORIALS, S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, tutorialDone, tutorialStatus } from './tutorial.ts';
@@ -39,7 +41,17 @@ export type Adjustment =
   | { kind: 'equipmentGrant'; equipmentId: string; count: number }
   | { kind: 'equipmentRevoke'; key: string }
   /** 건물을 `level`까지 **올린다**(신축은 0 → n) — 2026-11-13, 관리자 「도시」 탭. 권한 `city` */
-  | { kind: 'building'; building: string; level: number };
+  | { kind: 'building'; building: string; level: number }
+  /**
+   * **AI 대전 결과 등록** (2026-11-23 기획자) — 증축 조건의 누적 승리를 게임을 안 하고 채운다. 권한 `battles`(관리자만).
+   * 게임의 AI 대전 정산(`applyBattleResult`, `opponent: 'ai'`)과 같은 자리만 움직인다 — **이긴 판만 `battleWins`에 더하고**
+   * 전적(`record`) · 이력(`matches`) · 승점에는 안 센다(AI 대전은 거기 안 세는 것이 게임 규칙이다). 그래서 **무 · 패는 계정에 남는 값이 없고
+   * 감사 로그에만 남는다.** 보상 · 부상도 안 준다(판을 둔 것이 아니다)
+   */
+  | { kind: 'aiBattles'; wins: number; draws: number; losses: number };
+
+/** AI 대전 결과 등록 한 번에 칸마다 적을 수 있는 판 수 — 리터럴(화면이 `satisfies AiBattlesMax`로 묶는다) */
+export const AI_BATTLES_MAX = 100;
 
 /** 한 번에 움직일 수 있는 양 — 오타 하나(0을 셋 더 친 것)가 경제를 흔들지 않게 */
 export const ADJUST_LIMITS = {
@@ -140,6 +152,13 @@ export function parseAdjustment(body: unknown): Adjustment | string {
       if (!Number.isInteger(level) || (level as number) < 1 || (level as number) > data.maxLevel) return `level은 1~${data.maxLevel}`;
       return { kind: 'building', building: data.id, level: level as number };
     }
+    case 'aiBattles': {
+      const n = (v: unknown): number | null => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= AI_BATTLES_MAX ? v as number : null);
+      const wins = n(b['wins'] ?? 0), draws = n(b['draws'] ?? 0), losses = n(b['losses'] ?? 0);
+      if (wins === null || draws === null || losses === null) return `wins · draws · losses는 0~${AI_BATTLES_MAX}의 정수`;
+      if (wins + draws + losses === 0) return '등록할 판이 없다';
+      return { kind: 'aiBattles', wins, draws, losses };
+    }
     default:
       return '모르는 kind다';
   }
@@ -226,6 +245,9 @@ export function applyAdjustment(profile: PlayerProfile, adj: Adjustment, nowMs: 
       const built: PlayerProfile = { ...synced, buildings: { ...synced.buildings, [id]: adj.level } };
       return id === 'palace' ? admitFromBox(built) : built;
     }
+    case 'aiBattles':
+      // `applyBattleResult`의 `opponent: 'ai'`와 같다 — 이긴 판만 누적 승리에. 무 · 패는 게임에도 남는 칸이 없다
+      return adj.wins > 0 ? { ...profile, battleWins: battleWinsOf(profile) + adj.wins } : profile;
     case 'equipmentRevoke': {
       if (!(adj.key in profile.forgeOwned)) throw new Error(`그런 자루가 없다 — ${adj.key}`);
       const holder = profile.forgeOwned[adj.key];
@@ -367,6 +389,7 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
 // | `unban` | 정지 해제 | ✓ | |
 // | `rename` | 도시 이름 강제 변경(+ 알림 우편, 2026-10-22) | ✓ | ✓ |
 // | `city` | 건물 짓기 · 올리기(조정 `building`, 2026-11-13) | ✓ | |
+// | `battles` | AI 대전 결과 등록(조정 `aiBattles`, 2026-11-23) — 누적 승리 | ✓ | |
 //
 // 역할 주기 · MFA 지우기는 표에 없다 — 서비스 키를 쥔 도구(`tools/admin_role.ts`)만 한다.
 
@@ -376,6 +399,7 @@ export const isAdminRole = (v: unknown): v is AdminRole => (ADMIN_ROLES as reado
 
 export const ADMIN_PERMISSIONS = [
   'view', 'resolve', 'grant', 'revoke', 'mail.one', 'mail.all', 'mail.revoke', 'ban', 'ban.long', 'unban', 'rename', 'anomaly', 'delete', 'city', 'system',
+  'battles',
 ] as const;
 export type AdminPermission = typeof ADMIN_PERMISSIONS[number];
 
@@ -404,6 +428,8 @@ export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   rename: '도시 이름 강제 변경', anomaly: '이상 징후 처리', delete: '계정 삭제', city: '건물 짓기 · 올리기',
   // 서버 상태 · 트래픽 · 인프라 점검 — DB 주소 · 프로젝트 ref · 서버 내부 값이라 CS가 볼 일이 아니다(2026-11-13 기획자 확정)
   system: '시스템(서버 상태 · 트래픽 · 인프라 점검) 보기',
+  // 증축 조건의 누적 승리를 게임 없이 채운다 — 진행을 건너뛰는 일이라 관리자만(2026-11-23)
+  battles: 'AI 대전 결과 등록',
 };
 
 /** `role_forbidden`에 싣는 사람 말 — 라우트의 `permit`과 정지 줄이기(`banTx`)가 같은 말을 쓴다 */
@@ -421,7 +447,7 @@ export const isGrant = (adj: Adjustment): boolean =>
 
 /** 같은 `/adjust`라도 **본문을 보고** 권한이 갈린다 */
 export const adjustPermission = (adj: Adjustment): AdminPermission =>
-  (adj.kind === 'building' ? 'city' : isGrant(adj) ? 'grant' : 'revoke');
+  (adj.kind === 'building' ? 'city' : adj.kind === 'aiBattles' ? 'battles' : isGrant(adj) ? 'grant' : 'revoke');
 
 /** 일괄의 줄들이 요구하는 권한 — 겹치지 않게 */
 export const batchPermissions = (adjs: readonly Adjustment[]): AdminPermission[] => [...new Set(adjs.map(adjustPermission))];

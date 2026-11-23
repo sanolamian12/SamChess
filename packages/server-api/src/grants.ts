@@ -48,9 +48,10 @@ async function assemble(db: Db, audits: AuditRow[], ledger: LedgerRow[]): Promis
   };
   const out: GrantCheck[] = [];
   for (const a of audits) {
-    // 건물만 바꾼 조정(`adjust.building`, 일괄이면 건물 줄뿐인 것)은 재화 지급이 아니다 — 견줄 것이 없어 늘 「맞음」으로 표만 채운다
+    // 건물만 바꾼 조정(`adjust.building`, 일괄이면 건물 줄뿐인 것) · AI 대전 결과 등록(`adjust.aiBattles` — 누적 승리는 장부가 안 본다)은
+    // 재화 지급이 아니다 — 견줄 것이 없어 늘 「맞음」으로 표만 채운다
     const adjs = adjustmentsOfAudit(a.action, a.params);
-    if (adjs.length > 0 && adjs.every((x) => x.kind === 'building')) continue;
+    if (adjs.length > 0 && adjs.every((x) => x.kind === 'building' || x.kind === 'aiBattles')) continue;
     const ref = `audit:${a.id}`;
     const rows = byRef.get(ref);
     const expected = grantExpected(adjs);

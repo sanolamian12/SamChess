@@ -16,7 +16,7 @@ import type {
 } from '@samchess/data';
 import type { BattleMode, BattlePhase, OfficerId } from '@samchess/rules';
 import type {
-  ADJUST_BATCH_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
+  ADJUST_BATCH_MAX, AI_BATTLES_MAX, Adjustment, AdminPermission, UpgradeCheck, AdminPlayStatus, AdminRole, BAN_DAYS_MAX, CITY_NAME_MAX, CS_BAN_DAYS_MAX, CarriedBattle, CsCheck, CsLimitKind, CsUsage, DefenseResult, FAN_OFFICER_SEATS, MAIL_LANGS,
   LiveRoomSeat, MAIL_LIMITS, MAIL_TTL_DAYS, Mail, MailDraft, MailLang, MailReward, MailText, PlayerProfile, Resolution,
   ProcessHealth, ServiceId, TrafficRecent, TrafficWindow,
 } from '@samchess/meta';
@@ -34,6 +34,8 @@ export type BanDaysMax = typeof BAN_DAYS_MAX;
 export type CsBanDaysMax = typeof CS_BAN_DAYS_MAX;
 /** 일괄 지급 한 번의 줄 수 상한 — 리터럴 `50`(2026-11-13). 화면이 같은 값을 적고 `satisfies`로 묶는다 */
 export type AdjustBatchMax = typeof ADJUST_BATCH_MAX;
+/** AI 대전 결과 등록 한 번에 칸(승 · 무 · 패)마다 적을 수 있는 판 수 — 리터럴 `100`(2026-11-23). 화면이 `satisfies`로 묶는다 */
+export type AiBattlesMax = typeof AI_BATTLES_MAX;
 /** 도시 이름 최대 길이 — 게임의 이름 변경과 같은 값(리터럴 `12`) */
 export type CityNameMax = typeof CITY_NAME_MAX;
 /**
@@ -201,6 +203,11 @@ export interface UserDetail {
    * 수성전은 AI가 두므로 수비대의 `record`에는 안 쌓이고 방어 기록(`defense_log`)에서 센다
    */
   heldByMode: Record<BattleMode, number>;
+  /**
+   * 누적 승리 — 증축 조건이 읽는 값(meta `battleWinsOf`, 2026-11-23). 공성전 · 야전 · **AI 대전**의 승리이고 전적(`record`)과 다르다 —
+   * AI 대전은 전적에 안 세므로. 관리자의 AI 대전 결과 등록(조정 `aiBattles`)이 이 값을 올린다. 도시가 없으면 `0`
+   */
+  battleWins: number;
   /**
    * 누적 결제(2026-11-13) — **결제 연동 전이라 언제나 `null`**이다(결제 기록 표가 아직 없다, `history/2026-09-25_현금결제연동_1차검토.md`).
    * 화면은 `null`이면 「연동 전」을 띄운다. 결제 주문 표가 생기면 `readUser()` 한 곳에서 채운다.

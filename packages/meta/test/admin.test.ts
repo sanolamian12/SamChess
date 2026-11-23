@@ -16,7 +16,7 @@ import { describe, it } from 'node:test';
 import {
   ADJUST_BATCH_MAX, ADJUST_LIMITS, BUILD_CITY_LEVEL, addCard, adjustPermission, adjustmentsOfAudit, batchPermissions, boxedOfficers, buildingLevel,
   grantUsage, isGrant, parseMailDraft, poolCap, poolUsed, syncCity, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
-  parseAdjustment, parseAdjustmentBatch,
+  parseAdjustment, parseAdjustmentBatch, AI_BATTLES_MAX, battleWinsOf, upgradeChecklist,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 import type { OfficerId } from '@samchess/rules';
@@ -245,5 +245,45 @@ describe('건물 올리기 (2026-11-13, 관리자 「도시」 탭)', () => {
     assert.ok(Array.isArray(batch), String(batch));
     const mail = parseMailDraft({ targetUid: null, title: { ko: '건물' }, body: { ko: '본문' }, rewards: [b] });
     assert.equal(typeof mail, 'string');
+  });
+});
+
+describe('AI 대전 결과 등록 (2026-11-23, 증축 조건의 누적 승리)', () => {
+  it('이긴 판만 누적 승리에 — 전적 · 이력 · 보상은 안 움직인다', () => {
+    const p = fresh();
+    const next = applyAdjustment(p, { kind: 'aiBattles', wins: 3, draws: 2, losses: 4 }, NOW);
+    assert.equal(battleWinsOf(next), battleWinsOf(p) + 3);
+    assert.deepEqual(next.record, p.record);
+    assert.deepEqual(next.matches, p.matches);
+    assert.equal(next.gold, p.gold);
+    // 한 번 더 — 이미 있는 값 위에 더한다
+    assert.equal(battleWinsOf(applyAdjustment(next, { kind: 'aiBattles', wins: 2, draws: 0, losses: 0 }, NOW)), battleWinsOf(p) + 5);
+  });
+
+  it('무 · 패만이면 계정은 그대로다(게임에도 남는 칸이 없다)', () => {
+    const p = fresh();
+    assert.deepEqual(changedProfileFields(p, applyAdjustment(p, { kind: 'aiBattles', wins: 0, draws: 1, losses: 1 }, NOW)), { before: {}, after: {} });
+  });
+
+  it('증축 조건의 「누적 전투 승리」가 그 값을 읽는다', () => {
+    const p = fresh();
+    const wins = (q: PlayerProfile) => upgradeChecklist(q)!.checks.find((c) => c.kind === 'wins');
+    const before = wins(p);
+    assert.ok(before, '새 계정의 다음 증축에 승리 조건이 있다');
+    assert.equal(wins(applyAdjustment(p, { kind: 'aiBattles', wins: before.need, draws: 0, losses: 0 }, NOW))!.ok, true);
+  });
+
+  it('본문 — 0~상한의 정수, 합이 0이면 거절 · 권한은 battles(관리자만) · 일괄로는 안 받는다', () => {
+    assert.deepEqual(parseAdjustment({ kind: 'aiBattles', wins: 5 }), { kind: 'aiBattles', wins: 5, draws: 0, losses: 0 });
+    assert.equal(typeof parseAdjustment({ kind: 'aiBattles', wins: 0, draws: 0, losses: 0 }), 'string');
+    assert.equal(typeof parseAdjustment({ kind: 'aiBattles', wins: -1 }), 'string');
+    assert.equal(typeof parseAdjustment({ kind: 'aiBattles', wins: AI_BATTLES_MAX + 1 }), 'string');
+    assert.equal(typeof parseAdjustment({ kind: 'aiBattles', wins: 1.5 }), 'string');
+    const adj = { kind: 'aiBattles', wins: 1, draws: 0, losses: 0 } as const;
+    assert.equal(adjustPermission(adj), 'battles');
+    assert.equal(isGrant(adj), false);
+    assert.deepEqual(grantUsage([adj]), grantUsage([]));
+    assert.equal(typeof parseAdjustmentBatch({ adjustments: [adj] }), 'string');
+    assert.deepEqual(adjustmentsOfAudit('adjust.aiBattles', adj), [adj]);
   });
 });
