@@ -684,10 +684,11 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           badge={<img className="frg-cel-weapon" src={`blacksmith/${justDone.item.id}.png`} alt="" />}
           tone={equipBlink(justDone.item.unlockLevel)}
           okAction="ackDone" onClose={() => acknowledgeDone(justDone.key)}>
-          {/* 큰 글씨 대신 강화 완료 · 도시 증축과 같은 옥색 붓 획 한 줄 — 둥근 병기 배지 + 「Lv1 대감도」, 그 밑에 어디서 보는지 (2026-11-23 기획자) */}
-          <p className="lvd-row frg-done-row" data-field="doneItem" data-item={justDone.item.id}>
-            <span className="frg-done-medal"><img src={`blacksmith/${justDone.item.id}.png`} alt="" /></span>
-            <b>{equipLabel(justDone.item)}</b>
+          {/* 큰 글씨 대신 강화 완료 · 도시 증축과 같은 붓 획 한 줄 — 금테 병기 메달 + 이름, 그 밑에 어디서 보는지 (2026-11-23 기획자).
+              획의 색은 병기 레벨(`data-level` — Lv1 옥색 · 2 쪽빛 · 3 주홍 · 4 짙은 자주 · 5 금). 메달은 `tools/build_blacksmith.py`가 굽는다 */}
+          <p className="lvd-row frg-done-row" data-field="doneItem" data-item={justDone.item.id} data-level={justDone.item.unlockLevel}>
+            <img className="frg-done-medal" src={`blacksmith/medal-${justDone.item.id}.png`} alt="" />
+            <b>{pickEquipName(justDone.item)}</b>
           </p>
           <p className="row dim">{t('forge.done.hint')}</p>
         </Celebrate>

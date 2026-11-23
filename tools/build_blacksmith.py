@@ -12,6 +12,7 @@ r"""assets/icons/blacksmith/ 의 장비 그림을 웹용으로 굽는다 (2026-0
 | `frame_item_list.png` (927×672, 제작 목록 카드용 금테 액자 — 캔버스는 짙은 회색) | `public/blacksmith/frame_item_list.png` 그대로(여백이 거의 없다) |
 | `assets/icons/ui/chip_neutral.png` (600×398, 나무 명패) | `public/blacksmith/nameplate.png` 실측 경계상자로 트리밍 |
 | `weapon.png`·`shield.png`·`timer.png` (381² 아이콘) | `public/blacksmith/{같은 이름}` 그대로 |
+| (위에서 구운 `{id}.png`) + 아이콘 메달의 금빛 고리(`build_icons_composed.py`) | `public/blacksmith/medal-{id}.png` 256² — 제작 완료 줄의 둥근 배지, 그림이 원을 꽉 채운다 (2026-11-23) |
 
 `level2.png`·아이콘 셋은 품목 사진이 아니라
 **UI 스프라이트**라 나머지와 다르게 다룬다 — RGB로 접지 않고(투명 배경이
@@ -69,7 +70,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 TOOLS = Path(__file__).resolve().parent
 ROOT = TOOLS.parent
@@ -95,6 +96,52 @@ FIXED_COPY = (
     "level2.png", "weapon.png", "shield.png", "timer.png",
     "frame_item_list.png",
 )
+
+
+# ── 병기 메달 (2026-11-23 기획자) ─────────────────────────────────
+# 제작 완료 무대의 붓 획 줄에 앉는 둥근 배지 — 아이콘 메달과 같은 금빛 고리(`build_icons_composed.py`의 「나」 표지 고리)에
+# 밝은 바탕 원, 그 안을 병기 그림이 **꽉 채운다**. 그림의 상자가 아니라 **불투명 화소가 가운데에서 가장 먼 거리**로 크기를 잡는다 —
+# 상자로 맞추면 비스듬한 칼은 끝이 고리 밖으로 잘리고, 작은 갑옷(엄심경)은 상자의 여백만큼 작아졌다.
+MEDAL_BG = (190, 164, 116)
+MEDAL_REACH = .95          # 안쪽 반지름의 몇 배까지 그림이 닿나
+
+
+def build_medals(equipment: list[dict], force: bool) -> list[str]:
+    import numpy as np
+    import build_icons_composed as bic
+    if not bic.RING_SRC.exists():
+        return []
+    bic.RING, bic.INNER, bic.HELMET = bic.load_ring()
+    N, R = bic.N, bic.INNER
+    made: list[str] = []
+    for item in equipment:
+        src = OUT / f"{item['id']}.png"
+        dst = OUT / f"medal-{item['id']}.png"
+        if not src.exists():
+            continue
+        if dst.exists() and not force and dst.stat().st_mtime >= src.stat().st_mtime:
+            continue
+        with Image.open(src) as im:
+            art = bic.trim(im.convert("RGBA"), floor=24)
+        a = np.array(art.getchannel("A")) > 24
+        ys, xs = np.nonzero(a)
+        cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+        reach = float(np.hypot(xs - cx, ys - cy).max()) or 1.0
+        k = R * MEDAL_REACH / reach
+        art = art.resize((max(1, round(art.width * k)), max(1, round(art.height * k))), Image.LANCZOS)
+        out = Image.new("RGBA", (N, N))
+        out.alpha_composite(bic.backdrop(MEDAL_BG))
+        pos = (round(N / 2 - cx * k), round(N / 2 - cy * k))
+        sh = Image.new("RGBA", art.size, (0, 0, 0, 0))
+        sh.putalpha(art.getchannel("A").point(lambda v: v * .45))
+        out.alpha_composite(sh.filter(ImageFilter.GaussianBlur(4)), (pos[0] + 2, pos[1] + 4))
+        out.alpha_composite(art, pos)
+        clip = np.minimum(np.array(out.getchannel("A")), np.array(bic.disc_mask()))
+        out.putalpha(Image.fromarray(clip))
+        out.alpha_composite(bic.RING)
+        out.save(dst, optimize=True)
+        made.append(f"medal-{item['id']}.png (메달)")
+    return made
 
 
 def main() -> int:
@@ -178,6 +225,9 @@ def main() -> int:
         made.append("nameplate.png (← chip_neutral.png, 실측 트리밍)")
     else:
         skipped += 1
+
+    # 병기 메달 — 위에서 구운 그림으로(`build_medals`)
+    made += build_medals(equipment, args.force)
 
     print(f"출력 → {OUT}")
     print(f"  구운 것 {len(made)}종" + (f" (그대로 둔 것 {skipped}개)" if skipped else ""))

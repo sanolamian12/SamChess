@@ -8516,15 +8516,13 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frg-done .cel-stage .cel-art { inset: 14% 2% 2%; }
 /* 모루는 어둡게 — 쇠빛이 만든 병기와 같은 색이라 병기가 묻혔다 (2026-11-23 기획자) */
 .frg-done .cel-stage .cel-art-img { filter: brightness(.38) saturate(.6) drop-shadow(0 .4rem 1rem #000c); }
-/* 병기 한 줄 — 옥색 붓 획(`.lvd-row`) 위에 둥근 병기 배지 + 이름 */
+/* 병기 한 줄 — 붓 획(`.lvd-row`) 위에 금테 병기 메달 + 이름. 획의 색은 병기 레벨 (2026-11-23 기획자) */
 .frg-done .frg-done-row { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .45rem; font-size: 1.05rem; }
-.frg-done-medal {
-  position: relative; flex: none; width: 2.6rem; height: 2.6rem; border-radius: 50%; overflow: hidden;
-  background: radial-gradient(circle at 50% 42%, #fbf1d8 0%, #e6cf9c 60%, #b8925a 100%);
-  box-shadow: 0 0 0 .12rem #e2bd6a, 0 0 0 .2rem #5a3c14, 0 .15rem .35rem #000b;
-}
-.frg-done-medal img { position: absolute; inset: 3%; width: 94%; height: 94%; object-fit: contain;
-  filter: drop-shadow(0 .05rem .1rem #0008); }
+.frg-done .frg-done-row[data-level="2"] { --lvd-stroke: url(ui/era-stroke-b-7.png); }
+.frg-done .frg-done-row[data-level="3"] { --lvd-stroke: url(ui/era-stroke-b-4.png); }
+.frg-done .frg-done-row[data-level="4"] { --lvd-stroke: url(ui/era-stroke-b-6.png); }
+.frg-done .frg-done-row[data-level="5"] { --lvd-stroke: url(ui/era-stroke-b-8.png); }
+.frg-done-medal { flex: none; width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 .15rem .3rem #000b); }
 
 /* 연구 완료(`AcademyNotice`) — 두루마리 위에 개량된 책략의 엠블럼, 아래에 이름 · MP · 효과 · 「몇 명에게 적용」 */
 .cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }

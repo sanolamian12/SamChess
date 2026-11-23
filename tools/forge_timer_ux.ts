@@ -12,6 +12,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { equipmentById } from '@samchess/data';
 import { forgeOrderRemainingMs } from '@samchess/meta';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
@@ -20,7 +21,7 @@ const BASE = 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
 const SHOTS = shotDir('forge_timer_ux');
-const ITEM = 'su-geuk';            // 대장간 Lv1에서 만드는 병기
+const ITEM = process.env['ITEM'] ?? 'su-geuk';   // 만들 병기 — 기본은 대장간 Lv1의 수극(`ITEM=sa-ja-tu-gu`처럼 바꿔 다른 레벨의 줄 색을 본다)
 const LEFT_MS = 15_000;
 
 const ok = (m: string) => console.log(`  ✓ ${m}`);
@@ -67,7 +68,7 @@ try {
   const full = forgeOrderRemainingMs({ ...stored, forgeOrder: { equipmentId: ITEM, startedAt: now } }, now);
   await saveProfileTrusted(uid, {
     ...stored,
-    buildings: { ...stored.buildings, forge: 1 },
+    buildings: { ...stored.buildings, forge: equipmentById.get(ITEM)!.unlockLevel },
     forgeOrder: { equipmentId: ITEM, startedAt: now - (full - LEFT_MS) },
   });
   ok(`제작 기간 ${Math.round(full / 1000)}초 중 ${LEFT_MS / 1000}초 남김`);
