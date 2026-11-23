@@ -9407,17 +9407,17 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
    대치 판 → 「승리 시 · 항복 시」 두 줄 → 말풍선 위 남은 시간 → 단추 셋([항복] · [지금 전투] · [닫기]).
    판 폭은 열 언어에서 안 넘치게 넉넉히 — 줄은 낱말에서만 접는다 */
 .modal.frg-confirm.raid-alert-box { width: min(24rem, calc(100% - 1rem)); max-width: none; }
+/* 항복 정산(「항복」 + 「(군량) −N」)은 좁게 — 열 언어 중 가장 긴 제목(몽골어 「Бууж өглөө」 5.73rem, 영어 5.69rem)이
+   명패(옆 테 1.6rem × 2 + 안쪽 .2rem × 2 − 바깥 .15rem × 2) 안에 한 줄로 드는 폭 + 판 테(1.7rem × 2 + .35rem × 2) ≈ 13.1rem.
+   언어마다 폭이 달라지지 않게 못 박는다 (2026-11-23 기획자). 제목을 바꾸면 다시 잰다 */
+.modal.frg-confirm.raid-alert-box.raid-alert-loot { width: 13.5rem; }
+.raid-alert-loot .modal-ttl { white-space: nowrap; }
 
 /* 대치 판 — 고유기술 판(`ui/panel-battle-skill.png`, 9분할은 전투 배치 판과 같은 자르기)을 반으로 갈라
    왼쪽 아군 · 오른쪽 도적. 가운데 쌍검 밑에 섬광(`duel/hit.png`)을 깐다 */
 .raid-vs {
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
   margin: .1rem 0 .45rem; min-height: 6.4rem; padding: .1rem .7rem .35rem;   /* 아래 귀퉁이의 창 · 방패를 글자가 비켜 선다 */
-/* 항복 정산(「항복」 + 「(군량) −N」)은 좁게 — 열 언어 중 가장 긴 제목(몽골어 「Бууж өглөө」 5.73rem, 영어 5.69rem)이
-   명패(옆 테 1.6rem × 2 + 안쪽 .2rem × 2 − 바깥 .15rem × 2) 안에 한 줄로 드는 폭 + 판 테(1.7rem × 2 + .35rem × 2) ≈ 13.1rem.
-   언어마다 폭이 달라지지 않게 못 박는다 (2026-11-23 기획자). 제목을 바꾸면 다시 잰다 */
-.modal.frg-confirm.raid-alert-box.raid-alert-loot { width: 13.5rem; }
-.raid-alert-loot .modal-ttl { white-space: nowrap; }
   border-style: solid; border-color: transparent; border-width: .75rem .8rem .8rem;
   border-image: url(ui/panel-battle-skill.png) 82 70 90 84 fill / 2.1rem 1.8rem 2.3rem 2.2rem;
 }
@@ -9459,12 +9459,6 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .raid-info dd.loss { display: flex; align-items: center; gap: .2rem; color: #f0a08a; }
 .raid-grain { width: 1.3rem; height: 1.3rem; object-fit: contain; }
 .raid-loss-n { font-variant-numeric: tabular-nums; }
-.raid-rate { display: inline-flex; align-items: center; margin-left: .15rem; }
-.raid-rate:empty { display: none; }
-
-/* 남은 시간 — 말풍선(`duel/bubble-tie.png`, 설전 비김 풍선) 위 「(모래시계) m:ss 후 약탈」.
-   풍선의 뾰족한 가장자리 안으로 글자가 들게 좌우 여백을 넉넉히 */
-.raid-left {
 /* 항복 정산 팝업 — 「(군량) −N」 큰 글씨, 숫자는 붉게 한 번 튀었다 돌아온다 (2026-11-23 기획자) */
 .raid-loot-big { display: flex; align-items: center; justify-content: center; gap: .5rem; margin: .9rem 0 1.1rem; }
 .raid-loot-grain { width: 2.6rem; height: 2.6rem; object-fit: contain; }
@@ -9475,6 +9469,12 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 }
 @keyframes raid-loot-pop { 0% { transform: scale(1); } 35% { transform: scale(1.45); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .raid-loot-n { animation: none; } }
+.raid-rate { display: inline-flex; align-items: center; margin-left: .15rem; }
+.raid-rate:empty { display: none; }
+
+/* 남은 시간 — 말풍선(`duel/bubble-tie.png`, 설전 비김 풍선) 위 「(모래시계) m:ss 후 약탈」.
+   풍선의 뾰족한 가장자리 안으로 글자가 들게 좌우 여백을 넉넉히 */
+.raid-left {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: .3rem;
   width: min(15rem, 100%); min-height: 4.6rem; margin: .1rem auto .45rem; padding: .7rem 2.2rem;
   background: url(duel/bubble-tie.png) center / 100% 100% no-repeat;
