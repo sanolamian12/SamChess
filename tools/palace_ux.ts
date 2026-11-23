@@ -142,8 +142,11 @@ try {
       name: !!document.querySelector('.scr-city [data-field="cityName"]'),
       rename: !!document.querySelector('.scr-city [data-action="rename"]'),
       emperor: !!document.querySelector('.scr-city [data-field="emperor"]'),
-      level: document.querySelector('.scr-city [data-field="level"] .v')?.textContent ?? '',
-      materials: document.querySelector('.scr-city [data-field="materials"] .v')?.textContent ?? '',
+      level: (document.querySelector('.scr-city [data-field="level"]') as HTMLElement | null)?.dataset['level'] ?? '',
+      materials: document.querySelector('.scr-city [data-field="materials"]')?.textContent ?? '',
+      // 건물 줄은 「그림 · 배지 · 이름」 셋만 — 현황 칸이 남았으면 실패 (2026-11-23 기획자)
+      statusLeft: document.querySelectorAll('.scr-city .cty-bld .fx').length,
+      backBottom: !!document.querySelector('.scr-city .cty-acts [data-action="backBottom"]'),
       ready: !!document.querySelector('.scr-city [data-cond="materials"][data-ok="1"]'),
       upgradeHere: !!document.querySelector('.scr-city .cty-acts [data-action="upgrade"]'),
       oldDoor: !!document.querySelector('[data-action="buildings"]'),
@@ -153,13 +156,15 @@ try {
   });
   console.log('   ', JSON.stringify(city));
   if (city.name || city.rename || city.emperor) fail('도시 관리에 이름·[이름 변경]·황제 줄이 남아 있다');
-  if (city.level.trim() !== 'Lv4') fail(`레벨 줄이 「Lv4」만이 아니다 — "${city.level}"`);
-  if (city.materials.replace(/\s/g, '') !== `75/${upgradeCost(4)}`) fail(`자재 줄이 「75 / 25」가 아니다 — "${city.materials}"`);
+  if (city.level !== '4') fail(`레벨 배지가 Lv4가 아니다 — "${city.level}"`);
+  if (city.statusLeft) fail(`건물 줄에 현황 칸이 ${city.statusLeft}개 남았다`);
+  if (!city.backBottom) fail('도시 관리 바닥에 [뒤로 가기]가 없다');
+  if (city.materials.replace(/\s/g, '') !== `75/${upgradeCost(4)}`) fail(`자재 요건 칸이 「75/25」가 아니다 — "${city.materials}"`);
   if (!city.ready) fail('자재가 다 모였는데 자재 조건 칸이 채움(초록)이 아니다');
   if (!city.upgradeHere) fail('도시 관리 바닥에 [도시 증축]이 없다');
   if (city.oldDoor) fail('도시 관리에 옛 [건물 관리]가 남았다');
   if (city.actsGap > 24) fail(`명령 판이 바닥에 안 붙었다 — 본문 끝에서 ${city.actsGap}px 위`);
-  ok(`도시 관리 — Lv4 · 자재 「${city.materials}」 + 충족 · [도시 증축]이 바닥 판에 · 명령 판 바닥(${city.actsGap}px)`);
+  ok(`도시 관리 — Lv4 배지 · 자재 요건 「${city.materials}」 + 충족 · 건물 줄 그림 · 배지 · 이름뿐 · [증축] · [뒤로 가기]가 바닥 판에(${city.actsGap}px)`);
 
   // 자재가 모자라면 자재 칸이 채움이 **아니어야** 한다 — 있을 때만 보면 늘 띄워도 통과한다. [도시 증축]은 막히고 이유는 내관이 말한다
   await saveProfileTrusted(uid, { ...seeded, materials: 5 } as Parameters<typeof saveProfileTrusted>[1]);

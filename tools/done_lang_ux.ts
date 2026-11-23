@@ -89,13 +89,31 @@ try {
     for (const id of ['farm', 'hospital', 'forge']) await page.click(`[data-modal="upgrade"] [data-action="pickBuilding"][data-building="${id}"]`);
     await page.waitForTimeout(250);
     const pick = await page.evaluate(() => {
-      const box = document.querySelector('[data-modal="upgrade"] .modal')!.getBoundingClientRect();
+      const box = document.querySelector('[data-modal="upgrade"] .lvp-modal')!.getBoundingClientRect();
       const rows = [...document.querySelectorAll<HTMLElement>('[data-modal="upgrade"] .cty-up-row')];
       const out = rows.filter((e) => { const q = e.getBoundingClientRect(); return q.left < box.left || q.right > box.right; }).map((e) => e.dataset['building']);
       return { out, h: Math.round(box.height), hs: [...new Set(rows.map((e) => Math.round(e.getBoundingClientRect().height)))] };
     });
     if (pick.out.length) fail(`${lang} 증축 팝업 — 고르기 줄이 판 밖으로 나간다: ${pick.out.join(' ')}`);
     await page.screenshot({ path: join(OUT, `${lang}-pick.png`) });
+    // [보기] — 오른 뒤의 건물 한 장(지금 형편 줄은 없다) · 가리개를 눌러도 고르기 판은 그대로 (2026-11-23 기획자)
+    await page.click('[data-modal="upgrade"] [data-action="viewNext"][data-building="hospital"]');
+    await page.waitForSelector('[data-modal="building"][class*="cty-peek-back"] .cty-peek[data-building="hospital"][data-level="1"]');
+    if (await page.$('[data-modal="building"] [data-field="status"]')) fail(`${lang} 증축 고르기의 건물 한 장에 지금 형편 줄이 있다`);
+    await page.screenshot({ path: join(OUT, `${lang}-pick-peek.png`) });
+    await page.click('[data-modal="building"] [data-action="closeBuilding"]');
+    // 장터 · 대장간의 [보기]는 그 레벨에서 새로 열리는 것만(「신규 아이템」 · 「신규 제작」)
+    for (const b of ['market', 'forge']) {
+      await page.click(`[data-modal="upgrade"] [data-action="viewNext"][data-building="${b}"]`);
+      await page.waitForSelector(`[data-modal="building"] .cty-peek[data-building="${b}"]`);
+      await page.waitForFunction(() => [...document.querySelectorAll<HTMLImageElement>('[data-modal="building"] img')].every((i) => i.complete), null, { timeout: 5_000 });
+      await page.screenshot({ path: join(OUT, `${lang}-pick-peek-${b}.png`) });
+      await page.click('[data-modal="building"] [data-action="closeBuilding"]');
+    }
+    // 판은 화면 높이의 80% 이상 · 판 안 스크롤 없음
+    const fit = await page.evaluate(() => { const m = document.querySelector<HTMLElement>('[data-modal="upgrade"] .lvp-modal')!; const b = m.parentElement!.getBoundingClientRect(); return { ratio: m.getBoundingClientRect().height / b.height, scroll: m.scrollHeight - m.clientHeight }; });
+    if (fit.ratio < 0.8 || fit.scroll > 1) fail(`${lang} 증축 판 — 높이 ${Math.round(fit.ratio * 100)}% · 스크롤 ${fit.scroll}px`);
+    if (!await page.$('[data-modal="upgrade"]')) fail(`${lang} 건물 한 장을 닫았더니 고르기 판까지 닫혔다`);
     await page.click('[data-action="upgradeConfirm"]');
     const city = await check('[data-modal="upgradeDone"]', `${lang} 도시`);
     const built = await page.evaluate(() => {

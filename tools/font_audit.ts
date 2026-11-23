@@ -166,6 +166,8 @@ async function seed(): Promise<void> {
     ...stored, cityLevel: 6, gold: 480, materials: 60, grain: 40,
     buildings: { ...stored.buildings, palace: 5, barracks: 5, market: 5, academy: 3, hospital: 2, forge: 3 },
     roster, squads,
+    // ACADEMY_DONE=1 — 태학 Lv3 주제를 끝낸 계정(도시 관리 건물 한 장의 「연구: [엠블럼]」 · 흑백 둘을 보려고)
+    ...(process.env['ACADEMY_DONE'] ? { academy: { done: [{ level: 3, tactic: 'ham-jeong-plus', doneAt: now - 3_600_000 }] } } : {}),
   } as Parameters<typeof saveProfileTrusted>[1]);
 }
 
@@ -244,6 +246,16 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22e-officer-noskill', { name: 'officers', officer: 'gyeong-mu' }],
     ['22d-officer-items', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="heldOpen"]'); }],
     ['23-city', { name: 'city' }],
+    // 건물 한 장 — 줄 오른쪽 [보기] (2026-11-23 기획자)
+    // 아이콘 말풍선 — 요건 칸 그림을 누르면 이름이 2초(2026-11-23 기획자). 누른 뒤 곧장 찍는다
+    ['23i-city-tip', { name: 'city' }, async (p) => { await p.click('.cty-cond[data-cond="topOfficers"] .gic', { force: true }); }],
+    ['23b-city-peek', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="palace"] [data-action="viewBuilding"]'); }],
+    ['23c-city-peek-farm', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="farm"] [data-action="viewBuilding"]'); }],
+    ['23d-city-peek-barracks', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="barracks"] [data-action="viewBuilding"]'); }],
+    ['23e-city-peek-market', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="market"] [data-action="viewBuilding"]'); }],
+    ['23f-city-peek-academy', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="academy"] [data-action="viewBuilding"]'); }],
+    ['23g-city-peek-hospital', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="hospital"] [data-action="viewBuilding"]'); }],
+    ['23h-city-peek-forge', { name: 'city' }, async (p) => { await jsClick(p, '.cty-bld[data-building="forge"] [data-action="viewBuilding"]'); }],
     ['30-barracks', { name: 'place', place: 'barracks' }],
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],

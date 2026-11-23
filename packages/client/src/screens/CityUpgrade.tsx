@@ -23,10 +23,11 @@ import { t } from '../i18n/index.ts';
 import { reasonText } from '../i18n/reason.ts';
 import { BusyVeil } from './BusyVeil.tsx';
 import { Celebrate } from './Celebrate.tsx';
-import { BuildingLevelBadge, LevelBadge } from './LevelBadge.tsx';
+import { BuildingLevelBadge, CityLevelBadge, LevelBadge } from './LevelBadge.tsx';
+import { BuildingPeek, nextBuilding } from './BuildingPeek.tsx';
 import { LEVEL_BADGE_MAX } from '../ui/levelBadge.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
-import { buildingLineText, buildingNameText } from './buildingText.ts';
+import { buildingNameText } from './buildingText.ts';
 import { useAllLangLayout } from './useAllLangLayout.ts';
 
 /** 방금 끝난 증축 — 오른 도시 레벨과 함께 오른 건물(서버가 준 계정에서 읽은 새 레벨) */
@@ -138,39 +139,23 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
   );
 }
 
-/** 건물 한 줄에 적을 효과 — 규칙이 낸 줄(`buildingLineText`)에 셋만 갈아 끼운다(옛 [건물 관리]의 `lineOf` 그대로) */
-function effectLine(row: BuildingRow): string {
-  if (row.id === 'market') return t('city.bld.market.what');
-  if (row.id === 'forge') return t('city.bld.forge.what');
-  if (row.id === 'farm' && row.level === 0 && row.effect?.next != null) {
-    return t('city.bld.farm.gain', { n: row.effect.next - row.effect.now });
-  }
-  return buildingLineText(row) ?? t('city.bld.pending', { what: row.purpose });
-}
-
-/** 「[Lv1] → [Lv2]」 · 「없음 → [Lv1]」, 만렙은 「[Lv5]」 하나 — 레벨은 배지 그림(2026-11-19 기획자) */
-function StepLevels({ row }: { row: BuildingRow }): React.JSX.Element {
-  const from = row.level > 0 ? <BuildingLevelBadge level={row.level} /> : <span className="bld-none">{t('city.bld.none')}</span>;
-  if (row.level >= row.maxLevel) return <span className="bld-step">{from}</span>;
-  return <span className="bld-step">{from}<span className="bld-arrow">→</span><BuildingLevelBadge level={row.level + 1} /></span>;
-}
-
 /**
- * 증축 확인 — **올릴 건물을 고른다** (2026-11-23 기획자).
+ * 증축 확인 — **올릴 건물을 고른다** (2026-11-23 기획자). 판은 장수 강화 판(`.lvp-back` · `.lvp-modal`)과 같다.
  *
  * ```
- * ┌ 증 축 ──────────────────────┐
- * │      도시 Lv2 → Lv3          │
- * │  올릴 건물  1 / 3             │
- * │  [궁궐   Lv1 → Lv2]  ✓       │  ← 누르면 고르고 · 다시 누르면 푼다 (최대 레벨은 잠김)
- * │  [병영   Lv1 → Lv2]          │
- * │  …                           │
- * │  ┌ 고른 건물의 효과 한 줄 ┐    │  ← 마지막에 누른 건물. 높이는 두 줄로 못 박는다(판이 출렁이지 않게)
- * │  [ 증축한다 ]  [ 그만둔다 ]   │  ← 셋을 다 골라야 켜진다
- * └─────────────────────────────┘
+ * ┌───────────────────────────────┐
+ * │   [도시] [Lv4 배지]  증축        │  ← 도시 그림 · 오를 도시 레벨 배지 · 「증축」
+ * │  선택                   1 / 3   │
+ * │ [그림][Lv2] 궁궐          (보기) │  ← 줄 = 전투 명령 단추 그림. 안 고르면 흑백 · 회색 글, 고르면 제 색 + 섬광 + 초록 네온
+ * │ [그림][Lv1] 농지          (보기) │  ← 오를 레벨 배지(새로 지으면 Lv1). 최대 레벨은 잠김
+ * │ …                               │
+ * │ [ 증축한다 ]                     │  ← 셋을 다 골라야 켜진다
+ * │ [ 그만둔다 ]                     │
+ * └───────────────────────────────┘
  * ```
  *
- * 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다. 황궁으로 오르는 증축은 고르지 않는다 — 목록 대신 「모든 건물이 최대 레벨이 된다」 한 줄.
+ * [보기]는 **오른 뒤의** 건물 한 장(`BuildingPeek`의 `future` — 지금 형편 줄은 뺀다). 되돌릴 수 없고 값이 나가는 한 수라 한 번 묻는다.
+ * 황궁으로 오르는 증축은 고르지 않는다 — 목록 대신 「모든 건물이 최대 레벨이 된다」 한 줄.
  */
 function UpgradeModal({ profile, cue, onClose, onConfirm }: {
   /** 첫 증축의 길이면 [증축한다]도 빛난다(2026-11-13 기획자) */
@@ -180,22 +165,24 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
   const need = upgradePickCount(profile);
   const rows = buildingRows(profile);
   const [picks, setPicks] = useState<BuildingId[]>([]);
-  /** 효과 줄이 보여 줄 건물 — 마지막에 누른 것 */
-  const [focus, setFocus] = useState<BuildingId | null>(null);
+  /** [보기]로 연 건물 — 오른 뒤의 한 장 */
+  const [peek, setPeek] = useState<BuildingId | null>(null);
   const toggle = (id: BuildingId): void => {
-    setFocus(id);
     setPicks((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : xs.length >= need ? xs : [...xs, id]));
   };
-  const focusRow = rows.find((r) => r.id === focus) ?? null;
   /* 줄 높이 · 목록 높이는 열 언어 가운데 가장 큰 것에 맞춘다 — 몽골어만 긴 이름이 두 줄로 접혀 판이 14px 컸다(2026-11-23, `look:doneLang`) */
   const listRef = useRef<HTMLDivElement>(null);
   useAllLangLayout([{ box: listRef, rows: ':scope > .cty-up-row' }], JSON.stringify([need, rows.map((x) => [x.id, x.level])]));
   const ready = picks.length === need;
+  const peeked = peek ? nextBuilding(profile, peek) : null;
   return (
-    <div className="modal-back" data-modal="upgrade" onClick={onClose}>
-      <div className="modal mod-plank cty-modal cty-up" onClick={(e) => e.stopPropagation()}>
-        <p className="modal-ttl">{t('city.upgrade.title')}</p>
-        <p className="cty-up-lv" data-field="what">{t('city.upgrade.levels', { from: level, to: level + 1 })}</p>
+    <div className="lvp-back cty-up-back" data-modal="upgrade" onClick={onClose}>
+      <div className="place-panel lvp-modal cty-up" onClick={(e) => e.stopPropagation()}>
+        <h3 className="lvp-title cty-up-ttl" data-field="what" data-to={level + 1}>
+          <GameIcon name="tab-city" label={t('city.summary.level', { level: level + 1 })} />
+          <CityLevelBadge level={level + 1} />
+          <span>{t('city.upgrade')}</span>
+        </h3>
         {need === 0 ? (
           <p className="row cty-up-allmax" data-field="allMax">{t('city.upgrade.allMax')}</p>
         ) : (
@@ -208,24 +195,33 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
               {rows.map((row) => {
                 const maxed = row.level >= row.maxLevel;
                 const on = picks.includes(row.id);
+                const name = buildingNameText(row.id);
                 return (
-                  <button
-                    key={row.id} type="button" className={`cty-up-row${on ? ' on' : ''}`}
-                    data-action="pickBuilding" data-building={row.id} data-on={on ? '1' : '0'}
-                    aria-pressed={on} disabled={maxed}
-                    onClick={() => toggle(row.id)}
+                  // 줄 안에 [보기] 단추가 있어 줄은 `<button>`이 아니라 누를 수 있는 `<div>`다(단추 안에 단추는 못 넣는다)
+                  <div
+                    key={row.id} className={`cty-up-row${on ? ' on' : ''}`} role="button" tabIndex={maxed ? -1 : 0}
+                    data-action="pickBuilding" data-building={row.id} data-on={on ? '1' : '0'} data-maxed={maxed ? '1' : '0'}
+                    aria-pressed={on} aria-disabled={maxed}
+                    onClick={() => { if (!maxed) toggle(row.id); }}
+                    onKeyDown={(e) => { if (!maxed && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(row.id); } }}
                   >
-                    <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
-                    <span className="lv"><StepLevels row={row} /></span>
-                    <span className="ck" aria-hidden="true" />
-                  </button>
+                    <span className="ic cty-up-shine"><BuildingIcon id={row.id} label={name} /></span>
+                    <span className="lv"><BuildingLevelBadge level={maxed ? row.level : row.level + 1} /></span>
+                    <span className="nm">{name}</span>
+                    {!maxed && (
+                      <button type="button" className="cty-view" data-action="viewNext" data-building={row.id}
+                        aria-label={t('city.bld.view')} title={t('city.bld.view')}
+                        onClick={(e) => { e.stopPropagation(); setPeek(row.id); }}>
+                        <GameIcon name="mk-view" label={t('city.bld.view')} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
-            <p className="cty-up-what" data-field="pickWhat">{focusRow ? effectLine(focusRow) : t('city.upgrade.pickHint', { n: need })}</p>
           </>
         )}
-        <div className="cty-acts">
+        <div className="lv-acts cty-acts">
           <button className="btn primary wide" data-action="upgradeConfirm" data-guide-cue={cue && ready ? '' : undefined}
             disabled={!ready} onClick={() => onConfirm(picks)}>
             {t('city.upgrade.ok')}
@@ -235,6 +231,12 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
           </button>
         </div>
       </div>
+      {peeked && (
+        // 가리개 클릭이 뒤의 증축 판까지 올라가 닫지 않게 막는다(포털이 아니라 같은 나무라 React 이벤트가 오른다)
+        <div onClick={(e) => e.stopPropagation()}>
+          <BuildingPeek profile={peeked.profile} row={peeked.row} future onClose={() => setPeek(null)} />
+        </div>
+      )}
     </div>
   );
 }

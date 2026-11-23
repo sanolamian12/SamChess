@@ -62,14 +62,13 @@
 
 import { useRef, useState } from 'react';
 import { CityUpgrade } from './CityUpgrade.tsx';
-import {
-  buildingRows, grainCap, grainPerHour, growthCue, pendingGuide, poolCap, poolUsed, upgradeChecklist, upgradeCost,
-} from '@samchess/meta';
-import type { BuildingRow, PlayerProfile, UpgradeCheck } from '@samchess/meta';
+import { buildingRows, growthCue, pendingGuide, upgradeChecklist } from '@samchess/meta';
+import type { PlayerProfile, UpgradeCheck } from '@samchess/meta';
+import type { BuildingId } from '@samchess/data';
 import { currentSession } from '../meta/auth.ts';
 import { placeBackdrop } from './backdrop.ts';
-import { BUILDING_BONUS_KEYS, buildingNameText, buildingStatusText } from './buildingText.ts';
-import { CityBonusMark } from './CityBonus.tsx';
+import { buildingNameText } from './buildingText.ts';
+import { BuildingPeek } from './BuildingPeek.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { t } from '../i18n/index.ts';
@@ -80,7 +79,7 @@ import { useGuide } from './useGuide.tsx';
 import { guidesEnabled } from './guideScript.ts';
 import { BuildingIcon, GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
-import { BuildingLevelBadge } from './LevelBadge.tsx';
+import { BuildingLevelBadge, CityLevelBadge } from './LevelBadge.tsx';
 
 /** 증축 조건 칸의 그림 — 이름은 올리면(`condLabel`) */
 const COND_ICON = {
@@ -92,52 +91,6 @@ function condLabel(kind: UpgradeCheck['kind']): string {
   return kind === 'materials' ? t('city.materials') : t(`city.cond.${kind}`);
 }
 
-/**
- * 건물 줄의 현황 칸 — **도시 관리에서만** 아이콘으로 (2026-11-12 지정). 「현재 20 / 최대 20」만으로는
- * 무엇의 현재 · 최대인지가 안 보였다. 숫자는 `buildingStatusText`와 같은 규칙 함수가 낸다.
- * 건물 관리 · 건물 상세는 글 한 줄(`buildingStatusText`) 그대로다 — 그 문장은 거기서 아직 쓰인다.
- *
- * | 건물 | 칸 |
- * |---|---|
- * | 궁궐 | [투구] 현원 / 최대 — 증축 조건의 「보유 장수」와 같은 그림 |
- * | 병영 | [군량] 현재 / 최대 |
- * | 장터 | [금화] [자재] [장수 카드] 구매 |
- * | 농지 | [시간당 군량] +n/시간 |
- * | 나머지 | 글 한 줄 그대로 |
- */
-function BuildingStatus({ profile, row }: { profile: PlayerProfile; row: BuildingRow }): React.JSX.Element {
-  switch (row.id) {
-    case 'palace':
-      return (
-        <span className="fx-t fx-ic" data-have={poolUsed(profile)} data-max={poolCap(profile)}>
-          <GameIcon name="tab-officer" label={t('city.pool')} />{poolUsed(profile)} / {poolCap(profile)}
-        </span>
-      );
-    case 'barracks':
-      return (
-        <span className="fx-t fx-ic" data-have={profile.grain} data-max={grainCap(profile)}>
-          <GameIcon name="res-grain" label={t('market.grain')} />{profile.grain} / {grainCap(profile)}
-        </span>
-      );
-    case 'market':
-      return (
-        <span className="fx-t fx-ic">
-          <GameIcon name="res-gold" label={t('market.gold')} />
-          <GameIcon name="res-materials" label={t('city.materials')} />
-          <GameIcon name="res-card" label={t('market.status.cards')} />
-          {t('city.bld.market.buy')}
-        </span>
-      );
-    case 'farm':
-      return (
-        <span className="fx-t fx-ic" data-rate={grainPerHour(profile)}>
-          <GameIcon name="grain-rate" label={t('city.bld.label.farm')} />{t('city.bld.farm.rate', { n: grainPerHour(profile) })}
-        </span>
-      );
-    default:
-      return <span className="fx-t">{buildingStatusText(profile, row)}</span>;
-  }
-}
 
 export function CityScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
@@ -153,9 +106,9 @@ export function CityScreen({ profile, onBack, onChange }: {
   const [guidesOn] = useState(guidesEnabled);
   const cue = guidesOn ? growthCue(profile) : null;
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  /** [보기]로 연 건물 — 건물 한 장(`BuildingPeek`) */
+  const [peek, setPeek] = useState<BuildingId | null>(null);
   const guide = useGuide(profile, onChange, upgradeOpen ? null : pendingGuide(profile, 'city'), 'city');
-  /** 다음 레벨에 드는 자재 — 현황판의 자재 줄이 쓴다. 진짜 최대면 `null` */
-  const cost = upgradeCost(profile.cityLevel);
   /** 다음 레벨의 조건표 — 단추의 잠금(`can`)과 **같은 표**다. 진짜 최대면 `null` */
   const checklist = upgradeChecklist(profile);
   /*
@@ -196,80 +149,73 @@ export function CityScreen({ profile, onBack, onChange }: {
 
       <div className="place-body">
         <section className="place-panel cty-info" ref={infoRef}>
-          {/* 도시 이름 · [이름 변경] · 황제는 **궁궐 첫 화면의 현황 판**으로 옮겼다(2026-09-18 지정,
-              `PlaceScreen`의 `PalaceStatus`). 여기는 증축을 고르는 자리라 레벨과 자재 두 줄이다.
-              자재는 「가진 수 / 다음 레벨에 드는 수」. 채웠는지는 오른쪽 조건 칸이 색 · 체크로 말한다
-              (예전엔 자재 줄 끝에 「(증축 조건 충족)」을 붙였다 — 조건이 넷이 되며 칸으로 옮겼다) */}
-          {/* **2단** (2026-11-12 지정) — 왼쪽은 지금(레벨 · 자재), 오른쪽은 다음 레벨의 조건.
-              격자의 차례가 「레벨 · 조건 머리 · 자재 · 조건 칸」이라 같은 줄끼리 높이가 맞는다 */}
-          <div className="cty-grid">
-            <p className="cty-row" data-field="level">
-              <span className="k">{t('city.level')}</span>
-              <b className="v">Lv{profile.cityLevel}</b>
-            </p>
+          {/* **첫 줄 — 「[지금 레벨] ▶ [다음 레벨] 요건」, 그 밑에 요건 칸** (2026-11-23 기획자). 「도시 레벨 Lv3」 · 「증축 조건 Lv3 → Lv4」 ·
+              「건축 자재 5 / 20」 글은 걷었다 — 레벨은 배지가, 자재는 요건 칸이 말한다. 도시 이름 · 황제는 궁궐 현황 판(2026-09-18).
+              진짜 최대면 지금 배지 + 「최대 레벨」 */}
+          <p className="cty-head" data-field="level" data-level={profile.cityLevel}>
+            <CityLevelBadge level={profile.cityLevel} />
+            {checklist ? (
+              <>
+                <img className="cty-head-arrow" src="ui/turn/arrowhead.png" alt="→" draggable={false} />
+                <CityLevelBadge level={checklist.to} />
+                <span className="cty-head-t" data-field="condHead">{t('city.cond.req')}</span>
+              </>
+            ) : (
+              <span className="cty-head-t" data-field="condHead"><GameIcon name="bld-max" label={t('city.upgrade.max')} text /></span>
+            )}
+          </p>
 
-            <p className="cty-row cty-cond-head" data-field="condHead">
-              {checklist
-                ? t('city.cond.head', { from: checklist.from, to: checklist.to })
-                : <GameIcon name="bld-max" label={t('city.upgrade.max')} text />}
-            </p>
-
-            <p className="cty-row" data-field="materials" data-have={profile.materials}>
-              {/* 짧은 이름 — 몽골어 「Барилгын материал」이 왼쪽 칸에서 잘렸다(2026-11-23). 다른 언어는 본래 이름과 같다 */}
-              <span className="k"><GameIcon name="res-materials" label={t('city.materials.short')} text /></span>
-              <b className="v">
-                {cost === null
-                  ? t('city.materials.max', { have: profile.materials })
-                  : t('city.materials.have', { have: profile.materials, need: cost })}
-              </b>
-            </p>
-
-            {/* 조건 칸 — 아이콘 + 「가진 수/필요한 수」, 이름은 올리면(`title`). 칸마다 채웠는지(`data-ok`)를
-                색으로(옥색 채움 · 붉은 먹 모자람 — 체크 그림은 작게 놓으면 붉은 점으로 읽혀 뺐다). 표는 규칙이 낸다(`upgradeChecklist` — 단추의 잠금과 같은 표) */}
+          {/* 요건 칸 — 판 폭을 넷으로 똑같이 나눈다(2026-11-23 기획자). 아이콘 + 「가진 수/필요한 수」, 이름은 올리면(`title`).
+              채움은 옥색 · 모자람은 붉은 먹(`data-ok`). 표는 규칙이 낸다(`upgradeChecklist` — 단추의 잠금과 같은 표) */}
+          {checklist && (
             <p className="cty-conds" data-field="conds">
-              {checklist?.checks.map((c) => (
-                <span key={c.kind} className="cty-cond" data-cond={c.kind} data-ok={c.ok ? '1' : '0'}>
+              {checklist.checks.map((c) => (
+                <span
+                  key={c.kind} className="cty-cond" data-cond={c.kind} data-ok={c.ok ? '1' : '0'}
+                  {...(c.kind === 'materials' ? { 'data-field': 'materials', 'data-have': profile.materials } : {})}
+                >
                   <GameIcon name={COND_ICON[c.kind]} label={condLabel(c.kind)} />
                   {c.kind === 'emperor' ? null : `${c.have}/${c.need}`}
                 </span>
               ))}
             </p>
-          </div>
+          )}
         </section>
 
-        {/*
-          ── 건물 (2026-09-04 · pptx 56쪽) ──────────────────────────
-          **못 짓는 줄도 빼지 않는다** — 무엇이 있는지 안 보이면 도시를 왜
-          올리는지 알 수 없다. 대신 잠긴 단추 옆에 규칙이 이유를 적는다.
-        */}
+        {/* 건물 — 「[건물 그림] [레벨 배지] 이름」 셋만 (2026-11-23 기획자). 현황(장수 · 군량 · 구매 · 연구 …)과 컬렉션 인장은 걷었다 —
+            각 건물 화면이 말한다. 이름은 열 언어 모두 한 줄(넘치면 `useFitNames`가 하한까지 줄인다).
+            안 지은 농지도 뜬다 — 「없음」에 회색이지만 시간당 1은 실제로 찬다 */}
         <section className="place-panel cty-blds cty-blds-st" ref={namesRef}>
-          {/* 판 제목 「건물」은 걷었다(2026-11-12 지정) — 건물 그림 · 이름이 이미 말한다 */}
-          {/* 안 지은 농지도 뜬다 — 「없음」에 회색이지만 시간당 1은 실제로 찬다.
-              **등용 장수·군량 두 줄이 여기로 들어왔다**(2026-09-04 세 번째 손질) —
-              같은 숫자를 판때기 아래에 한 번 더 적으면 언젠가 한쪽만 낡는다 */}
           {rows.map((row) => (
             <div
               className="cty-bld" key={row.id}
               data-building={row.id} data-level={row.level} data-field={row.id}
             >
-              <span className="nm"><BuildingIcon id={row.id} label={buildingNameText(row.id)} text /></span>
-              <span className="lv">{row.level > 0 ? <BuildingLevelBadge level={row.level} /> : t('city.bld.none')}</span>
-              {/* 말줄임은 글에만 — 인장까지 같은 칸에 두면 긴 번역(몽골어)에서 인장이 잘려 나간다 */}
-              <span className="fx v">
-                <BuildingStatus profile={profile} row={row} />
-                {BUILDING_BONUS_KEYS[row.id] && <CityBonusMark profile={profile} keys={BUILDING_BONUS_KEYS[row.id]!} />}
-              </span>
+              <span className="ic"><BuildingIcon id={row.id} label={buildingNameText(row.id)} /></span>
+              {/* 안 지은 건물은 「없음」 글자 대신 **흐린 Lv1 배지** — 글자는 언어마다 폭이 달라(몽골어 「Байхгүй」) 이름 열을 밀었다 */}
+              <span className="lv" title={row.level > 0 ? undefined : t('city.bld.none')}><BuildingLevelBadge level={Math.max(1, row.level)} /></span>
+              <span className="nm"><span className="gic-t">{buildingNameText(row.id)}</span></span>
+              {/* [보기] — 줄 오른쪽 끝. 줄에서 걷은 기능 · 현황을 건물 한 장으로 (2026-11-23 기획자) */}
+              <button className="cty-view" data-action="viewBuilding" onClick={() => setPeek(row.id)} aria-label={t('city.bld.view')} title={t('city.bld.view')}>
+                <GameIcon name="mk-view" label={t('city.bld.view')} />
+              </button>
             </div>
           ))}
         </section>
 
         <section className="place-panel cty-acts" ref={actsRef}>
-          {/* [도시 증축] — 누르면 올릴 건물 셋을 고르고 한 번에 오른다(2026-11-23 기획자 — 옛 [건물 관리] 자리).
-              **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 같은 곳으로 가는 문이 둘이면 하나는 언젠가 낡는다 */}
+          {/* [증축] — 누르면 올릴 건물 셋을 고르고 한 번에 오른다(2026-11-23 기획자). 그 밑에 [뒤로 가기](장수 일람의 명령 판과 같은 틀) */}
           <CityUpgrade profile={profile} onChange={onChange} cue={cue === 'upgrade'} onModal={setUpgradeOpen} />
+          <button className="btn wide" data-action="backBottom" onClick={onBack}>
+            {stripBackArrow(t('match.back'))}
+          </button>
         </section>
-
       </div>
+
+      {(() => {
+        const row = peek ? rows.find((r) => r.id === peek) : undefined;
+        return row ? <BuildingPeek profile={profile} row={row} onClose={() => setPeek(null)} /> : null;
+      })()}
 
       {guide.node}
     </ScreenChrome>

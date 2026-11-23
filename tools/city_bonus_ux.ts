@@ -150,19 +150,15 @@ try {
     return { collection: { slots, completedAt }, roster: hurt.roster };
   });
 
-  step('도시 관리 — 병영 · 농지 · 병원 · 대장간 · 태학 줄 끝에 인장');
+  step('도시 관리 — 건물 줄은 그림 · 배지 · 이름뿐이라 인장이 없다 (2026-11-23 기획자) — 인장은 각 건물 화면에');
   await toMain();
   await page.click('.scr-main [data-place="palace"]', { force: true });
   await page.waitForSelector('[data-action="city"]');
   await page.click('[data-action="city"]');
-  await page.waitForSelector('.cty-bld [data-city-bonus]');
+  await page.waitForSelector('.cty-bld');
   await shot('cbx-01-city');
-  const marks = await page.$$eval('.cty-bld', (rows) => rows
-    .filter((r) => r.querySelector('[data-city-bonus]'))
-    .map((r) => (r as HTMLElement).dataset.building).sort());
-  if (marks.join(',') !== 'academy,barracks,farm,forge,hospital') fail(`인장이 선 줄 — ${marks.join(',')}`);
-  ok(`인장 다섯 줄 — ${marks.join(' · ')}`);
-  await popup('.cty-bld[data-building="barracks"] [data-city-bonus]', 3, '병영');
+  if (await page.$('.cty-bld [data-city-bonus]')) fail('도시 관리 건물 줄에 인장이 남았다');
+  ok('도시 관리 — 건물 줄에 인장 없음');
 
   step('최대 군량 — 병영 현황판 · 장터 홈 · 장터 물자의 군량 줄에도 인장 (값은 같은 grainCap())');
   await toMain();

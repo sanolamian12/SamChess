@@ -99,6 +99,7 @@ import type { RaidAlertKind } from './RaidAlert.tsx';
 import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { useFrameFit } from './useFrameFit.ts';
+import { TapTip } from './TapTip.tsx';
 
 /**
  * 지금 화면이 「지난 설명」의 어느 1단인가 (2026-10-23 기획자 — 건물 안에서 열면 그 건물 안내가 펼쳐져 있다).
@@ -1048,6 +1049,9 @@ export function App(): React.JSX.Element {
         />
       )}
       </HeadToolsLayer>
+
+      {/* 아이콘 말풍선 — 누르면 그 아이콘의 이름이 2초 뜬다(휴대폰엔 마우스 올리기가 없다, 2026-11-23 기획자) */}
+      <TapTip />
 
       {/* 안내 내관 — 메인 밖의 화면들(1차 묶음, 2026-10-22). 메인은 `MainScreen`이 직접 세운다(성 안 · 산 너머 · 다시 듣기) */}
       {profile && !booting && guideAt && (

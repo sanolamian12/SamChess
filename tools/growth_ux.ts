@@ -97,10 +97,11 @@ try {
   await page.click('[data-action="upgrade"]');
   await page.waitForSelector('[data-modal="upgrade"]');
   const ask = await page.evaluate(() => ({
-    what: document.querySelector('[data-modal="upgrade"] [data-field="what"]')?.textContent ?? '',
+    // 제목은 「▶ [Lv2 배지] 증축」 — 오를 도시 레벨은 배지의 data-to (2026-11-23 기획자)
+    what: (document.querySelector('[data-modal="upgrade"] [data-field="what"]') as HTMLElement | null)?.dataset['to'] ?? '',
     rows: document.querySelectorAll('[data-modal="upgrade"] [data-action="pickBuilding"]').length,
   }));
-  if (ask.what !== '도시 Lv1 → Lv2' || ask.rows !== 7) fail(`증축 팝업이 다르다 — ${JSON.stringify(ask)}`);
+  if (ask.what !== '2' || ask.rows !== 7) fail(`증축 팝업이 다르다 — ${JSON.stringify(ask)}`);
   if (await page.$('[data-action="upgradeConfirm"][data-guide-cue]')) fail('아직 안 골랐는데 [증축한다]가 빛난다');
   for (const id of ['market', 'farm', 'forge']) await page.click(`[data-modal="upgrade"] [data-action="pickBuilding"][data-building="${id}"]`);
   if (!await page.$('[data-action="upgradeConfirm"][data-guide-cue]:not(:disabled)')) fail('셋을 골랐는데 [증축한다]가 안 빛난다');
