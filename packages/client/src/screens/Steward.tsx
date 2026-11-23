@@ -324,8 +324,8 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone,
   return host ? createPortal(layer, host) : layer;
 }
 
-/** 지난 설명 오른쪽 칸의 한 쪽 — 안내 단추 다섯 (2026-10-23 기획자 「5개나 8개 단위」) */
-export const GUIDE_REPLAY_PAGE = 5;
+/** 지난 설명 오른쪽 칸의 한 쪽 — 안내 단추 여덟 (2026-11-23 기획자, 10-23의 다섯을 늘림 — 판이 화면 높이의 80%가 되어 여덟이 든다) */
+export const GUIDE_REPLAY_PAGE = 8;
 
 /**
  * [사용 안내] — 지난 설명을 골라 다시 듣는다 (pptx 114쪽 「설명을 다시 보고 싶으시면 화면 상단의 아이콘을」).

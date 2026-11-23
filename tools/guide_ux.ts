@@ -340,8 +340,8 @@ try {
   if (building) {
     await page.click(`${R} [data-guide-group="${building.chapter}"]`);
     const ids = await attrs(`${R} [data-guide]`, 'guide');
-    if (ids.join(',') !== building.ids.slice(0, 5).join(',')) fail(`${building.chapter}의 안내 ${ids.join(',')} ≠ ${building.ids.join(',')}`);
-    if (building.ids.length > 5 && !await page.$(`${R} [data-field="guidePager"]`)) fail('다섯 개가 넘는데 쪽 넘김이 없다');
+    if (ids.join(',') !== building.ids.slice(0, 8).join(',')) fail(`${building.chapter}의 안내 ${ids.join(',')} ≠ ${building.ids.join(',')}`);
+    if (building.ids.length > 8 && !await page.$(`${R} [data-field="guidePager"]`)) fail('여덟 개가 넘는데 쪽 넘김이 없다');
     await shot('replay-building');
   }
   await page.click(`${R} [data-guide-group="main"]`);
