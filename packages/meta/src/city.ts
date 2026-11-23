@@ -116,17 +116,13 @@ export function buildingValue(id: BuildingId, level: number): number {
 export const buildingEffect = (profile: PlayerProfile, id: BuildingId): number =>
   buildingValue(id, buildingLevel(profile, id));
 
-/** 도시를 한 단계 올릴 때 받는 건설 기회 (GDD §5.2) */
-export const BUILD_ACTIONS_PER_UPGRADE = CITY_RULES.buildActionsPerUpgrade;
-
 /**
- * 남은 건설 기회. **`null`이면 제한이 없다** — 황궁 레벨에 닿았다는 뜻이다.
+ * 도시를 한 단계 올릴 때 **함께 올리는 건물 수** — 서로 다른 건물을 한 단계씩 (GDD §5.2, 2026-11-23 기획자).
  *
- * ★ **기회를 읽는 자리는 여기 하나다.** 화면이 `profile.buildCredits`를 직접 보면
- * 황궁의 예외를 빠뜨려 「황궁인데 못 짓는다」가 된다 — 그것은 화면에 이유도 안 뜬다.
+ * 예전에는 증축이 「건설 기회」 셋을 주고 [건물 관리]에서 따로 썼다(같은 건물에 몰아 쓸 수도 있었다). 이제는 장수 레벨업이
+ * 능력치 · 책략을 고르며 오르듯 **증축하는 그 한 수에 고른다** — 단계가 하나다. 값은 엑셀의 `buildActionsPerUpgrade` 그대로다.
  */
-export const buildCreditsLeft = (profile: PlayerProfile): number | null =>
-  profile.cityLevel >= MAX_CITY_LEVEL ? null : Math.max(0, Math.floor(profile.buildCredits ?? 0));
+export const UPGRADE_PICKS = CITY_RULES.buildActionsPerUpgrade;
 
 /** 새 계정의 건물 — 기본 셋은 Lv1, 추가 넷은 0(안 지음) */
 export const initialBuildings = (): Record<BuildingId, number> =>
@@ -145,61 +141,39 @@ export const initialBuildings = (): Record<BuildingId, number> =>
 export const BUILD_CITY_LEVEL = CITY_RULES.buildCityLevel;
 
 /**
- * 지을 수 있는가(= 새로 짓거나 한 단계 올릴 수 있는가).
- * **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다.
+ * 이번 증축에서 고를 건물 수.
  *
- * > **건축 자재가 들지 않는다.** 값을 받는 것은 **도시 증축**뿐이고, 건물이 쓰는
- * > 것은 **건설 기회**(`buildCredits`)다 — 증축 한 번에 `BUILD_ACTIONS_PER_UPGRADE`씩
- * > 쌓인다. 자재를 두 번 받으면 부담이 겹친다는 판단이다 (2026-09-04).
- * >
- * > **황궁 레벨에서는 기회를 안 본다** — 남은 것을 전부 지을 수 있다.
+ * | 경우 | 수 |
+ * |---|---|
+ * | 오른 레벨이 아직 건물을 못 짓는다(`BUILD_CITY_LEVEL` 밑) | 0 |
+ * | **황궁으로 오르는 증축**(`MAX_CITY_LEVEL`) | 0 — 모든 건물이 최대가 된다(2026-11-23 기획자) |
+ * | 그 밖 | `UPGRADE_PICKS`, 최대가 아닌 건물이 그보다 적으면 그 수 |
+ *
+ * 서로 다른 건물이라, 한 건물만 몰아 올린 계정은 끝에서 고를 곳이 모자랄 수 있다 — 그때는 남은 만큼만 고른다.
  */
-export function canBuild(profile: PlayerProfile, id: BuildingId): MetaResult {
-  const data = buildingById.get(id);
-  if (!data) return { ok: false, reason: `알 수 없는 건물입니다 — ${id}` };
-  const level = buildingLevel(profile, id);
-  if (level >= data.maxLevel) {
-    return { ok: false, code: 'city.maxLevel', params: { lv: data.maxLevel }, reason: `${data.name}은 이미 최대 레벨입니다 (Lv${data.maxLevel})` };
-  }
-  if (profile.cityLevel < BUILD_CITY_LEVEL) {
-    // 코드는 화면이 번역할 때 쓴다(`reasonText`) — 건물 이름은 화면이 제 줄에 이미 적으므로 번역 문장에는 안 넣는다
-    return {
-      ok: false,
-      code: level === 0 ? 'build.cityLevelNew' : 'build.cityLevelUp',
-      params: { need: BUILD_CITY_LEVEL, now: profile.cityLevel },
-      reason: level === 0
-        ? `${data.name}을 지으려면 도시가 Lv${BUILD_CITY_LEVEL}이어야 한다 — 지금 Lv${profile.cityLevel}`
-        : `도시가 Lv${BUILD_CITY_LEVEL}이어야 증축할 수 있다 — 지금 Lv${profile.cityLevel}`,
-    };
-  }
-  const left = buildCreditsLeft(profile);
-  if (left !== null && left <= 0) {
-    return { ok: false, code: 'build.noCredits', reason: '건설 기회를 다 쓰셨습니다 — 도시를 증축하시면 다시 생깁니다' };
-  }
-  return { ok: true };
+export function upgradePickCount(profile: PlayerProfile): number {
+  const to = profile.cityLevel + 1;
+  if (to < BUILD_CITY_LEVEL || to >= MAX_CITY_LEVEL) return 0;
+  return Math.min(UPGRADE_PICKS, BUILDINGS.filter((b) => buildingLevel(profile, b.id) < b.maxLevel).length);
 }
 
 /**
- * 건물을 한 단계 올린다.
- *
- * **`nowMs`를 받아 먼저 정산한다 ★** 병영(최대 군량)과 농지(시간당 생산량)가
- * **생산 요율이 바뀌는 자리**다 — 정산하지 않고 올리면 그 전에 흘러간 시간이
- * 새 요율로 계산된다. 예전에는 도시 증축이 그 자리였고, 이제는 여기다.
- * 화면이 「짓기 전에 먼저 정산하기」를 잊지 않기를 기대하는 대신 규칙 층에 묶었다.
+ * 증축 때 고른 건물이 맞는가 — 수가 `upgradePickCount()`와 같고, 서로 다르고, 전부 최대 레벨이 아니다.
+ * **왜 안 되는지 글자로 말한다**(화면이 막지만 서버도 같은 함수로 본다).
  */
-export function applyBuild(profile: PlayerProfile, id: BuildingId, nowMs: number): PlayerProfile {
-  const check = canBuild(profile, id);
-  if (!check.ok) rejectWith(check);
-  const synced = syncCity(profile, nowMs);
-  const left = buildCreditsLeft(synced);
-  const built: PlayerProfile = {
-    ...synced,
-    buildings: { ...synced.buildings, [id]: buildingLevel(synced, id) + 1 },
-    // 황궁 레벨에서는 안 깎는다 — 애초에 안 보는 값이라 0 아래로 밀 이유가 없다
-    buildCredits: left === null ? synced.buildCredits : left - 1,
-  };
-  // **궁궐이 오르면 보관함의 장수가 새 자리로 들어온다** (GDD §5.9, 2026-09-14)
-  return id === 'palace' ? admitFromBox(built) : built;
+export function checkUpgradePicks(profile: PlayerProfile, picks: readonly string[]): MetaResult {
+  const need = upgradePickCount(profile);
+  for (const id of picks) {
+    const data = buildingById.get(id as BuildingId);
+    if (!data) return { ok: false, reason: `알 수 없는 건물입니다 — ${id}` };
+    if (buildingLevel(profile, data.id) >= data.maxLevel) {
+      return { ok: false, code: 'city.maxLevel', params: { lv: data.maxLevel }, reason: `${data.name}은 이미 최대 레벨입니다 (Lv${data.maxLevel})` };
+    }
+  }
+  if (new Set(picks).size !== picks.length || picks.length !== need) {
+    return { ok: false, code: 'city.picks', params: { n: need }, reason: `서로 다른 건물 ${need}곳을 고르소서` };
+  }
+  return { ok: true };
 }
 
 // ── 건물이 정하는 값들 ─────────────────────────────────────────
@@ -496,7 +470,7 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   next = stampForgeDates(next, now);
   // 끝난 태학 연구를 거둔다 — 대장간 주문과 같은 자리(`academy.ts`의 `collectResearch()`)
   next = collectResearch(next, now);
-  // 풀에 자리가 있는데 보관함에 장수가 남아 있으면 올린다 — 궁궐 증축(`applyBuild`)이
+  // 풀에 자리가 있는데 보관함에 장수가 남아 있으면 올린다 — 도시 증축(`applyCityUpgrade`)이
   // 정본 자리이고, 여기는 **이 규칙이 생기기 전에 궁궐을 올린 계정**을 위한 것이다
   next = admitFromBox(next);
 
@@ -537,11 +511,11 @@ export function upgradeOfficerNeeds(profile: PlayerProfile):
 }
 
 /**
- * `canUpgradeCity()`가 붙이는 이유 코드 전부 — 화면은 `reason.{code}`로 번역한다.
+ * `canUpgradeCity()` · `checkUpgradePicks()`가 붙이는 이유 코드 전부 — 화면은 `reason.{code}`로 번역한다.
  * 클라이언트 회귀가 이 목록으로 **열 언어 전부에 문구가 있는지** 본다(빠지면 한국어 원문이 샌다)
  */
 export const CITY_UPGRADE_REASONS = [
-  'city.capNoEmperor', 'city.maxLevel', 'city.credits', 'city.officers', 'city.topOfficers', 'city.wins', 'city.materials',
+  'city.capNoEmperor', 'city.maxLevel', 'city.picks', 'city.officers', 'city.topOfficers', 'city.wins', 'city.materials',
 ] as const;
 
 /**
@@ -550,13 +524,12 @@ export const CITY_UPGRADE_REASONS = [
  * | kind | have / need | 언제 싣는가 |
  * |---|---|---|
  * | `emperor` | 0 / 1 | 황제가 없어 상한에 막혔을 때 |
- * | `credits` | 남은 기회 / 0 | 기회가 남았을 때. **남아도 쓸 곳이 없으면 `ok`다**(아래 주석) |
  * | `officers` | 보유 장수 / 필요 | 그 레벨에 요구가 있을 때 |
  * | `topOfficers` | S·A급 / 필요 | 요구가 1 이상일 때 |
  * | `materials` | 자재 / 필요 | 언제나 |
  */
 export interface UpgradeCheck {
-  kind: 'emperor' | 'credits' | 'officers' | 'topOfficers' | 'wins' | 'materials';
+  kind: 'emperor' | 'officers' | 'topOfficers' | 'wins' | 'materials';
   have: number;
   need: number;
   ok: boolean;
@@ -572,15 +545,6 @@ export function upgradeChecklist(profile: PlayerProfile): { from: number; to: nu
   if (cost === null) return null;
   const checks: UpgradeCheck[] = [];
   if (profile.cityLevel >= maxCityLevel(profile)) checks.push({ kind: 'emperor', have: 0, need: 1, ok: false });
-  /*
-   * **건설 기회를 다 써야 올린다.** 다만 「쓸 곳이 있는데 남긴 것」만 막는다 — 도시
-   * Lv1처럼 아무것도 못 짓는 자리에 기회가 남아 있으면 영원히 못 올린다. 황제 없는
-   * 상한까지는 남는 칸이 언제나 다섯 이상이라(GDD §5.3) 정상 계정에서는 늘 쓸 곳이 있다.
-   */
-  const credits = buildCreditsLeft(profile);
-  if (credits !== null && credits > 0) {
-    checks.push({ kind: 'credits', have: credits, need: 0, ok: !BUILDINGS.some((b) => canBuild(profile, b.id).ok) });
-  }
   const needs = upgradeOfficerNeeds(profile);
   if (needs && needs.total.need > 0) {
     checks.push({ kind: 'officers', ...needs.total, ok: needs.total.have >= needs.total.need });
@@ -601,7 +565,7 @@ export function upgradeChecklist(profile: PlayerProfile): { from: number; to: nu
 /**
  * 증축할 수 있는가. **왜 안 되는지 글자로 말한다** — 잠긴 단추만 두면 「고장인가」가 남는다.
  *
- * 조건 넷 (2026-09-14): **건설 기회를 다 썼는가 · 보유 장수 총원 · 그중 S·A급 · 건축 자재.**
+ * 조건 (2026-09-14 · 2026-11-23에 「건설 기회를 다 썼는가」가 빠졌다): **보유 장수 총원 · 그중 S·A급 · 누적 승리 · 건축 자재.**
  * 자재를 **맨 뒤에** 본다 — 화면은 자재가 모자란 이유를 따로 적으므로(「건축 자재」
  * 줄), 나머지 이유가 자재에 가려지지 않아야 한다. 조건 자체는 `upgradeChecklist()`가 내고
  * 여기는 **처음 걸린 것**을 문장으로 바꿀 뿐이다(표의 차례가 곧 이유의 차례다).
@@ -622,8 +586,6 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
   switch (miss.kind) {
     case 'emperor':
       return capNoEmperor();
-    case 'credits':
-      return { ok: false, code: 'city.credits', params: { n: have }, reason: `건설 기회가 ${have}회 남았습니다 — 다 쓰신 뒤에 증축하소서` };
     case 'officers':
       return { ok: false, code: 'city.officers', params: { have, need }, reason: `보유 장수가 모자랍니다 — ${have}/${need}명` };
     case 'topOfficers':
@@ -646,33 +608,39 @@ export function canUpgradeCity(profile: PlayerProfile): MetaResult {
 }
 
 /**
- * 도시를 한 단계 올린다. 재료를 내고 `cityLevel += 1`.
+ * 도시를 한 단계 올린다 — 재료를 내고 `cityLevel += 1`, **고른 건물이 같은 수에 한 단계씩 오른다** (2026-11-23 기획자).
  *
- * **늘어나는 것은 「지을 수 있는 것」이지 능력치가 아니다** (2026-09-04). 예전에는
- * 상한·풀·생산량 셋이 이 한 줄을 따라 함께 올라갔는데, 이제는 건물을 지어야
- * 올라간다 — 그래서 확인 팝업의 글도 「무엇이 늘어나는가」가 아니라 **「무엇을
- * 지을 수 있게 되는가」**다 (GDD §8.5).
+ * 장수 레벨업이 능력치 · 책략을 고른 채로 오르듯, 증축도 지을 건물을 고른 채로 오른다 — 옛 「증축 → 건설 기회 → [건물 관리]에서
+ * 짓기」 두 단계가 하나가 됐다. 고를 수는 `upgradePickCount()`, 맞는지는 `checkUpgradePicks()`가 본다.
+ * **황궁으로 오르는 증축은 고르지 않는다** — 모든 건물이 최대 레벨이 된다.
  *
- * **`nowMs`를 받아 먼저 정산한다.** 여기서 요율이 바뀌지는 않지만(그것은
- * `applyBuild`다), 자재를 쓰는 한 수 앞에서 계정을 최신으로 맞춰 두는 편이
- * 낫다 — 증축 직후 화면이 낡은 군량을 보여 주지 않는다.
+ * **`nowMs`를 받아 먼저 정산한다 ★** 병영(최대 군량)과 농지(시간당 생산량)가 **생산 요율이 바뀌는 자리**다 — 정산하지 않고
+ * 올리면 그 전에 흘러간 시간이 새 요율로 계산된다. **궁궐이 오르면 보관함의 장수가 새 자리로 들어온다**(GDD §5.9).
  */
-export function applyCityUpgrade(profile: PlayerProfile, nowMs: number): PlayerProfile {
+export function applyCityUpgrade(profile: PlayerProfile, nowMs: number, picks: readonly BuildingId[]): PlayerProfile {
   const check = canUpgradeCity(profile);
   if (!check.ok) rejectWith(check);
+  const pick = checkUpgradePicks(profile, picks);
+  if (!pick.ok) rejectWith(pick);
   const cost = upgradeCost(profile.cityLevel)!;
   const synced = syncCity(profile, nowMs);
+  const to = synced.cityLevel + 1;
+  const buildings = { ...synced.buildings };
+  if (to >= MAX_CITY_LEVEL) {
+    for (const b of BUILDINGS) buildings[b.id] = b.maxLevel;
+  } else {
+    for (const id of picks) buildings[id] = buildingLevel(synced, id) + 1;
+  }
   // 「증축할 채비가 끝났다」(`city.ready`)는 **증축마다** 다시 말한다 (2026-11-14 기획자 — 10-23의 「처음 한 번」을 뒤집음).
   // 들은 기록에서 지워 두면 다음 레벨의 조건이 찼을 때 메인이 다시 낸다(`pendingMainGuide`). 안내 id를 레벨마다 늘리지 않는다
   const seen = synced.guide?.seen.filter((id) => id !== 'city.ready');
-  return {
+  return admitFromBox({
     ...synced,
-    cityLevel: synced.cityLevel + 1,
+    cityLevel: to,
     materials: synced.materials - cost,
-    // **증축이 사는 것은 이것이다** — 능력치가 아니라 「지을 기회」다 (GDD §5.2)
-    buildCredits: (synced.buildCredits ?? 0) + BUILD_ACTIONS_PER_UPGRADE,
+    buildings,
     ...(seen ? { guide: { seen } } : {}),
-  };
+  });
 }
 
 // ── 건축 자재 구매 (장터 「거래」, 2026-09-04) ──────────────────
@@ -837,8 +805,6 @@ export interface BuildingRow {
    * 건물(시장·대장간)도 `null`이라, 화면은 그때 `purpose`를 적는다.
    */
   status: string | null;
-  /** 지금 짓거나 올릴 수 있는가. **안 되면 이유가 들어 있다** */
-  can: MetaResult;
 }
 
 /**
@@ -849,8 +815,7 @@ export interface BuildingRow {
  * `forecastAttack()`과 같은 자리다. 화면이 `values[level]`을 직접 펴면 만렙
  * 경계에서 `undefined`가 새고, 그건 화면에 그대로 뜬다.
  *
- * **못 짓는 줄도 뺴지 않는다** — 무엇이 있는지 보이지 않으면 도시를 왜 올리는지
- * 알 수 없다. 대신 `can.reason`이 왜 지금은 안 되는지 말한다.
+ * 증축 때 고르는 판(`CityUpgrade`)도 이 줄을 읽는다 — 「Lv1 → Lv2」와 효과 한 줄.
  */
 export function buildingRows(profile: PlayerProfile): BuildingRow[] {
   return BUILDINGS.map((b) => {
@@ -876,7 +841,7 @@ export function buildingRows(profile: PlayerProfile): BuildingRow[] {
     const status = level === 0 || effect === null ? null : `${effect.label} ${effect.now}`;
     return {
       id: b.id, name: b.name, kind: b.kind, level, maxLevel: b.maxLevel,
-      effect, purpose: b.purpose, line, status, can: canBuild(profile, b.id),
+      effect, purpose: b.purpose, line, status,
     };
   });
 }

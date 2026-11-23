@@ -37,7 +37,7 @@ import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } 
 import { MARKET_ITEM_IDS, fitCarry, isCarriedBattle } from './market.ts';
 import { PROFILE_VERSION, checkGrowth } from './profile.ts';
 import {
-  BUILD_ACTIONS_PER_UPGRADE, MAX_CITY_LEVEL, buildingValue, initialBuildings,
+  MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
 import { BATTLE_MODES, MATCH_LOG_CAP, OPPONENT_KINDS, emptyTally } from './records.ts';
 import { SORTIE_TUTORIALS, isTutorialId } from './tutorial.ts';
@@ -76,7 +76,11 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (version > PROFILE_VERSION) return null;
 
   const cityLv = clampInt(num(raw.cityLevel, 1), 1, MAX_CITY_LEVEL);
-  const buildings = readBuildings(raw.buildings);
+  // 황궁(최대 레벨)은 모든 건물이 최대다 (2026-11-23 기획자 — 황궁으로 오르는 증축이 전부 올린다). 그 전에 황궁에 든 계정도 맞춘다
+  const read = readBuildings(raw.buildings);
+  const buildings = cityLv >= MAX_CITY_LEVEL
+    ? Object.fromEntries(BUILDINGS.map((b) => [b.id, b.maxLevel])) as Record<BuildingId, number>
+    : read;
   const forgeOrder = readForgeOrder(raw.forgeOrder);
   const profile: PlayerProfile = {
     version: PROFILE_VERSION,
@@ -93,7 +97,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     materials: Math.max(0, Math.floor(num(raw.materials, 0))),
     // 건물·병원은 v4에서 생겼다. v3 이하는 아래 `readBuildings()`가 채운다
     buildings,
-    buildCredits: readCredits(raw.buildCredits, version, cityLv, buildings),
+    // 건설 기회(`buildCredits`)는 2026-11-23에 없어졌다 — 증축이 건물을 함께 올린다. 남은 값은 버린다(아직 배포 전)
     hospitalBusy: readBusy(raw.hospitalBusy),
     roster: {},
     cards: {},
@@ -487,34 +491,6 @@ function readBuildings(raw: unknown): Record<BuildingId, number> {
     out[b.id] = b.kind === 'basic' ? 1 : 0;
   }
   return out;
-}
-
-/**
- * 남은 건설 기회. **없으면 「받은 만큼에서 지은 만큼을 뺀」 값이다.**
- *
- * 받은 것은 `증축 횟수 × BUILD_ACTIONS_PER_UPGRADE` = `(도시 레벨 − 1) × 3`이고,
- * 쓴 것은 지어 놓은 칸 수다. **Lv1의 몫 3회는 v5에서 없어졌다**(`profile.ts`) —
- * Lv1에서는 지을 수가 없어 화면에 숫자만 떠 있었다.
- *
- * ★ **v4 저장은 그 3회를 이미 받아 두었으므로 한 번 덜어 낸다.** 되접기는 멱등해야
- * 하는데 「덜어 내기」는 두 번 지나면 두 번 깎는다 — 그래서 **버전으로 가른다**
- * (v5로 저장된 뒤에는 이 갈래가 안 돈다). 이미 다 쓴 계정은 0에서 멈춘다 —
- * 빚을 지우지 않는다. 그때는 3회를 공짜로 쓴 셈인데, 되접기가 계정을 **약하게**
- * 만들지 않는 쪽을 고른 것이다(레벨을 눌러 담되 버리지 않는 것과 같은 결).
- */
-function readCredits(
-  raw: unknown, version: number, cityLv: number, built: Record<BuildingId, number>,
-): number {
-  const v = num(raw, NaN);
-  if (Number.isFinite(v)) {
-    const legacyGrant = version <= 4 ? BUILD_ACTIONS_PER_UPGRADE : 0;
-    return Math.max(0, Math.floor(v) - legacyGrant);
-  }
-  const granted = Math.max(0, cityLv - 1) * BUILD_ACTIONS_PER_UPGRADE;
-  const spent = BUILDINGS.reduce(
-    (n, b) => n + Math.max(0, built[b.id] - (b.kind === 'basic' ? 1 : 0)), 0,
-  );
-  return Math.max(0, granted - spent);
 }
 
 /** 바쁜 room의 해제 시각들. **지난 것도 그대로 둔다** — `syncCity()`가 지운다 */

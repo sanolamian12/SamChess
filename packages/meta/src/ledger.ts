@@ -27,7 +27,7 @@ import type { Adjustment } from './admin.ts';
  *
  * | 묶음 | 칸 |
  * |---|---|
- * | `gold` · `grain` · `materials` · `buildCredits` · `cityLevel` | 같은 이름의 숫자 |
+ * | `gold` · `grain` · `materials` · `cityLevel` | 같은 이름의 숫자 |
  * | `cards` | `cards.{장수}` — 여분 카드 |
  * | `pool` | `pool.{장수}` — 풀에 있으면 1 |
  * | `level` | `level.{장수}` — 풀에 있는 장수가 **Lv1 위로 올린 수**(새로 든 Lv1 장수는 0 — 풀에 드는 것과 레벨이 오르는 것을 가른다) |
@@ -38,11 +38,11 @@ import type { Adjustment } from './admin.ts';
  * | `record` | `record.{갈래}/{모드}` — 계정 전적의 **승점**(랭킹의 정렬 값, 2026-11-12 — 저장 하나로 위조할 수 있었다) |
  */
 export type LedgerGroup =
-  | 'gold' | 'grain' | 'materials' | 'buildCredits' | 'cityLevel'
+  | 'gold' | 'grain' | 'materials' | 'cityLevel'
   | 'cards' | 'pool' | 'level' | 'buildings' | 'market' | 'forge' | 'collection' | 'record';
 
 export const LEDGER_GROUPS: readonly LedgerGroup[] = [
-  'gold', 'grain', 'materials', 'buildCredits', 'cityLevel',
+  'gold', 'grain', 'materials', 'cityLevel',
   'cards', 'pool', 'level', 'buildings', 'market', 'forge', 'collection', 'record',
 ];
 
@@ -64,7 +64,6 @@ export function ledgerValues(p: PlayerProfile): LedgerValues {
   put('gold', p.gold);
   put('grain', p.grain);
   put('materials', p.materials);
-  put('buildCredits', p.buildCredits);
   put('cityLevel', p.cityLevel);
   for (const [id, n] of Object.entries(p.cards ?? {})) put(`cards.${id}`, n);
   for (const [id, inst] of Object.entries(p.roster ?? {})) {
@@ -148,8 +147,8 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /mail/:id/read': [],
   'POST /mail/:id/claim': ANY,
   // 도시
-  'POST /city/upgrade': ['cityLevel', 'buildCredits'],
-  'POST /city/build': ['buildings', 'pool'],
+  // 증축이 고른 건물을 함께 올린다(2026-11-23 — 옛 `POST /city/build`가 합쳐졌다). 궁궐이 오르면 보관함의 장수가 풀로 든다
+  'POST /city/upgrade': ['cityLevel', 'buildings', 'pool'],
   'POST /city/heal': [],
   'POST /city/rename': [],
   'POST /forge/order': [],
@@ -272,7 +271,7 @@ export function profileInvariants(p: PlayerProfile): InvariantBreak[] {
     out.push(detail === undefined ? { code, key } : { code, key, detail });
   };
   // 잔액 — 군량은 시간 충전이 소수를 낼 수 있어(컬렉션 요율) 정수를 안 묻는다
-  for (const k of ['gold', 'materials', 'buildCredits'] as const) if (!isCount(p[k])) add('negative', k, String(p[k]));
+  for (const k of ['gold', 'materials'] as const) if (!isCount(p[k])) add('negative', k, String(p[k]));
   if (!isAmount(p.grain)) add('negative', 'grain', String(p.grain));
   // 도시 레벨
   if (!Number.isInteger(p.cityLevel) || p.cityLevel < 1 || p.cityLevel > MAX_CITY_LEVEL) add('cityLevel', 'cityLevel', String(p.cityLevel));

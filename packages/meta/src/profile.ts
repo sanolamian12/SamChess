@@ -153,7 +153,6 @@ export function createProfile(cityName: string, seed: number): PlayerProfile {
      * Lv10으로 한 칸 늘어(황궁이 Lv11이 됐다) 황제 없이 27회를 그대로 받는다 —
      * 「황궁이 다섯을 연다」(GDD §5.2)는 그대로다.
      */
-    buildCredits: 0,
     hospitalBusy: [],
     // 상한만큼 채워 시작한다. 시간 충전(GDD §5)은 `syncGrain()`이 맡는다 —
     // 여기서 `grainAt`을 찍지 못하는 것은 meta가 시계를 안 읽기 때문이고,

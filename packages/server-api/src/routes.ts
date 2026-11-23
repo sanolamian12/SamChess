@@ -85,9 +85,9 @@ export function registerRoutes(app: FastifyInstance): void {
   });
 
   /**
-   * 도시 행위 셋 — 증축 · 건설 · 치료 (2026-09-04).
+   * 도시 행위 — 증축(고른 건물을 함께 올린다, 2026-11-23 — 옛 `/city/build`가 합쳐졌다) · 치료 (2026-09-04).
    *
-   * `PUT /profile`이 `materials`·`buildings`·`buildCredits`·`hospitalBusy`·부상을
+   * `PUT /profile`이 `materials`·`buildings`·`hospitalBusy`·부상을
    * 통째로 버리므로(H3d의 `grain`과 같은 자리), **그 값을 바꾸는 행위마다 전용
    * 경로가 필요하다** — 안 만들면 「증축했는데 레벨은 그대로」로 조용히 삼킨다.
    *
@@ -315,19 +315,11 @@ export function registerRoutes(app: FastifyInstance): void {
   app.post('/city/upgrade', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const r = await applyCityAction(user.uid, { kind: 'upgrade' });
-    if (!r.ok) return reply.code(r.status).send(refusal(r));
-    return r.profile;
-  });
-
-  app.post('/city/build', async (req, reply) => {
-    const user = await verifyToken(req.headers.authorization);
-    if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ building: BuildingId }>;
-    if (!b.building) return reply.code(400).send({ error: 'invalid body' });
-    // **id가 진짜인지는 `canBuild()`가 본다** — 여기서 목록을 한 벌 더 적으면
-    // 건물이 늘 때 한쪽만 낡는다
-    const r = await applyCityAction(user.uid, { kind: 'build', building: b.building });
+    // 고른 건물 — 모양만 본다. **수 · 겹침 · id가 진짜인지는 `checkUpgradePicks()`가 본다** — 여기서 목록을 한 벌 더 적으면 건물이 늘 때 한쪽만 낡는다
+    const b = (req.body ?? {}) as Partial<{ buildings: unknown }>;
+    const picks = Array.isArray(b.buildings) && b.buildings.every((x) => typeof x === 'string') ? b.buildings as BuildingId[] : null;
+    if (!picks) return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyCityAction(user.uid, { kind: 'upgrade', picks });
     if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });

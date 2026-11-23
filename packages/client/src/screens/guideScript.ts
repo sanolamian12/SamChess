@@ -11,7 +11,7 @@
  */
 
 import {
-  BUILD_ACTIONS_PER_UPGRADE, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, GUIDE_PLACE, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
+  UPGRADE_PICKS, FAN_OFFICER_SEATS, GUIDE_BUILDINGS, GUIDE_PLACE, HEAL_MS, MAX_CITY_LEVEL, allOfficersMilestone, buildingLevel, guideHonor,
   officerLevelCap,
 } from '@samchess/meta';
 import { CONTROL_MS, DEPLOY_MS, SCOUT_MS } from '@samchess/rules';
@@ -34,7 +34,6 @@ export const SPOT_SELECTOR = {
   officersDoor: '[data-action="officers"]',
   cityDoor: '[data-action="city"]',
   // 도시 관리 · 건물 관리 — 첫 증축의 길(2026-11-13). 지을 수 있는 줄의 단추만
-  buildingsDoor: '[data-action="buildings"]',
   upgradeDoor: '[data-action="upgrade"]',
   // 첫 편성(2026-11-13) — 새 편성 · 부대원 · 배치
   squadName: '#squad-name',
@@ -55,8 +54,6 @@ export const SPOT_SELECTOR = {
   garrisonDoor: '[data-action="garrisonPolicy"]',
   stanceBtn: '.gpl-body [data-action="stance"]',
   savePolicy: '[data-action="savePolicy"]',
-  buildCredits: '[data-field="credits"]',
-  buildBtn: '.cty-bld [data-action="build"]:not(:disabled)',
   // 튜토리얼 목록
   basic1: '[data-tutorial="basic-1"]',
   // S급 판은 [S급 장수 튜토리얼] 갈래 뒤에 있다(2026-11-11) — 갈래 단추를 가리킨다
@@ -157,7 +154,7 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.city.congrats', { honor }) },
         // 이 레벨들은 호칭이 **바뀌는** 자리다(도시 둘씩 한 단) — 군주가 진급했다는 소식이다 (2026-10-22 기획자)
         { text: t(`guide.city.promote.${lv}` as StringKey) },
-        { text: t('guide.city.grow', { lv: officerLevelCap(profile), n: BUILD_ACTIONS_PER_UPGRADE }), spot: 'palace' },
+        { text: t('guide.city.grow', { lv: officerLevelCap(profile) }), spot: 'palace' },
       ];
       if (id === 'city.lv9') lines.push({ text: t('guide.city.lv9.emperor') });
       return lines;
@@ -206,25 +203,16 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       ];
     case 'palace.grow':
       return [
-        { text: t('guide.palace.grow.1', { n: BUILD_ACTIONS_PER_UPGRADE }), spot: 'cityDoor' },
+        { text: t('guide.palace.grow.1', { n: UPGRADE_PICKS }), spot: 'cityDoor' },
         { text: t('guide.palace.grow.2'), spot: 'cityDoor' },
         { text: t('guide.palace.grow.3', { lv: officerLevelCap(profile) }), spot: 'officersDoor' },
         { text: t('guide.palace.grow.4') },
       ];
-    // 첫 증축의 길 — 궁궐에서 [도시 관리], 도시 관리에서 [건물 관리], 건물 관리에서 [도시 증축] (2026-11-13 기획자 문장 그대로)
+    // 첫 증축의 길 — 궁궐에서 [도시 관리], 도시 관리에서 [도시 증축] (2026-11-13 기획자 — 2026-11-23 [건물 관리]가 없어지며 한 걸음 줄었다)
     case 'palace.upgrade':
       return [{ text: t('guide.palace.upgrade.1'), spot: 'cityDoor' }];
-    case 'city.build':
-      return [{ text: t('guide.city.build.1'), spot: 'buildingsDoor' }];
     case 'city.upgrade':
-      return [{ text: t('guide.city.upgrade.1'), spot: 'upgradeDoor' }];
-    // 첫 증축 뒤 건물 관리 — 증축 완료 팝업을 닫은 뒤에 선다(`BuildingsScreen`이 세운다). 셋째 마디는 다음 증축의 조건(2026-11-13 기획자)
-    case 'buildings.intro':
-      return [
-        { text: t('guide.buildings.intro.1'), spot: 'buildCredits' },
-        { text: t('guide.buildings.intro.2'), spot: 'buildBtn' },
-        { text: t('guide.buildings.intro.3', { n: BUILD_ACTIONS_PER_UPGRADE }), spot: 'upgradeDoor' },
-      ];
+      return [{ text: t('guide.city.upgrade.1', { n: UPGRADE_PICKS }), spot: 'upgradeDoor' }];
     case 'building.academy':
       return [{ text: t('guide.building.academy.1'), spot: 'researchDoor' }, { text: t('guide.building.academy.2') }];
     // 농지 (2026-11-14) — 보초병 배치 판을 가리키고(2026-11-16 [보초병 관리] 걸음을 걷었다 — 판에서 바로 세운다), 보초병을 부대에 넣으면 빠진다는 것(편성에서 처음 부딪혔다)

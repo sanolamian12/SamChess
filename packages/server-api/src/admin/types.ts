@@ -207,7 +207,7 @@ export interface UserDetail {
    */
   payments: AdminPayments | null;
   /**
-   * 도시 — 증축 조건 · 남은 건설 기회 · 건물을 짓는 도시 레벨(2026-11-13, 「도시」 탭). 게임과 같은 함수(`upgradeChecklist` · `buildCreditsLeft`)가
+   * 도시 — 증축 조건 · 건물을 짓는 도시 레벨(2026-11-13, 「도시」 탭 — 남은 건설 기회는 2026-11-23에 없어졌다). 게임과 같은 함수(`upgradeChecklist`)가
    * 낸 값이라 화면이 규칙을 다시 짓지 않는다. 도시를 안 만들었으면 `null`
    */
   city: AdminCityStatus | null;
@@ -215,10 +215,8 @@ export interface UserDetail {
 
 /** `UserDetail.city` */
 export interface AdminCityStatus {
-  /** 다음 레벨로 가는 조건 — 진짜 최대면 `null`. `checks`의 `kind`는 `emperor` · `credits` · `officers` · `topOfficers` · `materials` */
+  /** 다음 레벨로 가는 조건 — 진짜 최대면 `null`. `checks`의 `kind`는 `emperor` · `officers` · `topOfficers` · `wins` · `materials` */
   upgrade: { from: number; to: number; checks: UpgradeCheck[] } | null;
-  /** 남은 건설 기회 — 황궁 레벨이면 `null`(제한 없음) */
-  creditsLeft: number | null;
   /** 건물을 짓거나 올릴 수 있는 도시 레벨(`BUILD_CITY_LEVEL`) — 그 아래에서는 관리자도 건물을 못 바꾼다 */
   buildCityLevel: number;
 }

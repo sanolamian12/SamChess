@@ -16,7 +16,7 @@ import { stampMilestones } from './milestones.ts';
 import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
-  addCard, applyBuild, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
+  addCard, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, carriedFor, consumeCarried,
   applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, fitCarry, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
@@ -293,8 +293,7 @@ export class RaidBlockedError extends Error {
 // 넣는다 — 클라이언트 시계로 군량·치료 시간을 흔들 수 없다.
 
 export type CityAction =
-  | { kind: 'upgrade' }
-  | { kind: 'build'; building: BuildingId }
+  | { kind: 'upgrade'; picks: BuildingId[] }
   | { kind: 'heal'; officer: OfficerId }
   // **장터에서 부르지만 여기 있다** — 바꾸는 것이 `materials`(서버 소유 필드)라
   // 같은 기계를 그대로 탄다. 금화(`gold`)는 서버 소유가 아니지만, 자재를 늘리는
@@ -311,13 +310,12 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
   return mutateProfile<CityActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
-      const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now)
-        : action.kind === 'build' ? applyBuild(profile, action.building, now)
+      const next = action.kind === 'upgrade' ? applyCityUpgrade(profile, now, action.picks)
         : action.kind === 'buyMaterials' ? applyBuyMaterials(profile, now)
         : applyHeal(profile, action.officer, now);
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
-      // `canUpgradeCity`·`canBuild`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
+      // `canUpgradeCity`·`checkUpgradePicks`·`canHeal`이 던진 사람 말이다. 400으로 그대로 돌린다
       return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });

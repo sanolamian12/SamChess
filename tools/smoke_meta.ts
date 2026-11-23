@@ -2332,12 +2332,10 @@ console.log(`✓ 저장 유지 — ${kept}`);
   };
 
   /**
-   * [도시 증축]은 **건물 관리** 바닥에 있다(2026-11-13 — 도시 관리에서 옮겼다). 건물 관리로 가서 단추가 눌리는지 · 막힌 이유를 읽는다 —
-   * 돌아오지 않는다(증축은 거기서 누른다)
+   * [도시 증축]은 **도시 관리** 바닥에 있다(2026-11-23 — 건물 관리가 없어지며 돌아왔다). 단추가 눌리는지 · 막힌 이유를 읽는다
    */
   const upgradeState = async () => {
-    await page.click('[data-action="buildings"]');
-    await page.waitForSelector('[data-screen="buildings"]');
+    await page.waitForSelector('[data-screen="city"]');
     return page.evaluate(() => ({
       upgradeOn: !((document.querySelector('[data-action="upgrade"]') as HTMLButtonElement).disabled),
       why: document.querySelector('.stw[data-say="why"] [data-field="guideText"]')?.textContent ?? '',
@@ -2356,7 +2354,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
   // 41쪽의 나머지 줄들이 다 있는가
   if (it!.emperor !== '0') fail('헌제가 없는데 황제가 「옹립」이다');
   if (it!.pool !== poolAfterLoss) fail(`등용 장수가 ${it!.pool}명이다(${poolAfterLoss}명이어야 한다)`);
-  // 현황판은 **지금 열린 건물만** 적는다(Lv1은 넷) — 일곱 줄은 [건물 관리] 쪽이고 아래에서 본다.
+  // 현황판은 **지금 열린 건물만** 적는다(Lv1은 넷) — 일곱 줄은 증축 팝업의 고르기 목록이고 아래에서 본다.
   // 증축 뒤 비교에 쓰는 셋(풀 = 궁궐, 군량 = 병영·농지)은 반드시 있어야 한다
   for (const b of ['palace', 'barracks', 'farm']) {
     if (!(b in it!.buildings)) fail(`현황판에 ${b} 줄이 없다: ${JSON.stringify(it!.buildings)}`);
@@ -2423,6 +2421,23 @@ console.log(`✓ 저장 유지 — ${kept}`);
   await shot('popup-upgrade');
   if (!modal!.what.includes('Lv1 → Lv2')) fail(`팝업이 무엇을 사는지 안 적는다: "${modal!.what}"`);
 
+  /*
+   * 올릴 건물 고르기 (2026-11-23 기획자) — 일곱 줄 · 셋을 골라야 [증축한다]가 켜진다 · 넷째는 안 골라진다.
+   * 고른 셋만 한 단계 오르고 나머지는 그대로다 — 「기본값과 같은 값」이 안 되게 **궁궐은 고르지 않는다**(풀이 그대로인지 본다)
+   */
+  const PICKS = ['barracks', 'farm', 'academy'] as const;
+  {
+    const rows = await page.$$eval('[data-modal="upgrade"] [data-action="pickBuilding"]', (els) => els.length);
+    if (rows !== 7) fail(`증축 팝업의 고르기 줄이 일곱이 아니다 — ${rows}`);
+    const off = () => page.$eval('[data-action="upgradeConfirm"]', (b) => (b as HTMLButtonElement).disabled);
+    if (!await off()) fail('아무것도 안 골랐는데 [증축한다]가 눌린다');
+    for (const id of PICKS) await page.click(`[data-modal="upgrade"] [data-action="pickBuilding"][data-building="${id}"]`);
+    await page.click('[data-modal="upgrade"] [data-action="pickBuilding"][data-building="hospital"]');
+    const head = await page.$eval('[data-field="pickHead"]', (e) => (e as HTMLElement).dataset['picked']);
+    if (head !== '3') fail(`넷째를 눌렀는데 고른 수가 ${head}다 — 셋에서 멈춰야 한다`);
+    if (await off()) fail('셋을 골랐는데 [증축한다]가 안 눌린다');
+    await shot('popup-upgrade-picked');
+  }
   await page.click('[data-action="upgradeConfirm"]');
   // **증축은 서버 왕복이다**(`POST /city/upgrade`) — 고정 대기 대신 결과(완료 팝업) 또는
   // 거절(이유 한 줄)이 뜰 때까지 본다. 거절이면 그 말을 그대로 실패에 싣는다
@@ -2431,51 +2446,27 @@ console.log(`✓ 저장 유지 — ${kept}`);
   {
     const refused = await page.textContent('.stw[data-say="refused"] [data-field="guideText"]').catch(() => null);
     if (refused) fail(`서버가 증축을 거절했다: "${refused}"`);
+    const doneRows = await page.$$eval('[data-modal="upgradeDone"] .cty-done-bldrow', (els) => els.map((e) => (e as HTMLElement).dataset['building']));
+    if (doneRows.join(',') !== PICKS.join(',')) fail(`완료 팝업의 함께 오른 건물이 다르다: [${doneRows.join(' ')}]`);
   }
   await page.click('[data-action="doneOk"]');
   await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
   await page.waitForTimeout(200);
-  // 건물 관리에서 증축했다 — 현황판(도시 관리)으로 돌아가 읽는다
-  await page.click('[data-screen="buildings"] [data-action="back"]');
-  await page.waitForSelector('[data-screen="city"]');
   it = await info();
-  /*
-   * ★ **증축만으로는 아무 수치도 안 늘어난다** (2026-09-04). 예전에는 풀·상한·
-   * 요율 셋이 `cityLevel` 하나를 따라 함께 올라갔는데, 이제 그것들은 **건물**이
-   * 정하고 도시 레벨은 「무엇을 지을 수 있는가」만 정한다. 그래서 여기서 재는
-   * 것도 「셋이 따라오는가」가 아니라 **「안 따라오는가」**로 뒤집혔다 — 규칙이
-   * 뒤집혔는데 검사만 남으면 다음 사람이 옛 규칙을 되살린다.
-   */
   if (it!.level !== 2) fail(`증축했는데 레벨이 ${it!.level}이다`);
-  // 풀 상한은 궁궐이, 군량 상한·생산량은 병영·농지가 정한다 — 증축으로 건물 레벨이 바뀌면 안 된다
-  if (JSON.stringify(it!.buildings) !== buildingsBefore) {
-    fail(`증축이 건물 레벨을 건드렸다: ${buildingsBefore} → ${JSON.stringify(it!.buildings)}`);
+  {
+    const before = JSON.parse(buildingsBefore) as Record<string, number>;
+    const saved = (await getProfile(player.uid))!.buildings as Record<string, number>;
+    for (const [id, lv] of Object.entries(saved)) {
+      const want = (before[id] ?? 0) + ((PICKS as readonly string[]).includes(id) ? 1 : 0);
+      if (lv !== want) fail(`증축 뒤 ${id}가 Lv${lv}다 (Lv${want}이어야 한다 — 고른 셋만 오른다)`);
+    }
   }
+  if (it!.pool !== poolAfterLoss + 5) fail(`궁궐을 안 골랐는데 풀이 바뀌었다 — ${it!.pool}`);
   if (!it!.materials.includes('/ 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
-
-  // 짓기·증축은 [건물 관리]로 옮겨 갔다 — 현황판에는 단추가 없어야 한다
-  if (await page.$('.scr-city [data-action="build"]')) {
-    fail('도시 관리(현황판)에 아직 [짓기]/[증축] 단추가 있다');
-  }
-  await page.click('[data-action="buildings"]');
-  await page.waitForTimeout(250);
-  const blds = await page.evaluate(() => {
-    const bar = document.querySelector('[data-screen="buildings"]');
-    if (!bar) return null;
-    const scr = bar.closest('.scr')!;
-    return {
-      credits: scr.querySelector('[data-field="credits"]')?.textContent?.trim() ?? '',
-      rows: scr.querySelectorAll('[data-building]').length,
-      buttons: scr.querySelectorAll('[data-action="build"]').length,
-    };
-  });
-  if (!blds) fail('[건물 관리]를 눌렀는데 화면이 안 뜬다');
-  if (blds!.rows !== 7 || blds!.buttons !== 7) fail(`건물 관리에 일곱 줄이 아니다 — ${JSON.stringify(blds)}`);
-  // **시작 기회는 없다**(v5) — 증축 한 번을 했으니 딱 3회다 (GDD §5.2)
-  if (!blds!.credits.includes('3')) fail(`증축 한 번에 건설 기회가 3회가 아니다: "${blds!.credits}"`);
-  await page.click('[data-screen="buildings"] [data-action="back"]');
-  await page.waitForTimeout(250);
-  console.log(`✓ 증축 — Lv2 · 수치는 그대로(${it!.pool}) · 건물 관리 ${blds!.credits}`);
+  // [건물 관리]와 짓기 단추는 없어졌다(2026-11-23)
+  if (await page.$('[data-action="buildings"], .scr-city [data-action="build"]')) fail('도시 관리에 옛 [건물 관리]/[짓기]가 남았다');
+  console.log(`✓ 증축 — Lv2 · 고른 셋(${PICKS.join(' · ')})만 한 단계 · 풀 그대로(${it!.pool})`);
 
   /*
    * ⑤ 랭킹 — 전투 · 도시화 · 컬렉션 (2026-11-20 기획자, 옛 「도시 전적은 장수 전적의 합이 아니다」 절을 바꿨다).

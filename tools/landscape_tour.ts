@@ -190,7 +190,6 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['21-officers', { name: 'officers' }],
     ['22-officer-detail', { name: 'officers', officer: firstOfficer }],
     ['23-city', { name: 'city' }],
-    ['24-buildings', { name: 'buildings' }],
     ['30-barracks', { name: 'place', place: 'barracks' }],
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],

@@ -30,9 +30,8 @@
  *
  * 첫 증축의 길 (2026-11-13 기획자) — 말은 한 번, **표지는 그 일을 할 때까지** (`growthCue`)
  * 궁궐 — 증축할 채비가 됐다   palace.upgrade    [도시 관리]를 누르라
- * 도시 관리 — 그다음         city.build        [건물 관리]를 누르라 (증축 전이든 뒤든 — [도시 증축]이 건물 관리에 있다)
- * 건물 관리 — 증축 전        city.upgrade      [도시 증축]을 누르라
- * 건물 관리 — 증축 뒤 처음   buildings.intro   건설 기회 · [짓기] · [증축] · 기회를 다 써야 도시를 올린다
+ * 도시 관리 — 그다음         city.upgrade      [도시 증축]을 누르라 — 올릴 건물 셋을 고르면 함께 오른다
+ *   (2026-11-23 — [건물 관리] · 건설 기회가 없어지며 옛 city.build · buildings.intro는 걷었다)
  *
  * 첫 편성 (2026-11-13 기획자) — 3인팀(3v3)이 아직 없는 동안, 병영의 무관이 한 걸음씩 (`squadCue`가 표지를 정한다)
  * 새 편성 — 이름이 비었다      squadNew.intro     3인팀 · 5인팀 · 3인팀부터 · 이름을 적어라
@@ -69,7 +68,7 @@
  * 순수 함수다. 시계 · 난수를 들이지 않는다.
  */
 
-import { BUILD_ACTIONS_PER_UPGRADE, BUILD_CITY_LEVEL, buildCreditsLeft, buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
+import { buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { boxedOfficers, canLevelUp } from './profile.ts';
@@ -111,8 +110,6 @@ export const GUIDE_IDS = [
   'building.farm',
   'building.hospital',
   'building.forge',
-  'city.build',
-  'buildings.intro',
   'palace.upgrade',
   'city.upgrade',
   'squadNew.intro',
@@ -151,7 +148,7 @@ export type GuideId = typeof GUIDE_IDS[number];
  */
 export const GUIDE_SCREENS = [
   'main', 'palace', 'market', 'board', 'barracks', 'tutorial', 'squads', 'squadNew', 'squadEdit', 'squadDeploy', 'squadView', 'garrison', 'sortie', 'siege', 'result',
-  'officers', 'city', 'buildings', 'building', 'marketMerc', 'marketItems', 'marketStorage', 'officerCard',
+  'officers', 'city', 'building', 'marketMerc', 'marketItems', 'marketStorage', 'officerCard',
 ] as const;
 export type GuideScreen = typeof GUIDE_SCREENS[number];
 
@@ -172,7 +169,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'city.ready': 'main',
   'palace.grow': 'palace',
   'building.academy': 'building', 'building.farm': 'building', 'building.hospital': 'building', 'building.forge': 'building',
-  'city.build': 'city', 'buildings.intro': 'buildings', 'palace.upgrade': 'palace', 'city.upgrade': 'buildings',
+  'palace.upgrade': 'palace', 'city.upgrade': 'city',
   'squadNew.intro': 'squadNew', 'squadNew.mode': 'squadNew',
   'squadEdit.king': 'squadEdit', 'squadEdit.rock': 'squadEdit', 'squadEdit.queen': 'squadEdit', 'squadEdit.deploy': 'squadEdit',
   'squadDeploy.swap': 'squadDeploy', 'squadDeploy.pick': 'squadDeploy', 'squadDeploy.range': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.garrison': 'squadView',
@@ -329,16 +326,11 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       // 궁궐이 가득 차 새 장수가 보관함으로 갔다 — 가챠 결과에는 표시가 없다 (2026-11-14)
       return boxedOfficers(profile).length > 0 ? once(profile, 'palace.box') : null;
     }
-    // 첫 증축의 길 (2026-11-13) — 도시 관리는 첫 증축 직후(아직 한 번도 안 지었다), 건물 관리는 처음 들어왔을 때(지을 수 있는 레벨)
-    // [도시 증축]은 건물 관리 바닥에 있다(2026-11-13 — 도시 관리에서 옮겼다). 도시 관리는 증축 전이든 뒤든 [건물 관리]로 보낸다
+    // 첫 증축의 길 — [도시 증축]은 도시 관리 바닥에 있다(2026-11-23 — 건물 관리가 없어지며 돌아왔다)
     case 'city': {
-      if (growthCue(profile)) return once(profile, 'city.build');
+      if (growthCue(profile)) return once(profile, 'city.upgrade');
       // 증축 조건을 아직 못 채웠다 — 무엇을 어디서 채우는지 (2026-11-14). 조건이 이미 찼으면 위의 길이 말한다
       return canUpgradeCity(profile).ok ? null : once(profile, 'city.intro');
-    }
-    case 'buildings': {
-      if (growthCue(profile) === 'upgrade') return once(profile, 'city.upgrade');
-      return profile.cityLevel >= BUILD_CITY_LEVEL ? once(profile, 'buildings.intro') : null;
     }
     // 첫 편성 (2026-11-13) — 3인팀이 아직 없을 때만, 화면이 넘겨준 사정(`ctx`)으로 걸음을 고른다
     case 'squadNew':
@@ -416,11 +408,10 @@ function pendingMainGuide(profile: PlayerProfile, view: GuideView, extended: boo
  * | 값 | 언제 | 끝나는 때 |
  * |---|---|---|
  * | `upgrade` | 증축 조건이 다 찼다 — **어느 레벨이든**(2026-11-14, 처음엔 Lv1만) | 증축하면 |
- * | `build` | 첫 증축 레벨(`BUILD_CITY_LEVEL`)이고 건설 기회를 하나도 안 썼다 | 하나라도 지으면 |
  *
  * 저장하지 않는다 — 계정에서 낸다(`pendingGuide`와 같은 결). 안내를 끈 사람에게는 화면이 안 그린다(`guidesEnabled`).
  */
-export type GrowthCue = 'upgrade' | 'build';
+export type GrowthCue = 'upgrade';
 
 /**
  * **첫 편성의 길이 열려 있나** (2026-11-13 기획자) — **3v3 공격대 칸이 비었다**(2026-11-14 부대 개편 — 첫 편성은 공격대 먼저, 기획자).
@@ -441,10 +432,7 @@ export function garrisonMissionPending(profile: PlayerProfile): boolean {
 }
 export function growthCue(profile: PlayerProfile): GrowthCue | null {
   // 증축할 수 있으면 **어느 레벨이든** 표지가 선다 (2026-11-14 기획자 — 둘째 증축부터 아무 표지가 없었다)
-  if (canUpgradeCity(profile).ok) return 'upgrade';
-  if (profile.cityLevel < BUILD_CITY_LEVEL) return null;
-  if (profile.cityLevel === BUILD_CITY_LEVEL && buildCreditsLeft(profile) === BUILD_ACTIONS_PER_UPGRADE) return 'build';
-  return null;
+  return canUpgradeCity(profile).ok ? 'upgrade' : null;
 }
 
 /**
@@ -532,8 +520,6 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'building.farm': { chapter: 'farm' },
   'building.hospital': { chapter: 'hospital' },
   'building.forge': { chapter: 'forge' },
-  'city.build': { chapter: 'palace' },
-  'buildings.intro': { chapter: 'palace' },
   'palace.upgrade': { chapter: 'palace' },
   'city.upgrade': { chapter: 'palace' },
   'squadNew.intro': { chapter: 'barracks' }, 'squadNew.mode': { chapter: 'barracks' },

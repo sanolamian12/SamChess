@@ -1,7 +1,7 @@
 /**
- * 완료 팝업 한 줄 글 — 열 언어 눈 확인 (2026-11-13). 도시 증축 완료와 **건물 일곱의 짓기 · 증축 완료**를 언어마다 실제로 띄워, 제목(「증 축 완 료」)과
- * 큰 글씨(「도시 Lv2」 · 「대장간 Lv1」)가 한 줄에 들어 판 안에 있는지 본다(`FitLine.tsx`가 글마다 배율을 잰다). 언어마다 도시 · 대장간을 찍고,
- * 글마다 배율을 표로 남긴다.
+ * 완료 팝업 한 줄 글 — 열 언어 눈 확인 (2026-11-13). 도시 증축 완료를 언어마다 실제로 띄워, 제목(「증 축 완 료」)과
+ * 큰 글씨(「도시 Lv2」)가 한 줄에 들어 판 안에 있는지 본다(`FitLine.tsx`가 글마다 배율을 잰다). **2026-11-23부터 증축이 건물 셋을 함께 올린다** —
+ * 건물 완료 팝업이 없어졌고, 증축 팝업의 고르기 일곱 줄 · 완료 팝업의 함께 오른 셋이 판 안에 드는지도 본다. 언어마다 고르기 · 완료를 찍는다.
  *
  *   npm run look:doneLang      (= node --env-file=.env tools/done_lang_ux.ts [--out 폴더])
  *
@@ -12,8 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
-import { BUILDINGS, OFFICERS } from '@samchess/data';
-import { getProfile } from '../packages/server-api/src/profileStore.ts';
+import { OFFICERS } from '@samchess/data';
 import { SORTIE_TUTORIALS, createProfile } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { pool } from '../packages/server-api/src/db.ts';
@@ -53,7 +52,8 @@ try {
 
   /** 떠 있는 완료 팝업 — 제목 · 큰 글씨가 한 줄이고 판 안에 있는가. 배율을 돌려준다 */
   const check = async (modal: string, where: string): Promise<{ ttl: string; lv: string; ttlScale: string; lvScale: string }> => {
-    await page.waitForSelector(modal, { timeout: 10_000 });
+    // 도시 증축 축하는 도입부가 길다(큰 급 약 7초 + 서버 왕복) — 판(.modal)이 그려질 때까지 넉넉히. data-modal만 보면 판이 아직 없을 수 있다(2026-11-23)
+    await page.waitForSelector(`${modal} .modal`, { timeout: 20_000 });
     await page.waitForTimeout(550);   // 큰 글씨가 떠오르는 애니메이션(.45초)이 끝난 뒤
     const r = await page.evaluate((sel) => {
       const box = document.querySelector(`${sel} .modal`)!.getBoundingClientRect();
@@ -83,43 +83,40 @@ try {
     await page.waitForTimeout(600);
     await page.click('.city-hot[data-place="palace"]', { force: true });
     await page.click('[data-action="city"]');
-    // [도시 증축]은 건물 관리 바닥에 있다(2026-11-13)
-    await page.click('[data-action="buildings"]');
+    // [도시 증축]은 도시 관리 바닥에 있다(2026-11-23). 새로 짓는 셋을 골라 「건설」 표지까지 판 안에 드는지 본다
     await page.click('[data-action="upgrade"]');
+    await page.waitForSelector('[data-modal="upgrade"]');
+    for (const id of ['farm', 'hospital', 'forge']) await page.click(`[data-modal="upgrade"] [data-action="pickBuilding"][data-building="${id}"]`);
+    await page.waitForTimeout(250);
+    const pick = await page.evaluate(() => {
+      const box = document.querySelector('[data-modal="upgrade"] .modal')!.getBoundingClientRect();
+      const rows = [...document.querySelectorAll<HTMLElement>('[data-modal="upgrade"] .cty-up-row')];
+      const out = rows.filter((e) => { const q = e.getBoundingClientRect(); return q.left < box.left || q.right > box.right; }).map((e) => e.dataset['building']);
+      return { out, h: Math.round(box.height), hs: [...new Set(rows.map((e) => Math.round(e.getBoundingClientRect().height)))] };
+    });
+    if (pick.out.length) fail(`${lang} 증축 팝업 — 고르기 줄이 판 밖으로 나간다: ${pick.out.join(' ')}`);
+    await page.screenshot({ path: join(OUT, `${lang}-pick.png`) });
     await page.click('[data-action="upgradeConfirm"]');
     const city = await check('[data-modal="upgradeDone"]', `${lang} 도시`);
+    const built = await page.evaluate(() => {
+      const box = document.querySelector('[data-modal="upgradeDone"] .modal')!.getBoundingClientRect();
+      return [...document.querySelectorAll<HTMLElement>('[data-modal="upgradeDone"] .cty-done-bldrow')].map((e) => {
+        const q = e.getBoundingClientRect();
+        return { id: e.dataset['building'], ok: q.left >= box.left && q.right <= box.right };
+      });
+    });
+    if (built.length !== 3 || built.some((x) => !x.ok)) fail(`${lang} 완료 팝업 — 함께 오른 건물 줄이 판 밖이다: ${JSON.stringify(built)}`);
     await page.screenshot({ path: join(OUT, `${lang}-city.png`) });
     await page.click('[data-action="doneOk"]');
     await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
-    // 2. 건물 일곱 — 기회를 넉넉히 넣고 하나씩(짓기 넷 · 증축 셋)
-    await saveProfileTrusted(u.uid, { ...(await getProfile(u.uid))!, buildCredits: BUILDINGS.length });
-    await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForSelector('.scr-main', { timeout: 20_000 });
-    await page.waitForTimeout(600);
-    await page.click('.city-hot[data-place="palace"]', { force: true });
-    await page.click('[data-action="city"]');
-    await page.click('[data-action="buildings"]');
-    const blds: string[] = [];
-    for (const b of BUILDINGS) {
-      await page.click(`.cty-bld[data-building="${b.id}"] [data-action="build"]`);
-      await page.click('[data-action="buildConfirm"]');
-      const r = await check('[data-modal="buildDone"]', `${lang} ${b.id}`);
-      // 건설 완료(대장간, 새로 지음) · 증축 완료(장터, Lv1 → Lv2) 한 장씩
-      if (b.id === 'forge') await page.screenshot({ path: join(OUT, `${lang}-forge.png`) });
-      if (b.id === 'market') await page.screenshot({ path: join(OUT, `${lang}-market.png`) });
-      blds.push(`${r.lv}(${r.lvScale})`);
-      await page.click('[data-modal="buildDone"] [data-action="doneOk"]');
-      await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
-    }
-    rows.push(`${lang.padEnd(8)} 제목 ${city.ttl}(${city.ttlScale}) · ${city.lv}(${city.lvScale}) | ${blds.join(' · ')}`);
-    await page.click('[data-action="backBottom"]');
+    rows.push(`${lang.padEnd(8)} 제목 ${city.ttl}(${city.ttlScale}) · ${city.lv}(${city.lvScale}) | 고르기 판 ${pick.h}px · 줄 높이 ${pick.hs.join('/')}px`);
     await page.click('[data-action="back"]');
     await page.click('[data-action="back"]');
     await page.waitForSelector('.scr-main');
   }
   await browser.close();
   console.log(rows.join('\n'));
-  console.log(`✓ 열 언어 — 도시 증축 완료 · 건물 일곱 완료 팝업의 제목 · 큰 글씨가 전부 한 줄 · 판 안 (${OUT})`);
+  console.log(`✓ 열 언어 — 도시 증축 완료 · 증축 고르기 줄 · 완료 팝업의 제목 · 큰 글씨 · 함께 오른 건물이 판 안 (${OUT})`);
 } finally {
   await cleanupUsers();
   await pool.end().catch(() => {});

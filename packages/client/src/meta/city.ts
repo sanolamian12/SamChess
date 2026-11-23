@@ -1,11 +1,11 @@
 /**
- * 도시 행위 — 증축 · 건설 · 치료를 **서버에 시킨다** (2026-09-04, GDD §5 · §10).
+ * 도시 행위 — 증축(고른 건물을 함께 올린다) · 치료를 **서버에 시킨다** (2026-09-04, GDD §5 · §10).
  *
  * ────────────────────────────────────────────────────────────────
  * 왜 `PUT /profile`로는 안 되는가 ★
  * ────────────────────────────────────────────────────────────────
  *
- * `PUT`은 `materials` · `buildings` · `buildCredits` · `hospitalBusy` · 부상을
+ * `PUT`은 `materials` · `buildings` · `hospitalBusy` · 부상을
  * **통째로 버리고 서버 값으로 되쓴다**(H3d가 `grain`에 세운 그대로). 그래서 그 값을
  * 바꾸는 행위를 로컬에서 계산해 `PUT`으로 올리면 **아무 오류 없이 삼켜진다** —
  * 화면에는 「증축했는데 자재만 줄고 레벨은 그대로」로 보인다. 무승부의 군량 택1이
@@ -170,12 +170,12 @@ export async function devGrantsEnabled(): Promise<boolean> {
   }
 }
 
-/** 도시를 한 단계 올린다. `null`이면 서버에 못 닿았다는 뜻 */
-export const upgradeCityOnServer = (): Promise<PlayerProfile | null> => post('/city/upgrade', {});
-
-/** 건물을 짓거나 한 단계 올린다 */
-export const buildOnServer = (building: BuildingId): Promise<PlayerProfile | null> =>
-  post('/city/build', { building });
+/**
+ * 도시를 한 단계 올리며 **고른 건물을 함께 한 단계씩 올린다** (2026-11-23 — 옛 `/city/build`가 합쳐졌다).
+ * 고를 수는 `upgradePickCount()`(황궁으로 오르는 증축은 0 — 전부 최대). `null`이면 서버에 못 닿았다는 뜻
+ */
+export const upgradeCityOnServer = (buildings: readonly BuildingId[]): Promise<PlayerProfile | null> =>
+  post('/city/upgrade', { buildings });
 
 /** 부상 장수를 병원 room에 넣는다 */
 export const healOnServer = (officer: OfficerId): Promise<PlayerProfile | null> =>

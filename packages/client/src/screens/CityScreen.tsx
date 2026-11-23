@@ -25,8 +25,9 @@
  * 이 화면은 **현황판**이다 — 짓지 않는다 (2026-09-04 두 번째 손질) ★
  * ────────────────────────────────────────────────────────────────
  *
- * 짓기·증축과 「남은 건설 기회」는 [건물 관리](`BuildingsScreen.tsx`)로 옮겼다. **[도시 증축]도 2026-11-13에 그리로 옮겼다**(`CityUpgrade.tsx`) —
- * 건물이 들어설수록 이 화면의 줄이 늘어 명령 판을 밀어낸다. 이 화면의 명령 판에는 [건물 관리]만 남았다.
+ * 짓기·증축과 「남은 건설 기회」는 한때 [건물 관리](`BuildingsScreen.tsx`)로 옮겼고 [도시 증축]도 2026-11-13에 그리로 갔다.
+ * **2026-11-23 기획자 — 증축이 건물 셋을 함께 올리게 되며 [건물 관리]와 건설 기회가 없어졌다.** [도시 증축](`CityUpgrade.tsx`)은
+ * 이 화면 바닥 명령 판으로 돌아왔다 — 위 판의 증축 조건을 보고 그 자리에서 누른다(조건은 여기, 단추는 한 걸음 안 — 가 풀렸다).
  * 한 화면이 「지금 어떤가」와 「무엇을 할까」를 같이 지면 **아무것도 못 하는 단추
  * 일곱**이 현황을 덮는다 — Lv1 계정은 일곱 줄이 전부 잠겨 있다.
  *
@@ -60,6 +61,7 @@
  */
 
 import { useRef, useState } from 'react';
+import { CityUpgrade } from './CityUpgrade.tsx';
 import {
   buildingRows, grainCap, grainPerHour, growthCue, pendingGuide, poolCap, poolUsed, upgradeChecklist, upgradeCost,
 } from '@samchess/meta';
@@ -82,7 +84,7 @@ import { BuildingLevelBadge } from './LevelBadge.tsx';
 
 /** 증축 조건 칸의 그림 — 이름은 올리면(`condLabel`) */
 const COND_ICON = {
-  emperor: 'emperor', credits: 'build-credit', officers: 'tab-officer',
+  emperor: 'emperor', officers: 'tab-officer',
   topOfficers: 'grade-score', wins: 'rec-win', materials: 'res-materials',
 } as const satisfies Record<UpgradeCheck['kind'], GameIconName>;
 
@@ -137,21 +139,21 @@ function BuildingStatus({ profile, row }: { profile: PlayerProfile; row: Buildin
   }
 }
 
-export function CityScreen({ profile, onBack, onChange, onBuildings }: {
+export function CityScreen({ profile, onBack, onChange }: {
   profile: PlayerProfile;
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
-  onBuildings: () => void;
 }): React.JSX.Element {
   const lang = useLang();
   const namesRef = useFitNames(lang);
   /*
-   * 첫 증축의 길 (2026-11-13 기획자) — [도시 증축]은 건물 관리로 옮겼다(`CityUpgrade.tsx`). 여기서는 증축할 채비가 됐거나 첫 증축 뒤
-   * 아직 안 지었으면(`growthCue`) [건물 관리]가 빛나고, 안내 내관(`city.build`)이 한 번 그 단추를 가리킨다
+   * 첫 증축의 길 (2026-11-13 기획자) — 증축할 채비가 됐으면(`growthCue`) [도시 증축]이 빛나고, 안내 내관(`city.upgrade`)이 한 번
+   * 그 단추를 가리킨다. 증축 · 완료 팝업이 떠 있는 동안은 내관을 미룬다(그 위로 겹치지 않게)
    */
   const [guidesOn] = useState(guidesEnabled);
   const cue = guidesOn ? growthCue(profile) : null;
-  const guide = useGuide(profile, onChange, pendingGuide(profile, 'city'), 'city');
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const guide = useGuide(profile, onChange, upgradeOpen ? null : pendingGuide(profile, 'city'), 'city');
   /** 다음 레벨에 드는 자재 — 현황판의 자재 줄이 쓴다. 진짜 최대면 `null` */
   const cost = upgradeCost(profile.cityLevel);
   /** 다음 레벨의 조건표 — 단추의 잠금(`can`)과 **같은 표**다. 진짜 최대면 `null` */
@@ -213,7 +215,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
             </p>
 
             <p className="cty-row" data-field="materials" data-have={profile.materials}>
-              <span className="k"><GameIcon name="res-materials" label={t('city.materials')} text /></span>
+              {/* 짧은 이름 — 몽골어 「Барилгын материал」이 왼쪽 칸에서 잘렸다(2026-11-23). 다른 언어는 본래 이름과 같다 */}
+              <span className="k"><GameIcon name="res-materials" label={t('city.materials.short')} text /></span>
               <b className="v">
                 {cost === null
                   ? t('city.materials.max', { have: profile.materials })
@@ -227,7 +230,8 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
               {checklist?.checks.map((c) => (
                 <span key={c.kind} className="cty-cond" data-cond={c.kind} data-ok={c.ok ? '1' : '0'}>
                   <GameIcon name={COND_ICON[c.kind]} label={condLabel(c.kind)} />
-                  {c.kind === 'emperor' ? null : c.kind === 'credits' ? c.have : `${c.have}/${c.need}`}                </span>
+                  {c.kind === 'emperor' ? null : `${c.have}/${c.need}`}
+                </span>
               ))}
             </p>
           </div>
@@ -260,13 +264,9 @@ export function CityScreen({ profile, onBack, onChange, onBuildings }: {
         </section>
 
         <section className="place-panel cty-acts" ref={actsRef}>
-          {/* 건물 관리 — 짓기·증축과 「남은 건설 기회」가 사는 자리.
-              **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 눌러도
-              메인의 「랭킹」 자리와 같은 화면으로 갔다. 같은 곳으로 가는 문이
-              둘이면 하나는 언젠가 낡는다 */}
-          <button className="btn wide" data-action="buildings" data-guide-cue={cue ? '' : undefined} onClick={onBuildings}>
-            <GameIcon name="build-credit" label={t('city.buildings.manage')} text />
-          </button>
+          {/* [도시 증축] — 누르면 올릴 건물 셋을 고르고 한 번에 오른다(2026-11-23 기획자 — 옛 [건물 관리] 자리).
+              **[도시 전적 보기]는 없앴다**(2026-09-04 세 번째 손질) — 같은 곳으로 가는 문이 둘이면 하나는 언젠가 낡는다 */}
+          <CityUpgrade profile={profile} onChange={onChange} cue={cue === 'upgrade'} onModal={setUpgradeOpen} />
         </section>
 
       </div>

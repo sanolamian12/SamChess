@@ -37,7 +37,7 @@ const LANG_NAMES: Record<string, string> = {
 };
 const SHOTS: [string, string][] = [
   ['pick-support', '레벨업 고르기 — 지원'], ['pick-illusion', '레벨업 고르기 — 환술 · MP'], ['levelup', '강화 완료'],
-  ['city', '도시 증축 완료'], ['build', '건설 완료 (대장간)'], ['upgrade', '증축 완료 (장터)'],
+  ['city', '도시 증축 완료 (대장간 · 장터 · 농지 함께)'],
   ['forge', '제작 완료'], ['academy', '연구 완료'], ['gold', '금화 구매 완료'],
 ];
 
@@ -99,24 +99,14 @@ try {
     await saveProfileTrusted(u.uid, seed());
     await page.evaluate((l) => { localStorage.setItem('samchess.lang', l); localStorage.removeItem('samchess.forge.celebrated'); }, lang);
 
-    // 도시 증축 → 대장간 짓기 · 장터 증축
+    // 도시 증축 — 대장간 짓기 · 장터 증축 · 농지 짓기를 함께 고른다(2026-11-23 — 증축이 건물 셋을 함께 올린다. 건물 완료 팝업은 없어졌다)
     await home(page);
     await page.click('.city-hot[data-place="palace"]', { force: true });
     await page.click('[data-action="city"]');
-    await page.click('[data-action="buildings"]');
     await page.click('[data-action="upgrade"]');
+    for (const b of ['forge', 'market', 'farm']) await page.click(`[data-modal="upgrade"] [data-action="pickBuilding"][data-building="${b}"]`);
     await page.click('[data-action="upgradeConfirm"]');
     await celebrate(lang, 'upgradeDone', 'city');
-    await saveProfileTrusted(u.uid, { ...(await getProfile(u.uid))!, buildCredits: 2 });
-    await home(page);
-    await page.click('.city-hot[data-place="palace"]', { force: true });
-    await page.click('[data-action="city"]');
-    await page.click('[data-action="buildings"]');
-    for (const [b, name] of [['forge', 'build'], ['market', 'upgrade']] as const) {
-      await page.click(`.cty-bld[data-building="${b}"] [data-action="build"]`);
-      await page.click('[data-action="buildConfirm"]');
-      await celebrate(lang, 'buildDone', name);
-    }
 
     // 레벨업 — 첫 장수(Lv1). 도시가 Lv1이면 장수도 Lv1까지라 증축 뒤에 한다
     await home(page);

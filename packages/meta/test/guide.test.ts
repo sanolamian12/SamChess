@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   BASIC_TUTORIALS, SORTIE_TUTORIALS, GUIDE_IDS, canUpgradeCity, nextTourStop, GUIDE_SCREEN_OF, GUIDE_SCREENS, SERVER_OWNED_FIELDS, applyTutorialDone, cardsToLevelUp, createProfile, guardServerOwned, guideHonor, guideSeen, hasEmperor, markGuideSeen,
-  BUILD_ACTIONS_PER_UPGRADE, applyBuild, applyCityUpgrade, garrisonMissionPending, setSquadPolicy, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
+  applyCityUpgrade, garrisonMissionPending, setSquadPolicy, growthCue, migrateProfile, pendingGuide, stewardTier, GUIDE_CHAPTERS, GUIDE_MAIN_TOPICS, GUIDE_PLACE, guideShelves,
 } from '../src/index.ts';
 import type { GuideId, PlayerProfile } from '../src/index.ts';
 import { COLLECTIONS, MARKET_ITEMS, OFFICERS } from '@samchess/data';
@@ -219,7 +219,7 @@ describe('지난 설명의 3단 분류 (2026-10-23)', () => {
 });
 
 // ── 첫 증축의 길 (2026-11-13) — 표지는 그 일을 할 때까지, 말은 한 번 ──
-describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () => {
+describe('첫 증축의 길 — growthCue · palace.upgrade · city.upgrade', () => {
   const readyToUpgrade = (): PlayerProfile => {
     const p = fresh();
     const extra = OFFICERS.filter((o) => !p.roster[o.id as keyof typeof p.roster]).slice(0, 20);
@@ -236,36 +236,24 @@ describe('첫 증축의 길 — growthCue · city.build · buildings.intro', () 
     assert.equal(growthCue(seen(readyToUpgrade(), 'city.ready')), 'upgrade');
   });
 
-  it('upgrade — 궁궐은 [도시 관리]를, 도시 관리는 [건물 관리]를, 건물 관리는 [도시 증축]을 한 번씩 (궁궐 소개를 들은 뒤)', () => {
+  it('upgrade — 궁궐은 [도시 관리]를, 도시 관리는 [도시 증축]을 한 번씩 (궁궐 소개를 들은 뒤)', () => {
     const r = seen(readyToUpgrade(), 'palace.intro');
     assert.equal(pendingGuide(r, 'palace'), 'palace.upgrade');
     assert.equal(pendingGuide(seen(r, 'palace.upgrade'), 'palace'), null);
-    assert.equal(pendingGuide(r, 'city'), 'city.build');
-    assert.equal(pendingGuide(seen(r, 'city.build'), 'city'), null);
-    assert.equal(pendingGuide(r, 'buildings'), 'city.upgrade');
-    // 증축 전에는 「건설 기회 · [짓기]」 안내가 안 나온다 — Lv1이라 못 짓는다
-    assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'buildings'), null);
-    // 조건이 안 찼으면 셋 다 없다
+    assert.equal(pendingGuide(r, 'city'), 'city.upgrade');
+    assert.equal(pendingGuide(seen(r, 'city.upgrade'), 'city'), null);
+    // 조건이 안 찼으면 없다 (도시 관리는 조건을 채우는 법을 따로 한 번 말한다 — city.intro, 2026-11-14)
     assert.equal(pendingGuide(seen(fresh(), 'palace.intro'), 'palace'), null);
-    // (도시 관리는 조건을 채우는 법을 따로 한 번 말한다 — city.intro, 2026-11-14)
     assert.equal(pendingGuide(seen(fresh(), 'city.intro'), 'city'), null);
-    assert.equal(pendingGuide(fresh(), 'buildings'), null);
   });
 
-  it('증축하면 build — 건물 관리에서 기회 · [짓기]를 말하고, 하나 지으면 표지가 꺼진다', () => {
-    const up = seen(applyCityUpgrade(readyToUpgrade(), 1_000), 'city.build', 'city.upgrade', 'city.intro');
+  it('증축하면 표지가 꺼진다 — 건물은 증축이 함께 올렸다(2026-11-23)', () => {
+    const r = readyToUpgrade();
+    const up = seen(applyCityUpgrade(r, 1_000, ['market', 'farm', 'forge']), 'city.upgrade', 'city.intro');
     assert.equal(up.cityLevel, 2);
-    assert.equal(growthCue(up), 'build');
-    assert.equal(pendingGuide(up, 'city'), null, '도시 관리의 [건물 관리] 안내는 증축 전에 이미 들었다');
-    assert.equal(pendingGuide(up, 'buildings'), 'buildings.intro');
-    const built = applyBuild(up, 'market', 2_000);
-    assert.equal(growthCue(built), null, `기회를 썼는데 표지가 남았다 (남은 기회 — ${BUILD_ACTIONS_PER_UPGRADE}에서 줄어야 한다)`);
-    // 지은 뒤에 도시 관리에 처음 와도 「건물을 지으소서」는 안 나온다 — 이미 지었다
-    assert.equal(pendingGuide(built, 'city'), null);
-  });
-
-  it('Lv1에서는 건물 관리 안내가 안 나온다(지을 수 없다)', () => {
-    assert.equal(pendingGuide(fresh(), 'buildings'), null);
+    assert.equal(up.buildings.farm, 1);
+    assert.equal(growthCue(up), null);
+    assert.equal(pendingGuide(up, 'city'), null);
   });
 });
 
@@ -319,12 +307,12 @@ describe('처음 만나는 화면 · 사건 — 2026-11-14 점검', () => {
     ({ ...p, roster: { ...p.roster, [sOfficer]: { ...Object.values(p.roster)[0]!, officer: sOfficer } } }) as PlayerProfile;
   const basics = (p: PlayerProfile): PlayerProfile => SORTIE_TUTORIALS.reduce(applyTutorialDone, p);
 
-  it('도시 관리 — 조건이 안 찼으면 city.intro 한 번, 찼으면 원래 길(city.build)', () => {
+  it('도시 관리 — 조건이 안 찼으면 city.intro 한 번, 찼으면 원래 길(city.upgrade)', () => {
     assert.equal(pendingGuide(fresh(), 'city'), 'city.intro');
     assert.equal(pendingGuide(seen(fresh(), 'city.intro'), 'city'), null);
     const ready = { ...fresh(), materials: 99, battleWins: 1, roster: Object.fromEntries(OFFICERS.slice(0, 20).map((o) => [o.id, { ...Object.values(fresh().roster)[0]!, officer: o.id }])) } as PlayerProfile;
     assert.equal(canUpgradeCity(ready).ok, true);
-    assert.equal(pendingGuide(ready, 'city'), 'city.build');
+    assert.equal(pendingGuide(ready, 'city'), 'city.upgrade');
   });
 
   it('병영 — 출정 소개 → 두 수비군이 서면 sortieReady → S급 판이 열렸으면 sTutorial', () => {
@@ -384,12 +372,11 @@ describe('2026-11-14 둘째 지정', () => {
   it('「증축할 채비」는 증축마다 — 증축하면 들은 기록에서 지워지고, 다음 레벨 조건이 차면 다시 나온다', () => {
     const lv1 = toured(stocked(fresh()));
     assert.equal(pendingGuide(lv1, 'main', { view: 'core' }), 'city.ready');
-    const up = applyCityUpgrade(seen(lv1, 'city.ready', 'city.lv2'), 1_000);
+    const up = applyCityUpgrade(seen(lv1, 'city.ready', 'city.lv2'), 1_000, ['market', 'farm', 'forge']);
     assert.equal(guideSeen(up, 'city.ready'), false, '증축하면 다시 들을 수 있다');
     assert.equal(guideSeen(up, 'main.intro'), true, '다른 들은 기록은 그대로');
-    // Lv2 — 기회를 다 써야 조건이 찬다
-    let lv2 = up;
-    for (const b of ['market', 'farm', 'forge'] as const) lv2 = applyBuild(lv2, b, 2_000);
+    // Lv2 — 건물은 증축이 함께 올렸다. 다음 조건이 차 있으면 곧바로 다시 말한다
+    const lv2 = up;
     assert.equal(canUpgradeCity(lv2).ok, true, JSON.stringify(canUpgradeCity(lv2)));
     assert.equal(pendingGuide(lv2, 'main', { view: 'core', extended: true }), 'city.ready');
     assert.equal(growthCue(lv2), 'upgrade', 'Lv2에서도 표지가 선다');

@@ -244,8 +244,6 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22e-officer-noskill', { name: 'officers', officer: 'gyeong-mu' }],
     ['22d-officer-items', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="heldOpen"]'); }],
     ['23-city', { name: 'city' }],
-    ['24-buildings', { name: 'buildings' }],
-    ['24b-buildings-build', { name: 'buildings' }, async (p) => { await jsClick(p, '[data-action="build"]'); }],
     ['30-barracks', { name: 'place', place: 'barracks' }],
     ['31-tutorials', { name: 'tutorials' }],
     ['32-squads', { name: 'squads' }],

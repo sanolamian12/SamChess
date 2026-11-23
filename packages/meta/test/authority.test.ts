@@ -21,7 +21,7 @@ const T0 = 1_700_000_000_000;
 /** 서버가 갖고 있는 정본 */
 const server = (): PlayerProfile => ({
   ...createProfile('내성', 7),
-  grain: 10, grainAt: T0, materials: 4, buildCredits: 1, cityLevel: 3,
+  grain: 10, grainAt: T0, materials: 4, cityLevel: 3,
   buildings: { ...initialBuildings(), farm: 2 },
   hospitalBusy: [T0 + 60_000],
   forgeOrder: { equipmentId: 'dae-gam-do', startedAt: T0 },
@@ -38,7 +38,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
    * 더하면 아래 두 줄이 함께 깨지면서 「전용 경로는 만들었나」를 묻게 된다.
    */
   const EXPECTED = [
-    'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
+    'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forgeOrder',
     // 제작일(2026-09-11) — 찍는 자리가 `collectForgeOrder()` 하나이고, 그 함수를
     // 시각과 함께 부르는 것은 서버의 `getProfile()`이다
     'forgeMadeAt',
@@ -96,7 +96,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     };
     const greedy: PlayerProfile = {
       ...current,
-      grain: 9999, grainAt: 0, materials: 9999, buildCredits: 99,
+      grain: 9999, grainAt: 0, materials: 9999,
       buildings: { ...initialBuildings(), palace: 5, barracks: 5, farm: 5, hospital: 5 },
       hospitalBusy: [],
       forgeOrder: { equipmentId: 'su-geuk', startedAt: 0 },

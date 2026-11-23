@@ -185,17 +185,17 @@ describe('건물 올리기 (2026-11-13, 관리자 「도시」 탭)', () => {
   /** 건물을 지을 수 있는 도시 — 새 계정은 Lv1이라 문에 걸린다 */
   const city = (): PlayerProfile => ({ ...fresh(), cityLevel: BUILD_CITY_LEVEL });
 
-  it('신축(0 → n) · 증축(n → m) — 건설 기회는 안 쓴다', () => {
+  it('신축(0 → n) · 증축(n → m) — 도시 레벨은 그대로', () => {
     const p = city();
     assert.equal(buildingLevel(p, 'forge'), 0);
     const built = applyAdjustment(p, { kind: 'building', building: 'forge', level: 3 }, NOW);
     assert.equal(buildingLevel(built, 'forge'), 3);
-    assert.equal(built.buildCredits, p.buildCredits);
+    assert.equal(built.cityLevel, p.cityLevel);
     const up = applyAdjustment(built, { kind: 'building', building: 'barracks', level: 4 }, NOW);
     assert.equal(buildingLevel(up, 'barracks'), 4);
   });
 
-  it('먼저 정산한다 — 병영 · 농지는 요율이 바뀌는 자리다(applyBuild와 같은 차례)', () => {
+  it('먼저 정산한다 — 병영 · 농지는 요율이 바뀌는 자리다(applyCityUpgrade와 같은 차례)', () => {
     const p = city();
     const later = NOW + 5 * 3_600_000;
     const r = applyAdjustment(p, { kind: 'building', building: 'farm', level: 5 }, later);

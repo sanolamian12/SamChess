@@ -73,7 +73,6 @@ import { MainScreen } from './MainScreen.tsx';
 import { PlaceScreen } from './PlaceScreen.tsx';
 import { BuildingScreen } from './BuildingScreen.tsx';
 import { CityScreen } from './CityScreen.tsx';
-import { BuildingsScreen } from './BuildingsScreen.tsx';
 import { RankingScreen } from './RankingScreen.tsx';
 import { RankingBoardScreen } from './RankingBoardScreen.tsx';
 import { MarketScreen } from './MarketScreen.tsx';
@@ -109,7 +108,7 @@ function guideChapterOf(screen: Screen): GuideChapter | null {
   switch (screen.name) {
     case 'main': return 'main';
     case 'place': return screen.place === 'palace' ? 'palace' : screen.place === 'barracks' ? 'barracks' : null;
-    case 'officers': case 'city': case 'buildings': return 'palace';
+    case 'officers': case 'city': return 'palace';
     case 'tutorials': case 'squads': case 'squadEdit': case 'sortie': case 'siege': return 'barracks';
     case 'market': return 'market';
     case 'board': case 'collection': case 'ranking': case 'rankingBoard': return 'board';
@@ -151,7 +150,6 @@ export type Screen =
   | { name: 'building'; building: ExtBuildingId }
   | { name: 'city' }
   /** 짓기·증축 — 도시 관리(현황판)에서 갈라져 나왔다 (2026-09-04 두 번째 손질) */
-  | { name: 'buildings' }
   /** 「전적 보기」는 이제 궁궐 갈래(도시 관리)와 메인(랭킹 자리) 둘에서 온다 —
       `from`이 없으면 「뒤로」가 어디로 갈지 모른다 (2026-08-25 세 번째 리디자인).
       pptx 50~52쪽(2026-08-26 디자인 심화)부터 궁궐·병영처럼 「메뉴 → 그 안의 화면」
@@ -855,13 +853,6 @@ export function App(): React.JSX.Element {
         <CityScreen
           profile={profile}
           onBack={() => setScreen({ name: 'place', place: 'palace' })}
-          onChange={setProfile}
-          onBuildings={() => setScreen({ name: 'buildings' })}
-        />
-      ) : screen.name === 'buildings' ? (
-        <BuildingsScreen
-          profile={profile}
-          onBack={() => setScreen({ name: 'city' })}
           onChange={setProfile}
         />
       ) : screen.name === 'board' ? (

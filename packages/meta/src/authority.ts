@@ -34,7 +34,7 @@ import type { PlayerProfile } from './types.ts';
  * |---|---|
  * | `grain` · `grainAt` | `getProfile()`의 서버 시계 정산 · 전투 보상 |
  * | `materials` | 전투 보상(승리 1) · `POST /city/upgrade` |
- * | `buildings` · `buildCredits` | `POST /city/upgrade` · `POST /city/build` |
+ * | `buildings` | `POST /city/upgrade` (증축이 고른 건물을 함께 올린다, 2026-11-23) |
  * | `hospitalBusy` | `POST /city/heal` |
  * | `forgeOrder` | `POST /forge/order` (취소는 없다 — 2026-09-25) |
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
@@ -62,7 +62,7 @@ import type { PlayerProfile } from './types.ts';
  * 지급뿐이다 — 금화팩 결제가 붙으면 그것도 서버 경로여야 한다.
  */
 export const SERVER_OWNED_FIELDS = [
-  'grain', 'grainAt', 'materials', 'buildings', 'buildCredits', 'hospitalBusy', 'forgeOrder',
+  'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forgeOrder',
   'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
   // 도적떼 — 출몰·정산이 서버 시계로만 일어난다 (GDD §5.11). `farmGuards`는 클라이언트 것이다
   'raid',

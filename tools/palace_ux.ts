@@ -3,8 +3,8 @@
  *
  * 궁궐 — 도시 이름(가운데) + [이름 변경](오른쪽 벽, 붉은 목판) · 2×2 왼쪽 정렬
  *        (도시 Lv · 황제 / 궁궐 Lv · 등용 장수).
- * 도시 관리 — 이름·황제 줄이 없고, 자재 줄 「75 / 25 (증축 조건 충족)」, 막힌 이유는
- *        [도시 증축] 바로 밑이며 **화면 언어로** 뜬다, 명령 판은 화면 바닥.
+ * 도시 관리 — 이름·황제 줄이 없고, 자재 줄 「75 / 25」 + 조건 칸, [도시 증축]은 바닥 명령 판(2026-11-23),
+ *        막힌 이유는 내관이 **화면 언어로** 말한다.
  *
  *   VW=760 VH=1200 SHOTS=<dir> [LANG_UI=mn] node --experimental-strip-types --env-file=.env tools/palace_ux.ts
  *
@@ -130,7 +130,7 @@ try {
   ok('궁궐 현황판 — 도시 Lv4 · 궁궐 Lv2 · 장수 · 황제 옹립(이름 줄 없음)');
 
 
-  // 도시 관리 — 이름·황제 줄이 없고, 레벨 줄 오른쪽에 다음 레벨 자재. [도시 증축]은 건물 관리로 옮겼다(2026-11-13 — 아래에서 본다)
+  // 도시 관리 — 이름·황제 줄이 없고, 레벨 줄 오른쪽에 다음 레벨 자재. [도시 증축]은 바닥 명령 판에(2026-11-23 — 건물 관리가 없어지며 돌아왔다)
   await page.click('[data-action="city"]');
   await page.waitForSelector('[data-screen="city"]');
   await page.waitForTimeout(300);
@@ -145,7 +145,8 @@ try {
       level: document.querySelector('.scr-city [data-field="level"] .v')?.textContent ?? '',
       materials: document.querySelector('.scr-city [data-field="materials"] .v')?.textContent ?? '',
       ready: !!document.querySelector('.scr-city [data-cond="materials"][data-ok="1"]'),
-      upgradeHere: !!document.querySelector('.scr-city [data-action="upgrade"]'),
+      upgradeHere: !!document.querySelector('.scr-city .cty-acts [data-action="upgrade"]'),
+      oldDoor: !!document.querySelector('[data-action="buildings"]'),
       // 명령 판이 본문 바닥에 붙었는가 — 본문 안쪽 여백(1rem ≈ 16px) 안이면 붙은 것이다
       actsGap: acts && body ? Math.round(body.bottom - acts.bottom) : 999,
     };
@@ -155,13 +156,13 @@ try {
   if (city.level.trim() !== 'Lv4') fail(`레벨 줄이 「Lv4」만이 아니다 — "${city.level}"`);
   if (city.materials.replace(/\s/g, '') !== `75/${upgradeCost(4)}`) fail(`자재 줄이 「75 / 25」가 아니다 — "${city.materials}"`);
   if (!city.ready) fail('자재가 다 모였는데 자재 조건 칸이 채움(초록)이 아니다');
-  if (city.upgradeHere) fail('도시 관리에 아직 [도시 증축]이 있다 — 건물 관리로 옮겼다');
+  if (!city.upgradeHere) fail('도시 관리 바닥에 [도시 증축]이 없다');
+  if (city.oldDoor) fail('도시 관리에 옛 [건물 관리]가 남았다');
   if (city.actsGap > 24) fail(`명령 판이 바닥에 안 붙었다 — 본문 끝에서 ${city.actsGap}px 위`);
-  ok(`도시 관리 — Lv4 · 자재 「${city.materials}」 + 충족 · [도시 증축] 없음 · 명령 판 바닥(${city.actsGap}px)`);
+  ok(`도시 관리 — Lv4 · 자재 「${city.materials}」 + 충족 · [도시 증축]이 바닥 판에 · 명령 판 바닥(${city.actsGap}px)`);
 
-  // 자재가 모자라면 「(증축 조건 충족)」이 **없어야** 한다 — 있을 때만 보면 늘 띄워도 통과한다
-  // 건설 기회 1 — 아래 건물 관리에서 확인 팝업을 열고 실제로 한 번 짓는다(그 뒤 0이 되어 잠김 안내가 뜬다)
-  await saveProfileTrusted(uid, { ...seeded, materials: 5, buildCredits: 1 } as Parameters<typeof saveProfileTrusted>[1]);
+  // 자재가 모자라면 자재 칸이 채움이 **아니어야** 한다 — 있을 때만 보면 늘 띄워도 통과한다. [도시 증축]은 막히고 이유는 내관이 말한다
+  await saveProfileTrusted(uid, { ...seeded, materials: 5 } as Parameters<typeof saveProfileTrusted>[1]);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
   await page.click('.scr-main [data-place="palace"]', { force: true });
@@ -170,90 +171,24 @@ try {
   await page.waitForSelector('[data-screen="city"]');
   await page.waitForTimeout(300);
   if (await page.$('.scr-city [data-cond="materials"][data-ok="1"]')) fail('자재가 5인데 자재 조건 칸이 채움으로 뜬다');
-  ok('자재가 모자라면 자재 조건 칸이 채움(초록)이 아니다');
-
-  // 건물 관리 — 바닥 명령 판의 [뒤로 가기]가 도시 관리로 돌아가는가 (2026-09-18)
-  await page.click('[data-action="buildings"]');
-  await page.waitForSelector('[data-screen="buildings"]');
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: `${SHOTS}/palace-04-buildings.png` });
-  const bld = await page.evaluate(() => {
-    const acts = document.querySelector('.scr-city .place-panel.cty-acts')?.getBoundingClientRect();
-    const body = document.querySelector('.scr-city .place-body')?.getBoundingClientRect();
-    return {
-      back: document.querySelector('.cty-acts [data-action="backBottom"]')?.textContent ?? '',
-      gap: acts && body ? Math.round(body.bottom - acts.bottom) : 999,
-    };
-  });
-  // 줄은 「Lv1 → Lv2」 · 「없음 → Lv1」만 — 효과 문장은 확인 팝업이 말한다 (2026-11-12)
-  const steps = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cty-bld')].map((el) =>
-    [(el as HTMLElement).dataset.building, [...el.querySelectorAll('[data-field="step"] .bld-step > *')]
-      .map((c) => (c.classList.contains('bld-badge') ? `Lv${(c as HTMLElement).dataset.level}` : c.textContent)).join(' ')])));   // 레벨은 배지 그림(2026-11-19)
-  if (!/2/.test(steps.palace ?? '') || !(steps.palace ?? '').includes('→')) fail(`궁궐 줄이 「Lv2 → Lv3」이 아니다 — "${steps.palace}"`);
-  if (!(steps.academy ?? '').includes('→ Lv1')) fail(`태학 줄이 「없음 → Lv1」이 아니다 — "${steps.academy}"`);
-  if (await page.$('.cty-bld .fx')) fail('건물 관리 줄에 아직 효과 문장 칸이 있다');
-  await page.click('.cty-bld[data-building="academy"] [data-action="build"]');
-  await page.waitForSelector('[data-modal="buildAsk"]');
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `${SHOTS}/palace-05-buildAsk.png` });
-  const ask = await page.evaluate(() => ({
-    step: [...document.querySelectorAll('[data-field="askStep"] .bld-step > *')]
-      .map((c) => (c.classList.contains('bld-badge') ? `Lv${(c as HTMLElement).dataset.level}` : c.textContent)).join(' '),
-    what: document.querySelector('[data-field="askWhat"]')?.textContent ?? '',
-    cost: document.querySelector('[data-field="askCost"]')?.textContent ?? '',
-  }));
-  if (!ask.step.includes('→ Lv1') || !ask.what || !ask.cost.includes('-1')) fail(`짓기 확인 팝업이 비었다 — ${JSON.stringify(ask)}`);
-  await page.click('[data-action="buildCancel"]');
-  if (await page.$('[data-modal="buildAsk"]')) fail('[취소]를 눌렀는데 확인 팝업이 안 닫힌다');
-  await page.click('.cty-bld[data-building="academy"] [data-action="build"]');
-  await page.click('[data-action="buildConfirm"]');
-  await page.waitForSelector('[data-modal="buildDone"]', { timeout: 10_000 });
-  await page.click('[data-action="doneOk"]');
-  await page.waitForSelector('.cel-back[data-leaving]', { state: 'detached', timeout: 5_000 });   // 축하 화면의 닫힘 연출(.36초)이 끝날 때까지
-  await page.waitForTimeout(300);
-  const after = await page.evaluate(() => {
-    const note = document.querySelector('[data-field="whyBuild"]');
-    const first = document.querySelector('.cty-bld');
-    return {
-      lv: (document.querySelector('.cty-bld[data-building="academy"]') as HTMLElement | null)?.dataset.level,
-      note: note?.textContent ?? '',
-      // 잠김 안내는 머리줄 밑 — 첫 건물 줄보다 위
-      above: !!(note && first && note.getBoundingClientRect().bottom <= first.getBoundingClientRect().top + 1),
-    };
-  });
-  await page.screenshot({ path: `${SHOTS}/palace-06-buildings-after.png` });
-  if (after.lv !== '1') fail(`[짓기]를 확인했는데 태학이 Lv1이 아니다 — ${after.lv}`);
-  if (!after.note) fail('건설 기회를 다 썼는데 잠김 안내가 없다');
-  // [도시 증축]은 이 화면 바닥 판에 — [뒤로 가기] 위 (2026-11-13). 자재 5라 막혀 있다. 막힌 이유는 내관이 말한다(2026-11-19).
-  // 「건설 기회가 남았다」는 이유로 안 띄운다 — 머리의 「남은 건설 기회」(남았으면 붉은 글)가 말한다
   const upg = await page.evaluate(() => {
     const acts = document.querySelector('.scr-city .place-panel.cty-acts')!;
-    const up = acts.querySelector('[data-action="upgrade"]');
-    const back = acts.querySelector('[data-action="backBottom"]');
+    const up = acts.querySelector('[data-action="upgrade"]') as HTMLButtonElement | null;
     return {
-      up: !!up, before: !!(up && back && (up.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING)),
-      disabled: (up as HTMLButtonElement | null)?.disabled ?? null,
+      disabled: up?.disabled ?? null,
       why: document.querySelector('.stw[data-say="why"] [data-field="guideText"]')?.textContent ?? '',
       whyCode: (document.querySelector('.stw[data-say="why"]') as HTMLElement | null)?.dataset.sayCode ?? '',
       // 판 안에 숨었다 나타나는 줄이 남지 않았다
       oldLine: !!acts.querySelector('.cty-whys, [data-field="why"]'),
     };
   });
-  if (!upg.up || !upg.before) fail(`건물 관리 바닥에 [도시 증축]이 [뒤로 가기] 위에 없다 — ${JSON.stringify(upg)}`);
+  await page.screenshot({ path: `${SHOTS}/palace-04-city-short.png` });
   if (upg.disabled !== true) fail('자재가 5인데 [도시 증축]이 눌린다');
   if (upg.oldLine) fail('막힌 이유가 아직 판 안의 줄로 뜬다');
-  if (upg.whyCode === 'city.credits') fail('「건설 기회가 남았다」 이유가 아직 뜬다');
   if (upg.why && !upg.whyCode) fail('막힌 이유에 번역 코드가 없다');
   // 한국어가 아닌 화면에서 한국어 원문이 새지 않는가
   if (LANG && LANG !== 'ko' && /[가-힣]/.test(upg.why)) fail(`${LANG} 화면에 한국어 이유가 뜬다 — "${upg.why}"`);
-  if (!after.above) fail('잠김 안내가 머리줄 밑(첫 건물 줄 위)이 아니다');
-  ok(`건물 관리 — 줄 「${steps.palace}」 「${steps.academy}」 · 확인 팝업 「${ask.what}」 → 지음 · 안내 「${after.note}」`);
-
-  if (!bld.back) fail('건물 관리 바닥에 [뒤로 가기]가 없다');
-  if (bld.gap > 24) fail(`건물 관리 명령 판이 바닥에 안 붙었다 — ${bld.gap}px 위`);
-  await page.click('.cty-acts [data-action="backBottom"]');
-  await page.waitForSelector('[data-screen="city"]', { timeout: 5_000 });
-  ok(`건물 관리 — 바닥 「${bld.back}」(${bld.gap}px) → 도시 관리로 돌아온다`);
+  ok(`자재가 모자라면 — 자재 칸 채움 아님 · [도시 증축] 막힘 · 이유 「${upg.why || '(자재 — 조건 칸이 말한다)'}」`);
 
   if (errors.length) fail(`콘솔 오류 — ${errors.join(' | ')}`);
   console.log('\n✓ 궁궐 현황 판 완주');
