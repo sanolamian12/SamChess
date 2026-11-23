@@ -3304,11 +3304,10 @@ button.lv-tactic-row {
 /* 증축 고르기 위에 뜬 건물 한 장 — 강화 판 가리개(55)보다 위 */
 .modal-back.cty-peek-back { z-index: 60; }
 .cty-up-allmax { text-align: center; color: #f0c674; font-weight: 700; margin: .3rem 0 .4rem; word-break: keep-all; }
-/* 완료 팝업의 함께 오른 건물 — 「(그림) 이름 [건설] [Lv]」 한 줄씩, 가운데 */
-.cty-done .cty-done-blds { display: flex; flex-direction: column; align-items: center; gap: .15rem; margin: .1rem 0 .2rem; }
-.cty-done .cty-done-bldrow { display: flex; align-items: center; gap: .35rem; margin: 0; font-size: .95rem; font-weight: 700; color: #f6ecd2; }
+/* 완료 팝업의 함께 오른 건물 — 「(그림) 이름 [Lv]」 한 줄씩. 줄은 강화 완료와 같은 붓 획(`.lvd-row`, 옥색 획) — 2026-11-23 기획자 */
+.cty-done .cty-done-blds { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; margin: .1rem 0 .2rem; align-self: stretch; }
+.cty-done .cty-done-bldrow { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .35rem; font-weight: 700; }
 .cty-done .cty-done-bldrow .bld-badge { height: 1.9rem; }
-.cty-done .cty-done-new { font-size: .8rem; padding: 0 .3rem; border-radius: .2rem; background: #f0c674; color: #3a1c08; }
 /* 모드 두 줄 + 총합. 총합만 도드라지게 — 41쪽 목업이 아래에 따로 뒀다 */
 .cty-sums { display: flex; flex-direction: column; margin-top: .4rem; }
 .cty-sums [data-sum="total"] { margin-top: .25rem; padding-top: .3rem; border-top: 1px solid #ffffff1f; }

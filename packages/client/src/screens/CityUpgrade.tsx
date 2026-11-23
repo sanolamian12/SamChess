@@ -243,7 +243,7 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
 
 /**
  * 증축이 **끝났다** — 축하 팝업 (2026-09-04 지정). 큰 글씨 「도시 Lv3」 아래에 **함께 오른 건물**을 한 줄씩(이름 + 새 레벨 배지,
- * 새로 세운 것은 「건설」 표시). 황궁에 닿았으면 「모든 건물이 최대 레벨이 되었다」.
+ * 새로 세운 것도 표시 없이 Lv1 배지만 — 2026-11-23 기획자). 황궁에 닿았으면 「모든 건물이 최대 레벨이 되었다」.
  *
  * 뒤 화면은 이미 새 값이다(`onChange`가 먼저 갔다) — 이 팝업이 덮고 있다가 [확인]에 걷힌다.
  * **오른 레벨은 서버가 준 계정에서 읽는다**(부르는 쪽 참조).
@@ -259,9 +259,8 @@ function UpgradeDoneModal({ done, onClose }: { done: Done; onClose: () => void }
       {done.built.length > 0 && (
         <div className="cty-done-blds" data-field="doneBuilt">
           {done.built.map((b) => (
-            <p key={b.id} className="cty-done-bldrow" data-building={b.id} data-level={b.level} data-new={b.isNew ? '1' : '0'}>
+            <p key={b.id} className="lvd-row cty-done-bldrow" data-building={b.id} data-level={b.level} data-new={b.isNew ? '1' : '0'}>
               <BuildingIcon id={b.id} label={buildingNameText(b.id)} text />
-              {b.isNew && <span className="cty-done-new">{t('city.done.new')}</span>}
               <BuildingLevelBadge level={b.level} />
             </p>
           ))}
