@@ -162,10 +162,11 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
           <>
             <div className="mkt-banners">
               <Banner id="merc" onClick={() => go('merc')} />
+              {/* 차례 — 용병 시장 · 도시 물자 · 전투 아이템 (2026-11-23 기획자 — 물자와 아이템 자리를 맞바꿨다. 장터 Lv1에서 잠긴 배너가 맨 아래로) */}
+              <Banner id="goods" onClick={() => go('goods')} />
               {/* 장터 Lv1은 아이템을 안 판다 — 들어가서 「올리면 판다」를 읽게 하지 않고 배너에서 막는다 (2026-11-12 지정) */}
               <Banner id="items" onClick={() => go('items')}
                 lockedUntil={marketLevel(profile) < MARKET_ITEM_MIN_LEVEL ? MARKET_ITEM_MIN_LEVEL : undefined} />
-              <Banner id="goods" onClick={() => go('goods')} />
             </div>
             <BackPanel onBack={up} />
           </>
