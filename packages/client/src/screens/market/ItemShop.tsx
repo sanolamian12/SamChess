@@ -412,7 +412,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
             <Pager page={cur} pageCount={pageCount} onPage={setPage} field="storagePager" />
           </>
         )}
-        <Say text={note} level={profile.cityLevel} name="storageNote" />
+        <Say text={note} level={profile.cityLevel} name="storageNote" repeat />
       </section>
 
       <section className="place-panel mkt-cmds">

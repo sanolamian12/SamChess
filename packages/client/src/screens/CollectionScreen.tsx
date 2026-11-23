@@ -463,7 +463,7 @@ function CollectionScroll({ collection: c, profile, onChange, onClose }: {
                 : t('collection.ask.good', { name: slotLabel(asked), from: askedState.have, to: askedState.have - 1 })}
             </p>
             <p className="clx-ask-warn">{t('collection.ask.final')}</p>
-            <Say text={error} level={profile.cityLevel} name="collectionError" />
+            <Say text={error} level={profile.cityLevel} name="collectionError" repeat />
             <div className="clx-ask-btns">
               <button className="btn" data-action="cancelRegister" disabled={busy} onClick={() => setAsking(null)}>
                 {t('collection.ask.no')}

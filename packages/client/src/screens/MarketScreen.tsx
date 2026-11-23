@@ -220,7 +220,7 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
         )}
 
         {/* 규칙·서버가 거부한 말은 **한 자리**다 — 어느 판에서 거부당했든 같은 줄에 뜬다 */}
-        <Say text={note} level={profile.cityLevel} name="refused" />
+        <Say text={note} level={profile.cityLevel} name="refused" repeat />
 
         {/* 개발용은 **금화 충전 판에만** — 용병 시장에 두면 긴 목록이 화면을 늘려 바닥 명령 판이
             바닥에서 떨어지고, 화면 크기에 맞춰 앉는 섬광·팝업까지 아래로 밀린다(눈으로 잡았다) */}

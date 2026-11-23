@@ -46,7 +46,7 @@ import {
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, squadById, squadSlot, syncCity, pendingGuide,
 } from '@samchess/meta';
 import { ScreenGuide } from './useGuide.tsx';
-import { setSayLevel } from './Steward.tsx';
+import { setSayLevel, setSayVisit } from './Steward.tsx';
 import { HeadToolsLayer } from './HeadTools.tsx';
 import { officerById } from '@samchess/data';
 import { playBgm, trackForRaid, trackForResult, trackForScreen } from '../audio/bgm.ts';
@@ -212,6 +212,28 @@ export type Screen =
   | { name: 'raidBattle' }
   | { name: 'raidResult'; banditsLeft: number; error: string | null };
 
+/**
+ * **지금 어느 건물 안인가** — 한 마디 안내(`Say`)가 「이 건물 안에서 이미 섰다」를 세는 단위(`setSayVisit`, 2026-11-23 기획자).
+ * 건물 안에서 들어가는 화면은 그 건물로 묶는다 — 궁궐(도시 관리 · 장수 일람 · 도시의 전적), 병영(부대 · 출정 · 공성전 · 매칭 · 판 · 결과 ·
+ * 튜토리얼 — 판도 병영에서 나갔다 병영으로 돌아온다), 대자보(컬렉션 · 메인에서 연 랭킹). 메인 · 간판은 건물 밖이다.
+ */
+function sayVisitOf(screen: Screen): string {
+  switch (screen.name) {
+    case 'place': return screen.place;
+    case 'building': return screen.building;
+    case 'market': return 'market';
+    case 'city': case 'officers': return 'palace';
+    case 'ranking': case 'rankingBoard': return screen.from === 'city' ? 'palace' : 'board';
+    case 'board': case 'collection': return 'board';
+    case 'squads': case 'garrisonPolicy': case 'squadEdit': case 'sortie': case 'siege': case 'match': case 'battle': case 'result':
+    case 'tutorials': case 'tutorialBattle': case 'tutorialResult':
+      return 'barracks';
+    case 'raidBattle': case 'raidResult': return 'raid';
+    case 'main': return 'main';
+    case 'title': case 'newgame': return screen.name;
+  }
+}
+
 /** 도적떼 시계 — 카운트다운이 초 단위다. 판정엔 안 쓴다(마감은 서버가 정한다) */
 const RAID_TICK_MS = 1_000;
 
@@ -273,6 +295,8 @@ export function App(): React.JSX.Element {
   // 한 마디 안내(`Say`)의 옷 — 계정을 안 받는 화면(장수 카드 · 로그인)도 지금 도시 레벨의 내관이 선다
   if (profile) setSayLevel(profile.cityLevel);
   const [screen, setScreen] = useState<Screen>({ name: 'title' });
+  // 한 마디 안내는 한 건물 안에서 한 번 — 건물이 바뀌면(메인으로 나가면) 다시 선다(2026-11-23 기획자)
+  setSayVisit(sayVisitOf(screen));
   /** 세션·프로필을 아직 확인하는 중 — 로그인이 되어 있는데도 간판이 잠깐 보이지 않게 한다 */
   const [booting, setBooting] = useState(true);
   /** 저장된 세션으로 들어오는 중의 걸음 — 이때도 서버 왕복이 둘이라 입성 로딩 화면을 띄운다 */

@@ -339,7 +339,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
                 );
               })}
             </div>
-            <Say text={error} who="farm" level={profile.cityLevel} name="error" />
+            <Say text={error} who="farm" level={profile.cityLevel} name="error" repeat />
           </section>
         )}
 

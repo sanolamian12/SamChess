@@ -596,7 +596,7 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
                       <Say text={injury.heal.blocked} who="doctor" name="healBlocked" />
                     </>
                   )}
-                  <Say text={injury.heal?.error} who="doctor" name="healError" />
+                  <Say text={injury.heal?.error} who="doctor" name="healError" repeat />
                 </div>
               )}
             </div>

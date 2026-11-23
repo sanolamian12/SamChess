@@ -32,7 +32,8 @@ import { stewardTier as stewardTierOf } from '@samchess/meta';
 import type { GuideChapter, GuideHonor, GuideId, GuideMainTopic, GuideShelf, StewardTier } from '@samchess/meta';
 import type { GuideSpeaker } from './guideScript.ts';
 import { playStewardVoice } from '../audio/stewardVoice.ts';
-import { t } from '../i18n/index.ts';
+import { onLangChange, t } from '../i18n/index.ts';
+import { useLang } from '../i18n/useLang.ts';
 import { SPOT_SELECTOR, guideChapterTitle, guideSpeaker, guideSpeakerArt, guideStrokeUrl, guideTopicTitle, guideVoicePrefix, GUIDE_ABOVE, GUIDE_HOLD } from './guideScript.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
@@ -452,7 +453,30 @@ export function GuideReplay({ shelves, titleOf, onPick, onClose, initial }: {
 let sayLevel = 1;
 export const setSayLevel = (level: number): void => { sayLevel = level; };
 
-export function Say({ text, who = 'steward', level, name, code }: {
+/**
+ * **한 건물 안에서는 한 번만** (2026-11-23 기획자) — 궁궐 · 병영 · 장터 … 안에서 쪽을 오가면 화면이 다시 그려질 때마다 같은 안내
+ * (「군량이 모자랍니다」 · 「레벨 상한」 …)가 또 섰다. 한 번 선 말(이름 + 글)은 **그 건물을 완전히 벗어났다가 다시 들어올 때**까지 다시 안 선다.
+ * 지금 어느 건물에 있는지는 `App`이 화면마다 적는다(`setSayVisit` ← `sayVisitOf`) — 메인으로 나가면 건물이 바뀌어 비워진다.
+ * 「섰다」는 말풍선이 실제로 펴진 때 적는다 — 기다리다 화면을 떠났으면 안 들은 것이다.
+ * 누른 일의 대답(서버 거절 · 실패 · 「건넸다」)은 `repeat`로 늘 선다 — 안내가 아니라 그때그때의 결과다.
+ */
+let sayVisit = '';
+const saidThisVisit = new Set<string>();
+/**
+ * **언어를 바꾸기 전에 선 말의 이름** — 글이 새 언어로 바뀌면 「이름 + 글」로는 같은 말인 줄 모른다(언어를 바꿀 때마다 같은 안내가 또 섰다).
+ * 그래서 언어가 바뀌는 순간 그때까지 선 말을 이름으로 옮겨 두고, 이 건물 안에서는 그 이름을 글과 상관없이 「섰다」로 본다
+ */
+const saidBeforeLang = new Set<string>();
+const nameOf = (key: string): string => key.slice(0, key.indexOf('\n'));
+onLangChange(() => { for (const k of saidThisVisit) saidBeforeLang.add(nameOf(k)); });
+export const setSayVisit = (visit: string): void => {
+  if (visit === sayVisit) return;
+  sayVisit = visit;
+  saidThisVisit.clear();
+  saidBeforeLang.clear();
+};
+
+export function Say({ text, who = 'steward', level, name, code, repeat = false }: {
   /** 할 말 — `null`이면 아무도 안 선다(서 있으면 물러난다) */
   text: string | null | undefined;
   who?: GuideSpeaker;
@@ -462,18 +486,31 @@ export function Say({ text, who = 'steward', level, name, code }: {
   name: string;
   /** 막은 까닭의 코드 — `data-say-code`(옛 `data-code`) */
   code?: string | undefined;
+  /** 누른 일의 대답 — 같은 건물 안에서도 생길 때마다 선다(`setSayVisit` 참조) */
+  repeat?: boolean;
 }): React.JSX.Element | null {
-  const [shown, setShown] = useState<{ text: string; leaving: boolean } | null>(null);
+  const [shown, setShown] = useState<{ text: string; leaving: boolean; seq: number } | null>(null);
+  const lang = useLang();
+  const langRef = useRef(lang);
+  /** 새로 들어올 때마다 하나씩 — 말풍선의 `key`. 언어만 바뀐 것은 새로 들어오지 않고 그 자리에서 글만 갈린다 */
+  const seq = useRef(0);
   useEffect(() => {
-    if (text) setShown({ text, leaving: false });
-    else setShown((s) => (s && !s.leaving ? { ...s, leaving: true } : s));
-  }, [text]);
+    const relabel = langRef.current !== lang;
+    langRef.current = lang;
+    const fresh = !!text && (repeat || (!saidThisVisit.has(`${name}\n${text}`) && !saidBeforeLang.has(name)));
+    setShown((s) => {
+      if (text && relabel && s && !s.leaving) return { ...s, text };
+      if (fresh) return { text: text!, leaving: false, seq: ++seq.current };
+      return s && !s.leaving ? { ...s, leaving: true } : s;
+    });
+  }, [text, lang]);
   const done = useCallback(() => setShown((s) => (s && s.leaving ? null : s)), []);
   const closed = useCallback(() => setShown(null), []);
+  const said = useCallback(() => { if (!repeat && shown) saidThisVisit.add(`${name}\n${shown.text}`); }, [repeat, name, shown]);
   if (!shown) return null;
   return (
     <Steward
-      key={shown.text}
+      key={shown.seq}
       tier={stewardTierOf(level ?? sayLevel)}
       speaker={who}
       say={name}
@@ -481,6 +518,7 @@ export function Say({ text, who = 'steward', level, name, code }: {
       lines={[{ text: shown.text }]}
       delayMs={120}
       leaving={shown.leaving}
+      onRead={said}
       onDone={shown.leaving ? done : closed}
     />
   );

@@ -47,7 +47,7 @@ export function CityRenameButton({ profile, onChange }: {
       <button ref={ref} className="city-rename" data-action="rename" title={t('city.rename')} aria-label={t('city.rename')} onClick={() => setRenaming(true)}>
         <GameIcon name="mk-edit" label={t('city.rename')} />
       </button>
-      <Say text={refused} level={profile.cityLevel} name="refused" />
+      <Say text={refused} level={profile.cityLevel} name="refused" repeat />
       {renaming && createPortal(<RenameModal profile={profile} onClose={() => setRenaming(false)} onConfirm={rename} />, layer())}
       {busy && createPortal(<BusyVeil />, layer())}
     </>

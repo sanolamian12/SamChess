@@ -200,8 +200,8 @@ export function LoginModal({ mode = 'login', initialEmail, onSignedIn, onPhase, 
 
         {/* 입장 팝업의 안내는 그대로 글줄이다 — 계정 생성의 안내는 아래 팝업이 말한다 */}
         {/* 판 안의 줄 대신 내관이 말한다(2026-11-19 기획자) */}
-        <Say text={mode === 'login' && sent === 'reset' ? t('title.resetSent', { email }) : null} level={1} name="resetSent" />
-        <Say text={mode === 'login' && error ? t('title.error', { msg: error }) : null} level={1} name="loginError" />
+        <Say text={mode === 'login' && sent === 'reset' ? t('title.resetSent', { email }) : null} level={1} name="resetSent" repeat />
+        <Say text={mode === 'login' && error ? t('title.error', { msg: error }) : null} level={1} name="loginError" repeat />
       </form>
     </div>
     {notice && (

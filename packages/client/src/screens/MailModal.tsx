@@ -229,7 +229,7 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
                       ? <GameIcon name="mk-done" label={t('mail.claimed')} text />
                       : <GameIcon name="mk-claim" label={t('mail.claim')} text />}</button>
                   )}
-                  <Say text={error} level={profile.cityLevel} name="mailError" />
+                  <Say text={error} level={profile.cityLevel} name="mailError" repeat />
                 </div>
               )}
             </div>

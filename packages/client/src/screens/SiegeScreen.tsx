@@ -344,7 +344,7 @@ function TargetModal({ profile, mode, squad, row, myPower, onClose, onGone, onSt
             {weak && <p className="note" data-field="weak"><GameIcon name="mk-warn" label={t('siege.weak')} text /></p>}
           </>
         )}
-        <Say text={err} who="army" level={profile.cityLevel} name="error" />
+        <Say text={err} who="army" level={profile.cityLevel} name="error" repeat />
         {online && !err && !war && (
           <p className="hint" data-field="declareHint">{t(cityBusy ? 'war.hintBusy' : 'war.hint')}</p>
         )}

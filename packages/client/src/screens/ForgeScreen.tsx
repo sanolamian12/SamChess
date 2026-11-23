@@ -492,7 +492,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
                 )}
               </>
             )}
-            <Say text={error} who="blacksmith" level={profile.cityLevel} name="error" />
+            <Say text={error} who="blacksmith" level={profile.cityLevel} name="error" repeat />
           </section>
         )}
 

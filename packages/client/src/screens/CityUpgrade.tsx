@@ -121,7 +121,7 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
       </button>
       {/* 왜 안 되는지는 내관이 말한다(2026-11-19 기획자 — 판 안 글씨는 판 크기를 출렁여 걷었다). 자재가 모자란 이유만은 안 말한다 */}
       <Say text={whyShown ? reasonText(why) : null} level={profile.cityLevel} name="why" code={whyShown ? why.code : undefined} />
-      <Say text={refused} level={profile.cityLevel} name="refused" />
+      <Say text={refused} level={profile.cityLevel} name="refused" repeat />
 
       {layer(<>
         {asking && cost !== null && (

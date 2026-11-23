@@ -163,7 +163,7 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
               }).map((p, i) => (typeof p === 'string' ? <span key={i} className="raid-left-txt">{p}</span> : p))}
               <CityBonusMark profile={profile} keys={['raidResp']} atMs={raid.spawnedAt} />
             </div>
-            <Say text={error} level={profile.cityLevel} name="error" />
+            <Say text={error} level={profile.cityLevel} name="error" repeat />
             {/* 단추 셋 — [항복](붉은 판) · [지금 전투](옥색 판) · [닫기](뒤로 가기 판).
                 파수꾼이 없으면 [지금 전투]가 농지(파수꾼 관리)로 보내며 빛난다 */}
             <div className="frg-confirm-acts raid-acts">

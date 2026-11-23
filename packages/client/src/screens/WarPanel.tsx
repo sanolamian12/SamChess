@@ -221,7 +221,7 @@ export function WarInbox({ initial, profile, onBattle, onClose }: {
         ) : war.status === 'accepted' || war.status === 'started' ? (
           <p className="row" data-field="warState">{t('war.joining')}</p>
         ) : null}
-        <Say text={err} who="army" level={profile.cityLevel} name="error" />
+        <Say text={err} who="army" level={profile.cityLevel} name="error" repeat />
         <div className="srt-modal-acts">
           {end ? (
             <button className="btn wide" data-action="warOk" onClick={onClose}>{t('war.ok')}</button>

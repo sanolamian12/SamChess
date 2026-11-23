@@ -218,7 +218,7 @@ export function LevelUpPanel({ profile, officer, onChange, onClose }: {
             })();
           }}
         />
-        <Say text={respecNote} name="respecNote" />
+        <Say text={respecNote} name="respecNote" repeat />
       </div>
 
       {/* 레벨업은 서버 왕복이다 — `.lvp-back`(z 55) 안에서 판까지 덮는다. 클릭은 가리개가 먹어

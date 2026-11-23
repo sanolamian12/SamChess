@@ -202,7 +202,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
             {/* 안 되는 이유는 의원이 말한다(2026-11-19 기획자) */}
             <Say text={admitBlocked && rooms > 0 ? admitBlocked : null} who="doctor" level={profile.cityLevel} name="admitBlocked" />
           </div>
-          <Say text={error} who="doctor" level={profile.cityLevel} name="error" />
+          <Say text={error} who="doctor" level={profile.cityLevel} name="error" repeat />
         </section>
 
         {/* 부상을 만드는 길이 전투에서 지는 것뿐이라 병원을 시험하려면 판을 져야 했다.

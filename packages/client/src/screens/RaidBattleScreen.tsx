@@ -155,7 +155,7 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
         <>
           <h1 className="brs-ttl" style={{ fontSize: `${Math.min(12, titleSize(verdict))}cqw` }}>{verdict}</h1>
           <p className="brs-lede" data-field="bandits" data-n={banditsLeft}>{t('raid.result.bandits', { n: banditsLeft })}</p>
-          <Say text={error} name="error" />
+          <Say text={error} name="error" repeat />
         </>
       );
     }

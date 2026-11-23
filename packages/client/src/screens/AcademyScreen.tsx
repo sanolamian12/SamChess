@@ -264,7 +264,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
             {/* 안 되는 이유는 학사가 말한다(2026-11-19 기획자 — 판 안에 숨었다 나타나는 줄을 걷었다) */}
             <Say text={researchBlocked && level > 0 ? researchBlocked : null} who="school" level={profile.cityLevel} name="researchBlocked" />
           </div>
-          <Say text={error} who="school" level={profile.cityLevel} name="error" />
+          <Say text={error} who="school" level={profile.cityLevel} name="error" repeat />
         </section>
 
         {/* 1시간을 기다릴 수 없어 시험용으로 민다 — 병원의 강제 부상과 같은 스위치(`SAMCHESS_DEV_GRANTS=1`) */}
