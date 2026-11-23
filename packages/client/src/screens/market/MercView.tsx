@@ -37,20 +37,23 @@ import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { BurstStage, CardStat, DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
+import { CelebrateCharge } from '../Celebrate.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; exhausted: boolean };
 
 /**
- * 뽑기 효과음과 첫 섬광까지의 틈 (2026-09-24 지정). 단발은 소리가 먼저 차오르고 **1.5초 뒤**
- * 터지고, 8연은 소리와 **동시에** 터진다 — 두 소리의 짜임이 다르다(`cardx1`은 앞에 뜸이 있다).
+ * 뽑기 효과음과 첫 섬광까지의 틈 (2026-09-24 지정). 단발은 소리가 먼저 차오르고 터지고, 8연은 소리와 **동시에** 터진다
+ * — 두 소리의 짜임이 다르다(`cardx1`은 앞에 1.5초 뜸이 있다).
+ * **급** (2026-11-22 기획자 — 「7초가 큰 급, 2초가 작은 급」): 단발은 작은 급(2초) — 뜸을 0.9초로 줄이고 소리를 0.6초부터 틀어 「팡」을 섬광에 맞춘다.
+ * 8연은 큰 급(7초) — 축하 화면의 5초 모음(`CelebrateCharge`, 축하음)을 먼저 돌리고 그 「쾅」에 섬광 여덟이 터진다.
  */
-const PULL_SOUND: Record<GachaPullKind, { sfx: SfxId; lead: number }> = {
-  single: { sfx: 'cardx1', lead: 1500 },
-  multi: { sfx: 'cardx8', lead: 0 },
+const PULL_SOUND: Record<GachaPullKind, { sfx: SfxId; lead: number; from: number }> = {
+  single: { sfx: 'cardx1', lead: 900, from: 0.6 },
+  multi: { sfx: 'cardx8', lead: 0, from: 0 },
 };
 
-/** 뽑기의 걸음 — 방식 고르기 → 섬광 → 결과 */
-type PullStep = null | { at: 'choose' } | { at: 'burst'; got: Pulled } | { at: 'result'; got: Pulled };
+/** 뽑기의 걸음 — 방식 고르기 → (8연은 모음) → 섬광 → 결과 */
+type PullStep = null | { at: 'choose' } | { at: 'charge'; got: Pulled } | { at: 'burst'; got: Pulled } | { at: 'result'; got: Pulled };
 
 /** 정리의 걸음 */
 type CleanStep =
@@ -137,8 +140,9 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
     }, () => {
       if (!got) return;
       if (got.drawn.length === 0) { setPull({ at: 'result', got }); return; }
+      if (kind === 'multi') { setPull({ at: 'charge', got }); return; }
       // 소리는 무대가 뜨는 바로 그 순간에 — 섬광의 틈(`lead`)이 이 시각부터 잰다
-      playSfx(PULL_SOUND[kind].sfx);
+      playSfx(PULL_SOUND[kind].sfx, { from: PULL_SOUND[kind].from });
       setPull({ at: 'burst', got });
     });
   };
@@ -199,6 +203,14 @@ export function MercView({ profile, onChange, run, busy, onBack }: {
         </Layer>
       )}
 
+      {pull?.at === 'charge' && (
+        <Layer>
+          <CelebrateCharge tier="big" onDone={() => {
+            playSfx(PULL_SOUND.multi.sfx, { from: PULL_SOUND.multi.from });
+            setPull({ at: 'burst', got: pull.got });
+          }} />
+        </Layer>
+      )}
       {pull?.at === 'burst' && (
         <BurstStage
           grades={pull.got.drawn.map(gradeOf)}

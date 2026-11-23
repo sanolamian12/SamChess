@@ -142,7 +142,7 @@ try {
     // 7. 제작 완료 — 미지급 한 자루가 대장간에 들어서자마자 뜬다
     await home(page);
     await page.click('.city-gate rect', { force: true });   // 배경이 떠다녀 「안정」을 안 기다린다
-    await page.click('[data-place="forge"]');
+    await page.click('[data-place="forge"]', { force: true });
     await celebrate(lang, 'forgeDone', 'forge', 'ackDone');
 
     // 8. 금화 구매 완료

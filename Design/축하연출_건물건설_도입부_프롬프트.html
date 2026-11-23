@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>건물 건설 도입부 프롬프트</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 .4rem; }
+  .lead { color: #5b4a36; margin: 0 0 1rem; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .warn { border-left: 4px solid var(--accent); }
+  .tip { border-left: 4px solid var(--jade); }
+  ol, ul { margin: .3rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  code { background: #efe4cc; padding: 0 .3rem; border-radius: .2rem; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .cards { display: grid; gap: .9rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+  .card header { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .5rem .8rem; background: #efe4cc; flex-wrap: wrap; }
+  .card header b { font-size: 1rem; }
+  .card .why { padding: .5rem .8rem 0; font-size: .9rem; color: #4a3a28; }
+  .card pre { margin: 0; padding: .8rem; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "D2Coding", monospace; font-size: .82rem; line-height: 1.5; }
+  .copy { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 0; border-radius: .3rem; background: var(--jade); color: #fff; cursor: pointer; white-space: nowrap; }
+  .copy.done { background: #4a7a3a; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .tag { display: inline-block; font-size: .78rem; padding: 0 .45rem; border-radius: 1rem; background: var(--gold); color: #fff; margin-left: .3rem; }
+  .tag.opt { background: #8f8068; }
+  .ref { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .ref img { width: 160px; height: auto; background: #fff; border: 1px solid var(--line); border-radius: .4rem; }
+
+  .tl { position: relative; height: 3.4rem; margin: 1.2rem 0 2.6rem; background: linear-gradient(90deg, #120d09, #3a2c1e 30%, #6b5338 75%, #fff 100%); border-radius: .3rem; }
+  .tl .mk { position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; background: var(--accent); }
+  .tl .mk span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: .8rem; white-space: nowrap; color: var(--ink); padding-top: .2rem; }
+  .tl .mk.alt span { top: auto; bottom: 100%; padding: 0 0 .2rem; }
+  .tl .mk.big { width: 4px; background: #fff; box-shadow: 0 0 6px #ffcf5c; }
+
+  /* 미리 보기 판 — 게임 화면처럼 세로 */
+  .stage { position: relative; width: 100%; max-width: 340px; aspect-ratio: 9 / 16; margin: 0 auto; border-radius: .5rem; overflow: hidden;
+    background: radial-gradient(ellipse 80% 60% at 50% 62%, #2b2118 0%, #120d09 60%, #070504 100%); }
+  .stage .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #8a7a62; z-index: 9; }
+  .stage .world { position: absolute; inset: 0; }
+  /* 건물이 솟는 창 — 먼지 줄(아래 30%) 위에서 잘린다 */
+  .stage .rise { position: absolute; left: 0; right: 0; top: 0; bottom: 30%; overflow: hidden; }
+  .stage .rise img { position: absolute; left: 50%; bottom: 0; width: 84%; translate: -50% 0; transform-origin: 50% 100%; }
+  .stage .puff { position: absolute; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 45% 40%, rgba(214,196,164,.95) 0%, rgba(170,148,114,.75) 38%, rgba(110,92,70,.35) 62%, rgba(80,64,48,0) 72%); }
+  .stage svg.tool { position: absolute; width: 22%; overflow: visible; }
+  .stage .white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 7; }
+  .stage .after { position: absolute; inset: 0; display: grid; place-items: center; color: #6a4a12; font-size: 1.05rem; opacity: 0; text-align: center; padding: 1rem; z-index: 8;
+    background: radial-gradient(circle, #fff 0%, #ffe9b0 100%); }
+  .play { display: block; margin: .8rem auto 0; font: inherit; padding: .5rem 1.4rem; border: 0; border-radius: 2rem; background: var(--accent); color: #fff; cursor: pointer; }
+  .speed { text-align: center; margin-top: .4rem; font-size: .85rem; }
+  .speed label { margin: 0 .4rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>건물 짓기 · 건물 증축 완료 — 작은 급(2초) 도입부 「먼지 속에서 솟는다」 이미지 프롬프트</h1>
+  <p class="lead">도시 증축 「용머리를 올리다」(큰 급 7초)의 짝인 <b>작은 급</b>입니다. 건물 관리에서 건물 하나를 짓거나 증축이 끝났을 때 —
+    <b>어두운 바탕</b>에 <b>먼지가 뭉게뭉게</b> 일어나고, 그 속에서 <b>망치 · 톱 · 삽 · 끌 · 도끼 · 흙손 · 먹통</b>이 어지럽게 휘둘리고 튀어 오르는 사이로,
+    <b>공사 중인 탑(<code>ic_city_upgrade</code>)이 꼭대기부터 쑥 솟아오릅니다</b> — 땅이 울리듯 덜덜 떨면서. 다 솟으면 「쿵」 먼지가 한 번 터지고 하얗게 번쩍, 그 뒤는 지금의 「건설 완료」 축하 화면 그대로입니다.</p>
+
+  <h2>1. 어떤 방식으로 — 낱장 층을 받아 제가 움직인다 (앞의 셋과 같이)</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>층</th><th>움직임</th></tr>
+    <tr><td>어두운 바탕</td><td>제가 칠합니다(그림 불필요) — 가운데 아래가 살짝 밝은 흙빛 어둠.</td></tr>
+    <tr><td><b>공사 중인 탑</b> (이미 있음)</td><td><code>assets/icons/ui/city/ic_city_upgrade.png</code> 그대로. 먼지 줄 밑에서 위로 솟으며(꼭대기가 먼저 보인다) <b>좌우로 덜덜 · 살짝 기우뚱</b> 떨린다 — 다 솟으면 떨림이 잦아든다.</td></tr>
+    <tr><td><b>먼지 둑</b> (검정 바탕)</td><td>화면 아래를 가로로 덮는 뭉게구름 — 탑이 솟는 「땅의 줄」을 가립니다. 천천히 부풀고 옆으로 번집니다.</td></tr>
+    <tr><td><b>먼지 뭉치</b> (검정 바탕)</td><td>한 뭉치 그림을 크기 · 돌림 · 투명도를 바꿔 여러 번 씁니다 — 탑 둘레에서 뭉게뭉게 피어오르고, 「쿵」 때 옆으로 확 퍼진다.</td></tr>
+    <tr><td><b>연장 일곱</b> (오린 것)</td><td>망치는 내리치고, 톱은 앞뒤로 켜고, 삽은 흙을 퍼 던지듯 휙, 끌 · 도끼 · 흙손 · 먹통은 먼지 위로 튀어 올랐다 빙글 돌며 떨어진다 — <b>복잡스럽게</b>. 각자 따로 받아야 따로 움직입니다.</td></tr>
+    <tr><td>파편 (오린 것)<span class="tag opt">있으면 좋음</span></td><td>벽돌 조각 · 나뭇조각 · 기왓조각 — 연장 사이로 튀어 바쁜 느낌을 더합니다. 없으면 연장만.</td></tr>
+  </table>
+  </div>
+  <div class="box tip">먼지는 <b>검정 바탕</b>으로 받습니다 — 밝기를 투명도로 바꿔(밝은 곳 = 진한 먼지) 오리므로, 초록 바탕에서 오릴 때처럼 흐린 가장자리에 초록이 남지 않고, <b>탑 아래를 실제로 가릴 수 있습니다.</b></div>
+
+  <h2>2. 박자 — 약 2초</h2>
+  <div class="tl">
+    <div class="mk" style="left:0%"><span>0.0 어둠 · 먼지</span></div>
+    <div class="mk alt" style="left:12%"><span>0.18 연장 휘몰이</span></div>
+    <div class="mk" style="left:20%"><span>0.3 탑 솟기 시작</span></div>
+    <div class="mk alt" style="left:76%"><span>1.15 다 솟음 · 쿵</span></div>
+    <div class="mk big" style="left:100%"><span>1.5 하얗게 · 쾅</span></div>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>시각</th><th>화면</th></tr>
+    <tr><td>0.0 – 0.3</td><td>화면이 어두워지고, 아래에서 먼지가 뭉게뭉게 차오른다.</td></tr>
+    <tr><td>0.18 – 1.3</td><td>먼지 속에서 연장들이 바쁘게 — 망치가 내리치고 톱이 켜지고, 삽 · 끌 · 도끼 · 흙손 · 먹통이 튀어 올라 빙글 돌다 떨어지고 또 튄다.</td></tr>
+    <tr><td>0.3 – 1.15</td><td><b>탑이 꼭대기부터 쑥 솟는다</b> — 처음엔 빠르게, 끝에서 느려지며. 솟는 동안 지진처럼 좌우로 덜덜(빠른 진동) · 살짝 기우뚱. 둘레 먼지가 더 짙어진다.</td></tr>
+    <tr><td>1.15 쿵</td><td>다 솟아 자리를 잡는다 — 먼지가 옆으로 확 퍼지고 화면이 한 번 덜컥.</td></tr>
+    <tr><td>1.3 – 1.5</td><td>하얗게 번쩍 → <b>지금의 「건설 완료」 축하 화면</b>(축하음의 「쾅」이 여기 맞습니다).</td></tr>
+  </table>
+  </div>
+  <p>소리: 지금처럼 축하음을 「쾅」 직전부터 틀어 1.5초에 「쾅」이 맞게 합니다(지금 작은 급은 0.9초). <b>있으면 좋은 것</b> — 우르르 땅울림(0.3~1.15초, 낮게 웅웅 · 돌 긁히는 소리).
+    없으면 축하음만으로 갑니다. 이미 있는 <code>hammar.mp3</code>(1.3초)를 연장 휘몰이에 얕게 겹치는 것도 해 볼 수 있습니다.</p>
+
+  <h3>박자 미리 보기 (탑은 진짜 그림, 먼지 · 연장은 흉내)</h3>
+  <p class="file">탑이 솟는 빠르기 · 떨림의 세기, 먼지가 차오르는 양, 연장이 얼마나 어지러운지를 보세요. 연장은 단순한 도형이고 먼지는 둥근 번짐입니다. 소리는 축하음만.</p>
+  <div class="stage" id="stage">
+    <div class="world" id="world">
+      <div class="rise"><img id="tower" src="../assets/icons/ui/city/ic_city_upgrade.png" alt=""></div>
+      <div id="tools"></div>
+      <div id="dust"></div>
+    </div>
+    <div class="white" id="white"></div>
+    <div class="after" id="after">(여기서부터 지금의 축하 화면)<br>「건설 완료」</div>
+    <div class="clock" id="clock">0.00s</div>
+  </div>
+  <button class="play" id="play">▶ 재생</button>
+  <div class="speed">빠르기
+    <label><input type="radio" name="sp" value="1" checked> 1×</label>
+    <label><input type="radio" name="sp" value="0.5"> 0.5×</label>
+    <label><input type="radio" name="sp" value="0.25"> 0.25×</label>
+  </div>
+
+  <h2>3. 참조 그림 — 화풍을 맞춘다</h2>
+  <div class="ref">
+    <img src="../assets/icons/ui/city/ic_city_upgrade.png" alt="">
+    <div>
+      <p class="file">assets/icons/ui/city/ic_city_upgrade.png</p>
+      <p>솟아오르는 탑 그림 그 자체입니다. <b>연장 · 파편</b>을 뽑을 때 첨부하면 같은 나무결 · 밧줄 · 돌 화풍이 나옵니다.
+        (이 그림은 흰 테두리가 둘린 스티커 모양이라, 연장도 같은 <b>흰 테두리</b>를 두르게 적었습니다 — 어둠 위에서 한눈에 들어옵니다.)</p>
+    </div>
+  </div>
+  <div class="box warn">
+    <b>바탕색</b>
+    <ul>
+      <li><b>연장 · 파편</b>은 <b>순수 초록(#00FF00)</b> 바탕 — 제가 오립니다. 초록 손잡이 · 초록 녹이 들어가면 함께 깎이니 <b>초록색을 쓰지 말라</b>고 적었습니다.</li>
+      <li><b>먼지 둑 · 먼지 뭉치</b>는 <b>순수 검정(#000000)</b> 바탕 — 밝기를 투명도로 바꿉니다. 먼지 말고는 아무것도(땅 · 그림자 · 불빛) 없어야 합니다.</li>
+      <li>연장은 <b>하나씩 따로</b> — 한 장에 여럿을 받으면 제가 잘라야 하는데, 겹치거나 붙어 있으면 못 자릅니다.</li>
+    </ul>
+  </div>
+
+  <h2>4. 프롬프트</h2>
+  <p>받은 그림은 <code>assets/icons/ui/celebrate_intro/build/</code>에 아래 파일 이름으로 넣어 주세요. 연장 일곱은 같은 틀에서 이름만 바뀝니다.</p>
+  <div class="cards">
+
+    <div class="card">
+      <header><b>E1. 먼지 둑 (화면 아래를 덮는 뭉게구름)<span class="tag">필수</span></b><span class="file">build_dust_bank.png</span><button class="copy">복사</button></header>
+      <p class="why">탑이 솟아 나오는 「땅의 줄」을 가립니다. 가로로 길고, <b>아래쪽이 짙고 위쪽 가장자리가 뭉게뭉게</b>여야 합니다.</p>
+      <pre>A wide, low bank of thick billowing construction dust, seen from the front, painterly semi-realistic game effect art.
+Dense rolling clouds of warm sandy-beige and light earthy-brown dust, many soft round billows piled side by side, thickest and brightest along the bottom, the top edge broken into puffy cauliflower-like lumps, a few thin wisps drifting up.
+Soft warm light from above on the tops of the billows, darker brown in the folds.
+Pure black background (#000000). Nothing else: no ground, no buildings, no tools, no fire, no sparks.
+The dust bank spans the full width of the image and the bottom 60% of its height; above it is pure black.
+No text, no watermark.
+Landscape 2:1, 2048 x 1024.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>E2. 먼지 뭉치 (한 덩이)<span class="tag">필수</span></b><span class="file">build_dust_puff.png</span><button class="copy">복사</button></header>
+      <p class="why">한 장을 크기 · 돌림을 바꿔 여러 번 씁니다. 둥글게 뭉친 한 덩이이고, 가장자리가 검정으로 부드럽게 사라져야 합니다.</p>
+      <pre>A single round billowing puff of construction dust, seen from the front, painterly semi-realistic game effect art.
+A soft cauliflower-shaped cloud of warm sandy-beige and light earthy-brown dust made of several overlapping round billows, denser and brighter in the middle, with soft wispy edges.
+Pure black background (#000000). Nothing else.
+The puff is centered, filling about 70% of the image, and all its edges fade smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 1024 x 1024.</pre>
+    </div>
+
+    <div class="card">
+      <header><b>E3. 연장 한 점 (일곱 번 — 이름만 바꿔)<span class="tag">필수</span></b><span class="file">build_tool_hammer.png 외 여섯</span><button class="copy">복사</button></header>
+      <p class="why">탑 그림을 첨부해 주세요. 아래 틀의 <code>[TOOL]</code>을 표의 영어 글로 바꿔 일곱 번 뽑습니다. 돌려서 쓰므로 <b>대각선으로 놓인 모습</b>(손잡이 왼쪽 아래 → 머리 오른쪽 위)이 좋습니다.</p>
+      <pre>Use the attached image as the exact reference for the art style (painterly semi-realistic game art icon, ancient Chinese construction, warm wood grain, worn iron, thick clean white sticker outline around the object like the reference).
+Draw ONLY one [TOOL], lying diagonally from the lower-left (handle end) to the upper-right (working end).
+Seen from the side, the whole tool fully visible and centered, filling about 80% of the image, with clear margin on every side. Thick white outline around the whole silhouette.
+Warm light from the upper right, soft dust on the iron.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no ground, no cast shadow, no green tint, no green paint.
+No people, no hands, no other objects, no text, no watermark.
+Square 1:1, 1024 x 1024.</pre>
+      <div class="scroll" style="padding:0 .8rem .8rem">
+      <table>
+        <tr><th>파일</th><th>연장</th><th>[TOOL] 자리에 넣을 글</th></tr>
+        <tr><td class="file">build_tool_hammer.png</td><td>망치</td><td>ancient Chinese carpenter's iron hammer with a long wooden handle and a heavy square iron head</td></tr>
+        <tr><td class="file">build_tool_saw.png</td><td>톱</td><td>ancient Chinese wooden frame saw: an H-shaped wooden frame with a thin toothed iron blade along one side and a twisted rope tensioner with a toggle stick on the other side</td></tr>
+        <tr><td class="file">build_tool_spade.png</td><td>삽</td><td>ancient Chinese digging spade with a long wooden shaft and a flat iron blade caked with a little earth</td></tr>
+        <tr><td class="file">build_tool_chisel.png</td><td>끌</td><td>ancient Chinese woodworking chisel with an iron blade and a round wooden handle bound with an iron ring</td></tr>
+        <tr><td class="file">build_tool_axe.png</td><td>도끼</td><td>ancient Chinese carpenter's axe with a curved wooden handle and a broad iron blade</td></tr>
+        <tr><td class="file">build_tool_trowel.png</td><td>흙손</td><td>ancient Chinese mason's trowel: a flat leaf-shaped iron blade with a short wooden handle, a little grey mortar on the blade</td></tr>
+        <tr><td class="file">build_tool_inkline.png</td><td>먹통</td><td>ancient Chinese carpenter's ink-line marker (mo dou): a carved wooden ink box shaped like a small boat with a wooden reel wheel at the back and a short black ink line with a tiny awl at the front</td></tr>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <header><b>E4. 파편 한 벌<span class="tag opt">있으면 좋음</span></b><span class="file">build_debris.png</span><button class="copy">복사</button></header>
+      <p class="why">연장 사이로 튀는 작은 조각들입니다. 제가 한 조각씩 잘라 쓰므로 <b>서로 떨어져</b> 있어야 합니다.</p>
+      <pre>Use the attached image as the reference for the art style (painterly semi-realistic game art icon, thick clean white sticker outline around each piece).
+A set of eight small separate construction debris pieces arranged in a loose 4 x 2 grid with wide empty space between them (no piece touches another): two broken red-brown bricks, two chunks of grey stone, two splintered short wooden plank pieces, two broken dark grey curved roof-tile shards.
+Each piece seen from the front, fully visible, with a thick white outline.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no cast shadow, no green tint.
+No text, no watermark.
+Landscape 2:1, 2048 x 1024.</pre>
+    </div>
+  </div>
+
+  <h2>5. 받은 뒤 제가 하는 일 (같은 길)</h2>
+  <ol>
+    <li><code>tools/build_celebrate_intro.py</code>에 건설 그림을 더해 굽기 — 연장 · 파편은 오려 PNG로, 먼지는 「밝기 → 투명도」로 바꿔 PNG로. 탑은 지금 그림을 그대로 씁니다.</li>
+    <li><code>Celebrate</code>의 도입부 종류에 <code>build</code>를 더하고 건물 짓기 · 증축 완료(<code>BuildingsScreen</code>)만 쓰게 하기 — 작은 급이지만 이 장면만 도입이 1.5초입니다(금화 구매 · 아이템 구매의 0.9초 소용돌이는 그대로).</li>
+    <li>완성본 재생 페이지(<code>Design/축하연출_건물건설_도입부_완성본.html</code>)를 만들어 시각마다 멈춰 찍어 확인하고, 게임 안에서도 확인하기.</li>
+  </ol>
+</main>
+
+<script>
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.closest('.card').querySelector('pre').innerText;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      btn.textContent = '복사됨'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 1400);
+    });
+  });
+
+  // ── 박자 미리 보기 ──
+  const $ = (id) => document.getElementById(id);
+  const stage = $('stage'), world = $('world'), tower = $('tower'), white = $('white'), after = $('after'), clock = $('clock');
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const easeOut = (v) => 1 - Math.pow(1 - v, 3);
+  const END = 1500, RISE0 = 300, RISE1 = 1150;
+
+  // 먼지 — 둑(아래 줄) + 탑 둘레 뭉치. [x%, y%, 지름%(판 너비), 시작 ms, 앞에 서나]
+  const PUFFS = [];
+  for (let i = 0; i < 11; i++) PUFFS.push([-6 + i * 11, 74 + (i % 2) * 4, 34 + (i % 3) * 6, (i * 37) % 160, true]);
+  for (let i = 0; i < 8; i++) PUFFS.push([-4 + i * 15, 92 + (i % 2) * 3, 40, (i * 29) % 120, true]);
+  [[22,62,26,260],[78,60,24,340],[34,56,20,520],[66,54,22,620],[50,64,30,420],[14,70,22,700],[86,68,24,760]]
+    .forEach(([x, y, d, t]) => PUFFS.push([x, y, d, t, true]));
+  const dustBox = $('dust');
+  const puffEls = PUFFS.map(() => { const el = document.createElement('div'); el.className = 'puff'; dustBox.append(el); return el; });
+
+  // 연장 — 단순 도형 SVG. kind: swing(내리침) · saw(앞뒤) · hop(튀어 올라 돈다)
+  const SHAPES = {
+    hammer: '<rect x="-3" y="-2" width="44" height="5" rx="2" fill="#8b6a3e" stroke="#fff" stroke-width="1.5"/><rect x="36" y="-9" width="10" height="18" rx="1" fill="#5d5a55" stroke="#fff" stroke-width="1.5"/>',
+    saw: '<rect x="0" y="-12" width="4" height="24" fill="#8b6a3e" stroke="#fff" stroke-width="1.2"/><rect x="40" y="-12" width="4" height="24" fill="#8b6a3e" stroke="#fff" stroke-width="1.2"/><rect x="0" y="-1.5" width="44" height="3" fill="#8b6a3e"/><path d="M2 11 L42 11 L42 14 L2 14 Z" fill="#9aa0a6" stroke="#fff" stroke-width="1"/>',
+    spade: '<rect x="0" y="-2" width="40" height="4" rx="2" fill="#8b6a3e" stroke="#fff" stroke-width="1.5"/><path d="M38 -8 L52 -6 Q56 0 52 6 L38 8 Z" fill="#6e6b66" stroke="#fff" stroke-width="1.5"/>',
+    chisel: '<rect x="0" y="-3" width="18" height="6" rx="3" fill="#8b6a3e" stroke="#fff" stroke-width="1.5"/><path d="M18 -2 L34 -2 L38 0 L34 2 L18 2 Z" fill="#8a8f95" stroke="#fff" stroke-width="1.2"/>',
+    axe: '<rect x="0" y="-2" width="40" height="4" rx="2" fill="#8b6a3e" stroke="#fff" stroke-width="1.5"/><path d="M32 -4 Q44 -16 48 -6 Q50 0 48 6 Q44 16 32 4 Z" fill="#6e6b66" stroke="#fff" stroke-width="1.5"/>',
+    trowel: '<rect x="0" y="-2" width="14" height="4" rx="2" fill="#8b6a3e" stroke="#fff" stroke-width="1.5"/><path d="M14 0 L22 -8 L40 0 L22 8 Z" fill="#8a8f95" stroke="#fff" stroke-width="1.5"/>',
+    inkline: '<path d="M0 -6 Q20 -9 34 -3 L34 5 Q20 8 0 6 Z" fill="#7a5530" stroke="#fff" stroke-width="1.5"/><circle cx="6" cy="0" r="6" fill="#5d4224" stroke="#fff" stroke-width="1.2"/><line x1="34" y1="0" x2="46" y2="2" stroke="#111" stroke-width="1.2"/>',
+  };
+  // [모양, 방식, 기준 x%, 기준 y%, 크기, 시작 ms, 빠르기, 방향(±1)]
+  const TOOLS = [
+    ['hammer', 'swing', 14, 60, 1.1, 180, 1.0, 1],
+    ['saw', 'saw', 72, 66, 1.0, 220, 1.0, -1],
+    ['spade', 'hop', 30, 72, 1.0, 260, 1.0, 1],
+    ['axe', 'hop', 64, 74, 1.0, 380, 1.15, -1],
+    ['chisel', 'hop', 44, 76, .8, 200, 1.3, 1],
+    ['trowel', 'hop', 82, 72, .8, 520, 1.2, -1],
+    ['inkline', 'hop', 20, 76, .85, 600, 1.1, 1],
+    ['hammer', 'swing', 88, 58, .9, 420, 1.25, -1],
+  ];
+  const toolBox = $('tools');
+  const toolEls = TOOLS.map(([shape]) => {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('class', 'tool'); s.setAttribute('viewBox', '-6 -20 64 40');
+    s.innerHTML = SHAPES[shape]; toolBox.append(s); return s;
+  });
+
+  function draw(ms) {
+    // 어둠
+    world.style.opacity = clamp(ms / 160);
+    // 탑 — 꼭대기부터 솟는다(끝에서 느려짐) + 지진 떨림
+    const r = easeOut(clamp((ms - RISE0) / (RISE1 - RISE0)));
+    const quake = ms < RISE1 ? clamp((ms - RISE0 + 120) / 200) : Math.max(0, 1 - (ms - RISE1) / 260);
+    const jx = (Math.sin(ms * .19) * 1.6 + Math.sin(ms * .43) * .9) * quake;   // % 단위
+    const rot = Math.sin(ms * .11) * 1.3 * quake;
+    const thud = ms > RISE1 && ms < RISE1 + 140 ? Math.sin((ms - RISE1) / 140 * Math.PI) * 1.4 : 0;
+    tower.style.transform = `translate(${jx}%, ${(1 - r) * 100 + thud}%) rotate(${rot}deg)`;
+    // 쿵 — 화면 덜컥
+    const jolt = ms > RISE1 && ms < RISE1 + 180 ? Math.sin((ms - RISE1) * .25) * (1 - (ms - RISE1) / 180) * 5 : 0;
+    world.style.translate = `0 ${jolt}px`;
+    // 먼지 — 부풀고 · 위로 번지고 · 쿵 때 옆으로 확
+    const W = stage.clientWidth;
+    PUFFS.forEach(([x, y, d, t0], i) => {
+      const el = puffEls[i];
+      const a = clamp((ms - t0) / 380);
+      const burst = ms > RISE1 ? easeOut(clamp((ms - RISE1) / 300)) : 0;
+      const grow = .55 + .45 * a + Math.sin(ms * .006 + i) * .05 + burst * .35;
+      const size = d / 100 * W * grow;
+      const dx = (x - 50) * burst * .35 + Math.sin(ms * .004 + i * 2) * 1.2;
+      const dy = -a * 3 - burst * 2;
+      el.style.width = el.style.height = size + 'px';
+      el.style.left = `calc(${x + dx}% - ${size / 2}px)`;
+      el.style.top = `calc(${y + dy}% - ${size / 2}px)`;
+      el.style.opacity = a * (1 - clamp((ms - 1300) / 400) * .3);
+    });
+    // 연장 — 복잡스럽게
+    TOOLS.forEach(([, kind, x, y, sc, t0, sp, dir], i) => {
+      const el = toolEls[i];
+      const t = (ms - t0) * sp;
+      if (t < 0) { el.style.opacity = 0; return; }
+      el.style.opacity = clamp(t / 120);
+      let px = x, py = y, ang = 0;
+      if (kind === 'swing') {          // 천천히 들고 빨리 내리친다 — 0.42초마다
+        const p = (t % 420) / 420;
+        const lift = p < .75 ? Math.sin(p / .75 * Math.PI / 2) : 1 - Math.pow((p - .75) / .25, 2);
+        ang = dir * (-20 - 70 * lift); py = y - lift * 6;
+      } else if (kind === 'saw') {     // 앞뒤로 켠다
+        px = x + Math.sin(t * .03) * 6; ang = dir * (-12 + Math.sin(t * .03) * 4); py = y + Math.abs(Math.sin(t * .03)) * 1.5;
+      } else {                          // 튀어 올라 빙글 돌며 떨어진다 — 되풀이
+        const T = 620, p = (t % T) / T, k = Math.floor(t / T);
+        const h = 26 + ((i * 7 + k * 5) % 3) * 8;
+        py = y - 4 * h * p * (1 - p); px = x + dir * (p * 10 + k * 2 % 6);
+        ang = dir * (p * 540 + k * 70 + i * 40);
+      }
+      el.style.left = `calc(${px}% - 11%)`; el.style.top = `calc(${py}% - 6%)`;
+      el.style.transform = `rotate(${ang}deg) scale(${sc})`;
+    });
+    white.style.opacity = clamp((ms - 1300) / 200);
+  }
+
+  let raf = 0, bang = null;
+  function reset() { cancelAnimationFrame(raf); after.style.transition = 'none'; after.style.opacity = 0; white.style.transition = 'none'; if (bang) { bang.pause(); bang = null; } draw(0); clock.textContent = '0.00s'; }
+  reset();
+  $('play').addEventListener('click', () => {
+    reset();
+    const speed = Number(document.querySelector('input[name=sp]:checked').value);
+    bang = new Audio('../assets/Audio/effects/celebrate.mp3'); bang.currentTime = 3.5; bang.playbackRate = speed; bang.play().catch(() => {});
+    const t0 = performance.now();
+    const tick = () => {
+      const ms = (performance.now() - t0) * speed;
+      clock.textContent = (ms / 1000).toFixed(2) + 's';
+      if (ms < END) { draw(ms); raf = requestAnimationFrame(tick); }
+      else { draw(END); after.style.transition = 'opacity .5s'; after.style.opacity = 1; white.style.transition = 'opacity .5s'; white.style.opacity = 0; }
+    };
+    tick();
+  });
+</script>
+</body>
+</html>

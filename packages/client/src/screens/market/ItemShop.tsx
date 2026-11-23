@@ -47,6 +47,7 @@ import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
 import { useSteadyPage } from '../useSteadyPage.ts';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
+import { CelebrateCharge } from '../Celebrate.tsx';
 import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
@@ -118,6 +119,8 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   const [basket, setBasket] = useState<MarketBasket>({});
   const [ordering, setOrdering] = useState(false);
   const [bought, setBought] = useState<MarketBasket | null>(null);
+  /** 구매 직후 작은 급의 모음(0.9초, 2026-11-22 기획자 — 「아이템 구매는 2초」)이 끝났나 — 끝나면 「구매 완료」 판 */
+  const [boughtShown, setBoughtShown] = useState(false);
   const now = Date.now();
   const items = marketItemsOf(profile);
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE));
@@ -144,6 +147,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
     run(() => buyMarketItemsOnServer(order), () => {
       setOrdering(false);
       setBasket({});
+      setBoughtShown(false);
       setBought(order);
     });
   };
@@ -250,7 +254,8 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
         </ConfirmModal>
       )}
 
-      {bought && (
+      {bought && !boughtShown && <Layer><CelebrateCharge tier="small" onDone={() => setBoughtShown(true)} /></Layer>}
+      {bought && boughtShown && (
         <DoneModal
           title={t('market.bought.title')}
           field="bought"

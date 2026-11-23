@@ -192,6 +192,9 @@
     scene = wrap.firstElementChild; frame.append(scene);
     scene.getAnimations({ subtree: true }).forEach((an) => (an.playbackRate = rate));
     sfx('celebrate');
+    // 공사 소리 넷 — 게임의 CITY_SOUNDS(Celebrate.tsx)와 같은 시각
+    [['construction_saw', 0], ['construction_nail', 600], ['construction_hammer', 1400], ['construction_bignail', 2800]]
+      .forEach(([n, ms]) => timers.push(setTimeout(() => sfx(n), ms)));
     timers.push(setTimeout(() => {
       scene.remove();
       const after = document.createElement('div'); after.className = 'after';

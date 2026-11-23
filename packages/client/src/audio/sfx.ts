@@ -45,7 +45,9 @@ export type SfxId =
   // 축하 화면이 열리는 소리 (2026-11-20 기획자 — 원본 `assets/Audio/new/축하.mp3`를 `effects/celebrate.mp3`로 옮겼다)
   | 'celebrate'
   // 대장간 축하 도입부의 「깡」(2026-11-21 기획자 — 원본 `assets/Audio/new/망치질.mp3`를 `effects/forge_clang.mp3`로 옮겼다)
-  | 'forge_clang';
+  | 'forge_clang'
+  // 도시 증축 축하 도입부의 공사 소리 넷 (2026-11-23 기획자 — 원본 `assets/Audio/new/construction_톱질 · 못질 · 해머질 · 큰못질.mp3`)
+  | 'construction_saw' | 'construction_nail' | 'construction_hammer' | 'construction_bignail';
 
 const VOLUME = 0.8;
 
@@ -66,12 +68,14 @@ function templateOf(id: SfxId): HTMLAudioElement {
  * `volume`(0~1, 기본값에 곱한다) · `rate`(재생 빠르기 — 높낮이도 함께 바뀐다)는 같은 소리를 여러 번 겹칠 때
  * 기계적으로 들리지 않게 흔드는 데 쓴다.
  */
-export function playSfx(id: SfxId, opts: { volume?: number; rate?: number; channel?: VolumeChannel } = {}): void {
+export function playSfx(id: SfxId, opts: { volume?: number; rate?: number; channel?: VolumeChannel; from?: number } = {}): void {
   const scale = volumeScale(opts.channel ?? 'fx');
   if (scale === 0) return;
   const el = templateOf(id).cloneNode(true) as HTMLAudioElement;
   // 칸은 기본이 효과음(음성)이다 — 환경설정의 과녁 소리만 배경 음악 칸으로 미리 들려준다(`channel`)
   el.volume = Math.min(1, VOLUME * (opts.volume ?? 1) * scale);
   if (opts.rate) { el.preservesPitch = false; el.playbackRate = opts.rate; }
+  // 소리의 중간(초)부터 — 짧은 축하(2초 급)가 축하음의 「쾅」만 앞당겨 쓴다(2026-11-22)
+  if (opts.from) el.currentTime = opts.from;
   void el.play().catch(() => { /* 자동재생이 막혔거나 파일이 없다 */ });
 }

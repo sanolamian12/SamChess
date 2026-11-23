@@ -21,6 +21,10 @@
  * 용머리가 「쿵」 놓이자 곧바로 햇빛에 「쨍」 빛나 화면이 빛으로 찬다).
  * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
  *
+ * **급은 둘이다** (2026-11-22 기획자 — 「7초가 큰 급, 2초가 작은 급」): 큰 급(`tier="big"`, 기본)은 위의 5초 모음 + 무대(약 2초) — 강화 · 도시 증축 ·
+ * 대장간 제작 · 태학 연구. 작은 급(`small`)은 모음이 0.9초(세 빛이 빠르게 돌며 모여 번쩍)이고 축하음은 「쾅」 4.1초 앞부터 튼다 — 건물 짓기 · 증축 · 금화 구매.
+ * 작은 급은 도입부 갈래(`intro`)를 안 쓴다. 모음만 따로 쓰는 자리(장터 아이템 구매 · 8연 뽑기)는 `CelebrateCharge`.
+ *
  * 모으는 동안은 눌러도 · 키를 눌러도 안 닫힌다(소리와 맞춘 연출이다). **`data-modal`은 무대가 열린 뒤에야 붙는다** — 검사가
  * 「축하 화면이 떴다」를 기다리면 모음이 끝날 때까지 저절로 기다린다(모으는 중은 `.cel-back[data-phase="charge"]`).
  *
@@ -49,6 +53,12 @@ const LEAVE_MS = 360;
  * CSS의 `cel-swirl` · `cel-flare` · `cel-whiteout`(5초)과 같은 값이다 — 바꾸면 셋을 함께.
  */
 const CHARGE_MS = 5000;
+/** 축하의 급 — 큰 급(7초) · 작은 급(2초) */
+export type CelebrateTier = 'big' | 'small';
+/** 급마다 모으는 길이(ms) — 작은 급은 CSS의 `.cel-back[data-tier="small"]`(.9초)과 같은 값 */
+export const CHARGE_MS_OF: Record<CelebrateTier, number> = { big: CHARGE_MS, small: 900 };
+/** 축하음을 어디서부터 트나(초) — 「쾅」이 5.0초에 있으니 작은 급은 4.1초부터 틀어 0.9초에 「쾅」 */
+const SOUND_FROM: Record<CelebrateTier, number> = { big: 0, small: 4.1 };
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
 export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city';
 /**
@@ -58,6 +68,14 @@ export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | '
 const FORGE_STRIKES_MS = [1500, 3000, 4500] as const;
 /** 「깡」 — 망치가 칼날을 맞는 소리(`assets/Audio/new/망치질.mp3`) */
 const FORGE_CLANG: SfxId = 'forge_clang';
+/**
+ * 도시 증축 도입부의 공사 소리 — [소리, 트는 시각 ms]. 대장간의 「깡」처럼 장면에 얹는다(2026-11-23 기획자, `assets/Audio/new/construction_*.mp3`).
+ * 톱질은 기어에 붙은 처음부터(0~2.2초), 못질 · 해머질이 물러나며 짐이 오르는 동안 이어 치고, 큰못질은 둘째 「쾅」(소리 안 0.6초)이
+ * 용머리가 앉는 3.4초(`cic-cam` 68%)에 떨어지게 2.8초에 튼다.
+ */
+const CITY_SOUNDS: readonly (readonly [SfxId, number])[] = [
+  ['construction_saw', 0], ['construction_nail', 600], ['construction_hammer', 1400], ['construction_bignail', 2800],
+];
 /**
  * 태학 도입부 — 별과 빛줄의 계획. 좌표는 화면 비율(가로 0~100 · 세로 0~200, 세로 판 1:2)이고, 별 그림은 퍼센트 자리 · 빛줄은 같은 좌표의 SVG라
  * 둘이 같은 자리에 선다. 빛줄마다 언제(`at`) · 얼마 동안(`dur`) 그어지고 얼마나 옅은지(`op`)를 적고, 별은 처음 빛줄에 닿는 순간 한 단계 밝아진다.
@@ -246,7 +264,7 @@ const FLAKES = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel', tone = 'plain', okAction = 'doneOk',
-  sound = 'celebrate', intro = 'swirl', onClose, className = '', children }: {
+  sound = 'celebrate', intro: introAsked = 'swirl', tier = 'big', onClose, className = '', children }: {
   /** `data-modal` — 검사가 이 화면을 찾는 이름 */
   modal: string;
   /** 큰 제목(「강화 완료」) — 언제나 한 줄, 안 들면 그 글만 줄인다(`FitLine`) */
@@ -264,14 +282,18 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   okAction?: string;
   /** 열릴 때 소리 — 기본은 전용 축하음(`celebrate`, 2026-11-20 기획자) */
   sound?: SfxId | null;
-  /** 모으는 5초의 도입부 — 기본은 세 빛 나선 */
+  /** 모으는 5초의 도입부 — 기본은 세 빛 나선. 작은 급은 언제나 세 빛 나선이다 */
   intro?: CelebrateIntro;
+  /** 급 — 큰 급(기본, 7초) · 작은 급(2초) */
+  tier?: CelebrateTier;
   onClose: () => void;
   /** 갈래 클래스(글자 꼴 · 크기) — 예: 도시 증축의 `cty-done` */
   className?: string;
   /** 큰 글씨 아래 줄들 */
   children?: ReactNode;
 }): React.JSX.Element {
+  const intro: CelebrateIntro = tier === 'small' ? 'swirl' : introAsked;
+  const chargeMs = CHARGE_MS_OF[tier];
   const [leaving, setLeaving] = useState(false);
   const [charging, setCharging] = useState(true);
   const chargingRef = useRef(true);
@@ -294,12 +316,13 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   }, []);
 
   useEffect(() => {
-    if (sound) playSfx(sound);
-    const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms)) : [];
-    const shown = window.setTimeout(() => { chargingRef.current = false; setCharging(false); }, CHARGE_MS);
+    if (sound) playSfx(sound, { from: SOUND_FROM[tier] });
+    const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms))
+      : intro === 'city' ? CITY_SOUNDS.map(([id, ms]) => window.setTimeout(() => playSfx(id, { volume: 0.85 }), ms)) : [];
+    const shown = window.setTimeout(() => { chargingRef.current = false; setCharging(false); }, chargeMs);
     // 아무 키나 — 무대가 열리고 한 박자 뒤부터 듣는다(열리는 순간 눌려 있던 키는 넘긴다)
     let on = false;
-    const arm = window.setTimeout(() => { on = true; }, CHARGE_MS + 250);
+    const arm = window.setTimeout(() => { on = true; }, chargeMs + 250);
     const onKey = (e: KeyboardEvent): void => {
       if (!on || e.repeat) return;
       e.preventDefault();
@@ -310,7 +333,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
       window.clearTimeout(shown); window.clearTimeout(arm); clangs.forEach((c) => window.clearTimeout(c));
       window.removeEventListener('keydown', onKey);
     };
-  }, [sound, intro, leave]);
+  }, [sound, intro, tier, chargeMs, leave]);
 
   if (charging && intro === 'forge') {
     return (
@@ -368,20 +391,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
     return <StarIntro intro={intro} plan={STAR_PLANS[intro]} />;
   }
 
-  if (charging) {
-    return (
-      <div className="modal-back cel-back" data-phase="charge" aria-hidden>
-        <div className="cel-charge">
-          <div className="cel-swirl">
-            {FLARES.map((c, i) => (
-              <i key={c} style={{ rotate: `${i * 120}deg` }}><b><span data-c={c} /></b></i>
-            ))}
-          </div>
-          <span className="cel-whiteout" />
-        </div>
-      </div>
-    );
-  }
+  if (charging) return <SwirlCharge tier={tier} />;
 
   return (
     <div className="modal-back cel-back" data-modal={modal} data-phase="show" data-leaving={leaving ? '1' : undefined} onClick={leave}>
@@ -412,4 +422,39 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
       </div>
     </div>
   );
+}
+
+/** 세 빛 나선 모음 — 큰 급은 5초, 작은 급은 0.9초(`data-tier`) */
+function SwirlCharge({ tier }: { tier: CelebrateTier }): React.JSX.Element {
+  return (
+    <div className="modal-back cel-back" data-phase="charge" data-tier={tier} aria-hidden>
+      <div className="cel-charge">
+        <div className="cel-swirl">
+          {FLARES.map((c, i) => (
+            <i key={c} style={{ rotate: `${i * 120}deg` }}><b><span data-c={c} /></b></i>
+          ))}
+        </div>
+        <span className="cel-whiteout" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 모음만 — 무대 대신 제 판을 띄우는 자리가 앞에 붙인다(2026-11-22 기획자): 장터 아이템 구매(작은 급, 0.9초 뒤 「구매 완료」 판) ·
+ * 8연 뽑기(큰 급, 5초 뒤 섬광 여덟). 축하음을 같은 박자로 틀고(작은 급은 「쾅」 앞부터), 다 모으면 `onDone`. 배경 음악은 건드리지 않는다.
+ */
+export function CelebrateCharge({ tier, onDone, sound = 'celebrate' }: {
+  tier: CelebrateTier;
+  onDone: () => void;
+  sound?: SfxId | null;
+}): React.JSX.Element {
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    if (sound) playSfx(sound, { from: SOUND_FROM[tier] });
+    const id = window.setTimeout(() => done.current(), CHARGE_MS_OF[tier]);
+    return () => window.clearTimeout(id);
+  }, [tier, sound]);
+  return <SwirlCharge tier={tier} />;
 }

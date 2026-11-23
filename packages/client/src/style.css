@@ -8144,6 +8144,12 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   animation: cel-whiteout 5s ease-in both;
 }
 @keyframes cel-whiteout { 0%, 74% { opacity: 0; } 100% { opacity: 1; } }   /* 일찍 깔면 섬광이 갈라져 있을 때 화면이 잿빛으로 뿌예진다 */
+/* 작은 급(2026-11-22 기획자 — 2초): 같은 세 빛이 0.9초 만에 한 바퀴 반 돌며 모여 번쩍. 길이는 `Celebrate.tsx`의 `CHARGE_MS_OF.small`과 같다 */
+.cel-back[data-tier="small"] .cel-swirl { animation-name: cel-swirl-small; animation-duration: .9s; }
+@keyframes cel-swirl-small { to { transform: rotate(540deg); } }
+.cel-back[data-tier="small"] .cel-swirl > i > b,
+.cel-back[data-tier="small"] .cel-swirl span,
+.cel-back[data-tier="small"] .cel-whiteout { animation-duration: .9s; }
 /* 무대가 열리는 순간(「쾅」) — 흰빛이 걷힌다. 누름 칸(5) 밑 · 무대 위 */
 .cel-unwhite {
   position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #fff; opacity: 0;

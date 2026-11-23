@@ -253,7 +253,7 @@ function BuildDoneModal({ profile, id, level, isNew, onClose }: {
   const credits = buildCreditsLeft(profile);
   return (
     // 판 · 연출은 공용 축하 판(`Celebrate`, 2026-11-20) — 글만 넘긴다
-    <Celebrate modal="buildDone" className="cty-done" title={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
+    <Celebrate modal="buildDone" tier="small" className="cty-done" title={t(isNew ? 'city.bld.done.built' : 'city.bld.done.up')}
       art={<img className="cel-art-img" src="ui/cel-build.png" alt="" />}
       badge={<BuildingLevelBadge level={level} className="cty-done-badge cel-badge-img" />}
       bigField="doneBld"

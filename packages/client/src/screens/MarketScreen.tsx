@@ -329,6 +329,7 @@ function GoldCelebrate({ gold, have, onClose }: { gold: number; have: number; on
   return (
     <Celebrate
       modal="goldDone"
+      tier="small"
       className="gold-cel"
       tone="gold"
       title={t('market.gold.done.title')}

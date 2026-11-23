@@ -88,6 +88,17 @@ let X: OfficerId | undefined;      // Lv3 · 병기를 든 장수
 const WEAPON = EQUIPMENT[0]!;
 const [ITEM_A, ITEM_B] = [MARKET_ITEMS[0]!, MARKET_ITEMS[5]!];   // 1쪽 · 2쪽 품목
 
+/**
+ * 메인에서 장터로 — 새로고침 직후에는 계정이 늦게 와 메인이 한 번 더 그려지는데, 그 사이에 누르면 눌림이 사라진다(초점 테두리만 남는다).
+ * 장터 화면이 뜰 때까지 다시 누른다(2026-11-22)
+ */
+async function openMarket(): Promise<void> {
+  for (let i = 0; i < 6; i += 1) {
+    await page.click('[data-place="market"]', { force: true });
+    if (await page.waitForSelector('[data-action="openShop"]', { timeout: 2_000 }).catch(() => null)) return;
+  }
+  throw new Error('메인에서 장터가 안 열린다');
+}
 try {
   step('계정 만들기 — 서버 쪽에서 심는다');
   await page.goto(BASE, { waitUntil: 'networkidle' });
@@ -140,7 +151,7 @@ try {
   ok(`심었다 — 정리 ${SRC}(6장) → ${DST} · Lv3 ${X} + ${WEAPON.id}`);
 
   step('장터 홈 (76쪽 왼쪽) — 도시의 장터 자리가 곧장 연다');
-  await page.click('[data-place="market"]', { force: true });
+  await openMarket();
   await page.waitForSelector('[data-screen="market"]', { timeout: 10_000 });
   await shot('home');
   for (const f of ['status', 'marketLevel', 'items', 'cards']) {
@@ -439,7 +450,7 @@ try {
     });
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
-    await page.click('[data-place="market"]', { force: true });
+    await openMarket();
     await page.click('[data-action="openShop"]');
     await page.click('[data-action="openItems"]');
     await page.click('[data-action="openStorage"]');
@@ -519,7 +530,7 @@ try {
   step('장수 재설계 (88쪽) — Lv2 이상만, [궁궐로 이동]');
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  await page.click('[data-place="market"]', { force: true });
+  await openMarket();
   await page.click('[data-action="openShop"]');
   await page.click('[data-action="openGoods"]');
   await page.click('[data-good="respec"]');
