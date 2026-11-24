@@ -2,10 +2,8 @@
  * 장터 (2026-09-24 재구성, pptx 75~88쪽 — 「UI update 260924」).
  *
  * ```
- * 장터 홈 (76쪽 왼쪽)          현황판 — 장터 Lv · 보관함 · 금화/군량/자재 · 장수 카드 · 군량 충전
- *   [금화 충전]  현금으로 금화 구매
- *   [상품 구매]  금화로 상품 구매
- * 상품 구매 (76쪽 오른쪽)       배너 셋 — [용병 시장] [전투 아이템] [도시 물자]  + [뒤로 가기]
+ * 장터 홈                      현황판 한 줄 + 배너 셋 — [용병 시장] [도시 물자] [전투 아이템]  + 바닥 [금화 충전]
+ *                              (2026-11-24 기획자 — 옛 [상품 구매] 판을 홈으로 올렸다. 현황판은 장터 Lv · 금화 · 보관함 둘만)
  *   용병 시장   → market/MercView.tsx   새 카드 뽑기 · 보유 카드 정리
  *   전투 아이템 → market/ItemShop.tsx   아이템 사기 · 보관함 · 지급
  *   도시 물자   → market/GoodsView.tsx  자재 · 군량 · 연구 초기화 · 초심의 서
@@ -27,7 +25,7 @@
 import { useEffect, useState } from 'react';
 import { officerById } from '@samchess/data';
 import {
-  MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, grainCap, marketCapacity, marketLevel, marketOwnedCount, pendingGuide,
+  MARKET_ITEM_MIN_LEVEL, RESPEC_GOLD, marketCapacity, marketLevel, marketOwnedCount, pendingGuide,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -36,7 +34,6 @@ import { currentSession } from '../meta/auth.ts';
 import { devGrantOnServer, devGrantsEnabled } from '../meta/city.ts';
 import { Celebrate } from './Celebrate.tsx';
 import { BusyVeil } from './BusyVeil.tsx';
-import { CityBonusMark } from './CityBonus.tsx';
 import { placeBackdrop } from './backdrop.ts';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { stripBackArrow } from './RankingCommon.tsx';
@@ -44,25 +41,25 @@ import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
-import { CardStat, Layer, LayerContext, useServerCall } from './market/parts.tsx';
-import { MercView } from './market/MercView.tsx';
+import { Layer, LayerContext, useServerCall } from './market/parts.tsx';
+import { MercStatus, MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
 import { GoodsView } from './market/GoodsView.tsx';
 import { GameIcon } from './GameIcon.tsx';
-import { useGuide } from './useGuide.tsx';
 import { buildingNameText } from './buildingText.ts';
 import { BuildingLevel } from './LevelBadge.tsx';
+import { useGuide } from './useGuide.tsx';
 
-type View = 'home' | 'shop' | 'gold' | 'merc' | 'items' | 'storage' | 'goods';
+type View = 'home' | 'gold' | 'merc' | 'items' | 'storage' | 'goods';
 
 /** 아래 [뒤로 가기]가 가는 곳 — 한 칸 위 판 */
 const PARENT: Record<Exclude<View, 'home'>, View> = {
-  shop: 'home', gold: 'home', merc: 'shop', items: 'shop', goods: 'shop', storage: 'items',
+  gold: 'home', merc: 'home', items: 'home', goods: 'home', storage: 'items',
 };
 
 /** 제목 명패 — 판마다 (목업의 청동 명패 글자) */
 const TITLE: Record<View, string> = {
-  home: 'place.market', shop: 'market.btn.shop', gold: 'market.btn.gold',
+  home: 'place.market', gold: 'market.btn.gold',
   merc: 'market.shop.merc', items: 'market.shop.items', goods: 'market.shop.goods', storage: 'market.shop.items',
 };
 
@@ -140,25 +137,13 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
         <span className="place-nm" data-view={view}>{t(TITLE[view] as Parameters<typeof t>[0])}</span>
       </div>
 
+      {/* 현황판은 홈 · 용병 시장 모두 제목 바 바로 밑 같은 자리 · 같은 높이 (2026-11-24 기획자) */}
       {view === 'home' && <MarketStatus profile={profile} />}
+      {view === 'merc' && <MercStatus profile={profile} />}
 
-      <div className={`place-body mkt-body${view === 'home' ? '' : ' mkt-body-flow'}`} data-view={view}>
+      <div className="place-body mkt-body mkt-body-flow" data-view={view}>
+        {/* 홈 = 현황판 + 배너 셋 + 바닥의 [금화 충전] 하나 (2026-11-24 기획자 — 옛 [상품 구매] 판을 홈으로 올렸다) */}
         {view === 'home' && (
-          <section className="place-panel mkt-cmds">
-            <div className="frg-buttons">
-              <button className="btn wide" data-action="openGold" onClick={() => go('gold')}>
-                <span className="lbl"><GameIcon name="mk-topup" label={t('market.btn.gold')} text /></span>
-                <span className="sub">{t('market.btn.gold.sub')}</span>
-              </button>
-              <button className="btn wide" data-action="openShop" onClick={() => go('shop')}>
-                <span className="lbl"><GameIcon name="mk-shop" label={t('market.btn.shop')} text /></span>
-                <span className="sub">{t('market.btn.shop.sub')}</span>
-              </button>
-            </div>
-          </section>
-        )}
-
-        {view === 'shop' && (
           <>
             <div className="mkt-banners">
               <Banner id="merc" onClick={() => go('merc')} />
@@ -168,7 +153,14 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
               <Banner id="items" onClick={() => go('items')}
                 lockedUntil={marketLevel(profile) < MARKET_ITEM_MIN_LEVEL ? MARKET_ITEM_MIN_LEVEL : undefined} />
             </div>
-            <BackPanel onBack={up} />
+            <section className="place-panel mkt-cmds">
+              <div className="frg-buttons">
+                {/* 아이콘은 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자) */}
+                <button className="btn wide mkt-ctr-btn" data-action="openGold" onClick={() => go('gold')}>
+                  <span className="lbl"><GameIcon name="mk-topup" label={t('market.btn.gold')} text /></span>
+                </button>
+              </div>
+            </section>
           </>
         )}
 
@@ -236,60 +228,23 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
 }
 
 /**
- * 현황판 (76쪽) — 장터 Lv / [금화 | 군량 · 자재] / [장수 카드 · 정리 가능 | 보유 아이템].
- * **값은 규칙이 낸다** — 정리 가능 카드도 `recycleSources()`·`recyclableCards()`가 정한
- * 것을 단위(3장)로 내려 더한다. 화면이 「3장 이상」을 다시 세면 규칙과 갈린다.
- * 군량 충전 줄(시간당 · 가득까지)은 2026-09-25에 뺐다(기획자 지정). 재화 두 줄은 왼쪽에 붙인다.
+ * 현황판 한 줄 (2026-11-24 기획자) — 왼쪽 단: 장터 배지 + 레벨(왼쪽 정렬), 오른쪽 단: 금화 | 보관함(보유 / 최대)(오른쪽 정렬).
+ * 장터 Lv1은 보관함이 없다(「Lv 2부터」 — 언어마다 길이가 달라 짧게). 군량 · 자재 · 장수 카드는 그 판(도시 물자 · 용병 시장)이 보여 준다
  */
 function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
   const lv = marketLevel(profile);
   return (
     <section className="place-panel mkt-status" data-field="status">
-      <div className="mkt-status-top">
-        <span className="mkt-lv" data-field="marketLevel"><BuildingLevel id="market" name={buildingNameText('market')} level={lv} /></span>
-      </div>
-      {/* 3등분 격자 (2026-11-12 지정) — 칸마다 왼쪽 정렬. 1줄: 금화 / 군량 / 자재,
-          2줄: 장수 카드(1~2칸에 걸침) / 보유 아이템(장터 간판, 자재와 같은 세로선) */}
-      <div className="mkt-stat-grid">
-        <div className="mkt-currency">
-          <CurrencyStat icon="gold" label={t('market.gold')} value={profile.gold} />
-        </div>
-        <div className="mkt-currency">
-          {/* 최대 군량을 늘린 컬렉션이 있으면 인장 (2026-10-15) */}
-          <CurrencyStat icon="grain" label={t('market.grain')} value={`${profile.grain}/${grainCap(profile)}`}
-            mark={<CityBonusMark profile={profile} keys={['grainCap']} />} />
-        </div>
-        <div className="mkt-currency">
-          <CurrencyStat icon="materials" label={t('market.materials')} value={profile.materials} />
-        </div>
-        <div className="mkt-currency mkt-cards-cell">
-          <CardStat profile={profile} />
-        </div>
-        <div className="mkt-currency">
-          {/* 보유 아이템 — 글자 대신 장터 간판 그림. 장터 Lv1은 보관함이 없다(「Lv 2부터」로 짧게 — 언어마다 길이가 달라 판 밖으로 나갔다) */}
-          <CurrencyStat
-            icon="market-sign-icon"
-            field="items"
-            label={t('market.status.items')}
-            value={lv < 2
-              ? <span className="mkt-merc-cards">{t('market.status.items.none')}</span>
-              : `${marketOwnedCount(profile)}/${marketCapacity(profile)}`}
-          />
-        </div>
-      </div>
+      <span className="mkt-lv" data-field="marketLevel"><BuildingLevel id="market" name={buildingNameText('market')} level={lv} /></span>
+      <span className="mkt-cur" data-currency="gold" data-field="gold" data-gold={profile.gold}>
+        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} />
+        <b className="v">{profile.gold.toLocaleString('en-US')}</b>
+      </span>
+      <span className="mkt-cur mkt-stock" data-field="items">
+        <GameIcon name="mk-storage" label={t('market.status.items')} />
+        <b className="v">{lv < 2 ? <span className="mkt-merc-cards">{t('market.status.items.none')}</span> : `${marketOwnedCount(profile)}/${marketCapacity(profile)}`}</b>
+      </span>
     </section>
-  );
-}
-
-function CurrencyStat({ icon, label, value, field, mark }: {
-  icon: string; label: string; value: React.ReactNode; field?: string; mark?: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <span className="mkt-cur" data-currency={icon} data-field={field}>
-      <img src={`market/${icon}.png`} alt={label} title={label} />
-      <b className="v">{value}</b>
-      {mark}
-    </span>
   );
 }
 
@@ -310,14 +265,16 @@ function Banner({ id, onClick, lockedUntil }: {
       disabled={locked} onClick={onClick}>
       <span className="mkt-banner-art">
         <img src={src} alt="" onError={() => { if (src !== 'market/gacha-banner.jpg') setSrc('market/gacha-banner.jpg'); }} />
+        {/* 이름은 그림 가운데에 (2026-11-24 기획자 — 아래 명패 띠는 걷었다). 평소엔 어둡게 + 이름, 포커스면 본래 밝기 + 이름은 숨는다 */}
+        {!locked && <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>}
         {locked && (
           <span className="mkt-banner-lock" data-field="bannerLock">
+            <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>
             <GameIcon name="mk-lock" label={t('market.shop.items.locked', { level: lockedUntil })} />
             <span className="mkt-banner-lock-t">{t('market.shop.items.locked', { level: lockedUntil })}</span>
           </span>
         )}
       </span>
-      <span className="mkt-banner-lbl">{t(`market.shop.${id}`)}</span>
     </button>
   );
 }

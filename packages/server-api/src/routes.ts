@@ -5,11 +5,11 @@ import { randomInt } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type { BattleMode, Intent, OfficerId } from '@samchess/rules';
 import type {
-  BattleOutcome, GachaPullKind, MarketBasket, RecycleInputs, RosterPick, StatPick,
+  BattleOutcome, MarketBasket, RosterPick, StatPick,
 } from '@samchess/meta';
 import type { BattleRankMode, RankBoard, ReasonParams } from '@samchess/meta';
 import { BATTLE_RANK_MODES, RANK_BOARDS } from '@samchess/meta';
-import { RECORD_FILTERS, SIEGE_TABS, isTutorialId } from '@samchess/meta';
+import { RECORD_FILTERS, SIEGE_TABS, isGachaPullKind, isSurplusGrade, isTutorialId } from '@samchess/meta';
 import type { RecordFilter, SiegeTab } from '@samchess/meta';
 import { officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
@@ -18,7 +18,7 @@ import { registerBanReply } from './ban.ts';
 import { verifyInternalSecret } from './internalAuth.ts';
 import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
-  RaidBlockedError, completeTutorial, deleteProfile, getProfile, pullGacha, saveProfile,
+  RaidBlockedError, completeTutorial, deleteProfile, exchangeSurplusCards, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
 import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
@@ -460,11 +460,25 @@ export function registerRoutes(app: FastifyInstance): void {
   app.post('/market/gacha', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ kind: GachaPullKind }>;
-    if (b.kind !== 'single' && b.kind !== 'multi') return reply.code(400).send({ error: 'invalid body' });
+    const b = req.body as Partial<{ kind: unknown }>;
+    if (!isGachaPullKind(b.kind)) return reply.code(400).send({ error: 'invalid body' });
     const r = await pullGacha(user.uid, b.kind, randomInt(1, 2 ** 31 - 1));
     if (!r.ok) return reply.code(r.status).send(refusal(r));
-    return { profile: r.profile, drawn: r.drawn, exhausted: r.exhausted };
+    return { profile: r.profile, drawn: r.drawn, fates: r.fates, exhausted: r.exhausted };
+  });
+
+  /**
+   * **잉여 카드로 모집** (2026-11-24 — 카드 정리를 대신한다). 보내는 것은 등급뿐이고, 받는 장수는 서버가 시드로 고른다 —
+   * 클라이언트가 고를 수 있으면 원하는 장수가 나올 때까지 다시 보낸다.
+   */
+  app.post('/market/surplus', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = req.body as Partial<{ grade: unknown }>;
+    if (!isSurplusGrade(b.grade)) return reply.code(400).send({ error: 'invalid body' });
+    const r = await exchangeSurplusCards(user.uid, b.grade, randomInt(1, 2 ** 31 - 1));
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
+    return { profile: r.profile, officer: r.officer };
   });
 
   /**
@@ -556,24 +570,6 @@ export function registerRoutes(app: FastifyInstance): void {
       return reply.code(400).send({ error: 'invalid body' });
     }
     const r = await applyAccountAction(user.uid, { kind: 'levelUp', officer: b.officer, stat: b.stat, school: b.school });
-    if (!r.ok) return reply.code(r.status).send(refusal(r));
-    return r.profile;
-  });
-
-  /** **카드 정리** (A2) — 받을 장수와 재료 수만 보낸다. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
-  app.post('/market/recycle', async (req, reply) => {
-    const user = await verifyToken(req.headers.authorization);
-    if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ target: OfficerId; inputs: Record<string, unknown> }>;
-    if (typeof b.target !== 'string' || !b.inputs || typeof b.inputs !== 'object' || Array.isArray(b.inputs)) {
-      return reply.code(400).send({ error: 'invalid body' });
-    }
-    const inputs: RecycleInputs = {};
-    for (const [id, n] of Object.entries(b.inputs)) {
-      if (!Number.isInteger(n) || (n as number) < 0) return reply.code(400).send({ error: 'invalid inputs' });
-      inputs[id as OfficerId] = n as number;
-    }
-    const r = await applyAccountAction(user.uid, { kind: 'recycle', target: b.target, inputs });
     if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });

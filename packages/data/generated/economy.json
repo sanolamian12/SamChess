@@ -22,19 +22,24 @@
     "E"
   ],
   "gachaPull": {
-    "single": {
-      "gold": 10
+    "one": {
+      "gold": 10,
+      "count": 1
     },
-    "multi": {
-      "gold": 72,
-      "count": 8
+    "three": {
+      "gold": 25,
+      "count": 3
+    },
+    "five": {
+      "gold": 40,
+      "count": 5
     }
   },
   "gachaSlotMultiplier": 2,
-  "recycle": {
-    "cardsIn": 3,
-    "cardsOut": 1,
-    "minHeld": 2
+  "surplusExchange": {
+    "A": 10,
+    "S": 20,
+    "E": 30
   },
   "respecItemGold": 10,
   "battleRewards": {

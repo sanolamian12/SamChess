@@ -184,7 +184,7 @@ try {
   await guide('tour-market', 'tour.market');
   if (await tourTarget() !== 'market') fail(`가리킴 아이콘이 장터가 아니라 ${await tourTarget()}`);
   await page.click('.city-hot[data-place="market"]', { force: true });
-  await page.waitForSelector('[data-action="openShop"]');
+  await page.waitForSelector('[data-action="openMerc"]');
   await guide('market', 'market.intro');
   await toMain();
   await guide('tour-board', 'tour.board');

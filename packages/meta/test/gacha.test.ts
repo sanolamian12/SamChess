@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import test, { describe, it } from 'node:test';
 import { ECONOMY, OFFICERS } from '@samchess/data';
 import {
-  buyGacha, canAffordGacha, createProfile, drawGacha, gachaDeckBase, gachaPullCost,
+  addCard, buyGacha, canPullGacha, createProfile, drawGacha, gachaDeckBase, gachaPullCost, poolSeatsFree,
   gachaSlotsPerOfficer, migrateProfile, shuffledGachaDeck,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -129,26 +129,59 @@ describe('drawGacha', () => {
 describe('buyGacha — 골드 구매', () => {
   it('가격만큼 골드가 빠지고 뽑은 만큼 카드/보유 장수가 늘어난다', () => {
     const rich = { ...profile(), gold: 1_000 };
-    const cost = gachaPullCost('single');
-    const { profile: next, drawn } = buyGacha(rich, 'single', 1);
+    const cost = gachaPullCost('one');
+    const { profile: next, drawn } = buyGacha(rich, 'one', 1);
     assert.equal(drawn.length, 1);
     assert.equal(next.gold, 1_000 - cost.gold);
     const owned = next.roster[drawn[0]!] !== undefined || (next.cards[drawn[0]!] ?? 0) > 0;
     assert.ok(owned, '뽑은 장수가 보유 목록이나 카드에 들어가 있어야 한다');
   });
 
-  it('8연은 8장 · 72냥이다 (2026-09-24, 10연 90냥에서 바뀌었다)', () => {
+  it('1명 · 3명 · 5명 모집은 10 · 25 · 40냥이다 (2026-11-24 기획자 — 단발 · 8연을 대신한다)', () => {
+    assert.deepEqual(gachaPullCost('one'), { gold: 10, count: 1 });
+    assert.deepEqual(gachaPullCost('three'), { gold: 25, count: 3 });
+    assert.deepEqual(gachaPullCost('five'), { gold: 40, count: 5 });
     const rich = { ...profile(), gold: 1_000 };
-    const { profile: next, drawn } = buyGacha(rich, 'multi', 2);
-    assert.deepEqual(gachaPullCost('multi'), { gold: 72, count: 8 }, '기획자 지정 — 할인율 10% 유지');
-    assert.equal(drawn.length, 8);
-    assert.equal(next.gold, 1_000 - gachaPullCost('multi').gold);
+    const { profile: next, drawn, fates } = buyGacha(rich, 'five', 2);
+    assert.equal(drawn.length, 5);
+    assert.equal(fates.length, 5);
+    assert.equal(next.gold, 1_000 - 40);
   });
 
-  it('골드가 모자라면 canAffordGacha가 막고, buyGacha는 던진다', () => {
+  it('궁궐의 빈자리가 모집 수보다 적으면 막는다 — 자리를 금화보다 먼저 본다 (2026-11-24 기획자)', () => {
+    let p: PlayerProfile = { ...profile(), gold: 1_000 };
+    const fillers = OFFICERS.filter((o) => o.grade === 'C' || o.grade === 'D').map((o) => o.id);
+    let k = 0;
+    const fillTo = (free: number): void => { while (poolSeatsFree(p) > free) p = addCard(p, fillers[k++] as never); };
+    const code = (kind: 'one' | 'three' | 'five'): string | undefined => { const r = canPullGacha(p, kind); return r.ok ? undefined : r.code; };
+
+    fillTo(5);
+    assert.deepEqual([code('one'), code('three'), code('five')], [undefined, undefined, undefined], '빈자리 5 — 셋 다 열린다');
+    fillTo(4);
+    assert.equal(code('five'), 'market.recruit.noSeat', '빈자리 4 — 5명은 막힌다');
+    assert.equal(code('three'), undefined);
+    fillTo(2);
+    assert.equal(code('three'), 'market.recruit.noSeat', '빈자리 2 — 3명도 막힌다');
+    assert.equal(code('one'), undefined);
+    fillTo(0);
+    assert.equal(code('one'), 'market.recruit.noSeat', '가득 — 셋 다 막힌다');
+    assert.throws(() => buyGacha(p, 'one', 1), '규칙이 다시 막는다');
+    // 금화도 없으면 자리가 먼저 말한다
+    assert.equal(code('one'), (() => { const r = canPullGacha({ ...p, gold: 0 }, 'one'); return r.ok ? undefined : r.code; })());
+  });
+
+  it('빈자리가 넉넉하면 나온 새 장수는 전부 풀에 든다 — 모집에서는 잉여 카드가 「자리 없음」으로 생기지 않는다', () => {
+    const rich = { ...profile(), gold: 1_000 };
+    const { profile: next, drawn, fates } = buyGacha(rich, 'five', 3);
+    drawn.forEach((id, i) => { if (fates[i] === 'new') assert.ok(next.roster[id], `${id}가 풀에 들었다`); });
+    assert.ok(!fates.includes('surplus'), 'Lv1 장수뿐이라 잉여 카드가 없다');
+    assert.equal(next.surplusCards ?? 0, 0);
+  });
+
+  it('골드가 모자라면 canPullGacha가 막고, buyGacha는 던진다', () => {
     const poor = { ...profile(), gold: 0 };
-    assert.equal(canAffordGacha(poor, 'single').ok, false);
-    assert.throws(() => buyGacha(poor, 'single', 1));
+    assert.equal(canPullGacha(poor, 'one').ok, false);
+    assert.throws(() => buyGacha(poor, 'one', 1));
   });
 });
 
@@ -157,7 +190,7 @@ describe('buyGacha — 골드 구매', () => {
 // (「유한 배열」이 없었다) — 관리자 「가챠」 탭을 만들다 잡혔다.
 
 test('gachaPool은 migrateProfile(JSON 왕복)을 지나도 남는다', () => {
-  const p = buyGacha({ ...createProfile('가챠되접기', 1), gold: 99_999 }, 'single', 77).profile;
+  const p = buyGacha({ ...createProfile('가챠되접기', 1), gold: 99_999 }, 'one', 77).profile;
   const back = migrateProfile(JSON.parse(JSON.stringify(p)));
   assert.deepEqual(back?.gachaPool, { seed: 77, drawn: 1 });
 });
@@ -166,7 +199,7 @@ test('서버처럼 뽑을 때마다 되접어도 한 배열의 다음 칸이 차
   let p: PlayerProfile = { ...createProfile('가챠이어짐', 2), gold: 99_999 };
   const got: string[] = [];
   for (let i = 0; i < 5; i++) {
-    const r = buyGacha(migrateProfile(JSON.parse(JSON.stringify(p)))!, 'single', 1000 + i);
+    const r = buyGacha(migrateProfile(JSON.parse(JSON.stringify(p)))!, 'one', 1000 + i);
     got.push(...r.drawn);
     p = r.profile;
   }

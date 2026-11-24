@@ -125,7 +125,9 @@ describe('마이그레이션 — v1을 버리지 않고 되접는다', () => {
     assert.equal(back.version, PROFILE_VERSION);
     assert.equal(back.cityName, '옛성');
     assert.equal(back.grain, 12);
-    assert.equal(back.cards[GWAN], 4);
+    // Lv9 장수의 남은 카드는 잉여 카드로 옮겨진다 (2026-11-24 — 잃는 것은 없다, 자리만 바뀐다)
+    assert.equal(back.cards[GWAN], undefined);
+    assert.equal(back.surplusCards, 4);
   });
 });
 

@@ -37,7 +37,7 @@ try {
     assert.equal(r.status, 200, `관리자 API ${r.status}`);
     return (await r.json()) as AdminGachaResponse;
   };
-  const pull = async (kind: 'single' | 'multi'): Promise<string[]> => {
+  const pull = async (kind: 'one' | 'five'): Promise<string[]> => {
     const r = await fetch(`${GAME_API}/market/gacha`, {
       method: 'POST', headers: { Authorization: `Bearer ${u.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ kind }),
     });
@@ -50,18 +50,18 @@ try {
   assert.equal(before.slots.length, 0);
   ok(`가챠 전 — 배열 없음 (전체 ${before.total}칸, ${before.pages}쪽)`);
 
-  const first = await pull('single');
+  const first = await pull('one');
   const p1 = await peek();
   assert.deepEqual([p1.started, p1.drawn, p1.page], [true, 1, 1]);
   assert.equal(p1.slots[0]!.officer, first[0], '첫 칸이 방금 뽑은 장수가 아니다');
   const predicted = p1.slots[1]!.officer;
-  const second = await pull('single');
+  const second = await pull('one');
   assert.equal(second[0], predicted, `관리자가 본 다음 한 장(${predicted})과 실제(${second[0]})가 다르다`);
   ok(`다음 한 장 예측 = 실제 — ${predicted}`);
 
   const p2 = await peek();
   const range = p2.slots.slice(p2.drawn, p2.drawn + p2.multiCount).map((s) => s.officer);
-  const multi = await pull('multi');
+  const multi = await pull('five');
   assert.deepEqual(multi, range, '묶음 뽑기가 관리자가 본 범위와 다르다');
   const p3 = await peek();
   assert.equal(p3.drawn, 2 + p2.multiCount);

@@ -26,7 +26,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { EQUIPMENT, marketItemById } from '@samchess/data';
-import { mailGrainLoss, mailText } from '@samchess/meta';
+import { mailGrainLoss, mailSeatCheck, mailText } from '@samchess/meta';
 import type { MailReward, PlayerProfile } from '@samchess/meta';
 import { Say } from './Steward.tsx';
 import { claimMailOnServer, readMailOnServer } from '../meta/mail.ts';
@@ -145,6 +145,8 @@ export function MailModal({ profile, mails, onMail, onProfile, onClose }: {
   };
 
   const onClaim = (mail: MailView): void => {
+    // 새 장수 카드가 들 자리가 없으면 서버까지 안 가고 말한다 — 우편은 남는다 (2026-11-24 기획자)
+    if (!mailSeatCheck(profile, mail).ok) { setError(t('mail.err.noSeat')); return; }
     const loss = mailGrainLoss(profile, mail);
     if (loss > 0) setAskLoss(loss);
     else void claim(mail);

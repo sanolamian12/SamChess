@@ -241,10 +241,13 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
       await settle(page);
       const acts = await page.$$eval('.scr [data-action]', (els) => els.map((e) => (e as HTMLElement).dataset['action']));
       log(`  · 장터 단추 ${acts.join(' ')}`);
-      for (const [i, a] of ['openShop', 'openGold'].entries()) {
-        if (!acts.includes(a)) continue;
-        await page.click(`.scr [data-action="${a}"]`);
-        await settle(page);
+      // 'home' = 장터 홈 그대로(배너 셋이 홈에 있다 — 2026-11-24)
+      for (const [i, a] of ['home', 'openGold'].entries()) {
+        if (a !== 'home') {
+          if (!acts.includes(a)) continue;
+          await page.click(`.scr [data-action="${a}"]`);
+          await settle(page);
+        }
         await shoot(page, size.dir, `41-market-${i}-${a}`);
         const sub = await page.$$eval('.scr [data-action]', (els) => els.map((e) => (e as HTMLElement).dataset['action']));
         log(`  · ${a} 안 단추 ${sub.join(' ')}`);
@@ -255,8 +258,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
           await shoot(page, size.dir, `42-market-${b}`);
           await go(page, { name: 'main' }); await settle(page, 300); await go(page, { name: 'market' });
           await settle(page, 400);
-          await page.click(`.scr [data-action="${a}"]`);
-          await settle(page, 600);
+          if (a !== 'home') { await page.click(`.scr [data-action="${a}"]`); await settle(page, 600); }
         }
         await go(page, { name: 'main' }); await settle(page, 300); await go(page, { name: 'market' });
         await settle(page, 600);

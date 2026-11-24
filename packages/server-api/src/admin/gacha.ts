@@ -18,7 +18,7 @@ export async function readGacha(uid: string, page: number | null): Promise<Admin
   if (!profile) return null;
   const total = gachaDeckBase().length;
   const pages = Math.ceil(total / GACHA_ADMIN_PAGE);
-  const multiCount = gachaPullCost('multi').count;
+  const multiCount = gachaPullCost('five').count;   // 가장 큰 모집(5명)의 범위 — 계약 이름은 그대로 둔다
   const gp = profile.gachaPool;
   if (!gp) return { started: false, drawn: 0, total, page: 1, pages, pageSize: GACHA_ADMIN_PAGE, slots: [], drawnByGrade: {}, multiCount };
 

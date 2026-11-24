@@ -251,6 +251,13 @@ export interface PlayerProfile {
    */
   gachaPool?: { seed: number; drawn: number };
   /**
+   * **잉여 카드** — 더는 장수를 키울 수 없는 카드를 모은 수 (2026-11-24 기획자, `surplus.ts`). 서버 소유.
+   * 들어오는 길은 하나다 — Lv9(최대) 장수에게 들어온 카드(`addCard` · 레벨업 남은 몫 · 되접기). 궁궐이 가득 차면
+   * 새 장수는 아예 안 들어온다(모집은 막히고 · 전투 보상은 보유 장수로 다시 뽑고 · 우편은 못 받는다).
+   * 쓰는 길은 잉여 카드 모집(`exchangeSurplus`) 하나다. 없으면 0이다.
+   */
+  surplusCards?: number;
+  /**
    * 대장간에서 만든 장비 — 키는 **자루**(`{EquipmentData.id}#{n}`, 저장 형식 v6). **키가 있으면
    * 그 자루를 보유**하고, 종류당 개수는 대장간 레벨이 정한다(피라미드 — `forgeCopiesAllowed()`).
    * 값은 지급된 장수이고 `null`이면 미지급이다 (`forge.ts` 참조). v5까지는 키가 종류였고

@@ -31,6 +31,7 @@
 import { applyAdjustment, parseAdjustment } from './admin.ts';
 import type { Adjustment } from './admin.ts';
 import { grainCap } from './city.ts';
+import { ownedOfficers, poolSeatsFree } from './profile.ts';
 import type { MailboxEntry, MetaResult, PlayerProfile } from './types.ts';
 
 /**
@@ -195,6 +196,20 @@ export function mailGrainLoss(profile: PlayerProfile, mail: Mail): number {
 }
 
 /**
+ * 우편의 **새 장수** 카드가 들어갈 자리가 있는가 — 보유(풀 + 보관함)하지 않은 장수 수 ≤ 궁궐의 빈자리.
+ * 보관함으로 보내던 길을 닫았다(2026-11-24 기획자, 모집 · 전투 보상과 같은 결). 화면의 [받기]도 이것을 본다.
+ */
+export function mailSeatCheck(profile: PlayerProfile, mail: Mail): Extract<MetaResult, { ok: false }> | { ok: true } {
+  const have = new Set<string>(ownedOfficers(profile));
+  const fresh = new Set(mail.rewards.filter((r) => r.kind === 'cards' && r.delta > 0 && !have.has(r.officer)).map((r) => (r as { officer: string }).officer));
+  const free = poolSeatsFree(profile);
+  if (fresh.size > free) {
+    return { ok: false, reason: `궁궐에 빈자리가 모자라 새 장수를 받으실 수 없습니다 — ${free}/${fresh.size}석`, code: 'mail.noSeat', params: { free, need: fresh.size } };
+  }
+  return { ok: true };
+}
+
+/**
  * 받는다 — 보상을 계정에 넣고 「받았다」를 적는다. **`profile`은 서버 시계로 정산된 값이어야 한다**(군량 상한이
  * 정산된 군량 위에서 서야 한다 — `mutateProfile`이 그렇게 넘긴다).
  *
@@ -207,6 +222,9 @@ export function claimMail(profile: PlayerProfile, mail: Mail, nowMs: number):
   if (!gate.ok) return gate;
   if (mail.rewards.length === 0) return { ok: false, reason: '받을 것이 없는 공지 우편입니다', code: 'mail.noRewards' };
   if (mailClaimed(profile, mail.id)) return { ok: false, reason: '이미 받은 우편입니다', code: 'mail.claimed' };
+  // 새 장수의 카드는 궁궐에 빈자리가 있어야 받는다 (2026-11-24 기획자) — 못 받으면 우편은 그대로 남는다(만료는 제때)
+  const seat = mailSeatCheck(profile, mail);
+  if (!seat.ok) return seat;
 
   const grainLost = mailGrainLoss(profile, mail);
   let next = profile;

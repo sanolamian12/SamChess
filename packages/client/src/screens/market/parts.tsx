@@ -11,7 +11,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Grade } from '@samchess/rules';
-import { RECYCLE_CARDS_IN, recyclableCards, recycleSources } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { t } from '../../i18n/index.ts';
 import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
@@ -199,36 +198,6 @@ export function GoldCost({ gold, times }: { gold: number; times?: boolean }): Re
       {times ? ` × ${gold}` : t('market.pull.cost', { gold })}
     </span>
   );
-}
-
-// ── 장수 카드 셈 ───────────────────────────────────────────────
-
-/**
- * 「🂠 59 (정리 가능 15장)」 — 장터 현황판과 용병 시장 머리 판이 **함께** 쓴다(2026-09-25 지정).
- * 금화 줄(`.mkt-cur`)과 같은 짜임으로 그림이 「장수 카드」라는 이름을 대신한다.
- */
-export function CardStat({ profile }: { profile: PlayerProfile }): React.JSX.Element {
-  const { held, recyclable } = cardTally(profile);
-  return (
-    <span className="mkt-cur" data-currency="cards" data-field="cards" data-held={held} data-recyclable={recyclable}>
-      <img src="market/market_card.png" alt={t('market.status.cards')} title={t('market.status.cards')} />
-      <b className="v">{held}</b>
-      <span className="mkt-merc-cards"><GameIcon name="res-recycle" label={t('market.status.recyclable', { m: recyclable })} text /></span>
-    </span>
-  );
-}
-
-/**
- * 「합 n장 · 정리 가능 m장」 — 장터 현황판과 용병 시장 머리 판이 **함께** 부른다.
- * 정리 가능은 규칙(`recycleSources()`·`recyclableCards()`)이 정한 것을 단위(3장)로 내려
- * 더한다. 화면이 「3장 이상」을 다시 세거나 두 판이 따로 세면 한쪽만 낡는다.
- */
-export function cardTally(profile: PlayerProfile): { held: number; recyclable: number } {
-  const held = Object.values(profile.cards).reduce<number>((n, c) => n + (c ?? 0), 0);
-  const recyclable = recycleSources(profile).reduce(
-    (n, id) => n + Math.floor(recyclableCards(profile, id) / RECYCLE_CARDS_IN) * RECYCLE_CARDS_IN, 0,
-  );
-  return { held, recyclable };
 }
 
 // ── 서버 왕복 ──────────────────────────────────────────────────

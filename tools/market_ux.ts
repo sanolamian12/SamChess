@@ -17,7 +17,7 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { EQUIPMENT, MARKET_ITEMS, OFFICERS } from '@samchess/data';
-import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance } from '@samchess/meta';
+import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance, poolCap, poolUsed } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
@@ -82,8 +82,10 @@ const brokenImages = async (sel: string): Promise<string[]> => page.$$eval(sel, 
 
 // ── 심을 것 ── (장수는 계정을 만든 뒤 **처음 받은 장수와 겹치지 않게** 고른다)
 const gradeOf = (id: string): string | undefined => OFFICERS.find((o) => o.id === id)?.grade;
-let SRC = '' as OfficerId;         // 카드 6장 — 정리할 장수(가챠에 C급이 없어 뽑기가 안 건드린다)
-let DST = '' as OfficerId;         // 카드 0장 — 받을 장수(같은 C급)
+/** 용병 시장 — 풀의 빈자리를 이만큼 남긴다(1 · 3명은 열리고 5명은 자물쇠, 3명을 모집하면 3명도 닫히게) */
+const FREE_SEATS = 4;
+/** 심어 둘 잉여 카드 — A급 확정(10) 한 번 뒤 S급 확정(20)에 모자라게 */
+const SURPLUS_SEED = 25;
 let X: OfficerId | undefined;      // Lv3 · 병기를 든 장수
 const WEAPON = EQUIPMENT[0]!;
 const [ITEM_A, ITEM_B] = [MARKET_ITEMS[0]!, MARKET_ITEMS[5]!];   // 1쪽 · 2쪽 품목
@@ -95,7 +97,7 @@ const [ITEM_A, ITEM_B] = [MARKET_ITEMS[0]!, MARKET_ITEMS[5]!];   // 1쪽 · 2쪽
 async function openMarket(): Promise<void> {
   for (let i = 0; i < 6; i += 1) {
     await page.click('[data-place="market"]', { force: true });
-    if (await page.waitForSelector('[data-action="openShop"]', { timeout: 2_000 }).catch(() => null)) return;
+    if (await page.waitForSelector('[data-action="openMerc"]', { timeout: 2_000 }).catch(() => null)) return;
   }
   throw new Error('메인에서 장터가 안 열린다');
 }
@@ -123,21 +125,22 @@ try {
   const base = (await getProfile(uid))!;
   const fresh = (grade: string): OfficerId[] =>
     OFFICERS.filter((o) => o.grade === grade && !base.roster[o.id as OfficerId] && !base.cards[o.id as OfficerId]).map((o) => o.id as OfficerId);
-  [SRC, DST] = fresh('C') as [OfficerId, OfficerId];
-  // 같은 C급을 여섯 더 — 카드 정리의 「받을 장수」가 한 쪽(다섯)을 넘쳐야 스크롤이 안 생기는지 잴 수 있다
-  const MORE_C = fresh('C').slice(2, 8);
   [X] = fresh('D');
   let seeded = {
     ...base,
     gold: 1000,
     cityLevel: 5,
+    surplusCards: SURPLUS_SEED,
     buildings: { ...base.buildings, market: 5, academy: 1, forge: 1 },
-    roster: {
-      ...base.roster, [SRC]: newInstance(SRC), [DST]: newInstance(DST), [X!]: newInstance(X!),
-      ...Object.fromEntries(MORE_C.map((id) => [id, newInstance(id)])),
-    },
-    cards: { ...base.cards, [SRC]: 6, [X!]: (cardsToLevelUp(1) ?? 0) + (cardsToLevelUp(2) ?? 0) },
+    roster: { ...base.roster, [X!]: newInstance(X!) },
+    cards: { ...base.cards, [X!]: (cardsToLevelUp(1) ?? 0) + (cardsToLevelUp(2) ?? 0) },
   };
+  // 풀을 빈자리 FREE_SEATS만 남기고 C급으로 채운다(가챠에 C급이 없어 모집이 안 건드린다)
+  for (const id of fresh('C')) {
+    if (poolCap(seeded) - poolUsed(seeded) <= FREE_SEATS) break;
+    seeded = { ...seeded, roster: { ...seeded.roster, [id]: newInstance(id) } };
+  }
+  if (poolCap(seeded) - poolUsed(seeded) !== FREE_SEATS) throw new Error(`빈자리를 ${FREE_SEATS}로 못 맞췄다 — ${poolCap(seeded) - poolUsed(seeded)}`);
   // Lv3은 **정상 레벨업 두 번**으로 만든다 — 성장 스택을 손으로 적으면 `growth.length === level − 1`이 깨진다
   seeded = applyLevelUp(applyLevelUp(seeded, X!, 'hp', 'support'), X!, 'at', 'support');
   const topic = academyTopics(1)[0]!;
@@ -148,21 +151,63 @@ try {
   });
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
-  ok(`심었다 — 정리 ${SRC}(6장) → ${DST} · Lv3 ${X} + ${WEAPON.id}`);
+  ok(`심었다 — 빈자리 ${FREE_SEATS} · 잉여 카드 ${SURPLUS_SEED} · Lv3 ${X} + ${WEAPON.id}`);
 
   step('장터 홈 (76쪽 왼쪽) — 도시의 장터 자리가 곧장 연다');
   await openMarket();
   await page.waitForSelector('[data-screen="market"]', { timeout: 10_000 });
   await shot('home');
-  for (const f of ['status', 'marketLevel', 'items', 'cards']) {
+  // 홈 = 현황판 두 줄 + 배너 셋 + 바닥의 [금화 충전] 하나 (2026-11-24 기획자 — [상품 구매]는 걷었다)
+  for (const a of ['openMerc', 'openGoods', 'openItems', 'openGold']) {
+    if (!await page.$(`[data-action="${a}"]`)) fail(`장터 홈에 ${a}가 없다`);
+  }
+  for (const f of ['status', 'marketLevel', 'gold', 'items']) {
     if (!await page.$(`[data-field="${f}"]`)) fail(`현황판에 ${f}가 없다`);
   }
-  for (const a of ['openGold', 'openShop']) {
-    if (!await page.$(`[data-action="${a}"]`)) fail(`명령 판에 ${a}가 없다`);
+  if (await page.$('[data-action="openShop"], [data-field="status"] [data-field="cards"]')) fail('걷은 [상품 구매] · 장수 카드 줄이 남아 있다');
+  // 한 줄 — 장터 배지 · 금화 · 보관함이 같은 줄에
+  const stat = await page.evaluate(() => {
+    const g = document.querySelector('[data-field="status"] [data-field="gold"]')!.getBoundingClientRect();
+    const i = document.querySelector('[data-field="status"] [data-field="items"]')!.getBoundingClientRect();
+    const l = document.querySelector('[data-field="status"] [data-field="marketLevel"]')!.getBoundingClientRect();
+    const mid = (x: DOMRect): number => (x.top + x.bottom) / 2;
+    return { oneRow: Math.max(Math.abs(mid(g) - mid(i)), Math.abs(mid(g) - mid(l))) };
+  });
+  if (stat.oneRow > 2) fail(`현황판이 한 줄이 아니다 — 세로 중심 차 ${stat.oneRow.toFixed(1)}px`);
+  // 배너 셋의 간격 — 현황판 ↔ 용병 시장 = 전투 아이템 ↔ 명령 판, 배너 사이 둘도 같다(2026-11-24 기획자)
+  const gaps = await page.evaluate(() => {
+    const r = (sel: string): DOMRect => document.querySelector(sel)!.getBoundingClientRect();
+    const st = r('[data-field="status"]'), m = r('[data-banner="merc"] .mkt-banner-art'), g = r('[data-banner="goods"] .mkt-banner-art');
+    const it = r('[data-banner="items"] .mkt-banner-art'), cmd = r('.mkt-cmds');
+    return [m.top - st.bottom, g.top - m.bottom, it.top - g.bottom, cmd.top - it.bottom];
+  });
+  if (Math.abs(gaps[0]! - gaps[3]!) > 1.5 || Math.abs(gaps[1]! - gaps[2]!) > 1.5) fail(`배너 간격 — ${gaps.map((v) => v.toFixed(1)).join(' / ')}`);
+  // 배너 — 평소엔 어둡고 이름이 보이며, 올리면 밝아지고 이름이 숨는다
+  const lookOf = (): Promise<{ filter: string; lbl: string }> => page.evaluate(() => {
+    const b = document.querySelector('[data-banner="merc"]')!;
+    return { filter: getComputedStyle(b.querySelector('img')!).filter, lbl: getComputedStyle(b.querySelector('.mkt-banner-lbl')!).opacity };
+  });
+  const idle = await lookOf();
+  await page.hover('[data-banner="merc"]');
+  await page.waitForTimeout(400);
+  await shot('banner-hover');
+  const hot = await lookOf();
+  await page.mouse.move(0, 0);
+  if (!idle.filter.includes('brightness') || idle.lbl !== '1' || hot.filter !== 'none' || hot.lbl !== '0') {
+    fail(`배너 — 평소 ${JSON.stringify(idle)} · 올림 ${JSON.stringify(hot)}`);
   }
-  const cardsLine = await page.textContent('[data-field="cards"]');
-  if (!cardsLine?.includes('6')) fail(`정리 가능 카드가 안 뜬다 — 「${cardsLine}」`);
-  ok(`현황판 · 명령 둘 · 「${cardsLine?.trim()}」`);
+  ok(`현황판 한 줄 · 배너 간격 ${gaps.map((v) => v.toFixed(0)).join(' / ')}px · 배너는 어둡게 + 이름, 올리면 밝게 + 이름 숨김`);
+  const goldBtn = await page.evaluate(() => {
+    const b = document.querySelector<HTMLElement>('[data-action="openGold"]')!;
+    const r = b.getBoundingClientRect();
+    const tx = b.querySelector<HTMLElement>('.gic-t')!.getBoundingClientRect();
+    const ic = b.querySelector<HTMLElement>('.gic img')!.getBoundingClientRect();
+    const cs = getComputedStyle(b);
+    const inset = parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);   // 옛 자리(흐름의 첫 칸)와 같은 곳에 붙는가
+    return { off: Math.abs((tx.left + tx.right) / 2 - (r.left + r.right) / 2), icLeft: ic.left - r.left, inset, sub: Boolean(b.querySelector('.sub')) };
+  });
+  if (goldBtn.off > 2 || Math.abs(goldBtn.icLeft - goldBtn.inset) > 2 || goldBtn.sub) fail(`[금화 충전] — 글자 가운데에서 ${goldBtn.off.toFixed(1)}px · 아이콘 왼쪽 ${goldBtn.icLeft.toFixed(1)}px · 설명 ${goldBtn.sub}`);
+  ok(`배너 셋 + [금화 충전] — 글자 가운데(±${goldBtn.off.toFixed(1)}px) · 아이콘 왼쪽(${goldBtn.icLeft.toFixed(0)}px)`);
 
   step('금화 구매 — 상품 카드를 누르면 「구매 완료」 축하 화면(2026-11-20, 결제 전에는 개발용 지급이 켜졌을 때만)');
   await page.click('[data-action="openGold"]');
@@ -182,108 +227,115 @@ try {
     ok(`금화 ${packGold} → 「구매 완료」 · 보유 ${before} → ${have} · 화면을 눌러 닫힘`);
   } else ok('개발용 지급이 꺼진 서버 — 금화 상품은 눌리지 않는다(결제 전)');
   await page.click('[data-action="backHome"]');
-  await page.waitForSelector('[data-action="openShop"]', { timeout: 5_000 });
-
-  step('상품 구매 (76쪽 오른쪽) — 배너 셋');
-  await page.click('[data-action="openShop"]');
   await page.waitForSelector('[data-banner="goods"]', { timeout: 5_000 });
+
+  step('장터 홈 — 배너 셋');
   await page.waitForTimeout(400);   // 배너가 없으면 물러나는 데 한 번 더 받는다
   await shot('shop');
   const broken = await brokenImages('.mkt-banner img');
   if (broken.length > 0) fail(`배너가 안 뜬다 — ${broken.join(', ')}`);
   ok('배너 셋이 뜬다');
 
-  step('보유 카드 정리 (80·81쪽) — 섬광 없이 곧바로');
+  step('용병 시장 — 현황판(금화 · 거느린 장수 · 잉여 카드)이 홈과 같은 자리 · 같은 높이, 모집 셋 + 잉여 카드 셋, 바닥은 [뒤로 가기]만 (2026-11-24 기획자)');
+  const panelBox = (sel: string) => page.evaluate((s) => {
+    const r = document.querySelector(s)!.getBoundingClientRect();
+    return { top: r.top, h: r.height, left: r.left, w: r.width };
+  }, sel);
+  const homeBox = await panelBox('[data-field="status"]');
   await page.click('[data-action="openMerc"]');
-  await page.waitForSelector('[data-action="openRecycle"]', { timeout: 5_000 });
-  await shot('merc');
-  await page.click('[data-action="openRecycle"]');
-  await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
-  const sources = await pickRows();
-  if (sources.length !== 1 || sources[0] !== SRC) fail(`정리할 장수 목록이 ${JSON.stringify(sources)}다 — ${SRC} 하나라야 한다(3장 이상만)`);
-  ok('정리할 장수 — 카드 3장 이상만 뜬다');
-  await shot('recycle-source');
-  await pickOfficer(SRC);
-  await page.waitForFunction((src) => !document.querySelector(`[data-modal="officerPick"] .ofc-row[data-officer="${src}"]`), SRC, { timeout: 5_000 });
-  const targets = await pickRows();
-  // 처음 받은 C급 장수도 받을 수 있다 — **전부 C급이고 SRC는 없어야** 한다. 여러 쪽이라 DST는 검색으로 본다
-  if (targets.includes(SRC) || targets.some((id) => gradeOf(id) !== 'C')) {
-    fail(`받을 장수 목록이 ${JSON.stringify(targets)}다 — 같은 C급만(${SRC} 제외)`);
+  await page.waitForSelector('[data-field="mercShop"]', { timeout: 5_000 });
+  const mercBox = await panelBox('[data-field="mercStatus"]');
+  if (['top', 'h', 'left', 'w'].some((k) => Math.abs(homeBox[k as 'top'] - mercBox[k as 'top']) > 0.5)) {
+    fail(`용병 시장 현황판이 홈과 다르다 — 홈 ${JSON.stringify(homeBox)} · 용병 ${JSON.stringify(mercBox)}`);
   }
-  ok('받을 장수 — 같은 등급만 뜬다');
-  // 한 쪽 다섯 명 · 목록에 스크롤 없음 (2026-10-15 지정 — 여덟이면 판 안에서 스크롤이 생겼다)
-  const recyclePick = await page.evaluate(() => {
-    const list = document.querySelector('[data-modal="officerPick"] .ofc-rows') as HTMLElement;
-    return { rows: list.querySelectorAll('.ofc-row[data-officer]').length, scrolls: list.scrollHeight > list.clientHeight + 1 };
+  const head = await page.evaluate(() => {
+    const q = (f: string) => document.querySelector<HTMLElement>(`[data-field="mercStatus"] [data-field="${f}"]`);
+    return { gold: q('gold')?.dataset.gold, used: q('pool')?.dataset.used, cap: q('pool')?.dataset.cap, surplus: q('surplus')?.dataset.surplus };
   });
-  if (recyclePick.rows !== 5) fail(`카드 정리 장수 고르기가 한 쪽 ${recyclePick.rows}명이다 — 꽉 찬 쪽은 다섯이라야 한다`);
-  if (recyclePick.scrolls) fail('카드 정리 장수 고르기 목록에 스크롤이 생겼다');
-  await shot('recycle-target');
-  ok(`카드 정리 장수 고르기 — 한 쪽 ${recyclePick.rows}명 · 스크롤 없음`);
-  await page.fill('[data-modal="officerPick"] [data-field="search"]', OFFICERS.find((o) => o.id === DST)!.name);
-  if (!(await pickRows()).includes(DST)) fail(`받을 장수 목록에 ${DST}가 없다`);
-  await pickOfficer(DST);
-  await page.waitForSelector('[data-modal="recycleQty"]', { timeout: 5_000 });
-  await page.click('[data-modal="recycleQty"] [data-action="more"]');
-  const n = await page.getAttribute('[data-field="qty"]', 'data-n');
-  if (n !== '6') fail(`[+] 한 번에 ${n}장이다 — 3 → 6이라야 한다`);
-  if (await page.getAttribute('[data-modal="recycleQty"] [data-action="more"]', 'disabled') === null) fail('6장이 끝인데 [+]가 열려 있다');
-  const from = await page.textContent('[data-field="fromCards"]');
-  if (!from?.includes('0')) fail(`풀 장수가 0장까지 못 쓴다 — 「${from}」`);
-  ok(`3장 단위 · 끝은 6장 · 「${from?.trim()}」`);
-  await shot('recycle-qty');
-  await page.click('[data-action="recycleConfirm"]');
-  await page.waitForSelector('[data-modal="recycleDone"]', { timeout: 10_000 });
-  if (await page.$('[data-modal="burst"]')) fail('카드 정리에 섬광이 떴다');
-  await shot('recycle-done');
-  const afterClean = (await getProfile(uid))!;
-  if ((afterClean.cards[SRC] ?? 0) !== 0 || afterClean.cards[DST] !== 2) {
-    fail(`서버의 카드가 ${SRC}=${afterClean.cards[SRC]} · ${DST}=${afterClean.cards[DST]}다 — 0 · 2라야 한다`);
+  if (Number(head.surplus) !== SURPLUS_SEED || Number(head.cap) - Number(head.used) !== FREE_SEATS || head.gold === undefined) {
+    fail(`용병 시장 현황판 — ${JSON.stringify(head)}`);
   }
-  if (!afterClean.roster[SRC]) fail('카드를 다 쓴 풀 장수가 풀에서 빠졌다');
-  ok('서버 — 6장 → 2장, 정리한 장수는 풀에 그대로');
-  await page.click('[data-action="recycleClose"]');
+  const shop = await page.evaluate(() => ({
+    acts: [...document.querySelectorAll<HTMLElement>('[data-field="mercShop"] [data-action]')].map((b) => b.dataset.action),
+    cmds: [...document.querySelectorAll<HTMLElement>('.mkt-cmds [data-action]')].map((b) => b.dataset.action),
+    art: Object.fromEntries(['one', 'three', 'five'].map((k) => {
+      const b = document.querySelector<HTMLButtonElement>(`[data-action="pull-${k}"]`)!;
+      return [k, [b.querySelectorAll('.mkt-recruit-stand').length, b.disabled && Boolean(b.querySelector('[data-field="noSeat"]'))]];
+    })),
+    eLocked: (() => {
+      const e = document.querySelector<HTMLButtonElement>('[data-action="surplus-E"]')!;
+      return e.disabled && e.dataset.locked !== undefined && getComputedStyle(e).filter.includes('grayscale');
+    })(),
+    oldDoors: Boolean(document.querySelector('[data-action="openPull"], [data-action="openRecycle"]')),
+  }));
+  if (shop.acts.join() !== 'pull-one,pull-three,pull-five,surplus-A,surplus-S,surplus-E') fail(`용병 시장 칸 — ${shop.acts.join()}`);
+  if (shop.cmds.join() !== 'backHome') fail(`바닥 명령 판 — ${shop.cmds.join()} (뒤로 가기만이라야 한다)`);
+  if (shop.oldDoors) fail('옛 [카드 뽑기] · [카드 정리]가 남았다');
+  // 빈자리 4 — 꼬마 1 · 3 · 5, 5명만 자물쇠(「궁궐 증축 필요」)
+  if (JSON.stringify(shop.art) !== JSON.stringify({ one: [1, false], three: [3, false], five: [5, true] })) fail(`모집 칸 — ${JSON.stringify(shop.art)}`);
+  if (!shop.eLocked) fail('헌제가 없는데 E급 칸이 잿빛으로 안 막혔다');
+  ok(`현황판 홈과 같음(위 ${mercBox.top.toFixed(0)}px · 높이 ${mercBox.h.toFixed(0)}px) · 칸 여섯 · 꼬마/자물쇠 ${JSON.stringify(shop.art)} · E급 잿빛`);
+  await shot('merc');
 
-  step('새 카드 뽑기 (77·78쪽) — 단발');
+  step('1명 모집 — 빈자리가 있으면 곧바로 섬광 → 결과');
   let gold = await goldOf();
-  await page.click('[data-action="openPull"]');
-  await page.waitForSelector('[data-modal="pullChoose"]', { timeout: 5_000 });
-  await shot('pull-choose');
-  await page.click('[data-action="pull-single"]');
+  await page.click('[data-action="pull-one"]');
   await page.waitForSelector('[data-modal="burst"]', { timeout: 10_000 });
-  // **세고 나서 찍는다** — 섬광은 1.1초라, 넓은 화면을 2배로 찍는 동안 끝나 버린다(760px에서 0개로 셌다)
+  if (await page.$('[data-modal="recruitWarn"]')) fail('빈자리가 넉넉한데 경고가 떴다');
+  // **세고 나서 찍는다** — 섬광은 1.1초라, 넓은 화면을 2배로 찍는 동안 끝나 버린다
   const singles = (await page.$$('.mkt-burst')).length;
-  if (singles !== 1) fail(`단발에 섬광이 ${singles}개다 — 하나라야 한다`);
-  // 단발은 효과음이 먼저고 섬광은 그 뒤다(`MercView`의 `PULL_SOUND`) — 틈을 여기 다시 적지 않고
-  // **첫 칸이 실제로 그려질 때**를 기다린다(연출 길이를 스모크에 다시 적으면 한쪽만 낡는다)
-  await page.waitForSelector('.mkt-burst[data-frame]', { timeout: 10_000 });
-  await page.waitForTimeout(200);
-  await shot('burst-single');
+  if (singles !== 1) fail(`1명 모집에 섬광이 ${singles}개다 — 하나라야 한다`);
   await page.waitForSelector('[data-modal="reveal"]', { timeout: 10_000 });
   await page.waitForTimeout(700);
-  await shot('reveal-single');
-  if (await goldOf() !== gold - gachaPullCost('single').gold) fail('단발 값이 안 나갔다');
-  ok(`단발 — 섬광 하나 · 결과 한 장 · 금화 −${gachaPullCost('single').gold}`);
+  await shot('reveal-one');
+  if (await goldOf() !== gold - gachaPullCost('one').gold) fail('1명 모집 값이 안 나갔다');
+  ok(`1명 모집 — 섬광 하나 · 결과 한 장 · 금화 −${gachaPullCost('one').gold}`);
+  await page.click('[data-action="revealClose"]');
 
-  step('다시 뽑기 → 닫기 → 8연 (79쪽)');
-  await page.click('[data-action="revealClose"]');
-  gold = await goldOf();
-  await page.click('[data-action="openPull"]');
-  await page.click('[data-action="pull-multi"]');
-  await page.waitForSelector('[data-modal="burst"]', { timeout: 10_000 });
-  const bursts = await page.$$('.mkt-burst');
-  await page.waitForTimeout(500);
-  await shot('burst-multi');
-  if (bursts.length !== gachaPullCost('multi').count) fail(`섬광이 ${bursts.length}개다 — ${gachaPullCost('multi').count}개라야 한다`);
-  await page.waitForSelector('[data-modal="reveal"]', { timeout: 10_000 });
+  step('3명 모집 — 새 장수는 전부 풀에 든다, 빈자리가 3보다 적어지면 3명도 자물쇠');
+  const before = (await getProfile(uid))!;
+  gold = before.gold;
+  await page.click('[data-action="pull-three"]');
+  await page.waitForSelector('[data-modal="burst"]', { timeout: 15_000 });
+  const bursts = (await page.$$('.mkt-burst')).length;
+  if (bursts !== 3) fail(`섬광이 ${bursts}개다 — 셋이라야 한다`);
+  await page.waitForSelector('[data-modal="reveal"]', { timeout: 15_000 });
   await page.waitForTimeout(900);
-  await shot('reveal-multi');
-  const cells = await page.$$('.mkt-reveal-cell');
-  if (cells.length !== 8) fail(`결과가 ${cells.length}칸이다 — 8칸이라야 한다`);
-  if (await goldOf() !== gold - 72) fail('8연이 72냥이 아니다');
-  ok('8연 — 섬광 여덟 · 결과 4×2 · 금화 −72');
-  // 등급색이 섬광마다 제 것인가 — 결과 칸의 등급과 섬광의 등급이 같은 순서다
+  await shot('reveal-three');
+  const cells = await page.$$eval('.mkt-reveal-cell', (els) => els.map((e) => (e as HTMLElement).dataset.fate));
+  const after = (await getProfile(uid))!;
+  if (cells.length !== 3) fail(`결과가 ${cells.length}칸이다 — 셋이라야 한다`);
+  if (poolUsed(after) - poolUsed(before) !== cells.filter((f) => f === 'new').length) fail('「새 장수」 표와 풀에 든 수가 다르다');
+  if (after.gold !== gold - gachaPullCost('three').gold) fail(`3명 모집이 ${gachaPullCost('three').gold}냥이 아니다`);
   await page.click('[data-action="revealClose"]');
+  const seatsNow = poolCap(after) - poolUsed(after);
+  const threeLocked = await page.$eval('[data-action="pull-three"]', (b) => (b as HTMLButtonElement).disabled);
+  if (threeLocked !== seatsNow < 3) fail(`빈자리 ${seatsNow} — 3명 칸 잠김 ${threeLocked}`);
+  await shot('merc-after');
+  ok(`3명 모집 — 섬광 셋 · 결과 ${cells.join(' ')} · 금화 −${gachaPullCost('three').gold} · 빈자리 ${seatsNow} → 3명 ${threeLocked ? '자물쇠' : '열림'}`);
+
+  step('잉여 카드로 A급 확정 — 보유한 A급 장수의 카드 1장, 섬광 없이 곧바로');
+  const s0 = (await getProfile(uid))!;
+  await page.click('[data-action="surplus-A"]');
+  await page.waitForSelector('[data-modal="surplusDone"]', { timeout: 10_000 });
+  if (await page.$('[data-modal="burst"]')) fail('잉여 카드 모집에 섬광이 떴다');
+  await shot('surplus-done');
+  const got = await page.getAttribute('[data-modal="surplusDone"] [data-officer]', 'data-officer') as OfficerId;
+  const s1 = (await getProfile(uid))!;
+  if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - 10) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — 10장 줄어야 한다`);
+  if (gradeOf(got) !== 'A') fail(`받은 장수 ${got}가 A급이 아니다`);
+  // 풀 장수는 카드 +1, 보관함 장수가 빈자리로 들면 풀에 든다
+  const gained = (s1.cards[got] ?? 0) === (s0.cards[got] ?? 0) + 1 || (!s0.roster[got] && Boolean(s1.roster[got]));
+  if (!gained) fail(`${got}의 카드가 ${s0.cards[got]} → ${s1.cards[got]}다`);
+  ok(`A급 확정 — ${got} · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
+  await page.click('[data-action="surplusClose"]');
+
+  step('잉여 카드가 모자라면 내관이 말한다 — S급 확정(20장)');
+  if ((s1.surplusCards ?? 0) >= 20) fail(`잉여 카드가 ${s1.surplusCards}장이라 「모자람」을 시험할 수 없다`);
+  await page.click('[data-action="surplus-S"]');
+  await page.waitForSelector('.stw[data-say="mercWhy"][data-say-code="market.surplus.notEnough"]', { timeout: 5_000 });
+  if (await page.$('[data-modal="surplusDone"]')) fail('모자란데 모집됐다');
+  ok('S급 확정 — 모자라면 막고 까닭을 말한다');
   await page.click('[data-action="backHome"]');
 
   step('전투 아이템 (82·83쪽) — 쪽을 넘겨도 장바구니가 남는다');
@@ -451,8 +503,7 @@ try {
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('.scr-main', { timeout: 20_000 });
     await openMarket();
-    await page.click('[data-action="openShop"]');
-    await page.click('[data-action="openItems"]');
+      await page.click('[data-action="openItems"]');
     await page.click('[data-action="openStorage"]');
     await page.waitForSelector('[data-field="storage"] .mkt-irows .mkt-irow[data-item]', { timeout: 5_000 });
     await page.waitForTimeout(200);
@@ -531,7 +582,6 @@ try {
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
   await openMarket();
-  await page.click('[data-action="openShop"]');
   await page.click('[data-action="openGoods"]');
   await page.click('[data-good="respec"]');
   await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
@@ -556,7 +606,7 @@ try {
   ok(`재설계 — Lv2 이상만 · ×${cardsSpentOn(3)} · [궁궐로 이동] → 장수 카드 · 궁궐의 [재설계]는 없다`);
 
   if (errors.length > 0) fail(`콘솔 오류 ${errors.length}건 — ${errors.slice(0, 3).join(' | ')}`);
-  console.log('\n장터 UX 통과 — 홈 · 상품 구매 · 카드 정리 · 단발/8연 · 아이템 장바구니 · 보관함 지급 · 도시 물자 · 초기화 둘');
+  console.log('\n장터 UX 통과 — 홈 · 용병 시장(1 · 3명 모집 · 빈자리 자물쇠 · 잉여 카드 모집) · 아이템 장바구니 · 보관함 지급 · 도시 물자 · 초기화 둘');
 } finally {
   await browser.close();
   await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, {

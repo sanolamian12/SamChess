@@ -158,7 +158,26 @@ export function upgradePickCount(profile: PlayerProfile): number {
 }
 
 /**
+ * **궁궐을 반드시 고르는 증축** — 홀수 레벨로 오를 때(3 · 5 · 7 · 9, 2026-11-24 기획자). 고를 셋 중 하나가 궁궐로 정해진다.
+ *
+ * 궁궐은 Lv1(60석)에서 시작해 이 네 번으로 도시 Lv9에 Lv5(260석 = 장수 전원)가 된다. 궁궐이 가득 차면 새 장수가 안 들어오므로
+ * (모집 · 전투 보상 · 우편 — `canPullGacha` · `cardCandidates` · `mailSeatCheck`), 궁궐을 안 고른 계정은
+ * ① 증축의 보유 장수 조건(Lv7 80 · Lv9 120)에 영원히 못 닿거나 ② 헌제 없이 Lv10에서 궁궐이 가득 차 헌제를 못 얻어 멈췄다.
+ * 이 강제로 Lv6에 160석 이상 · Lv8에 210석 이상 · Lv9에 260석이 서서 둘 다 닫힌다.
+ */
+export const PALACE_FORCED_LEVELS: readonly number[] = [3, 5, 7, 9];
+
+/** 이번 증축에서 반드시 고르는 건물 — 화면은 처음부터 골라 두고 못 빼게, 서버는 `checkUpgradePicks`로 본다 */
+export function forcedUpgradePicks(profile: PlayerProfile): BuildingId[] {
+  const to = profile.cityLevel + 1;
+  if (upgradePickCount(profile) === 0 || !PALACE_FORCED_LEVELS.includes(to)) return [];
+  const palace = buildingById.get('palace' as BuildingId);
+  return palace && buildingLevel(profile, palace.id) < palace.maxLevel ? [palace.id] : [];
+}
+
+/**
  * 증축 때 고른 건물이 맞는가 — 수가 `upgradePickCount()`와 같고, 서로 다르고, 전부 최대 레벨이 아니다.
+ * 홀수 레벨로 오르는 증축은 궁궐이 들어 있어야 한다(`forcedUpgradePicks`).
  * **왜 안 되는지 글자로 말한다**(화면이 막지만 서버도 같은 함수로 본다).
  */
 export function checkUpgradePicks(profile: PlayerProfile, picks: readonly string[]): MetaResult {
@@ -172,6 +191,9 @@ export function checkUpgradePicks(profile: PlayerProfile, picks: readonly string
   }
   if (new Set(picks).size !== picks.length || picks.length !== need) {
     return { ok: false, code: 'city.picks', params: { n: need }, reason: `서로 다른 건물 ${need}곳을 고르소서` };
+  }
+  for (const id of forcedUpgradePicks(profile)) {
+    if (!picks.includes(id)) return { ok: false, code: 'city.forcedPick', params: { building: id }, reason: `이번 증축은 ${buildingById.get(id)?.name ?? id}을 반드시 고르셔야 합니다` };
   }
   return { ok: true };
 }
@@ -515,7 +537,7 @@ export function upgradeOfficerNeeds(profile: PlayerProfile):
  * 클라이언트 회귀가 이 목록으로 **열 언어 전부에 문구가 있는지** 본다(빠지면 한국어 원문이 샌다)
  */
 export const CITY_UPGRADE_REASONS = [
-  'city.capNoEmperor', 'city.maxLevel', 'city.picks', 'city.officers', 'city.topOfficers', 'city.wins', 'city.materials',
+  'city.capNoEmperor', 'city.maxLevel', 'city.picks', 'city.forcedPick', 'city.officers', 'city.topOfficers', 'city.wins', 'city.materials',
 ] as const;
 
 /**
@@ -667,7 +689,7 @@ export const MATERIAL_PACK: number = upgradeCost(1) ?? 1;
 /** 묶음 하나의 값(금화). 자재당 값이 바뀌면 여기가 따라온다 */
 export const materialPackCost = (): number => Math.ceil(MATERIAL_PACK / MATERIALS_PER_GOLD);
 
-/** 살 수 있는가. **왜 안 되는지 글자로 말한다** — `canAffordGacha`와 같은 결 */
+/** 살 수 있는가. **왜 안 되는지 글자로 말한다** — `canPullGacha`와 같은 결 */
 export function canBuyMaterials(profile: PlayerProfile): MetaResult {
   const gold = materialPackCost();
   // 코드를 단다 — 없으면 화면이 한국어 원문을 그대로 띄운다(2026-11-13, 몽골어 · 중국어 화면에서 「금화가 부족하다」가 한국어로 떴다).

@@ -412,14 +412,11 @@ export interface EconomyConfig {
   materialsPerGold: number;  // 1
   /** 상점 가챠에 등장하는 등급 — "계정별 유한 랜덤 어레이" 모델(C·D 제외) */
   gachaGrades: readonly Grade[];
-  gachaPull: { single: { gold: number }; ten: { gold: number; count: number } };
+  gachaPull: Readonly<Record<'one' | 'three' | 'five', { gold: number; count: number }>>;
   /** 장수 1명당 가챠 배열 슬롯 수 = 레벨업 누적 카드 수 × 이 배수. `@samchess/meta`의 `gacha.ts` 참조 */
   gachaSlotMultiplier: number;
-  recycle: {
-    cardsIn: number;   // 10
-    /** 등급 환산 점수 S=10 A=8 B=6 C=4 D=2 */
-    gradeScore: Readonly<Record<Grade, number>>;
-  };
+  /** 잉여 카드로 모집 — 등급마다 드는 잉여 카드 수 (2026-11-24, `@samchess/meta`의 `surplus.ts`) */
+  surplusExchange: Readonly<Record<'A' | 'S' | 'E', number>>;
   respecItemGold: number; // 둔갑천서 10
 }
 

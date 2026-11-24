@@ -39,7 +39,7 @@
 import { ECONOMY, OFFICERS } from '@samchess/data';
 import { hash32 } from '@samchess/rules';
 import type { Grade, OfficerId } from '@samchess/rules';
-import { addCard, ownedOfficers } from './profile.ts';
+import { addCard, ownedOfficers, poolSeatsFree } from './profile.ts';
 import { applyInjuries, grainCap } from './city.ts';
 import { fallenAfterShield } from './market.ts';
 import { carriedOf } from './types.ts';
@@ -112,6 +112,9 @@ export interface CardCandidate { officer: OfficerId; grade: Grade; weight: numbe
  * 추첨 후보 — 보유한 장수는 `owned` 등급이면, 아직 없는 장수는 `fresh` 등급이면 들어간다.
  * 보유는 **풀 + 보관함**이다(`ownedOfficers`).
  *
+ * **궁궐에 빈자리가 없으면 새 장수는 후보가 아니다** (2026-11-24 기획자) — 그 칸은 보유한 장수 중에서 다시 뽑는다
+ * (`fresh` 등급도 보유한 장수로 받는다). 새 장수 카드를 받아 보관함에 쌓는 길이 없어졌다.
+ *
  * **데이터 순서**(`OFFICERS`)로 늘어놓는다 — 같은 계정·같은 시드면 언제나 같은 장수가
  * 나와야 서버가 판을 재생해 보상을 다시 계산할 수 있다(H3c).
  */
@@ -119,8 +122,10 @@ export function cardCandidates(
   profile: PlayerProfile, owned: readonly Grade[], fresh: readonly Grade[],
 ): CardCandidate[] {
   const have = new Set<string>(ownedOfficers(profile));
+  const room = poolSeatsFree(profile) > 0;
+  const ownedGrades: readonly Grade[] = room ? owned : [...owned, ...fresh];
   return OFFICERS
-    .filter((o) => (have.has(o.id) ? owned : fresh).includes(o.grade as Grade))
+    .filter((o) => (have.has(o.id) ? ownedGrades.includes(o.grade as Grade) : room && fresh.includes(o.grade as Grade)))
     .map((o) => ({ officer: o.id as OfficerId, grade: o.grade as Grade, weight: CARD_WEIGHT[o.grade as Grade] ?? 0 }))
     .filter((c) => c.weight > 0);
 }

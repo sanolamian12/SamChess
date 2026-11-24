@@ -48,7 +48,7 @@ describe('늘릴 수 있는 길 — 표가 meta 함수와 맞는가', () => {
 
   it('가챠 — 금화를 내고 카드(· 풀)만 는다', () => {
     const a = { ...fresh(), gold: 100_000 };
-    const b = buyGacha(a, 'multi', 11).profile;
+    const b = buyGacha(a, 'five', 11).profile;
     assert.ok(b.gold < a.gold, '금화를 냈다');
     assert.deepEqual(surprises('POST /market/gacha', a, b), []);
     // 표를 비우면 잡힌다 — 이 검사가 살아 있다

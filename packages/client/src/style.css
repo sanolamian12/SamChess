@@ -3279,6 +3279,12 @@ button.lv-tactic-row {
 .cty-up-row .lv { display: inline-flex; line-height: 0; }
 .cty-up-row .lv .bld-badge { height: 1.9rem; }
 .cty-up-row .nm { min-width: 0; font-weight: 700; font-size: .95rem; line-height: 1.15; overflow-wrap: anywhere; }
+/* 홀수 레벨 증축의 궁궐 — 처음부터 골라져 있고 뺄 수 없다(2026-11-24 기획자) */
+.cty-up-row[data-forced] { cursor: default; }
+.cty-up-must {
+  display: inline-block; margin-left: .35rem; padding: .02rem .4rem; border-radius: .5rem; vertical-align: .08em;
+  background: #8a2a1c; color: #f6ecd2; font-size: .8rem; font-style: normal; font-weight: 800; white-space: nowrap;
+}
 /* 안 고른 줄 — 흑백 · 회색 글 · 별빛 없음 */
 .cty-up-row:not(.on) .ic img, .cty-up-row:not(.on) .lv .bld-badge > img { filter: grayscale(1) brightness(.85); }
 .cty-up-row:not(.on) .bld-glow { display: none; }
@@ -3486,37 +3492,36 @@ button.lv-tactic-row {
 .scr-market .btn:not(.ghost):hover:not(:disabled) { background: transparent; border-color: transparent; filter: brightness(1.12); }
 
 .mkt-body { display: flex; flex-direction: column; gap: .5rem; }
-/* 홈이 아닌 판은 목록이 위에 붙고 명령 판이 바닥에 — 대장간 `.frg-body-pinned`와 같은 결 */
+/* 판마다 목록(홈은 배너 셋)이 위에 붙고 명령 판이 바닥에 — 대장간 `.frg-body-pinned`와 같은 결 */
 .mkt-body-flow { margin-top: 0; padding-top: .5rem; flex: 1; min-height: 0; overflow-y: auto; }
 .mkt-body-flow > .mkt-cmds { margin-top: auto; flex: none; }
+/* [금화 충전] — 아이콘은 단추 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자). 그림을 흐름에서 빼 글자만 가운데 선다 */
+.scr-market .btn.mkt-ctr-btn { position: relative; justify-content: center; }
+.mkt-ctr-btn .gic img { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); }
 
-/* ── 현황판 (76쪽) — 제목 바 바로 밑, `.place-body` 밖 (궁궐·병영 현황 판과 같은 자리) ── */
-.place-panel.mkt-status { margin: 0 .75rem; padding: .35rem .6rem .45rem; gap: .3rem; }
-.mkt-status-top { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
-.mkt-lv { font-size: .95rem; font-weight: 700; color: #221407; white-space: nowrap; }
-.mkt-box { font-size: .8rem; font-weight: 700; color: #3a2c1e; text-align: right; }
-/* 왼쪽에 붙인다(2026-09-25 지정) — 금화 줄과 그 밑 장수 카드 줄이 같은 세로선에서 시작한다 */
-.mkt-currency { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .3rem 1.2rem; flex-wrap: wrap; }
-/* 현황판 3등분 (2026-11-12 지정) — 판 안쪽을 셋으로 나누고 칸마다 왼쪽 정렬.
-   1줄 금화 / 군량 / 자재, 2줄 장수 카드(1~2칸) / 보유 아이템(3칸 = 자재 세로선).
-   `1fr`의 최솟값은 내용 폭이라, 카드 글자가 두 칸보다 길면 그때만 열이 넓어져 겹치지 않는다 */
-.mkt-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem .6rem; align-items: center; justify-items: start; }
-.mkt-cards-cell { grid-column: 1 / span 2; }
+/* ── 현황판 한 줄 (2026-11-24 기획자) — 제목 바 바로 밑, `.place-body` 밖.
+   두 단: 왼쪽 단(장터 배지 + 레벨)은 왼쪽 정렬, 오른쪽 단은 다시 두 단(금화 | 보관함)이고 오른쪽 정렬 ── */
+.place-panel.mkt-status {
+  margin: 0 .75rem; padding: .35rem .8rem .45rem;
+  display: grid; grid-template-columns: 1fr auto auto; gap: 0 1.1rem; align-items: center;
+}
+.mkt-status .mkt-lv { justify-self: start; }
+.mkt-status .mkt-cur { justify-self: end; }
+.mkt-stock .gic img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
+/* 재화 한 칸 — 그림 + 값 (현황판 · 용병 시장 머리 판의 장수 카드) */
 .mkt-cur { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
 /* 재화 그림은 첫 자식만 — 뒤에 붙는 컬렉션 인장(`.cbm img`)까지 이 크기로 커졌다 (2026-10-15) */
 .mkt-cur > img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
 .mkt-cur .v { font-size: 1rem; font-weight: 700; color: #221407; }
-.mkt-rows { display: grid; grid-template-columns: max-content 1fr; gap: .12rem .7rem; margin: 0; font-size: .8rem; }
-.mkt-rows dt { color: #5a4128; white-space: nowrap; }
-.mkt-rows dd { margin: 0; color: #221407; font-weight: 700; }
 
-/* 용병 시장 머리 판 (2026-09-24) — 금화 · 장수 카드를 한 줄에. 글자는 현황판(`.mkt-cur` ·
-   `.mkt-rows`)과 같은 값이다. `.place-panel`은 세로 흐름이라 가로로 눕힌다.
-   `.place-body` 안이라 옆 여백은 몸통이 이미 둘렀다 — 더 주면 아래 명령 판보다 좁아진다 */
-.place-panel.mkt-merc-status {
-  flex: none; margin: 0; padding: .35rem .6rem .45rem;
-  flex-direction: row; align-items: center; justify-content: center; flex-wrap: wrap; gap: .2rem 1.1rem;
-}
+/* 용병 시장 머리 판 — 금화 · 거느린 장수 · 잉여 카드(2026-11-24 기획자). 홈 현황판(`.mkt-status`)과
+   같은 자리 · 같은 테 · 같은 높이라 그 상자를 그대로 쓰고 칸만 셋으로 */
+/* 높이는 줄 한 칸으로 맞춘다 — 홈의 건물 레벨 배지(1.9em)가 가장 크다. 두 판의 줄이 같으면 테 · 여백이 같아 판도 같다 */
+.place-panel.mkt-status { grid-auto-rows: 2rem; }
+/* 용병 시장은 셋(금화 · 거느린 장수 · 잉여 카드)을 고르게 */
+.place-panel.mkt-merc-status { grid-template-columns: repeat(3, auto); justify-content: space-evenly; }
+.mkt-merc-status .mkt-cur { justify-self: center; }
+.mkt-merc-status .gic img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
 .mkt-merc-cards { font-size: .8rem; white-space: nowrap; color: #5a4128; }
 
 /* ── 명령 판 — 단추 세로로 ── */
@@ -3529,7 +3534,12 @@ button.lv-tactic-row {
 /* ── 상품 구매 — 배너 셋 (76쪽 오른쪽) ── */
 /* 명패는 그림 **바로 아래**에 붙는다(2026-09-24 피드백 — 그림 위에 얹으면 장면을 가린다).
    단추 하나 = 그림 + 명패라, 배너 사이 여백(`gap`)은 명패 아래에서 다음 그림까지다. */
-.mkt-banners { display: flex; flex-direction: column; gap: .55rem; padding: 0 .9rem; }
+/* 배너 사이는 액자 테두리(그림자 4px)끼리 맞닿을 만큼만 (2026-11-24 기획자 — 명패 띠를 걷고 붙였다) */
+/* 홈의 배너 셋은 남는 높이를 고르게 나눈다 (2026-11-24 기획자) — 현황판 ↔ 용병 시장 = 전투 아이템 ↔ 명령 판,
+   배너 사이 둘도 같은 간격(`space-evenly`). 몸통의 위 여백 · 틈은 0으로 두어 바깥 간격도 이 상자 하나가 정한다.
+   `gap`을 두면 사이 둘만 그만큼 넓어지므로 0이다 */
+.mkt-body[data-view="home"] { padding-top: 0; gap: 0; }
+.mkt-banners { display: flex; flex-direction: column; gap: 0; padding: 0 .9rem; flex: 1 0 auto; justify-content: space-evenly; }
 .mkt-banner {
   display: flex; flex-direction: column; align-items: center;
   padding: 0; border: none; background: transparent; cursor: pointer; font: inherit;
@@ -3540,14 +3550,16 @@ button.lv-tactic-row {
   background: #000; border-radius: .35rem; overflow: hidden;
   box-shadow: 0 0 0 2px #7a5a2c, 0 0 0 4px #2a1c0e, 0 4px 10px #000a;
 }
-.mkt-banner img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
-.mkt-banner:hover img { transform: scale(1.03); }
+.mkt-banner img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s, filter .25s; }
+/* 평소엔 어둡게 + 가운데 이름, 포커스(올림 · 키보드 · 누르는 중)면 본래 밝기 + 이름은 숨는다 (2026-11-24 기획자) */
+.mkt-banner:not([data-locked]) img { filter: brightness(.45); }
+.mkt-banner:not([data-locked]):is(:hover, :focus-visible, :active) img { filter: none; transform: scale(1.03); }
+.mkt-banner:not([data-locked]):is(:hover, :focus-visible, :active) .mkt-banner-lbl { opacity: 0; }
 /* 잠긴 배너 (2026-11-12) — 그림은 어둡고 흐리게, 가운데 자물쇠 + 「장터 Lv2부터」. 명패도 가라앉힌다 */
 .mkt-banner-art { position: relative; }
 .mkt-banner[data-locked] { cursor: not-allowed; }
 .mkt-banner[data-locked] img { filter: blur(2px) brightness(.45) saturate(.4); transform: scale(1.04); }
 .mkt-banner[data-locked]:hover img { transform: scale(1.04); }
-.mkt-banner[data-locked] .mkt-banner-lbl { filter: brightness(.6) saturate(.5); }
 .mkt-banner-lock {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem;
 }
@@ -3556,15 +3568,13 @@ button.lv-tactic-row {
   font-size: 1rem; font-weight: 700; letter-spacing: .06em; white-space: nowrap;
   color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 8px #000;
 }
-/* 명패는 액자 **바깥 폭**(그림 + 양옆 테두리 4px)과 같고 액자에 틈 없이 붙는다
-   (2026-09-24 피드백). `margin-top` 4px는 여백이 아니라 그림자 테두리 두께다 —
-   0으로 두면 명패가 액자 아래 테두리를 덮는다. */
+/* 이름 — 그림 가운데에 얹는다(2026-11-24 기획자, 옛 명패 띠의 글자 값 그대로 크게). 잠긴 배너는 자물쇠 위에 선다 */
+.mkt-banner-art > .mkt-banner-lbl {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
 .mkt-banner-lbl {
-  box-sizing: border-box; width: calc(100% + 8px); margin-top: 4px; text-align: center;
-  white-space: nowrap; font-size: 1.05rem; font-weight: 700; letter-spacing: .12em;
-  background: transparent; border-style: solid; border-color: transparent; border-width: .4rem 1.2rem;
-  border-image: url(ui/plate-wide.png) 20% 15% fill;
-  padding: 0 .4rem; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
+  white-space: nowrap; font-size: 1.5rem; font-weight: 700; letter-spacing: .12em; transition: opacity .25s;
+  color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 10px #000c;
 }
 
 /* ── 금화 충전 ── */
@@ -3613,6 +3623,45 @@ button.lv-tactic-row {
   color: #3a2a00; text-shadow: 0 1px 0 #fff4c060;
 }
 .mkt-charge-have .gic img { width: 1.15rem; height: 1.15rem; }
+
+/* ── 용병 시장 (2026-11-24 기획자 — 금화 충전과 같은 종이 카드, 첫 줄 금화 모집 · 둘째 줄 잉여 카드 모집) ── */
+.mkt-pack-price[data-stroke="8"] { --pack-ink: #b8891c; --pack-stroke: url(ui/era-stroke-b-8.png); }   /* 금 — E급 */
+.mkt-pack-price .mkt-gold img { width: 1.25em; height: 1.25em; }
+/* 그림 칸 — 1명은 하나, 3명은 V자, 5명은 W자. 뒷줄(`data-top`)은 조금 위 · 조금 작게, 앞줄이 위에 겹친다 */
+.mkt-recruit-art { position: relative; display: block; align-self: stretch; height: 3.6rem; --rs: 2.9rem; }
+.mkt-recruit-art[data-count="3"] { --rs: 2.6rem; }
+.mkt-recruit-art[data-count="5"] { --rs: 2.3rem; }
+.mkt-recruit-spot { position: absolute; bottom: 0; width: var(--rs); height: var(--rs); transform: translateX(-50%); z-index: 2; }
+.mkt-recruit-spot[data-top] { bottom: .75rem; z-index: 1; transform: translateX(-50%) scale(.9); }
+.mkt-recruit-stand.ofc-stand { display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0006); }
+/* 잉여 카드 모집 — 등급 후광 위 장수 카드 + 등급 배지 */
+.mkt-surplus-art { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 3.6rem; }
+.mkt-surplus-art > img { position: relative; z-index: 1; width: 2.9rem; height: 2.9rem; object-fit: contain; filter: drop-shadow(0 2px 2px #3a240f55); }
+.mkt-surplus-art .gr { position: absolute; z-index: 2; right: -.2rem; bottom: -.1rem; }
+/* E급 — 헌제를 거느리지 않으면 잿빛으로 막는다 */
+button.mkt-pack.mkt-surplus[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
+/* 궁궐 빈자리가 모자란 모집 칸 — 자물쇠가 덮고 「궁궐 증축 필요」 (2026-11-24 기획자). 종이 카드는 잿빛으로 가라앉고
+   자물쇠 · 글자는 그 위에 선명하게(덮개는 카드 밖 `filter`를 안 받게 카드 위 층) */
+button.mkt-pack.mkt-recruit { position: relative; }
+button.mkt-pack.mkt-recruit[data-locked] { cursor: not-allowed; }
+button.mkt-pack.mkt-recruit[data-locked] > :not(.mkt-pack-lock) { filter: grayscale(1); opacity: .45; }
+/* 이름은 숨긴다 — 「궁궐 증축 필요」와 겹쳐 두 줄로 읽혔다 */
+button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; }
+.mkt-pack-lock {
+  position: absolute; inset: .4rem; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem;
+  background: #1a1108a6; border-radius: .3rem; pointer-events: none;
+}
+.mkt-pack-lock .gic img { width: 2.4rem; height: 2.4rem; object-fit: contain; filter: drop-shadow(0 2px 3px #000); }
+.mkt-pack-lock > span:last-child {
+  font-size: .85rem; font-weight: 800; white-space: nowrap; color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+}
+/* 결과 칸의 표 — 새 장수(옥색) · 잉여 카드(잿빛 붉은) */
+.mkt-fate { display: inline-block; margin-top: .1rem; padding: .05rem .45rem; border-radius: .6rem; font-size: .8rem; font-weight: 800; white-space: nowrap; }
+.mkt-fate[data-fate="new"] { background: #2f7f6e; color: #f4ecd8; }
+.mkt-fate[data-fate="surplus"] { background: #7a3a2a; color: #f4ecd8; }
+.mkt-reveal-grid[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
+.mkt-reveal-grid[data-count="5"] { display: flex; flex-wrap: wrap; justify-content: center; }
+.mkt-reveal-grid[data-count="5"] > .mkt-reveal-cell { flex: 0 0 31%; }
 
 /* ── 목록 판 (전투 아이템 · 보관함 · 도시 물자) ── */
 .mkt-list > .btn.primary.wide { margin-top: .45rem; }
@@ -3739,10 +3788,6 @@ button.lv-tactic-row {
 .mkt-irow.pick[data-soldout="1"] { cursor: default; }
 .mkt-irow.pick[data-soldout="1"] .mkt-check { opacity: .4; cursor: default; }
 
-/* [−] n [+] (카드 정리 수량) */
-.mkt-stepper { display: flex; align-items: center; gap: .2rem; }
-.mkt-step-n { min-width: 1.3rem; text-align: center; font-weight: 700; color: #221407; font-variant-numeric: tabular-nums; }
-
 /* 도시 물자 — 그림 · 이름/값/설명 · 체크 (86쪽) */
 .mkt-grows { display: flex; flex-direction: column; }
 /* 도시 물자의 줄은 모두 같은 높이 — 열 언어 가운데 가장 높은 줄(`GoodsView`의 `useAllLangLayout`이 판에 `--row-h`로 건다, 2026-11-13) */
@@ -3795,38 +3840,6 @@ button.lv-tactic-row {
  * ★ 전부 `.modal.xxx`로 **두 칸 세게** 적는다 — `.modal`의 `border:` 단축 속성이
  * `border-image`를 초기화한다(이 저장소가 `.ofc-skill-modal`·`.cty-done`·`.frg-confirm`에서
  * 이미 세 번 밟았다). */
-
-/* 뽑기 방식 (77쪽) — 로딩 판(panel-busy) */
-.modal.mkt-choose {
-  background: transparent; background-size: 100% 100%;
-  border-style: solid; border-color: transparent; border-width: 1.6rem 1.5rem;
-  border-image: url(ui/panel-busy.png) 11% 9% fill;
-  border-radius: 0; color: #f3e8c8; width: min(21rem, 92%); align-items: stretch; gap: .5rem;
-}
-.mkt-choose .modal-ttl { text-align: center; color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .02em; word-break: keep-all; }
-.mkt-choose .note { color: #ffcfae; text-align: center; margin: 0; font-size: .8rem; }
-.mkt-pulls { display: flex; gap: .45rem; }
-/* 칸 테두리는 금빛 밧줄(`frame-gold-1.png`, 2026-09-24 지정), 바탕은 검정. 밧줄이 그림의
-   약 2%(510px 중 10px)라 조각을 4%로 잡아 모서리 매듭까지 들이고, 곧은 변은 `round`로
-   되풀어 깐다 — 늘리면 꼬임이 길게 늘어진다. 안쪽이 투명하므로 검정은 `background`가 칠한다
-   (`fill`을 안 쓴다). 조각 안쪽 절반은 투명이라 `padding-box`까지만 칠하면 밧줄과 검정 사이에
-   틈이 뜬다 — 테두리 상자까지 칠하고 밧줄이 그 위를 덮는다(구운 그림은 밧줄이 맨 가장자리다).
-   모서리는 밧줄의 둥근 귀만큼 깎아 검정이 귀 바깥으로 안 삐진다 */
-.mkt-pull {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: .15rem;
-  padding: .45rem .2rem; cursor: pointer; font: inherit; color: #f3e8c8;
-  background: #000; border-radius: .3rem;
-  border: .5rem solid transparent;
-  border-image: url(ui/frame-gold-1.png) 4% round;
-}
-.mkt-pull:hover:not(:disabled) { filter: brightness(1.15); }
-.mkt-pull:disabled { opacity: .45; cursor: default; }
-/* 뽑기 그림만 — 값 줄의 금화(`.mkt-gold img`)까지 키우지 않게 클래스로 좁힌다 */
-.mkt-pull .mkt-pull-art { width: 2.8rem; height: 2.8rem; object-fit: contain; }
-.mkt-pull .lbl { font-weight: 700; font-size: .82rem; white-space: nowrap; }
-.mkt-pull .sub { color: #f0c674; font-weight: 700; font-size: .8rem; }
-/* 뽑기 방식 판의 금화만 1.3배(2026-09-25 지정) — 공용 `.mkt-gold img` 1.05em × 1.3 */
-.mkt-pull .mkt-gold img { width: 1.365em; height: 1.365em; }
 
 /* 「이뤘다」 — 붉은 금박(panel-done), 도시 증축 축하와 같은 값 */
 .modal.mkt-done {
@@ -3923,31 +3936,6 @@ button.lv-tactic-row {
   position: absolute; right: 4%; bottom: 4%; font-size: .8rem; color: #fff3c8;
   text-shadow: 0 1px 2px #000, 0 0 4px #000;
 }
-
-/* 수량 판 (81쪽 가운데) — 정리할 장수 왼쪽 위 · 받을 장수 오른쪽 아래 */
-.place-panel.mkt-qty { width: min(20rem, 94%); gap: .35rem; }
-.mkt-qty-ttl { margin: 0 0 .2rem; text-align: center; font-weight: 700; color: #221407; font-size: .88rem; }
-.mkt-qty-row { display: flex; align-items: center; gap: .45rem; }
-.mkt-qty-row.to { justify-content: flex-end; text-align: right; }
-.mkt-qty-who { display: flex; flex-direction: column; gap: .1rem; }
-.mkt-qty-row.to .mkt-qty-who { align-items: flex-end; }
-.mkt-qty .mkt-who .nm { color: #221407; }
-.mkt-qty-n { font-size: .8rem; font-weight: 700; color: #6a4210; font-variant-numeric: tabular-nums; }
-/* 바뀐 뒤 숫자만 — 주는 쪽 빨강, 받는 쪽 파랑(2026-09-24). 양피지 위라 짙게 잡는다 */
-.mkt-qty-to[data-dir="down"] { color: #b3261e; }
-.mkt-qty-to[data-dir="up"] { color: #1f56b8; }
-.mkt-qty .mkt-stepper { justify-content: center; margin: .3rem 0 .1rem; gap: .6rem; }
-/* 받을 장수는 두루마리(`ui/scroll.png`, 500×360) 위 — 늘리지 않게 상자를 그림 비율에 맞춘다.
-   글자는 양끝 축을 피해 가운데 종이에 앉는다 */
-.mkt-qty .mkt-qty-stepper .mkt-step-n {
-  min-width: 0; width: 3.36rem; aspect-ratio: 500 / 360; /* 4.2rem의 80%(2026-09-24) — 글자 크기는 그대로 */
-  display: flex; align-items: center; justify-content: center;
-  background: url(ui/scroll.png) center / 100% 100% no-repeat;
-  font-size: 1.15rem; color: #221407;
-}
-/* 기호는 판 이름 글자(.58rem)보다 크게 — 한 글자뿐이라 작으면 안 보인다 */
-.mkt-qty-stepper .pg-lbl { font-size: 1rem; line-height: 1; }
-.mkt-qty .btn { justify-content: center; }
 
 /* ── 장수 그림 + 후광 ── */
 .mkt-portrait { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; }

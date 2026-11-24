@@ -35,7 +35,7 @@ import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
 import { MARKET_ITEM_IDS, fitCarry, isCarriedBattle } from './market.ts';
-import { PROFILE_VERSION, checkGrowth } from './profile.ts';
+import { PROFILE_VERSION, checkGrowth, foldSurplus } from './profile.ts';
 import {
   MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
@@ -218,7 +218,12 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     profile.matches.reduce((n, row) => Math.max(n, row.seq + 1), 1),
   );
 
-  return profile;
+  // 잉여 카드 (2026-11-24) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려진다.** 그리고 Lv9 장수에게 남은 카드는
+  // 잉여 카드로 옮긴다 — 이 규칙 전에 쌓인 카드다. 이미 옮긴 계정은 그대로 지난다(멱등)
+  if (typeof raw.surplusCards === 'number' && Number.isFinite(raw.surplusCards) && raw.surplusCards > 0) {
+    profile.surplusCards = Math.floor(raw.surplusCards);
+  }
+  return foldSurplus(profile);
 }
 
 /** 장수 하나. 되접을 수 없을 만큼 망가졌으면 `null`(그 장수만 빠진다) */

@@ -71,14 +71,14 @@ try {
   ok(`create 한 줄 · 출처 ${r1[0]!.source} · 판정 없음`);
 
   step('2. 장부 밖 쓰기 — 도구 전용 길');
-  const cost = gachaPullCost('single').gold;
+  const cost = gachaPullCost('one').gold;
   const mark2 = await lastId(uid);
   await saveProfileTrusted(uid, { ...(await getProfile(uid))!, gold: cost * 3 });
   if ((await rows(uid, mark2)).length) fail('saveProfileTrusted는 장부를 안 지난다 — 그런데 줄이 생겼다');
   ok('줄 없음');
 
   step('3. 가챠 — 직전의 장부 밖 변화가 먼저 잡힌다');
-  const g = await call('POST', '/market/gacha', { kind: 'single' });
+  const g = await call('POST', '/market/gacha', { kind: 'one' });
   if (!g.ok) fail(`POST /market/gacha → ${g.status} ${await g.text()}`);
   const r3 = await rows(uid, mark2);
   const outside = r3.find((r) => r.phase === 'baseline');

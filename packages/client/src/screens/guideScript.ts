@@ -66,7 +66,10 @@ export const SPOT_SELECTOR = {
   // 둘러보기(2026-10-23) — 메인의 자리 네모 · 장터 홈 · 대자보
   marketHot: '.city-hot[data-place="market"]',
   boardHot: '.city-hot[data-place="ranking"]',
-  shopDoor: '[data-action="openShop"]',
+  // 장터 홈의 배너 셋 (2026-11-24 — 옛 [상품 구매] 판이 홈으로 올라왔다)
+  mercDoor: '[data-action="openMerc"]',
+  goodsDoor: '[data-action="openGoods"]',
+  itemsDoor: '[data-action="openItems"]',
   rankingDoor: '[data-action="ranking"]',
   collectionDoor: '[data-action="collection"]',
   // 산 너머 — 지은 건물(선택자는 마디가 `select`로 싣는다)
@@ -75,8 +78,8 @@ export const SPOT_SELECTOR = {
   upgradeNeeds: '[data-field="conds"]',
   cityRow: '[data-action="openCity"]',
   autoMatch: '[data-action="autoMatch"]',
-  pullDoor: '[data-action="openPull"]',
-  recycleDoor: '[data-action="openRecycle"]',
+  pullDoor: '[data-action="pull-one"]',
+  surplusDoor: '[data-action="surplus-A"]',
   storageDoor: '[data-action="openStorage"]',
   guardsDoor: '.scr-building-farm [data-field="guardList"]',
   researchDoor: '[data-action="openResearch"]',
@@ -183,8 +186,8 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
       return [{ text: t('guide.tour.barracks'), spot: 'barracks' }];
     case 'market.intro':
       return [
-        { text: t('guide.market.intro.1'), spot: 'shopDoor' },
-        { text: t('guide.market.intro.2'), spot: 'shopDoor' },
+        { text: t('guide.market.intro.1'), spot: 'mercDoor' },
+        { text: t('guide.market.intro.2'), spot: 'goodsDoor' },
       ];
     case 'board.intro':
       return [
@@ -353,10 +356,10 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
     case 'market.merc':
       return [
         { text: t('guide.market.merc.1'), spot: 'pullDoor' },
-        { text: t('guide.market.merc.2'), spot: 'recycleDoor' },
+        { text: t('guide.market.merc.2'), spot: 'surplusDoor' },
       ];
     case 'market.open':
-      return [{ text: t('guide.market.open.1', { honor }), spot: 'shopDoor' }];
+      return [{ text: t('guide.market.open.1', { honor }), spot: 'itemsDoor' }];
     case 'market.storage':
       return [
         { text: t('guide.market.storage.1') },

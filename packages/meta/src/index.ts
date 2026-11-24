@@ -27,7 +27,7 @@ export * from './siege.ts';
 export * from './war.ts';
 export * from './defense.ts';
 export * from './rewards.ts';
-export * from './recycle.ts';
+export * from './surplus.ts';
 export * from './power.ts';
 export * from './gacha.ts';
 export * from './ranking.ts';

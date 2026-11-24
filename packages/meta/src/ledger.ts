@@ -35,15 +35,16 @@ import type { Adjustment } from './admin.ts';
  * | `market` | `market.{아이템}` — 가진 것 + 들고 나간 것(들고 나가는 것은 옮김이라 합으로 본다) |
  * | `forge` | `forge.{병기 키}` — 있으면 1 |
  * | `collection` | `collection.{컬렉션}` — 채운 칸 수 |
+ * | `surplus` | 잉여 카드 수 (2026-11-24) |
  * | `record` | `record.{갈래}/{모드}` — 계정 전적의 **승점**(랭킹의 정렬 값, 2026-11-12 — 저장 하나로 위조할 수 있었다) |
  */
 export type LedgerGroup =
   | 'gold' | 'grain' | 'materials' | 'cityLevel'
-  | 'cards' | 'pool' | 'level' | 'buildings' | 'market' | 'forge' | 'collection' | 'record';
+  | 'cards' | 'pool' | 'level' | 'buildings' | 'market' | 'forge' | 'collection' | 'record' | 'surplus';
 
 export const LEDGER_GROUPS: readonly LedgerGroup[] = [
   'gold', 'grain', 'materials', 'cityLevel',
-  'cards', 'pool', 'level', 'buildings', 'market', 'forge', 'collection', 'record',
+  'cards', 'pool', 'level', 'buildings', 'market', 'forge', 'collection', 'record', 'surplus',
 ];
 
 /** 감시하는 값 — 평평한 표. 0인 칸은 없다(없는 것과 0을 같게 본다) */
@@ -65,6 +66,7 @@ export function ledgerValues(p: PlayerProfile): LedgerValues {
   put('grain', p.grain);
   put('materials', p.materials);
   put('cityLevel', p.cityLevel);
+  put('surplus', p.surplusCards);
   for (const [id, n] of Object.entries(p.cards ?? {})) put(`cards.${id}`, n);
   for (const [id, inst] of Object.entries(p.roster ?? {})) {
     put(`pool.${id}`, 1);
@@ -109,8 +111,8 @@ export const increasedGroups = (delta: Readonly<Record<string, number>>): Set<Le
 // 2. 늘릴 수 있는 길 — ① 출처 없는 변화
 // ═══════════════════════════════════════════════════════════════
 
-/** 전투가 주는 것 — 군량 · 재료 · 카드(처음 받은 장수는 풀에 든다) · 이긴 판의 승점. **금화는 없다** */
-const BATTLE: readonly LedgerGroup[] = ['grain', 'materials', 'cards', 'pool', 'record'];
+/** 전투가 주는 것 — 군량 · 재료 · 카드(처음 받은 장수는 풀에 든다 · Lv9 장수의 카드는 잉여 카드) · 이긴 판의 승점. **금화는 없다** */
+const BATTLE: readonly LedgerGroup[] = ['grain', 'materials', 'cards', 'pool', 'record', 'surplus'];
 /** 아무것이나 — 관리자 지급 · 개발용 지급 · 우편 보상 */
 const ANY: readonly LedgerGroup[] = LEDGER_GROUPS;
 
@@ -163,10 +165,12 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /market/grain': ['grain'],
   'POST /market/item': ['market'],
   'POST /market/items': ['market'],
-  'POST /market/gacha': ['cards', 'pool'],
-  'POST /market/recycle': ['cards', 'pool'],
+  // 가챠 — Lv9 장수의 카드는 잉여 카드 (2026-11-24)
+  'POST /market/gacha': ['cards', 'pool', 'surplus'],
+  // 잉여 카드로 모집 — 잉여 카드를 내고 보유 장수의 카드 1장(보관함 장수는 풀에 들 수 있다). 옛 `/market/recycle`을 대신한다
+  'POST /market/surplus': ['cards', 'pool'],
   // 장수 — 레벨업은 카드를 쓰고, 재설계는 쓴 카드를 돌려준다
-  'POST /officer/levelup': ['level'],
+  'POST /officer/levelup': ['level', 'surplus'],
   'POST /officer/respec': ['cards'],
   // 개발용 — 운영에서 이 길로 바뀌면 언제나 징후다(`DEV_SOURCES`)
   'POST /dev/grant': ANY,

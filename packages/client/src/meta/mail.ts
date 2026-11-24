@@ -32,7 +32,7 @@ export async function loadMail(): Promise<MailView[]> {
 
 export type MailActionReply =
   | { ok: true; profile: PlayerProfile | null; mail: MailView; grainLost: number }
-  | { ok: false; code: 'claimed' | 'gone' | 'other' };
+  | { ok: false; code: 'claimed' | 'gone' | 'noSeat' | 'other' };
 
 async function act(mail: MailView, what: 'read' | 'claim'): Promise<MailActionReply> {
   if (mailDemo()) {
@@ -46,7 +46,7 @@ async function act(mail: MailView, what: 'read' | 'claim'): Promise<MailActionRe
   }
   if (!res.ok) {
     const code = ((await res.json().catch(() => ({}))) as { code?: string }).code;
-    return { ok: false, code: code === 'mail.claimed' ? 'claimed' : code === 'mail.notFound' || code === 'mail.expired' || code === 'mail.revoked' ? 'gone' : 'other' };
+    return { ok: false, code: code === 'mail.claimed' ? 'claimed' : code === 'mail.noSeat' ? 'noSeat' : code === 'mail.notFound' || code === 'mail.expired' || code === 'mail.revoked' ? 'gone' : 'other' };
   }
   const body = (await res.json()) as { profile: unknown; mail: MailView; grainLost: number };
   return { ok: true, profile: migrateProfile(body.profile), mail: body.mail, grainLost: body.grainLost };

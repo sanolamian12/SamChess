@@ -17,14 +17,14 @@ import {
   ACADEMY_RESEARCH_MS, applyAckResearch, applyCancelResearch, applyResetAcademy, applyStartResearch,
   collectResearch,
   addCard, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
-  applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRecycle, applyRenameCity, applyRespec, carriedFor, consumeCarried,
-  applyRegisterSlot, applyStartForgeOrder, buyGacha, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
+  applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRenameCity, applyRespec, carriedFor, consumeCarried,
+  applyRegisterSlot, applyStartForgeOrder, buyGacha, exchangeSurplus, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, fitCarry, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
   settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
 import { RuleRejected, rejection } from '@samchess/meta';
 import type { Rejection } from '@samchess/meta';
-import type { BattleRewards, GachaPullKind, MarketBasket, PlayerProfile, RecycleInputs, StatPick, TutorialId } from '@samchess/meta';
+import type { BattleRewards, GachaFate, GachaPullKind, MarketBasket, PlayerProfile, StatPick, SurplusGrade, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import { marketItemById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
@@ -423,7 +423,7 @@ export async function completeTutorial(uid: string, id: TutorialId, seed: number
 // 클라이언트는 「무엇을」만 보낸다. 규칙이 거부하면 그 말을 그대로 올린다.
 
 export type GachaPullOutcome =
-  | { ok: true; profile: PlayerProfile; drawn: OfficerId[]; exhausted: boolean }
+  | { ok: true; profile: PlayerProfile; drawn: OfficerId[]; fates: GachaFate[]; exhausted: boolean }
   | ({ ok: false; status: number } & Rejection);
 
 /** `seed`는 라우트가 넣는다 — 이 계정의 **첫** 가챠에서만 쓰인다(`drawGacha()` 머리말) */
@@ -432,9 +432,26 @@ export async function pullGacha(uid: string, kind: GachaPullKind, seed: number):
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
       const r = buyGacha(profile, kind, seed);
-      return { next: r.profile, value: { ok: true, profile: r.profile, drawn: r.drawn, exhausted: r.exhausted } };
+      return { next: r.profile, value: { ok: true, profile: r.profile, drawn: r.drawn, fates: r.fates, exhausted: r.exhausted } };
     } catch (e) {
       return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid pull') } };
+    }
+  });
+}
+
+export type SurplusExchangeOutcome =
+  | { ok: true; profile: PlayerProfile; officer: OfficerId }
+  | ({ ok: false; status: number } & Rejection);
+
+/** 잉여 카드로 모집 (2026-11-24) — 받는 장수를 고르는 `seed`는 라우트가 넣는다. 판정은 `canExchangeSurplus()` */
+export async function exchangeSurplusCards(uid: string, grade: SurplusGrade, seed: number): Promise<SurplusExchangeOutcome> {
+  return mutateProfile<SurplusExchangeOutcome>(uid, (profile) => {
+    if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
+    try {
+      const r = exchangeSurplus(profile, grade, seed);
+      return { next: r.profile, value: { ok: true, profile: r.profile, officer: r.officer } };
+    } catch (e) {
+      return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid exchange') } };
     }
   });
 }
@@ -444,8 +461,6 @@ export type AccountAction =
   | { kind: 'respec'; officer: OfficerId }
   /** 레벨업 (A2) — 능력 하나 · 학파 하나. 도시 레벨 상한도 `canLevelUp()`이 여기서 본다 */
   | { kind: 'levelUp'; officer: OfficerId; stat: StatPick; school: 'support' | 'illusion' }
-  /** 카드 정리 (A2) — 받을 장수와 재료 수. 3:1 · 2장 이상만 재료는 `canRecycle()`이 본다 */
-  | { kind: 'recycle'; target: OfficerId; inputs: RecycleInputs }
   /**
    * 시장 아이템 한 개 사기 (2026-09-23, GDD §6.5).
    *
@@ -487,7 +502,6 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
       if (action.kind === 'rename') next = applyRenameCity(profile, action.name, now);
       else if (action.kind === 'respec') next = applyRespec(profile, action.officer);
       else if (action.kind === 'levelUp') next = applyLevelUp(profile, action.officer, action.stat, action.school);
-      else if (action.kind === 'recycle') next = applyRecycle(profile, action.target, action.inputs);
       else if (action.kind === 'buyGrain') {
         const can = canBuyGrain(profile, now);
         if (!can.ok) return { next: null, value: { ok: false, status: 400, ...rejection(new RuleRejected(can)) } };

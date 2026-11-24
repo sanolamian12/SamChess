@@ -40,6 +40,7 @@ import type { PlayerProfile } from './types.ts';
  * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
  * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/academy/reset` · `/dev/grant` |
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
+ * | `surplusCards` | 가챠 · 전투 정산 · 레벨업(Lv9의 남은 몫)이 쌓고 `POST /market/surplus`가 쓴다 (2026-11-24) |
  * | `cityName` · `cityNameChangedAt` | 첫 저장(도시 생성) · `POST /city/rename` |
  * | `academy` | `POST /academy/research` · `/academy/cancel` · `/academy/ack` · `/academy/reset` · 거두기는 `syncCity()` |
  * | `cityLevel` | `POST /city/upgrade` |
@@ -64,6 +65,8 @@ import type { PlayerProfile } from './types.ts';
 export const SERVER_OWNED_FIELDS = [
   'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forgeOrder',
   'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
+  // 잉여 카드 — 가챠 · 정산 · 레벨업이 쌓고 `POST /market/surplus`만 쓴다 (2026-11-24)
+  'surplusCards',
   // 도적떼 — 출몰·정산이 서버 시계로만 일어난다 (GDD §5.11). `farmGuards`는 클라이언트 것이다
   'raid',
   // 태학 연구 — 전투의 책략을 바꾼다 (GDD §5.12). `POST /academy/*`만 바꾼다

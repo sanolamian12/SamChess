@@ -47,6 +47,9 @@ const STARTER_GRADES: Grade[] = ['S', 'A', 'B', 'C', 'D'];
 /** 보유 상한은 **궁궐**이 정한다 (GDD §5.4) — `city.ts` 참조 */
 export const poolUsed = (profile: PlayerProfile): number => Object.keys(profile.roster).length;
 
+/** 풀의 빈자리 — 새 장수가 등용될 수 있는 수. 모집 · 전투 보상 · 우편이 이것을 본다 (2026-11-24) */
+export const poolSeatsFree = (profile: PlayerProfile): number => Math.max(0, poolCap(profile) - poolUsed(profile));
+
 // ── 보관함 · 보유 장수 (GDD §5.9, 2026-09-14) ─────────────────────
 
 /**
@@ -212,8 +215,36 @@ export function addCard(profile: PlayerProfile, officer: OfficerId, count = 1): 
     next.roster[officer] = newInstance(officer);
     remain -= 1;
   }
-  if (remain > 0) next.cards[officer] = (next.cards[officer] ?? 0) + remain;
+  if (remain <= 0) return next;
+  // Lv9(최대) 장수에게 들어온 카드는 쓸 데가 없다 — 곧장 잉여 카드로 (2026-11-24 기획자, `surplus.ts`)
+  if (isSurplusOfficer(next, officer)) next.surplusCards = (next.surplusCards ?? 0) + remain;
+  else next.cards[officer] = (next.cards[officer] ?? 0) + remain;
   return next;
+}
+
+// ── 잉여 카드 (2026-11-24 기획자) ─────────────────────────────────
+
+/**
+ * **이 장수에게 들어오는 카드가 잉여인가** — 풀에 있고 최대 레벨(Lv9)이다.
+ * 도시 레벨 상한(`officerLevelCap`)에 막혀 못 올리는 것은 잉여가 **아니다** — 도시가 오르면 쓴다(기획자 확정).
+ * 보관함 장수도 아니다 — 풀에 들면 Lv1부터 큰다.
+ */
+export function isSurplusOfficer(profile: PlayerProfile, officer: OfficerId): boolean {
+  const inst = profile.roster[officer];
+  return !!inst && cardsToLevelUp(inst.level) === null;
+}
+
+/**
+ * 최대 레벨 장수에게 남아 있는 카드를 잉여 카드로 옮긴다 — 레벨업으로 Lv9가 된 순간의 남은 몫, 이 규칙 전에 쌓인 카드(되접기).
+ * 옮길 것이 없으면 **같은 객체**를 돌려준다(되접기가 「바뀌었나」를 본다).
+ */
+export function foldSurplus(profile: PlayerProfile): PlayerProfile {
+  const ids = (Object.keys(profile.cards) as OfficerId[]).filter((id) => (profile.cards[id] ?? 0) > 0 && isSurplusOfficer(profile, id));
+  if (ids.length === 0) return profile;
+  const cards = { ...profile.cards };
+  let add = 0;
+  for (const id of ids) { add += cards[id] ?? 0; delete cards[id]; }
+  return { ...profile, cards, surplusCards: (profile.surplusCards ?? 0) + add };
 }
 
 // ── 레벨업 (GDD §4.3) ──────────────────────────────────────────
@@ -301,7 +332,8 @@ export function applyLevelUp(
   inst.level += 1;
   // 레벨과 성장 스택은 **함께** 늘어난다 — 둘을 다른 줄에서 건드리지 않는다
   inst.growth.push({ stat, tactics: gained });
-  return next;
+  // Lv9가 된 순간 남은 카드는 잉여 카드가 된다 (2026-11-24 기획자)
+  return foldSurplus(next);
 }
 
 /** 한 단계가 더하는 능력치 (`hp+5` / `mp+2` / `at+0.5`). 단일 출처는 엑셀의 `statChoices`다 */

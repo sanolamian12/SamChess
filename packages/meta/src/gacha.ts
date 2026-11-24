@@ -33,7 +33,7 @@
 import { ECONOMY, GROWTH, OFFICERS } from '@samchess/data';
 import { shuffle } from '@samchess/rules';
 import type { OfficerId } from '@samchess/rules';
-import { addCard, cardsSpentOn } from './profile.ts';
+import { addCard, cardsSpentOn, isSurplusOfficer, poolSeatsFree } from './profile.ts';
 import type { MetaResult, PlayerProfile } from './types.ts';
 import { rejectWith } from './reject.ts';
 
@@ -91,45 +91,71 @@ export function drawGacha(profile: PlayerProfile, count: number, newSeed: number
 
 // ── 골드 구매 (상점 UI, 트랙 9) ────────────────────────────────
 
-export type GachaPullKind = 'single' | 'multi';
+/**
+ * 모집 한 판의 종류 — **1명 · 3명 · 5명** (2026-11-24 기획자 — 용병 시장 개편, 옛 단발 · 8연을 대신한다).
+ * 값과 수는 `economy.json`의 `gachaPull`이 정한다.
+ */
+export const GACHA_PULL_KINDS = ['one', 'three', 'five'] as const;
+export type GachaPullKind = typeof GACHA_PULL_KINDS[number];
+export const isGachaPullKind = (v: unknown): v is GachaPullKind => (GACHA_PULL_KINDS as readonly unknown[]).includes(v);
 
 /** 뽑기 한 판의 가격·장수. 단일 출처는 `economy.json`의 `gachaPull` */
 export function gachaPullCost(kind: GachaPullKind): { gold: number; count: number } {
   const p = ECONOMY.gachaPull[kind];
-  return { gold: p.gold, count: 'count' in p ? p.count : 1 };
+  return { gold: p.gold, count: p.count };
 }
 
-/** 이 계정이 지금 이 뽑기를 살 수 있는가 — 화면은 이 판정을 다시 적지 않는다 */
-export function canAffordGacha(profile: PlayerProfile, kind: GachaPullKind): MetaResult {
-  const { gold } = gachaPullCost(kind);
+/**
+ * 이 계정이 지금 이 모집을 할 수 있는가 — 화면은 이 판정을 다시 적지 않는다.
+ *
+ * **궁궐의 빈자리가 모집 수보다 적으면 막는다** (2026-11-24 기획자) — 빈자리 2석이면 1명 모집만 열린다. 나온 장수가
+ * 전부 새 장수여도 다 등용되므로, 모집에서 「자리가 없어 못 받은 장수」는 생기지 않는다. 자리를 먼저 보고 금화를 본다 —
+ * 금화를 채워 봐야 못 하는 것이 더 앞선 사실이다(레벨업의 도시 상한과 같은 차례).
+ */
+export function canPullGacha(profile: PlayerProfile, kind: GachaPullKind): MetaResult {
+  const { gold, count } = gachaPullCost(kind);
+  const free = poolSeatsFree(profile);
+  if (free < count) return { ok: false, reason: `궁궐에 빈자리가 모자랍니다 — ${free}/${count}석`, code: 'market.recruit.noSeat', params: { free, need: count } };
   if (profile.gold < gold) return { ok: false, reason: `금화가 부족합니다 — ${profile.gold}/${gold}`, code: 'market.notEnoughGold', params: { have: profile.gold, need: gold } };
   return { ok: true };
 }
 
+/**
+ * 뽑은 한 장이 어디로 갔나 —
+ * `new` 새 장수가 풀에 등용됐다 · `card` 이미 거느린(또는 보관함의) 장수의 카드 · `surplus` Lv9 장수의 카드라 잉여 카드가 됐다.
+ */
+export type GachaFate = 'new' | 'card' | 'surplus';
+
 export interface GachaPullResult {
   profile: PlayerProfile;
   drawn: OfficerId[];
+  /** `drawn`과 같은 차례 — 각 장이 어디로 갔나 */
+  fates: GachaFate[];
   /** 배열이 모자라 요청한 수보다 적게 나왔다 — `drawGacha`의 결과를 그대로 물려받는다 */
   exhausted: boolean;
 }
 
 /**
- * 골드를 내고 뽑아 카드를 계정에 넣는다 — `drawGacha`(배열 소비) + `addCard`(지급)를
- * 한데 묶은 것. **골드 검증은 이 함수가 한다** — 화면이 버튼을 누르기 전에
- * `canAffordGacha`로 잠글 수는 있어도, 최종 판정은 여기서 다시 한다(전투 UI가
- * `validate()`를 다시 묻는 것과 같은 결).
+ * 골드를 내고 뽑아 카드를 계정에 넣는다 — `drawGacha`(배열 소비) + `addCard`(지급)를 한데 묶은 것.
+ * **판정(빈자리 · 금화)은 이 함수가 다시 한다** — 화면이 칸을 막아도 최종 판정은 여기다.
+ * 빈자리를 미리 봤으므로 새 장수는 전부 풀에 든다. Lv9 장수의 카드는 `addCard`가 잉여 카드로 돌린다.
  *
  * `newSeed`는 `drawGacha`와 같은 이유로 계정이 처음 가챠를 도는 경우에만 쓰인다.
  */
 export function buyGacha(profile: PlayerProfile, kind: GachaPullKind, newSeed: number): GachaPullResult {
-  const check = canAffordGacha(profile, kind);
+  const check = canPullGacha(profile, kind);
   if (!check.ok) rejectWith(check);
 
   const { gold, count } = gachaPullCost(kind);
   const { profile: pulled, drawn, exhausted } = drawGacha(profile, count, newSeed);
 
   let next: PlayerProfile = { ...pulled, gold: pulled.gold - gold };
-  for (const officer of drawn) next = addCard(next, officer);
+  const fates: GachaFate[] = [];
+  for (const officer of drawn) {
+    const owned = !!next.roster[officer] || (next.cards[officer] ?? 0) > 0;
+    fates.push(!owned ? 'new' : isSurplusOfficer(next, officer) ? 'surplus' : 'card');
+    next = addCard(next, officer);
+  }
 
-  return { profile: next, drawn, exhausted };
+  return { profile: next, drawn, fates, exhausted };
 }

@@ -43,7 +43,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     // 시각과 함께 부르는 것은 서버의 `getProfile()`이다
     'forgeMadeAt',
     // 금화와 가챠 배열(2026-09-14, A1) — 로컬 가챠·도시 이름·재설계가 `PUT`으로 금화를 적을 수 있었다
-    'gold', 'gachaPool',
+    'gold', 'gachaPool', 'surplusCards',
     // 장수 명단과 카드(2026-09-14, A2) — 레벨업·재설계·카드 정리가 서버 경로로 옮겨 오며
     // 장수 한 명 안에 클라이언트가 바꾸는 값이 남지 않았다
     'roster', 'cards',
@@ -82,7 +82,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
     const base = server();
     const [who] = Object.keys(base.roster) as OfficerId[];
     const current: PlayerProfile = {
-      ...base, gold: 30, gachaPool: { seed: 11, drawn: 7 }, cards: { [who!]: 2 } as PlayerProfile['cards'],
+      ...base, gold: 30, gachaPool: { seed: 11, drawn: 7 }, surplusCards: 3, cards: { [who!]: 2 } as PlayerProfile['cards'],
       cityNameChangedAt: T0,
       raid: { day: '2026-09-21', bandits: 5, spawnedAt: T0, grainAtSpawn: 40, status: 'pending' },
       academy: { done: [], research: { level: 1, tactic: 'jeung-pok-plus' as TacticId, startedAt: T0 } },
@@ -102,7 +102,7 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       forgeOrder: { equipmentId: 'su-geuk', startedAt: 0 },
       forgeMadeAt: { 'su-geuk': 1 },
       // 금화를 불리고, 가챠 배열을 처음으로 되감아 좋은 줄을 다시 뽑으려 한다
-      gold: 999_999, gachaPool: { seed: 11, drawn: 0 },
+      gold: 999_999, gachaPool: { seed: 11, drawn: 0 }, surplusCards: 999,
       // 카드를 불리고 장수를 Lv9로 적는다 — 도시 레벨 상한도 증축의 보유 조건도 이걸 본다
       cards: { [who!]: 999 } as PlayerProfile['cards'],
       roster: { ...current.roster, [who!]: { ...current.roster[who!]!, level: 9 } },

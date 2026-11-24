@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  applyCityUpgrade, buildingLevel, buildingRows, canUpgradeCity, MAX_CITY_LEVEL, upgradeCost, upgradePickCount,
+  applyCityUpgrade, buildingLevel, buildingRows, canUpgradeCity, forcedUpgradePicks, MAX_CITY_LEVEL, upgradeCost, upgradePickCount,
 } from '@samchess/meta';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
@@ -160,10 +160,13 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
   const level = profile.cityLevel;
   const need = upgradePickCount(profile);
   const rows = buildingRows(profile);
-  const [picks, setPicks] = useState<BuildingId[]>([]);
+  // 홀수 레벨로 오르는 증축은 궁궐이 처음부터 골라져 있고 뺄 수 없다(2026-11-24 기획자 — `forcedUpgradePicks`)
+  const forced = forcedUpgradePicks(profile);
+  const [picks, setPicks] = useState<BuildingId[]>(forced);
   /** [보기]로 연 건물 — 오른 뒤의 한 장 */
   const [peek, setPeek] = useState<BuildingId | null>(null);
   const toggle = (id: BuildingId): void => {
+    if (forced.includes(id)) return;
     setPicks((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : xs.length >= need ? xs : [...xs, id]));
   };
   /* 줄 높이 · 목록 높이는 열 언어 가운데 가장 큰 것에 맞춘다 — 몽골어만 긴 이름이 두 줄로 접혀 판이 14px 컸다(2026-11-23, `look:doneLang`) */
@@ -191,19 +194,20 @@ function UpgradeModal({ profile, cue, onClose, onConfirm }: {
               {rows.map((row) => {
                 const maxed = row.level >= row.maxLevel;
                 const on = picks.includes(row.id);
+                const must = forced.includes(row.id);
                 const name = buildingNameText(row.id);
                 return (
                   // 줄 안에 [보기] 단추가 있어 줄은 `<button>`이 아니라 누를 수 있는 `<div>`다(단추 안에 단추는 못 넣는다)
                   <div
                     key={row.id} className={`cty-up-row${on ? ' on' : ''}`} role="button" tabIndex={maxed ? -1 : 0}
-                    data-action="pickBuilding" data-building={row.id} data-on={on ? '1' : '0'} data-maxed={maxed ? '1' : '0'}
+                    data-action="pickBuilding" data-building={row.id} data-on={on ? '1' : '0'} data-maxed={maxed ? '1' : '0'} data-forced={must ? '1' : undefined}
                     aria-pressed={on} aria-disabled={maxed}
                     onClick={() => { if (!maxed) toggle(row.id); }}
                     onKeyDown={(e) => { if (!maxed && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(row.id); } }}
                   >
                     <span className="ic cty-up-shine"><BuildingIcon id={row.id} label={name} /></span>
                     <span className="lv"><BuildingLevelBadge level={maxed ? row.level : row.level + 1} /></span>
-                    <span className="nm">{name}</span>
+                    <span className="nm">{name}{must && <em className="cty-up-must" data-field="forced">{t('city.upgrade.forced')}</em>}</span>
                     {!maxed && (
                       <button type="button" className="cty-view" data-action="viewNext" data-building={row.id}
                         aria-label={t('city.bld.view')} title={t('city.bld.view')}

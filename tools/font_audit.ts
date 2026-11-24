@@ -322,11 +322,14 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     try {
       const home = async (): Promise<void> => { await go(page, { name: 'main' }); await settle(page, 300); await go(page, { name: 'market' }); await settle(page, 700); };
       await home();
-      for (const a of ['openShop', 'openGold']) {
+      // 'home' = 장터 홈 그대로(배너 셋이 홈에 있다 — 2026-11-24)
+      for (const a of ['home', 'openGold']) {
         const acts = await page.$$eval('.scr [data-action]', (els) => els.map((e) => (e as HTMLElement).dataset['action']));
-        if (!acts.includes(a)) continue;
-        await click(page, `.scr [data-action="${a}"]`);
-        await settle(page);
+        if (a !== 'home') {
+          if (!acts.includes(a)) continue;
+          await click(page, `.scr [data-action="${a}"]`);
+          await settle(page);
+        }
         await audit(page, `${d}/41-market-${a}`);
         const sub = await page.$$eval('.scr [data-action]', (els) => els.map((e) => (e as HTMLElement).dataset['action']));
         for (const b of ['openMerc', 'openItems', 'openGoods']) {
@@ -335,8 +338,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
           await settle(page);
           await audit(page, `${d}/42-market-${b}`);
           await home();
-          await click(page, `.scr [data-action="${a}"]`);
-          await settle(page, 600);
+          if (a !== 'home') { await click(page, `.scr [data-action="${a}"]`); await settle(page, 600); }
         }
         await home();
       }

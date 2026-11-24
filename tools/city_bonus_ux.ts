@@ -170,8 +170,6 @@ try {
   await page.click('[data-place="market"]', { force: true });
   await page.waitForSelector('[data-screen="market"]', { timeout: 10_000 });
   await shot('cbx-01c-market');
-  await popup('[data-currency="grain"] [data-city-bonus="grainCap"]', 3, '장터홈');
-  await page.click('[data-action="openShop"]');
   await page.click('[data-action="openGoods"]');
   await page.waitForSelector('[data-good="grain"]', { timeout: 5_000 });
   await shot('cbx-01d-goods');

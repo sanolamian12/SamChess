@@ -2067,12 +2067,11 @@ console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은
   await devAtMarket('[data-dev="gold-respec"]', 1);
   const heldBefore = await cardsOf();
 
-  /** 장터 → 상품 구매 → 도시 물자 → 장수 재설계 → 그 장수 → 확인 팝업 */
+  /** 장터 → 도시 물자 → 장수 재설계 → 그 장수 → 확인 팝업 */
   const openRespec = async (): Promise<void> => {
     await reenter();
     await clickPlace('market');
     await page.waitForSelector('[data-screen="market"]', { timeout: 5_000 });
-    await page.click('[data-action="openShop"]');
     await page.click('[data-action="openGoods"]');
     // 줄을 누르면 곧장 장수 고르기 판(2026-11-13 — 체크 → [구매하기]를 한 번으로)
     if (await page.getAttribute('[data-good="respec"]', 'data-can') !== '1') {

@@ -20,7 +20,7 @@ import type { BuildingId } from '@samchess/data';
 import {
   UPGRADE_PICKS, BUILD_CITY_LEVEL, INJURY_PENALTY, MATERIALS_PER_GOLD, MATERIAL_PACK,
   PROFILE_VERSION, applyBuyMaterials, canBuyMaterials, materialPackCost, battlePower,
-  buildingRows, checkUpgradePicks, hasEmperor, upgradePickCount, injuredStat, newInstance,
+  buildingRows, checkUpgradePicks, forcedUpgradePicks, PALACE_FORCED_LEVELS, hasEmperor, upgradePickCount, injuredStat, newInstance,
   nextRoomFreeAt, toRosterEntries,
   HEAL_MS, INJURY_RECOVER_MS, MAX_CITY_LEVEL, MS_PER_HOUR, ROOM_CYCLE_MS, accountTally,
   applyBattleResult, applyCityUpgrade, applyHeal, applyInjuries, buildingLevel,
@@ -299,6 +299,33 @@ describe('증축 (GDD §5)', () => {
     assert.throws(() => applyCityUpgrade(p, T0, ['farm', 'farm', 'forge']), /서로 다른/);
   });
 
+  it('홀수 레벨(3 · 5 · 7 · 9)로 오르는 증축은 궁궐을 반드시 고른다 — 도시 Lv9에 궁궐 Lv5(260석) (2026-11-24 기획자)', () => {
+    assert.deepEqual(PALACE_FORCED_LEVELS, [3, 5, 7, 9]);
+    for (let from = 1; from <= 10; from++) {
+      const p = stocked(city({ cityLevel: from, materials: 999 }));
+      const want = [3, 5, 7, 9].includes(from + 1) ? ['palace'] : [];
+      assert.deepEqual(forcedUpgradePicks(p), want, `Lv${from} → ${from + 1}`);
+    }
+    const p = stocked(city({ cityLevel: 2, materials: 999 }));
+    const code = (picks: string[]): string => { const c = checkUpgradePicks(p, picks); return c.ok ? 'ok' : c.code ?? 'none'; };
+    assert.equal(code(['farm', 'academy', 'forge']), 'city.forcedPick', '궁궐을 빼면 막는다');
+    assert.equal(code(['palace', 'academy', 'forge']), 'ok');
+    // 궁궐이 이미 최대면 강제가 없다
+    assert.deepEqual(forcedUpgradePicks({ ...p, buildings: { ...p.buildings, palace: 5 } }), []);
+    // 네 번 다 궁궐을 고르면(나머지는 아무거나) 도시 Lv9에 궁궐 Lv5 — 장수 260명이 다 앉는다
+    let q = stocked(city({ cityLevel: 1, materials: 9_999 }));
+    for (let lv = 1; lv < 9; lv++) {
+      const n = upgradePickCount(q);
+      const picks = [...forcedUpgradePicks(q)];
+      for (const b of BUILDINGS) if (picks.length < n && b.id !== 'palace' && (q.buildings[b.id as BuildingId] ?? 0) < b.maxLevel) picks.push(b.id as BuildingId);
+      q = { ...q, cityLevel: lv, buildings: { ...q.buildings } };
+      for (const id of picks) q.buildings[id] = (q.buildings[id] ?? 0) + 1;
+      q = { ...q, cityLevel: lv + 1 };
+    }
+    assert.equal(q.cityLevel, 9);
+    assert.equal(poolCap(q), OFFICERS.length, '도시 Lv9에 궁궐 260석 = 장수 전원');
+  });
+
   it('최대가 아닌 건물이 셋보다 적으면 남은 만큼만 고른다', () => {
     const p = stocked(city({ cityLevel: 5, materials: 999 }));
     const almost = { ...p, buildings: Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i < 2 ? b.maxLevel - 1 : b.maxLevel])) as PlayerProfile['buildings'] };
@@ -424,8 +451,10 @@ describe('건물 — 증축이 고른 셋을 함께 올린다 (GDD §5.2 · §5.
   it('낮은 건물부터 고르며 올리면 황제 없는 상한에서 다섯 칸이 남는다 ★', () => {
     let p = stocked(city({ materials: 9999 }));
     while (canUpgradeCity(p).ok) {
-      const picks = [...BUILDINGS].filter((b) => buildingLevel(p, b.id) < b.maxLevel)
-        .sort((x, y) => buildingLevel(p, x.id) - buildingLevel(p, y.id)).slice(0, upgradePickCount(p)).map((b) => b.id);
+      // 홀수 레벨 증축의 궁궐(`forcedUpgradePicks`)을 먼저, 나머지는 낮은 것부터
+      const must = forcedUpgradePicks(p);
+      const picks = [...must, ...[...BUILDINGS].filter((b) => buildingLevel(p, b.id) < b.maxLevel && !must.includes(b.id))
+        .sort((x, y) => buildingLevel(p, x.id) - buildingLevel(p, y.id)).map((b) => b.id)].slice(0, upgradePickCount(p));
       assert.equal(picks.length, UPGRADE_PICKS, `Lv${p.cityLevel}에서 셋을 다 골랐다`);
       p = applyCityUpgrade(p, T0, picks);
     }

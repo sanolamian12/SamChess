@@ -115,19 +115,24 @@ async function send(path: string, body: unknown): Promise<unknown | null> {
 export interface GachaPulled {
   profile: PlayerProfile;
   drawn: OfficerId[];
+  /** 각 장이 어디로 갔나 — 새 장수 · 카드 · 잉여 카드 (2026-11-24) */
+  fates: import('@samchess/meta').GachaFate[];
   exhausted: boolean;
 }
 
 /** 가챠 한 판 — 시드도 서버가 만든다. 뽑은 장수 목록이 프로필과 함께 온다 */
 export async function pullGachaOnServer(kind: import('@samchess/meta').GachaPullKind): Promise<GachaPulled | null> {
-  const raw = (await send('/market/gacha', { kind })) as { profile?: unknown; drawn?: unknown; exhausted?: unknown } | null;
+  const raw = (await send('/market/gacha', { kind })) as { profile?: unknown; drawn?: unknown; fates?: unknown; exhausted?: unknown } | null;
   if (raw === null) return null;
   const profile = migrateProfile(raw.profile);
   if (!profile || !Array.isArray(raw.drawn)) {
     console.warn('[city] /market/gacha 가 잘못된 몸통을 줬다');
     return null;
   }
-  return { profile, drawn: raw.drawn as OfficerId[], exhausted: raw.exhausted === true };
+  const fates = Array.isArray(raw.fates) && raw.fates.length === raw.drawn.length
+    ? raw.fates as import('@samchess/meta').GachaFate[]
+    : raw.drawn.map(() => 'card' as const);
+  return { profile, drawn: raw.drawn as OfficerId[], fates, exhausted: raw.exhausted === true };
 }
 
 /** 도시 이름을 바꾼다 — 금화와 쿨다운 시각은 서버가 정한다 */
@@ -144,10 +149,19 @@ export const levelUpOnServer = (
   officer: OfficerId, stat: import('@samchess/meta').StatPick, school: 'support' | 'illusion',
 ): Promise<PlayerProfile | null> => post('/officer/levelup', { officer, stat, school });
 
-/** 카드 정리 — 받을 장수와 재료 수 (A2) */
-export const recycleOnServer = (
-  target: OfficerId, inputs: import('@samchess/meta').RecycleInputs,
-): Promise<PlayerProfile | null> => post('/market/recycle', { target, inputs });
+/** 잉여 카드로 모집 (2026-11-24) — 등급만 보내고, 받는 장수는 서버가 고른다. 못 닿으면 물러나지 않는다 */
+export async function exchangeSurplusOnServer(
+  grade: import('@samchess/meta').SurplusGrade,
+): Promise<{ profile: PlayerProfile; officer: OfficerId } | null> {
+  const raw = (await send('/market/surplus', { grade })) as { profile?: unknown; officer?: unknown } | null;
+  if (raw === null) return null;
+  const profile = migrateProfile(raw.profile);
+  if (!profile || typeof raw.officer !== 'string') {
+    console.warn('[city] /market/surplus 가 잘못된 몸통을 줬다');
+    return null;
+  }
+  return { profile, officer: raw.officer as OfficerId };
+}
 
 /**
  * **개발용 지급** — 서버가 `SAMCHESS_DEV_GRANTS=1`일 때만 받는다(아니면 규칙 거부처럼 이유가 온다).
