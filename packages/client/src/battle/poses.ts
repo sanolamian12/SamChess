@@ -46,10 +46,10 @@ const FALL_FRAME_MS = 220;
 // (`ui/systemLog.ts`의 `pace()`).
 /** 이동 — 경로의 **칸마다** 이 시간씩 머문다. 부드럽게 미끄러지지 않고 한 칸씩 뛴다. 300 → 600(2026-11-17) → 300(2026-11-23 기획자, 전투가 끊겨 보인다) */
 const STEP_MS = 300;
-/** 공격 — 사이 두 칸(`ANIM.windup`)을 0.3초씩 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다.
- *  사이 칸은 옛 「점멸 0.3 → 평상 0.3」 자리에 들어왔다가 2026-11-17에 0.6초로 늦췄고 2026-11-23에 0.3초로 되돌렸다(기획자). 공격 자세의 2.3초는 그대로 */
-const ATTACK_FLASH_MS = 300;
-const ATTACK_GAP_MS = 300;
+/** 공격 — 사이 칸(`ANIM.windup`, 두 칸을 두 번)을 0.3초씩 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다.
+ *  사이 칸은 옛 「점멸 0.3 → 평상 0.3」 자리에 들어왔다가 2026-11-17에 0.6초로 늦췄고 2026-11-23에 0.3초로 되돌렸다(기획자).
+ *  2026-11-24에 두 칸을 두 번 돌게 해(기획자) 사이가 1.2초다. 공격 자세의 2.3초는 그대로 */
+const WINDUP_STEP_MS = 300;
 const ATTACK_HOLD_MS = 2300;
 /** 책략·명상 — 점멸 없이 1.3초. 적에게 건 책략이 성공하면 1.3초 더 */
 const CAST_MS = 1300;
@@ -617,7 +617,7 @@ export class PoseDirector {
           // 그 전에 **때리는 쪽**을 먼저 비추고 1초 (2026-10-09) — 대상은 언제나 이웃 칸이라 그다음 옮김은 짧다.
           introduce(ev.unit);
           look(SCALE_FOCUS, ev.target);
-          const hold = ATTACK_FLASH_MS + ATTACK_GAP_MS;
+          const hold = ANIM.windup.length * WINDUP_STEP_MS;
           // **게이지는 피격 그림과 함께 줄어든다.** 예전에는 판정 순서 그대로
           // 게이지가 먼저 줄고 때리는 그림이 나중에 떴다 (기획자 지적 2026-08-13).
           actStart = cursor;
@@ -630,9 +630,9 @@ export class PoseDirector {
           soundCues.push({ at: hitAt, k: 'attackHit', ev });
           face(ev.unit, cursor, xOf(ev.unit), xOf(ev.target));      // 때리는 쪽은 대상을
           face(ev.target, hitAt, xOf(ev.target), xOf(ev.unit));     // 맞는 쪽은 맞는 순간 때린 쪽을
-          // 평상 → 사이 두 칸(`ANIM.windup`) → 공격 자세 (2026-11-16). 옛 「공격 점멸 → 평상」 0.6초 자리에 들어가
+          // 평상 → 사이 칸(`ANIM.windup`) → 공격 자세 (2026-11-16). 옛 「공격 점멸 → 평상」 자리에 들어가
           // 공격 자세가 뜨는 순간이 그대로 `hitAt`이다
-          show(ev.unit, 0, hold, POSE.attack, { frames: ANIM.windup, step: hold / ANIM.windup.length });
+          show(ev.unit, 0, hold, POSE.attack, { frames: ANIM.windup, step: WINDUP_STEP_MS });
           show(ev.unit, hold, ATTACK_HOLD_MS, POSE.attack);
           // 대상은 **두 번째 공격 그림이 뜨는 동안** 피격을 띄운다.
           // 그 사이 시스템 대화창의 「누가 공격했다 · 크리티컬」을 읽게 된다.
@@ -846,7 +846,7 @@ export class PoseDirector {
         }
 
         /*
-         * **차례를 받은 장수의 평상 동작** (2026-11-16 기획자 — 관우 수염, 가후 부채질) — 평상 → 사이 세 칸 → 평상, 한 번.
+         * **차례를 받은 장수의 평상 동작** (2026-11-16 기획자 — 관우 수염, 가후 부채질) — 평상 → 사이 세 칸을 두 번(2026-11-24) → 평상.
          * 커서를 밀지 않는다: 차례가 넘어가는 통의 맨 끝이라 뒤따르는 동작이 없고, 그 장수의 다음 행동은 다음 계획이다.
          * 시전 중(`casting`)인 장수는 건너뛴다 — 씬이 평상 대신 시전 자세를 세워 둔다.
          */

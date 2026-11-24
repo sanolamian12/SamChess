@@ -164,9 +164,9 @@ test('다중 피격 — 포커스가 대상 사이를 옮겨 다닌다 (장료�
   ]);
   assert.equal(dir.camera.length, 2, '대상마다 큐가 하나씩 있어야 한다');
   assert.deepEqual(dir.camera.at(0)!.cell, { x: 2, y: 4 });
-  assert.deepEqual(dir.camera.at(3499)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
-  // 줌인 0.6 + 공격 2.9 = 3.5초 뒤에 둘째 대상으로 옮겨 간다
-  assert.deepEqual(dir.camera.at(3500)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
+  assert.deepEqual(dir.camera.at(4099)!.cell, { x: 2, y: 4 }, '첫 공격이 끝나기 전');
+  // 줌인 0.6 + 공격 3.5 = 4.1초 뒤에 둘째 대상으로 옮겨 간다
+  assert.deepEqual(dir.camera.at(4100)!.cell, { x: 9, y: 4 }, '둘째 대상으로 옮겨 간다');
 });
 
 test('책략·명상·고유기술은 포커스로 **시전자**를 비춘다', () => {
