@@ -8,7 +8,7 @@ import { GROWTH, OFFICERS, officerById } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   addCard, applyLevelUp, canExchangeSurplus, cardsToLevelUp, createProfile, exchangeSurplus, foldSurplus,
-  boxedOfficers, cardCandidates, claimMail, grantRewards, guardServerOwned, isSurplusOfficer, mailClaimed, ownedOfficers,
+  cardCandidates, claimMail, grantRewards, guardServerOwned, isSurplusOfficer, mailClaimed, ownedOfficers,
   poolSeatsFree, poolUsed, tacticChoices, migrateProfile, newInstance, surplusCost, surplusOf, surplusTargets,
 } from '../src/index.ts';
 import type { Mail, MetaResult, PlayerProfile } from '../src/index.ts';
@@ -152,7 +152,7 @@ describe('궁궐이 가득 차면 — 전투 보상은 보유한 장수에서 �
     let q = p;
     for (let seed = 1; seed <= 20; seed++) q = grantRewards(q, { cards: [{ owned: [], fresh: ['B', 'C', 'D'] }], materials: 0, grain: 0 }, seed).profile;
     assert.equal(poolUsed(q), poolUsed(p));
-    assert.deepEqual(boxedOfficers(q), boxedOfficers(p));
+    assert.ok(Object.keys(q.cards).every((id) => q.roster[id as OfficerId]), '카드는 풀에 있는 장수의 것뿐 — 보관함은 없다');
   });
 
   it('새 장수 카드가 든 우편은 자리가 모자라면 못 받고 우편이 남는다 — 보유한 장수의 카드는 받는다', () => {

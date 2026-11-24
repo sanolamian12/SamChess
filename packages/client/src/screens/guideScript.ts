@@ -332,11 +332,6 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.city.intro.1'), spot: 'upgradeNeeds' },
         { text: t('guide.city.intro.2') },
       ];
-    case 'palace.box':
-      return [
-        { text: t('guide.palace.box.1', { honor }), spot: 'officersDoor' },
-        { text: t('guide.palace.box.2'), spot: 'cityDoor' },
-      ];
     case 'barracks.sortieReady':
       return [{ text: t('guide.barracks.sortieReady.1', { honor }), spot: 'sortieDoor' }];
     case 'barracks.sTutorial':

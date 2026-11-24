@@ -8,8 +8,7 @@
  * 1. **칸마다 하나씩 채운다 · 부분 등록 가능 · 되돌릴 수 없다.** 모든 칸이 차야 완성이고
  *    그때 점수와 효과가 생긴다(부분 등록은 아무것도 없다).
  * 2. **장수 카드는 여분이 1장이라도 있으면** 낼 수 있고 **여분만** 쓴다 — 본체는 빠지지 않는다.
- *    「여분」은 풀의 장수면 `cards` 그대로, **보관함의 장수면 `cards − 1`**이다 — 보관함의
- *    장수는 본체가 카드 한 장으로 들어 있다(`boxedOfficers`). 그 한 장까지 내면 장수가 사라진다.
+ *    카드는 풀에 있는 장수의 것뿐이라 「여분」은 `cards` 그대로다(장수 보관함은 2026-11-24에 없어졌다).
  * 3. **병기는 미지급 자루만** 낸다. 낸 자루는 `forgeOwned`에서 빠지므로 대장간의 종류당 상한
  *    (`forgeCopiesOwned`)이 저절로 「만든 수 − 낸 수」가 된다 — 따로 세는 칸이 없다.
  * 4. **아이템은 이번 판에 들려 보낼 것(`marketCarry`)을 뺀 수량**만 낸다. 가장 오래 산 것부터 빠진다.
@@ -51,10 +50,9 @@ export function collectionStatus(profile: PlayerProfile, c: CollectionData): Col
 
 // ── 칸 하나 ─────────────────────────────────────────────────────
 
-/** 장수의 **여분** 카드 — 풀의 장수는 `cards` 그대로, 보관함의 장수는 본체 한 장을 뺀다 (머리말 ★2) */
+/** 장수의 **여분** 카드 — 풀에 있는 장수의 `cards` (머리말 ★2). 풀에 없는 장수는 0 */
 export function spareCards(profile: PlayerProfile, officer: string): number {
-  const n = profile.cards[officer as OfficerId] ?? 0;
-  return profile.roster[officer as OfficerId] ? n : Math.max(0, n - 1);
+  return profile.roster[officer as OfficerId] ? profile.cards[officer as OfficerId] ?? 0 : 0;
 }
 
 /** 그 병기의 **미지급** 자루 키 — 번호가 큰 것부터(먼저 만든 자루가 남는다) */
@@ -88,7 +86,7 @@ export function slotState(profile: PlayerProfile, c: CollectionData, index: numb
     const have = spareCards(profile, slot.id);
     if (done) return { state: 'done', have };
     if (have > 0) return { state: 'ready', have };
-    const owned = !!profile.roster[slot.id as OfficerId] || (profile.cards[slot.id as OfficerId] ?? 0) > 0;
+    const owned = !!profile.roster[slot.id as OfficerId];
     return { state: 'blocked', reason: owned ? 'noSpare' : 'notOwned', have };
   }
   if (slot.kind === 'weapon') {

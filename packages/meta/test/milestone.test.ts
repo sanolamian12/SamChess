@@ -14,11 +14,11 @@ import type { PlayerProfile } from '../src/index.ts';
 // 260명에는 헌제가 든다 — 황제 안내는 먼저 본 것으로 둔다
 const fresh = (): PlayerProfile => markGuideSeen(markGuideSeen(createProfile('천하성', 7), 'main.intro'), 'emperor');
 
-/** 풀에 없는 장수를 전부 카드 한 장씩(보관함)으로 채운다 — 보유 = 풀 + 보관함 */
+/** 260명을 전부 풀에 앉힌다 — 보유 = 풀(장수 보관함은 2026-11-24에 없어졌다) */
 const ownAll = (p: PlayerProfile): PlayerProfile => {
-  const cards = { ...p.cards };
-  for (const id of FOUNDING_OFFICERS) if (!p.roster[id]) cards[id] = Math.max(1, cards[id] ?? 0);
-  return { ...p, cards };
+  const roster = { ...p.roster };
+  for (const id of FOUNDING_OFFICERS) if (!roster[id]) roster[id] = { officer: id, level: 1, growth: [] };
+  return { ...p, roster };
 };
 const main = (p: PlayerProfile) => pendingGuide(p, 'main', { view: 'core', extended: false });
 
@@ -28,13 +28,13 @@ describe('판정', () => {
     assert.equal(FOUNDING_OFFICERS.length, OFFICERS.length);
   });
 
-  it('풀 + 보관함으로 260명을 모두 가져야 참 — 한 명이 빠지면 거짓', () => {
+  it('260명을 모두 거느려야 참 — 한 명이 빠지면 거짓', () => {
     const all = ownAll(fresh());
     assert.equal(ownsAllOfficers(fresh()), false);
     assert.equal(ownsAllOfficers(all), true);
-    const missing = FOUNDING_OFFICERS.find((id) => !all.roster[id])!;
-    const { [missing]: _gone, ...cards } = all.cards;
-    assert.equal(ownsAllOfficers({ ...all, cards }), false);
+    const missing = FOUNDING_OFFICERS[FOUNDING_OFFICERS.length - 1]!;
+    const { [missing]: _gone, ...roster } = all.roster;
+    assert.equal(ownsAllOfficers({ ...all, roster }), false);
   });
 });
 
@@ -53,9 +53,10 @@ describe('기록 · 보상', () => {
     assert.equal(fanOfficerEligible(fresh()), false);
   });
 
-  it('카드를 정리해 260명이 깨져도 기록은 남는다', () => {
+  it('260명이 깨져도 기록은 남는다', () => {
     const done = recordAllOfficers(ownAll(fresh()), 1, 1);
-    const broken = { ...done, cards: {} as PlayerProfile['cards'] };
+    const { [FOUNDING_OFFICERS[0]!]: _gone, ...roster } = done.roster;
+    const broken = { ...done, roster };
     assert.equal(ownsAllOfficers(broken), false);
     assert.equal(fanOfficerEligible(broken), true);
   });

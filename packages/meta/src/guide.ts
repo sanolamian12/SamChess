@@ -51,7 +51,6 @@
  *
  * 첫 판 점검으로 채운 빈자리 (2026-11-14, `history/2026-11-14_내관안내_빈자리점검.md`) — 처음 만나는 화면 · 사건
  * 도시 관리 — 조건이 아직       city.intro          무엇을 하는 곳(증축 · 새 건물 · 건물 올리기) · 장수는 용병 시장 · 전투 보상, 자재는 도시 물자 · 승리
- * 궁궐 — 보관함에 장수가 들었다  palace.box          궁궐이 가득 차 새 장수는 보관함 · 궁궐을 올리면 들어온다
  * 병영 — 두 수비군이 섰다       barracks.sortieReady [출정하기]로
  * 병영 — S급 판이 열렸다        barracks.sTutorial  튜토리얼의 S급 갈래
  * 공성전 도시 목록              siege.intro         도시를 고르면 수비군과 · ⚠ 약한 상대 · 접속 중이면 선전포고 · 자동 매칭
@@ -71,7 +70,7 @@
 import { buildingLevel, canUpgradeCity, hasEmperor } from './city.ts';
 import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
-import { boxedOfficers, canLevelUp } from './profile.ts';
+import { canLevelUp } from './profile.ts';
 import { garrisonOf } from './garrison.ts';
 import { MARKET_ITEM_MIN_LEVEL, marketOwnedCount } from './market.ts';
 import { attackSquadOf } from './squads.ts';
@@ -128,7 +127,6 @@ export const GUIDE_IDS = [
   'garrison.done',
   // 첫 판 점검으로 채운 빈자리 (2026-11-14) — 처음 만나는 화면 · 사건
   'city.intro',
-  'palace.box',
   'barracks.sortieReady',
   'barracks.sTutorial',
   'siege.intro',
@@ -174,7 +172,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'squadEdit.king': 'squadEdit', 'squadEdit.rock': 'squadEdit', 'squadEdit.queen': 'squadEdit', 'squadEdit.deploy': 'squadEdit',
   'squadDeploy.swap': 'squadDeploy', 'squadDeploy.pick': 'squadDeploy', 'squadDeploy.range': 'squadDeploy', 'squadDeploy.done': 'squadDeploy', 'squadView.garrison': 'squadView',
   'garrison.intro': 'garrison', 'garrison.save': 'garrison', 'garrison.done': 'garrison',
-  'city.intro': 'city', 'palace.box': 'palace', 'barracks.sortieReady': 'barracks', 'barracks.sTutorial': 'barracks', 'siege.intro': 'siege',
+  'city.intro': 'city', 'barracks.sortieReady': 'barracks', 'barracks.sTutorial': 'barracks', 'siege.intro': 'siege',
   'officer.injury': 'officers', 'market.merc': 'marketMerc', 'market.items': 'marketItems',
   'market.open': 'market', 'market.storage': 'marketStorage', 'officers.intro': 'officers', 'officer.card': 'officerCard',
 };
@@ -322,9 +320,8 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
       // 첫 증축의 길 (2026-11-13) — 증축할 채비가 됐으면 [도시 관리]를 누르라고 한 번
       if (growthCue(profile) === 'upgrade') return once(profile, 'palace.upgrade');
       // 도시 Lv2부터 — 건축 · 증축 · 장수 레벨업. Lv1에서는 셋 다 못 한다
-      if (profile.cityLevel >= 2 && !guideSeen(profile, 'palace.grow')) return 'palace.grow';
-      // 궁궐이 가득 차 새 장수가 보관함으로 갔다 — 가챠 결과에는 표시가 없다 (2026-11-14)
-      return boxedOfficers(profile).length > 0 ? once(profile, 'palace.box') : null;
+      // (옛 「궁궐이 가득 차 새 장수가 보관함으로 갔다」 안내는 보관함이 없어지며 걷었다 — 2026-11-24)
+      return profile.cityLevel >= 2 && !guideSeen(profile, 'palace.grow') ? 'palace.grow' : null;
     }
     // 첫 증축의 길 — [도시 증축]은 도시 관리 바닥에 있다(2026-11-23 — 건물 관리가 없어지며 돌아왔다)
     case 'city': {
@@ -528,7 +525,7 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'squadDeploy.pick': { chapter: 'barracks' }, 'squadDeploy.range': { chapter: 'barracks' }, 'squadDeploy.done': { chapter: 'barracks' },
   'squadView.garrison': { chapter: 'barracks' },
   'garrison.intro': { chapter: 'barracks' }, 'garrison.save': { chapter: 'barracks' }, 'garrison.done': { chapter: 'barracks' },
-  'city.intro': { chapter: 'palace' }, 'palace.box': { chapter: 'palace' }, 'officer.injury': { chapter: 'palace' },
+  'city.intro': { chapter: 'palace' }, 'officer.injury': { chapter: 'palace' },
   'barracks.sortieReady': { chapter: 'barracks' }, 'barracks.sTutorial': { chapter: 'barracks' }, 'siege.intro': { chapter: 'barracks' },
   'market.merc': { chapter: 'market' }, 'market.items': { chapter: 'market' },
   'market.open': { chapter: 'market' }, 'market.storage': { chapter: 'market' },

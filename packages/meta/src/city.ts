@@ -41,7 +41,7 @@ import type { OfficerId } from '@samchess/rules';
 import { collectForgeOrder, stampForgeDates } from './forge.ts';
 import { collectResearch } from './academy.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
-import { admitFromBox, ownedOfficers } from './profile.ts';
+import { ownedOfficers } from './profile.ts';
 import type { MetaResult, OfficerInstance, PlayerProfile } from './types.ts';
 import { rejectWith } from './reject.ts';
 
@@ -492,9 +492,6 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   next = stampForgeDates(next, now);
   // 끝난 태학 연구를 거둔다 — 대장간 주문과 같은 자리(`academy.ts`의 `collectResearch()`)
   next = collectResearch(next, now);
-  // 풀에 자리가 있는데 보관함에 장수가 남아 있으면 올린다 — 도시 증축(`applyCityUpgrade`)이
-  // 정본 자리이고, 여기는 **이 규칙이 생기기 전에 궁궐을 올린 계정**을 위한 것이다
-  next = admitFromBox(next);
 
   return next;
 }
@@ -656,13 +653,13 @@ export function applyCityUpgrade(profile: PlayerProfile, nowMs: number, picks: r
   // 「증축할 채비가 끝났다」(`city.ready`)는 **증축마다** 다시 말한다 (2026-11-14 기획자 — 10-23의 「처음 한 번」을 뒤집음).
   // 들은 기록에서 지워 두면 다음 레벨의 조건이 찼을 때 메인이 다시 낸다(`pendingMainGuide`). 안내 id를 레벨마다 늘리지 않는다
   const seen = synced.guide?.seen.filter((id) => id !== 'city.ready');
-  return admitFromBox({
+  return {
     ...synced,
     cityLevel: to,
     materials: synced.materials - cost,
     buildings,
     ...(seen ? { guide: { seen } } : {}),
-  });
+  };
 }
 
 // ── 건축 자재 구매 (장터 「거래」, 2026-09-04) ──────────────────

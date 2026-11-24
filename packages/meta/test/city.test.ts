@@ -27,7 +27,7 @@ import {
   CITY_UPGRADE_REASONS, canHeal, canUpgradeCity, cityLevel, createProfile, freeRooms, grainCap,
   grainPerHour, grainStepMs, hospitalRooms, hospitalWards, isInjured, maxCityLevel, migrateProfile,
   poolCap, syncCity, syncGrain, upgradeCost,
-  addCard, admitFromBox, battleWinsOf, boxedOfficers, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
+  addCard, settleLegacyBox, battleWinsOf, ownedOfficers, poolUsed, upgradeOfficerNeeds, upgradeChecklist,
 } from '../src/index.ts';
 import type { BattleOutcome, PlayerProfile, RosterPick } from '../src/index.ts';
 
@@ -51,18 +51,19 @@ const isTop = (id: string): boolean => {
  * 막히고, 보관함도 보유로 센다는 것이 규칙이다. 헌제는 안 넣는다(황제는 따로 본다).
  */
 function stocked(p: PlayerProfile, total = OFFICERS.length - 1, top = 70): PlayerProfile {
+  // 보유 = 풀이다(장수 보관함은 2026-11-24에 없어졌다) — 궁궐 상한은 이 시험 도우미가 안 본다
   const owned = new Set<string>(ownedOfficers(p));
-  const cards = { ...p.cards };
+  const roster = { ...p.roster };
   let topHave = [...owned].filter(isTop).length;
   for (const o of OFFICERS) {
     if (topHave >= top || owned.size >= total) break;
-    if (!owned.has(o.id) && isTop(o.id)) { cards[o.id as OfficerId] = 1; owned.add(o.id); topHave++; }
+    if (!owned.has(o.id) && isTop(o.id)) { roster[o.id as OfficerId] = newInstance(o.id as OfficerId); owned.add(o.id); topHave++; }
   }
   for (const o of OFFICERS) {
     if (owned.size >= total) break;
-    if (!owned.has(o.id) && !isTop(o.id) && o.grade !== 'E') { cards[o.id as OfficerId] = 1; owned.add(o.id); }
+    if (!owned.has(o.id) && !isTop(o.id) && o.grade !== 'E') { roster[o.id as OfficerId] = newInstance(o.id as OfficerId); owned.add(o.id); }
   }
-  return { ...p, cards };
+  return { ...p, roster };
 }
 
 /** 풀을 등급 `grades`의 장수로 `n`명까지 채운다 — 보관함이 생기는 상태를 만들려고 */
@@ -343,8 +344,8 @@ describe('증축 (GDD §5)', () => {
   });
 });
 
-describe('증축 조건 — 보유 장수 · 보관함 이관 (2026-09-14)', () => {
-  it('보유 장수는 **풀 + 보관함**을 센다 — 모자라면 몇 명인지 말한다', () => {
+describe('증축 조건 — 보유 장수 (2026-09-14) · 옛 보관함 정리 (2026-11-24)', () => {
+  it('보유 장수는 **풀**을 센다 — 모자라면 몇 명인지 말한다', () => {
     const base = city({ materials: upgradeCost(1)! });           // 새 계정은 5명
     const need = upgradeOfficerNeeds(base)!;
     assert.deepEqual(need.total, { have: 5, need: cityLevel(2).officersToUpgrade! });
@@ -353,9 +354,7 @@ describe('증축 조건 — 보유 장수 · 보관함 이관 (2026-09-14)', () 
     const check = canUpgradeCity(short);
     assert.equal(check.ok, false);
     assert.match(check.ok ? '' : check.reason, /보유 장수.*9\/10/);
-    assert.equal(boxedOfficers(short).length, 4, '모자란 넷은 풀이 아니라 보관함에 있다');
-
-    assert.equal(canUpgradeCity(stocked(base, need.total.need)).ok, true, '보관함까지 세면 열린다');
+    assert.equal(canUpgradeCity(stocked(base, need.total.need)).ok, true, '채우면 열린다');
   });
 
   it('무과금은 Lv3까지 — Lv3→4에서 처음 S·A를 요구한다', () => {
@@ -367,17 +366,16 @@ describe('증축 조건 — 보유 장수 · 보관함 이관 (2026-09-14)', () 
   });
 
   /*
-   * ★ **이 규칙이 생긴 이유 그 자체다.** 풀이 B~D급으로 가득 찬 채로 S·A를 뽑으면
-   * 보관함으로 빠진다. 풀만 세면 여기서 영원히 막힌다 — 궁궐을 올리는 것은 증축이다.
+   * 궁궐이 가득 차면 새 장수는 못 들어온다 — 장수 보관함은 없다(2026-11-24 기획자). `addCard`가 마지막 판정이라
+   * 관리자 지급도 이 거절을 받는다. 「풀만 세면 멈춘다」는 홀수 레벨 증축의 궁궐 강제가 닫는다(아래 「건물」).
    */
-  it('풀이 가득 찬 뒤 뽑은 S·A도 조건을 채운다 ★', () => {
-    let p = fillPool(city({ cityLevel: 3, materials: 999 }), 60, ['B', 'C', 'D']);
+  it('궁궐이 가득 차면 새 장수를 들이지 않는다 — 보유한 장수의 카드는 받는다', () => {
+    const p = fillPool(city({ cityLevel: 3, materials: 999 }), 60, ['B', 'C', 'D']);
     assert.equal(poolUsed(p), poolCap(p), '궁궐 Lv1 풀이 가득 찼다');
     const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
-    p = addCard(p, s);
-    assert.equal(p.roster[s], undefined, '풀이 가득 차 보관함으로 갔다');
-    assert.equal(upgradeOfficerNeeds(p)!.top.have, 3);
-    assert.equal(canUpgradeCity(p).ok, true);
+    assert.throws(() => addCard(p, s), (e: unknown) => (e as { code?: string }).code === 'officer.noSeat');
+    const mine = (Object.keys(p.roster) as OfficerId[])[0]!;
+    assert.equal(addCard(p, mine).cards[mine], (p.cards[mine] ?? 0) + 1);
   });
 
   /*
@@ -407,32 +405,25 @@ describe('증축 조건 — 보유 장수 · 보관함 이관 (2026-09-14)', () 
     assert.equal(canUpgradeCity(ready).ok, true);
   });
 
-  it('궁궐을 올리는 증축이면 보관함의 장수가 새 자리로 들어온다 — 카드 한 장을 쓴다', () => {
-    const emperor = OFFICERS.find((o) => o.grade === 'E')!.id as OfficerId;
-    let p = fillPool(city({ cityLevel: 2, materials: 999, battleWins: 999 }), 60, ['C', 'D']);
-    const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
-    p = stocked({ ...p, cards: { ...p.cards, [s]: 2, [emperor]: 1 } }, 30, 3);
-    assert.equal(hasEmperor(p), true, '보관함의 헌제도 보유다');
-
-    const next = applyCityUpgrade(p, T0, ['palace', 'farm', 'academy']);
-    assert.ok(next.roster[s] && next.roster[emperor], '둘 다 풀로 들어왔다');
-    assert.equal(next.cards[s], 1, '한 장은 장수가 되고 한 장은 남는다');
-    assert.equal(next.cards[emperor], undefined);
-  });
-
-  it('자리가 모자라면 귀한 등급부터 — 헌제 → S → … 차례가 결정적이다', () => {
+  it('옛 보관함은 되접기가 정리한다 — 자리만큼 귀한 등급부터 풀로(카드 한 장이 본체), 남은 카드는 잉여 카드', () => {
     let p = fillPool(city(), 59, ['C', 'D']);                     // 궁궐 Lv1(60)에 한 자리
     const emperor = OFFICERS.find((o) => o.grade === 'E')!.id as OfficerId;
     const s = OFFICERS.find((o) => o.grade === 'S' && !p.roster[o.id as OfficerId])!.id as OfficerId;
     const d = OFFICERS.find((o) => o.grade === 'D' && !p.roster[o.id as OfficerId])!.id as OfficerId;
-    p = { ...p, cards: { ...p.cards, [d]: 1, [s]: 1, [emperor]: 1 } };
+    p = { ...p, cards: { ...p.cards, [d]: 1, [s]: 3, [emperor]: 2 } };
 
-    const once = admitFromBox(p);
+    const once = settleLegacyBox(p);
     assert.ok(once.roster[emperor], '헌제가 먼저다');
-    assert.deepEqual(boxedOfficers(once).sort(), [d, s].sort());
-    assert.equal(admitFromBox(once), once, '자리가 없으면 같은 객체');
-    // 이 규칙 전에 궁궐을 올린 계정 — 정산이 한 번에 올린다
-    assert.ok(syncCity({ ...once, buildings: { ...once.buildings, palace: 2 } }, T0).roster[s]);
+    assert.equal(once.cards[emperor], 1, '두 장 중 한 장은 본체, 한 장은 카드');
+    assert.equal(once.roster[s], undefined);
+    assert.equal(once.cards[s], undefined);
+    assert.equal(once.cards[d], undefined);
+    assert.equal(once.surplusCards, 4, '자리가 없어 남은 S 3장 + D 1장은 잉여 카드');
+    assert.equal(settleLegacyBox(once), once, '정리할 것이 없으면 같은 객체');
+    // 서버는 읽을 때마다 되접는다 — JSON 왕복으로도 같은 결과
+    const back = migrateProfile(JSON.parse(JSON.stringify(p)))!;
+    assert.ok(back.roster[emperor]);
+    assert.equal(back.surplusCards, 4);
   });
 });
 

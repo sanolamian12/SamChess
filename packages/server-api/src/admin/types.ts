@@ -190,6 +190,11 @@ export interface UserDetail {
    */
   autoResolveAt: { aiBattle: number | null; raid: number | null };
   /**
+   * 궁궐 정원(풀 상한) — 게임과 같은 함수(`poolCap`)가 낸다(2026-11-24). **궁궐이 가득 차면 새 장수 카드를 못 준다**(장수 보관함이 없어졌다 —
+   * 본체 `addCard`가 거절한다). 화면이 「빈자리 = 정원 − 풀」로 지급 표를 미리 막는다. 도시를 안 만들었으면 `null`
+   */
+  poolCap: number | null;
+  /**
    * 진행 상태 — 출정 막힘 · 튜토리얼 · 수비군(2026-10-31). 게임과 같은 함수(`sortieGate` …)가 낸 값이라 화면이 규칙을 다시 짓지 않는다.
    * 도시를 안 만들었으면 `null`
    */

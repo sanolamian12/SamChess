@@ -54,15 +54,10 @@ describe('칸 판정 — 여분만 낸다', () => {
     const p = base({ roster: inst('yu-bi') });
     assert.deepEqual(slotState(p, DOWON, 0), { state: 'blocked', reason: 'noSpare', have: 0 });
   });
-  it('보관함의 장수는 본체 한 장을 뺀다 — 1장뿐이면 못 낸다', () => {
-    const one = base({ cards: { ['yu-bi' as OfficerId]: 1 } });
-    assert.equal(spareCards(one, 'yu-bi'), 0);
-    assert.equal(slotState(one, DOWON, 0).reason, 'noSpare');
-    const two = base({ cards: { ['yu-bi' as OfficerId]: 2 } });
-    assert.equal(spareCards(two, 'yu-bi'), 1);
-    // 내고 나도 보관함에 한 장 남는다 — 장수가 사라지지 않는다
-    const after = applyRegisterSlot(two, DOWON.id, 0, T);
-    assert.equal(after.cards['yu-bi' as OfficerId], 1);
+  it('풀에 없는 장수의 카드는 못 낸다 — 장수 보관함은 없다(2026-11-24), 「미보유」', () => {
+    const stray = base({ cards: { ['yu-bi' as OfficerId]: 2 } });
+    assert.equal(spareCards(stray, 'yu-bi'), 0);
+    assert.equal(slotState(stray, DOWON, 0).reason, 'notOwned');
   });
   it('없는 장수는 「미보유」', () => {
     assert.equal(slotState(base(), DOWON, 1).reason, 'notOwned');

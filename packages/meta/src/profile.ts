@@ -50,63 +50,54 @@ export const poolUsed = (profile: PlayerProfile): number => Object.keys(profile.
 /** 풀의 빈자리 — 새 장수가 등용될 수 있는 수. 모집 · 전투 보상 · 우편이 이것을 본다 (2026-11-24) */
 export const poolSeatsFree = (profile: PlayerProfile): number => Math.max(0, poolCap(profile) - poolUsed(profile));
 
-// ── 보관함 · 보유 장수 (GDD §5.9, 2026-09-14) ─────────────────────
+// ── 보유 장수 (GDD §5.9) ─────────────────────────────────────────
 
 /**
- * **보관함** — 카드는 있는데 풀에 없는 장수. 풀이 가득 찬 채로 처음 얻은 장수가
- * 여기 남는다(`addCard` 참조). 따로 저장하지 않는다 — `cards`와 `roster`에서 나온다.
- */
-export const boxedOfficers = (profile: PlayerProfile): OfficerId[] =>
-  (Object.entries(profile.cards) as [OfficerId, number][])
-    .filter(([id, n]) => n > 0 && !profile.roster[id])
-    .map(([id]) => id);
-
-/**
- * **보유 장수** — 풀 + 보관함의 서로 다른 장수. 도시 증축 조건과 황제 판정이 이것을 센다.
+ * **보유 장수 = 풀(궁궐)의 장수.** 도시 증축 조건과 황제 판정이 이것을 센다.
  *
- * ★ **풀만 세면 영원히 못 올리는 계정이 생긴다.** 풀이 B~D급으로 차 있으면 새로
- * 뽑은 S·A가 보관함으로 빠지는데, 궁궐을 올릴 건설 기회는 증축이 주므로 도시도
- * 궁궐도 못 올린다 — 시뮬레이션에서 전투를 먼저 하는 계정은 전부 멈췄다.
+ * **장수 보관함은 없다** (2026-11-24 기획자 — 「장터에서 파는 아이템 외에 다른 것을 보관한다는 개념을 없앤다」). 그전에는 궁궐이 가득 찬 채
+ * 얻은 장수가 카드로 보관함에 남았고 보유로 셌다. 이제 궁궐이 차면 새 장수는 아예 안 들어온다 — 모집은 막히고(`canPullGacha`),
+ * 전투 보상은 보유 장수에서 다시 뽑고(`cardCandidates`), 우편은 못 받고(`mailSeatCheck`), 관리자 지급도 막힌다(`addCard`가 거절한다).
+ * 「풀만 세면 영원히 멈춘다」던 막힘은 홀수 레벨 증축의 궁궐 강제(`PALACE_FORCED_LEVELS`)가 닫는다.
+ * **카드(`cards`)는 풀에 있는 장수의 것뿐이다** — 옛 계정의 보관함은 되접기가 정리한다(`settleLegacyBox`).
  */
-export const ownedOfficers = (profile: PlayerProfile): OfficerId[] =>
-  [...(Object.keys(profile.roster) as OfficerId[]), ...boxedOfficers(profile)];
+export const ownedOfficers = (profile: PlayerProfile): OfficerId[] => Object.keys(profile.roster) as OfficerId[];
 
-/** 보관함에서 풀로 올리는 차례 — 귀한 등급부터. 헌제가 맨 앞이다 */
+/** 옛 보관함에서 풀로 올리는 차례 — 귀한 등급부터. 헌제가 맨 앞이다 */
 const ADMIT_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
 
 /**
- * **보관함 → 풀 이관** — 풀에 빈자리가 있는 만큼 보관함의 장수를 올린다 (GDD §5.9).
- *
- * 카드 한 장을 써서 장수가 된다 — `addCard`가 처음 얻은 장수를 풀에 넣을 때와 같은
- * 셈이라, 이관을 거친 장수와 곧장 들어온 장수의 카드 수가 갈리지 않는다. 차례는
- * 등급(`ADMIT_ORDER`) 다음 데이터 순서로 **결정적**이다 — 서버와 클라이언트가 같은
- * 계정에서 같은 장수를 올려야 한다.
- *
- * 옮길 것이 없으면 **같은 객체**를 돌려준다(`syncCity()`가 부른다).
+ * **옛 보관함 정리**(되접기, 2026-11-24) — 풀에 없는 장수의 카드를 정리한다. 빈자리가 있는 만큼 귀한 등급부터 풀로 올리고
+ * (카드 한 장이 본체 — `addCard`와 같은 셈), 자리가 없어 남은 카드는 **잉여 카드**로 옮긴다. 차례는 등급 다음 데이터 순서로 결정적이다.
+ * 정리할 것이 없으면 **같은 객체**를 돌려준다.
  */
-export function admitFromBox(profile: PlayerProfile): PlayerProfile {
-  const room = poolCap(profile) - poolUsed(profile);
-  const boxed = boxedOfficers(profile);
-  if (room <= 0 || boxed.length === 0) return profile;
+export function settleLegacyBox(profile: PlayerProfile): PlayerProfile {
+  const boxed = (Object.entries(profile.cards) as [OfficerId, number][])
+    .filter(([id, n]) => n > 0 && !profile.roster[id]).map(([id]) => id);
+  if (boxed.length === 0) return profile;
 
   const rank = (id: OfficerId): number => {
     const grade = officerById.get(id)?.grade;
     return grade ? ADMIT_ORDER.indexOf(grade) : ADMIT_ORDER.length;
   };
   const order = new Map(OFFICERS.map((o, i) => [o.id, i]));
-  const picked = [...boxed]
-    .sort((a, b) => rank(a) - rank(b) || (order.get(a) ?? 0) - (order.get(b) ?? 0))
-    .slice(0, room);
+  const sorted = [...boxed].sort((a, b) => rank(a) - rank(b) || (order.get(a) ?? 0) - (order.get(b) ?? 0));
+  const room = Math.max(0, poolCap(profile) - poolUsed(profile));
 
   const roster = { ...profile.roster };
   const cards = { ...profile.cards };
-  for (const id of picked) {
-    roster[id] = newInstance(id);
-    const left = (cards[id] ?? 0) - 1;
-    if (left > 0) cards[id] = left;
-    else delete cards[id];
-  }
-  return { ...profile, roster, cards };
+  let surplus = profile.surplusCards ?? 0;
+  sorted.forEach((id, k) => {
+    const n = cards[id] ?? 0;
+    delete cards[id];
+    if (k < room) {
+      roster[id] = newInstance(id);
+      if (n - 1 > 0) cards[id] = n - 1;
+    } else {
+      surplus += n;
+    }
+  });
+  return { ...profile, roster, cards, ...(surplus > 0 ? { surplusCards: surplus } : {}) };
 }
 
 /** 새 장수 인스턴스 — Lv1 · 성장 스택 비어 있음 (GDD §4.2 기본치는 룰 엔진이 계산한다) */
@@ -211,7 +202,12 @@ export function tacticsOf(inst: OfficerInstance): TacticId[] {
 export function addCard(profile: PlayerProfile, officer: OfficerId, count = 1): PlayerProfile {
   const next = clone(profile);
   let remain = count;
-  if (!next.roster[officer] && poolUsed(next) < poolCap(next)) {
+  if (!next.roster[officer]) {
+    // 궁궐이 가득 차면 새 장수는 못 들어온다 — 보관함은 없다(2026-11-24 기획자). 들어오는 길마다 먼저 막고, 여기는 마지막 판정이다
+    // (관리자 지급은 이 거절을 그대로 받는다)
+    if (poolUsed(next) >= poolCap(next)) {
+      rejectWith({ reason: '궁궐이 가득 찼습니다 — 궁궐을 증축하기 전에는 새 장수를 들일 수 없습니다', code: 'officer.noSeat', params: { used: poolUsed(next), cap: poolCap(next) } });
+    }
     next.roster[officer] = newInstance(officer);
     remain -= 1;
   }

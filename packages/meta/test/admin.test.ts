@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-  ADJUST_BATCH_MAX, ADJUST_LIMITS, BUILD_CITY_LEVEL, addCard, adjustPermission, adjustmentsOfAudit, batchPermissions, boxedOfficers, buildingLevel,
+  ADJUST_BATCH_MAX, ADJUST_LIMITS, BUILD_CITY_LEVEL, addCard, adjustPermission, adjustmentsOfAudit, batchPermissions, buildingLevel,
   grantUsage, isGrant, parseMailDraft, poolCap, poolUsed, syncCity, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
   parseAdjustment, parseAdjustmentBatch, AI_BATTLES_MAX, battleWinsOf, upgradeChecklist,
 } from '../src/index.ts';
@@ -204,18 +204,19 @@ describe('건물 올리기 (2026-11-13, 관리자 「도시」 탭)', () => {
     assert.equal(r.grainAt, synced.grainAt);
   });
 
-  it('궁궐이 오르면 보관함의 장수가 새 자리로 들어온다', () => {
+  it('궁궐이 가득 찬 계정에는 새 장수 카드를 못 준다 — 장수 보관함은 없다(2026-11-24). 궁궐을 올리면 줄 수 있다', () => {
     let p = city();
-    // 풀을 상한까지 채우고 하나 더 — 넘친 장수는 보관함으로
     for (const o of OFFICERS) {
-      if (boxedOfficers(p).length >= 2) break;
+      if (poolUsed(p) >= poolCap(p)) break;
       if (!p.roster[o.id as OfficerId]) p = addCard(p, o.id as OfficerId, 1);
     }
     assert.equal(poolUsed(p), poolCap(p), '풀이 가득이어야 한다');
-    assert.ok(boxedOfficers(p).length > 0, '보관함에 장수가 있어야 한다');
-    const before = poolUsed(p);
-    const r = applyAdjustment(p, { kind: 'building', building: 'palace', level: buildingLevel(p, 'palace') + 1 }, NOW);
-    assert.ok(poolUsed(r) > before, `풀 ${before} → ${poolUsed(r)}`);
+    const stranger = OFFICERS.find((o) => !p.roster[o.id as OfficerId])!.id;
+    assert.throws(() => applyAdjustment(p, { kind: 'cards', officer: stranger, delta: 1 }, NOW), /궁궐이 가득/);
+    const mine = Object.keys(p.roster)[0]!;
+    assert.equal(applyAdjustment(p, { kind: 'cards', officer: mine, delta: 2 }, NOW).cards[mine as OfficerId], (p.cards[mine as OfficerId] ?? 0) + 2, '거느린 장수의 카드는 준다');
+    const up = applyAdjustment(p, { kind: 'building', building: 'palace', level: buildingLevel(p, 'palace') + 1 }, NOW);
+    assert.ok(applyAdjustment(up, { kind: 'cards', officer: stranger, delta: 1 }, NOW).roster[stranger as OfficerId], '자리가 나면 풀에 든다');
   });
 
   it('낮추기 · 같은 레벨 · 도시가 낮을 때는 거절하고 계정을 안 바꾼다', () => {

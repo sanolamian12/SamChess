@@ -58,7 +58,7 @@ test('처음 얻은 장수는 카드가 아니라 보유 풀로 들어간다', (
   assert.equal(addCard(after, fresh).cards[fresh], 1);
 });
 
-test('보유 풀이 가득 차면 카드로 쌓인다 (GDD §5)', () => {
+test('보유 풀이 가득 차면 새 장수를 들이지 않는다 — 장수 보관함은 없다 (GDD §5.9, 2026-11-24)', () => {
   let p = profile();
   // 풀이 60명이라 D급(44명)만으로는 안 찬다 — 등급을 가리지 않고 채운다
   const others = OFFICERS.filter((o) => !p.roster[o.id as OfficerId]);
@@ -69,9 +69,7 @@ test('보유 풀이 가득 차면 카드로 쌓인다 (GDD §5)', () => {
   assert.equal(Object.keys(p.roster).length, poolCap(p));
 
   const overflow = others[room]!.id as OfficerId;
-  p = addCard(p, overflow);
-  assert.equal(p.roster[overflow], undefined);
-  assert.equal(p.cards[overflow], 1, '풀이 차면 카드로 남는다');
+  assert.throws(() => addCard(p, overflow), /궁궐이 가득/, '풀이 차면 받지 않는다(옛날에는 보관함에 카드로 남았다)');
 });
 
 test('레벨업은 실패하지 않는다 — 카드만 채우면 반드시 오른다 (2026-08-04 확정)', () => {

@@ -85,8 +85,8 @@ describe('군량 — 상한 · 충전 요율', () => {
     const last = c.slots.length - 1;
     const card = c.slots[last]!.id as OfficerId;
     let p = base({ grain: 0, buildings: { ...base().buildings, farm: 1, barracks: 5 } });   // 시간당 2
-    // 풀에 없는 장수면 본체 한 장이 보관함이라 두 장을 심는다(여분 1)
-    p = { ...p, cards: { ...p.cards, [card]: 2 },
+    // 카드는 풀에 있는 장수의 것만 낸다(장수 보관함은 2026-11-24에 없어졌다) — 풀에 앉히고 여분 1장
+    p = { ...p, roster: { ...p.roster, [card]: { officer: card, level: 1, growth: [] } }, cards: { ...p.cards, [card]: 1 },
       collection: { slots: { [c.id]: c.slots.slice(0, last).map((_, i) => i) }, completedAt: {} } };
     // 화면이 정산을 안 부른 채 1시간 50분이 흘렀다
     const T1 = T0 + 110 * MIN;

@@ -35,7 +35,7 @@ import type { BuildingId, Grade } from '@samchess/data';
 import { MAX_BANDITS, UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, Intent, OfficerId, PieceType, RosterEntry, TacticId } from '@samchess/rules';
 import { MARKET_ITEM_IDS, fitCarry, isCarriedBattle } from './market.ts';
-import { PROFILE_VERSION, checkGrowth, foldSurplus } from './profile.ts';
+import { PROFILE_VERSION, checkGrowth, foldSurplus, settleLegacyBox } from './profile.ts';
 import {
   MAX_CITY_LEVEL, buildingValue, initialBuildings,
 } from './city.ts';
@@ -223,7 +223,8 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   if (typeof raw.surplusCards === 'number' && Number.isFinite(raw.surplusCards) && raw.surplusCards > 0) {
     profile.surplusCards = Math.floor(raw.surplusCards);
   }
-  return foldSurplus(profile);
+  // 옛 보관함(풀에 없는 장수의 카드)은 풀로 올리거나 잉여 카드로 — 장수 보관함은 없다(2026-11-24). 그 뒤 Lv9 장수의 카드를 잉여로
+  return foldSurplus(settleLegacyBox(profile));
 }
 
 /** 장수 하나. 되접을 수 없을 만큼 망가졌으면 `null`(그 장수만 빠진다) */

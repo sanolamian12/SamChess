@@ -12,7 +12,7 @@ import { CityNameTakenError, mutateProfile, syncAtServer } from '../profileStore
 import { grantsOfAccount } from '../grants.ts';
 import { defenseSummary } from '../defense.ts';
 import {
-  ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
+  ADMIN_ROLES, MAIL_TTL_MS, adminPlayStatus, aiAbandonAt, poolCap, defenseResultOf, applyForceRenameCity, changedProfileFields, forceRenameMail, normalizeCityName, csCheck, csDayStartMs, csUsageFromAudit, hasPermission, injuryHealsAt, isGrantCapped,
   isInjured, migrateProfile, raidAutoSurrenderAt, roleForbiddenMessage, BUILD_CITY_LEVEL, upgradeChecklist, battleWinsOf,
 } from '@samchess/meta';
 import type { Adjustment, CsUsage, DefenseResult, MailDraft, MailReward, MailText, PlayerProfile } from '@samchess/meta';
@@ -152,6 +152,7 @@ export async function readUser(uid: string): Promise<UserDetail | null> {
       .filter(([, inst]) => isInjured(inst, now))
       .map(([officer, inst]) => ({ officer, healsAt: injuryHealsAt(inst)!, healing: inst.healingAt !== undefined })),
     autoResolveAt: { aiBattle: profile ? aiAbandonAt(profile) : null, raid: profile ? raidAutoSurrenderAt(profile) : null },
+    poolCap: profile ? poolCap(profile) : null,
     play: profile ? adminPlayStatus(profile) : null,
     defenseSnapshots: snaps.rows.map((x) => ({ mode: x.mode, squadName: x.squad_name, power: x.power, updatedAt: x.updated_at.toISOString() })),
     // 수성에 성공한 판 — 게임 병영과 같은 함수(2026-11-20 부대 전적)

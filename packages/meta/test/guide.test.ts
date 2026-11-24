@@ -122,7 +122,7 @@ describe('동선 재설계 (2026-10-23) — 둘러보기 · 증축 · 궁궐 · 
     assert.equal(pendingGuide(fresh(), 'board'), 'board.intro');
     const p = seen(fresh(), 'board.intro');
     const card = COLLECTIONS.flatMap((c) => c.slots).find((s) => s.kind === 'card')!;
-    const ready = { ...p, cards: { ...p.cards, [card.id]: 3 } } as PlayerProfile;
+    const ready = { ...p, roster: { ...p.roster, [card.id]: { officer: card.id, level: 1, growth: [] } }, cards: { ...p.cards, [card.id]: 3 } } as PlayerProfile;
     assert.equal(pendingGuide(ready, 'board'), 'board.collection');
     assert.equal(pendingGuide(seen(ready, 'board.collection'), 'board'), null);
   });
@@ -329,13 +329,6 @@ describe('처음 만나는 화면 · 사건 — 2026-11-14 점검', () => {
     assert.equal(pendingGuide(seen(withS(b), 'barracks.sTutorial'), 'barracks'), null);
     // 기본 셋 전에는 S급 판이 잠겨 있다 — 말하지 않는다
     assert.equal(pendingGuide(seen(withS(fresh()), 'barracks.intro'), 'barracks'), null);
-  });
-
-  it('궁궐 — 보관함에 장수가 들면 palace.box (소개를 들은 뒤)', () => {
-    const p = seen(fresh(), 'palace.intro');
-    assert.equal(pendingGuide(p, 'palace'), null);
-    const boxed = { ...p, cards: { ...p.cards, [sOfficer]: 1 } } as PlayerProfile;
-    assert.equal(pendingGuide(boxed, 'palace'), 'palace.box');
   });
 
   it('장수 일람 — 레벨업이 먼저, 그다음 처음 다친 장수', () => {

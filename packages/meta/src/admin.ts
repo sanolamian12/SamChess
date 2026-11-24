@@ -26,7 +26,7 @@ import { BUILD_CITY_LEVEL, HEAL_MS, ROOM_CYCLE_MS, buildingLevel, grainCap, heal
 import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
-import { addCard, admitFromBox } from './profile.ts';
+import { addCard } from './profile.ts';
 import { battleWinsOf } from './wins.ts';
 import { GARRISON_MODES, garrisonOf } from './garrison.ts';
 import { squadLabelKo } from './squads.ts';
@@ -248,10 +248,9 @@ export function applyAdjustment(profile: PlayerProfile, adj: Adjustment, nowMs: 
       if (profile.cityLevel < BUILD_CITY_LEVEL) {
         throw new Error(`도시가 Lv${BUILD_CITY_LEVEL} 이상이어야 건물을 짓거나 올린다 — 지금 Lv${profile.cityLevel}`);
       }
-      // `applyBuild`와 같은 차례 — 먼저 정산(병영 · 농지는 요율이 바뀐다), 궁궐이 오르면 보관함의 장수가 들어온다. 건설 기회는 안 쓴다
+      // 게임의 증축과 같은 차례 — 먼저 정산(병영 · 농지는 요율이 바뀐다). 장수 보관함은 없다(2026-11-24)
       const synced = syncCity(profile, nowMs);
-      const built: PlayerProfile = { ...synced, buildings: { ...synced.buildings, [id]: adj.level } };
-      return id === 'palace' ? admitFromBox(built) : built;
+      return { ...synced, buildings: { ...synced.buildings, [id]: adj.level } };
     }
     case 'aiBattles':
       // `applyBattleResult`의 `opponent: 'ai'`와 같다 — 이긴 판만 누적 승리에. 무 · 패는 게임에도 남는 칸이 없다
