@@ -3696,6 +3696,36 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 .mkt-pack-lock > span:last-child {
   font-size: .85rem; font-weight: 800; white-space: nowrap; color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 6px #000;
 }
+/* ── 도시 물자 (2026-11-25 기획자 — 용병 시장의 꼴) — 첫 줄 건축 자재 · 군량 두 칸, 그 밑 연구 초기화 · 초심의 서가 한 줄씩.
+   종이 카드 · 가격 띠는 용병 시장 그대로(`.mkt-pack` · `.mkt-pack-price`), 보유량은 머리 판(`GoodsStatus`)이 말한다 ── */
+.mkt-goods-pair { grid-template-columns: repeat(2, 1fr); }
+.mkt-goods-wides { display: flex; flex-direction: column; gap: .45rem; margin-top: .45rem; }
+.mkt-good-art { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 3.6rem; flex: none; }
+.mkt-good-art > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 2px #3a240f55); }
+.mkt-good-body { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.mkt-good-nm { font-size: 1.05rem; font-weight: 800; color: #3a2210; letter-spacing: .03em; white-space: nowrap; }
+.mkt-good-fx { font-size: .85rem; color: #5a3d22; line-height: 1.3; word-break: keep-all; }
+/* 중국어는 띄어 쓰지 않아 `keep-all`이면 한 덩어리로 가격 띠를 침범한다 — 글자마다 끊는다 (2026-11-25) */
+:root:is([data-lang="zh_Hans"], [data-lang="zh_Hant"]) .mkt-good-fx { word-break: normal; }
+/* 두 칸의 받는 양 — 가격 띠 바로 위, 붓 획 오른쪽 끝에 오른쪽을 맞춘다(글꼴은 「x1」 표와 같다) */
+.mkt-good-qty {
+  position: absolute; z-index: 3; right: .75rem; bottom: 2.85rem; line-height: 1; color: #000;
+  font-size: 1.04rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+/* 두 칸 — 이름이 맨 위, 그림, 가격 띠 */
+.mkt-good:not(.mkt-good-wide) > .mkt-good-body { order: -1; align-items: center; }
+/* 한 줄 칸 — 그림 | 이름 · 설명 | 가격 띠. 높이는 열 언어 가운데 가장 큰 것(`--row-h`, `useAllLangLayout`) */
+button.mkt-pack.mkt-good-wide {
+  flex-direction: row; align-items: center; gap: .6rem; text-align: left;
+  min-height: var(--row-h, auto); padding: .6rem .7rem .65rem .75rem;
+}
+.mkt-good-wide > .mkt-good-body { flex: 1; }
+.mkt-good-wide > .mkt-pack-price { align-self: center; flex: none; min-width: 5.6rem; text-align: center; }
+/* 못 사는 칸 — 잿빛이지만 눌린다(누르면 내관이 까닭을 말한다) */
+button.mkt-pack.mkt-good[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
+/* 머리 판의 군량 — 창고가 차 한 묶음이 안 들어가면 회색 */
+.mkt-merc-status [data-field="grainNow"][data-full="1"] .v { color: #8a8580; }
+
 /* 결과 칸의 표 — 새 장수(옥색) · 잉여 카드(잿빛 붉은) */
 .mkt-fate { display: inline-block; margin-top: .1rem; padding: .05rem .45rem; border-radius: .6rem; font-size: .8rem; font-weight: 800; white-space: nowrap; }
 .mkt-fate[data-fate="new"] { background: #2f7f6e; color: #f4ecd8; }
@@ -3829,48 +3859,6 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 /* 오늘 매물이 없는 품목 — 체크가 잠긴다 */
 .mkt-irow.pick[data-soldout="1"] { cursor: default; }
 .mkt-irow.pick[data-soldout="1"] .mkt-check { opacity: .4; cursor: default; }
-
-/* 도시 물자 — 그림 · 이름/값/설명 · 체크 (86쪽) */
-.mkt-grows { display: flex; flex-direction: column; }
-/* 도시 물자의 줄은 모두 같은 높이 — 열 언어 가운데 가장 높은 줄(`GoodsView`의 `useAllLangLayout`이 판에 `--row-h`로 건다, 2026-11-13) */
-[data-field="goods"] .mkt-grows > .mkt-grow { min-height: var(--row-h, auto); }
-/* 줄 = 사는 단추 (2026-11-13 기획자) — 오른쪽 체크 칸을 걷고 글이 줄 끝까지 간다. 못 사는 줄은 눌리지 않는다 */
-.mkt-grow {
-  display: grid; grid-template-columns: 2.7rem minmax(0, 1fr); align-items: center; gap: .45rem;
-  padding: .35rem .2rem .35rem 0; position: relative; cursor: pointer; border-radius: .3rem;
-}
-.mkt-grow[data-can="1"]:hover { background: #5a41281f; }
-.mkt-grow[data-can="1"]:active { background: #5a412833; }
-.mkt-grow[data-can="1"]:focus-visible { outline: 2px solid #8a6a3c; outline-offset: -2px; }
-.mkt-grow[data-can="0"] { cursor: default; }
-.mkt-grow:not(:last-child)::after {
-  content: ''; position: absolute; left: .2rem; right: .2rem; bottom: -1px; height: 2px; pointer-events: none;
-  background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
-}
-/* 그림 — 전투 아이템 줄(`.mkt-irow > .c-art`)과 같은 처리(2026-09-25 지정): 검정 바탕에 금빛 밧줄
-   액자(`frame-gold-2.png`)를 통째로 위에 씌운다. 칸은 옛 3rem의 90%이고, 그림은 그 안에서
-   다시 90%로 줄여 가운데 둔다(2026-09-25) — 칸을 꽉 채우면 액자가 그림 가장자리를 덮는다 */
-.mkt-grow > .c-art {
-  width: 2.7rem; height: 2.7rem; position: relative;
-  display: flex; align-items: center; justify-content: center;
-  background: #000; border-radius: .15rem;
-}
-.mkt-grow > .c-art img { display: block; width: 90%; height: 90%; object-fit: contain; }
-.mkt-grow > .c-art::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
-}
-.mkt-grow .c-body { display: flex; flex-direction: column; gap: .05rem; min-width: 0; }
-.mkt-grow .c-nm { font-size: .82rem; font-weight: 700; color: #221407; }
-/* 군량 「(현재 : 20/20)」 — 한 묶음이 안 들어가면 회색(살 수 없다) */
-.mkt-grow .c-now { font-size: .8rem; color: #5a4128; }
-.mkt-grow .c-now[data-full="1"] { color: #8a8580; }
-.mkt-grow .c-price { font-size: .8rem; font-weight: 700; color: #6a4210; }
-.mkt-grow .c-fx { font-size: .8rem; color: #5a4128; line-height: 1.3; }
-.mkt-grow .c-why { font-size: .8rem; color: #8a2f17; font-weight: 700; line-height: 1.25; }
-.mkt-grow[data-can="0"] > .c-art { opacity: .5; }
-/* 고를 수 없는 줄 — 전투 아이템의 품절 줄과 같은 값 */
-.mkt-grow[data-locked="1"] { cursor: default; }
 
 /* 금화 한 닢 + 값 */
 .mkt-gold { display: inline-flex; align-items: center; gap: .15rem; white-space: nowrap; }

@@ -265,6 +265,10 @@ describe('되돌리기 · 서버 소유 · 되접기', () => {
 
   it('되돌릴 것이 없거나 금화가 모자라면 거부한다', () => {
     assert.equal(canResetAcademy(academy(3)).ok, false);
+    const none = canResetAcademy(academy(3));
+    assert.equal(!none.ok && none.code, 'academy.nothing', '태학이 있으면 「되돌릴 연구가 없다」');
+    const unbuilt = canResetAcademy({ ...academy(3), buildings: { ...academy(3).buildings, academy: 0 } });
+    assert.equal(!unbuilt.ok && unbuilt.code, 'academy.notBuilt', '태학이 없으면 그 말이 먼저');
     const poor = { ...syncCity(applyStartResearch(academy(1), T('증폭+'), T0), T0 + HOUR), gold: 9 };
     const r = canResetAcademy(poor);
     assert.equal(!r.ok && r.code, 'academy.gold');

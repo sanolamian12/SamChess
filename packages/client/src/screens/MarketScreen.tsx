@@ -44,7 +44,7 @@ import { GradeBadge } from './GradeBadge.tsx';
 import { Layer, LayerContext, useServerCall } from './market/parts.tsx';
 import { MercStatus, MercView } from './market/MercView.tsx';
 import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
-import { GoodsView } from './market/GoodsView.tsx';
+import { GoodsStatus, GoodsView } from './market/GoodsView.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { buildingNameText } from './buildingText.ts';
 import { BuildingLevel } from './LevelBadge.tsx';
@@ -137,9 +137,10 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
         <span className="place-nm" data-view={view}>{t(TITLE[view] as Parameters<typeof t>[0])}</span>
       </div>
 
-      {/* 현황판은 홈 · 용병 시장 모두 제목 바 바로 밑 같은 자리 · 같은 높이 (2026-11-24 기획자) */}
+      {/* 현황판은 홈 · 용병 시장 · 도시 물자 모두 제목 바 바로 밑 같은 자리 · 같은 높이 (2026-11-24 기획자) */}
       {view === 'home' && <MarketStatus profile={profile} />}
       {view === 'merc' && <MercStatus profile={profile} />}
+      {view === 'goods' && <GoodsStatus profile={profile} />}
 
       <div className="place-body mkt-body mkt-body-flow" data-view={view}>
         {/* 홈 = 현황판 + 배너 셋 + 바닥의 [금화 충전] 하나 (2026-11-24 기획자 — 옛 [상품 구매] 판을 홈으로 올렸다) */}

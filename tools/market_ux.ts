@@ -721,17 +721,16 @@ try {
   await page.waitForSelector('[data-good="materials"]', { timeout: 5_000 });
   await shot('goods');
   if (await page.getAttribute('[data-good="grain"]', 'data-can') !== '0') fail('군량이 가득인데 군량 줄이 열려 있다');
-  // 막힌 이유는 제목 옆 회색 「(현재 : 20/20)」이 말한다(2026-09-25) — 빨간 이유 줄은 안 뜨고, 고를 수도 없다
-  if (await page.getAttribute('[data-good="grain"] [data-field="grainNow"]', 'data-full') !== '1') fail('군량이 막혔는데 현재 창고가 회색이 아니다');
-  // 줄을 누르면 곧장 산다(2026-11-13) — 막힌 군량 줄은 눌러도 아무 판도 안 뜬다. 막힌 줄은 `aria-disabled`라
-  // Playwright가 「안 눌리는 것」으로 보고 기다리기만 한다 — 사람이 누르는 것처럼 `force`로 누른다
-  await page.click('[data-good="grain"]', { force: true });
-  await page.waitForTimeout(400);
-  if (await page.$('[data-modal="goodsDone"]')) fail('막힌 군량 줄을 눌렀는데 샀다');
+  // 보유량은 머리 판이 말한다(2026-11-25) — 창고가 차면 군량 칸이 회색
+  if (await page.getAttribute('[data-field="goodsStatus"] [data-field="grainNow"]', 'data-full') !== '1') fail('군량이 막혔는데 머리 판의 군량이 회색이 아니다');
+  // 막힌 칸도 눌린다 — 판은 안 뜨고 내관이 까닭을 말한다(2026-11-25 기획자)
+  await page.click('[data-good="grain"]');
+  await page.waitForSelector('.stw[data-say="goodsWhy"][data-say-code="market.grainFull"]', { timeout: 5_000 });
+  if (await page.$('[data-modal="goodAsk"], [data-modal="goodsDone"]')) fail('막힌 군량 칸을 눌렀는데 판이 떴다');
   const mats = afterGive.materials;
   if (await page.getAttribute('[data-good="materials"]', 'data-can') !== '1') {
     await shot('goods-stuck');
-    fail(`건축 자재 줄이 막혀 있다 — 이유 「${await page.textContent('[data-good="materials"] [data-field="why"]').catch(() => '')}」`);
+    fail(`건축 자재 칸이 막혀 있다 — 내관 「${await page.textContent('.stw[data-say="goodsWhy"]').catch(() => '')}」`);
   }
   // 줄을 누르면 「구매할까요?」(2026-11-13) — 물리면 안 사고, [확정]이라야 산다
   await page.click('[data-good="materials"]');
@@ -745,7 +744,7 @@ try {
   await page.waitForSelector('[data-modal="goodsDone"]', { timeout: 10_000 });
   await shot('goods-done');
   if ((await getProfile(uid))!.materials <= mats) fail('건축 자재가 안 늘었다');
-  ok('건축 자재 — 줄을 누르면 확인 판 · 물리면 그대로 · [확정]하면 샀고 완료 판 · 군량은 막힌 이유를 적는다');
+  ok('건축 자재 — 칸을 누르면 확인 판 · 물리면 그대로 · [확정]하면 샀고 완료 판 · 막힌 군량은 내관이 까닭을 말한다');
   await page.click('[data-action="goodsClose"]');
 
   step('태학 연구 초기화 (87쪽) — 사서 바로 쓰고 [태학으로 이동]');

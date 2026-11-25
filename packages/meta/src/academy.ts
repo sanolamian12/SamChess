@@ -276,7 +276,10 @@ export function applyAckResearch(profile: PlayerProfile): PlayerProfile {
 
 export function canResetAcademy(profile: PlayerProfile): MetaResult {
   const a = academyOf(profile);
-  if (a.done.length === 0 && !a.research) return no('되돌릴 연구가 없습니다', 'nothing');
+  if (a.done.length === 0 && !a.research) {
+    // 태학이 없으면 그 말이 먼저다 — 「되돌릴 연구가 없다」보다 까닭이 분명하다(2026-11-25 기획자, 장터 내관이 말한다)
+    return academyLevel(profile) < 1 ? no('태학을 아직 짓지 않으셨습니다', 'notBuilt') : no('되돌릴 연구가 없습니다', 'nothing');
+  }
   if (profile.gold < ACADEMY_RESET_GOLD) {
     return no(`금화가 부족합니다 — ${profile.gold}/${ACADEMY_RESET_GOLD}`, 'gold', { have: profile.gold, need: ACADEMY_RESET_GOLD });
   }

@@ -2075,7 +2075,7 @@ console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은
     await page.click('[data-action="openGoods"]');
     // 줄을 누르면 곧장 장수 고르기 판(2026-11-13 — 체크 → [구매하기]를 한 번으로)
     if (await page.getAttribute('[data-good="respec"]', 'data-can') !== '1') {
-      fail(`둔갑천서 값을 받았는데 재설계가 잠겨 있다: "${await page.textContent('[data-good="respec"] [data-field="why"]').catch(() => '')}"`);
+      fail(`둔갑천서 값을 받았는데 재설계가 잠겨 있다: "${await page.textContent('.stw[data-say="goodsWhy"]').catch(() => '')}"`);
     }
     await page.click('[data-good="respec"]');
     await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });

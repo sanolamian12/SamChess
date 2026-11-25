@@ -1,8 +1,15 @@
 /**
  * 도시 물자 — 건축 자재 · 군량 · 연구 초기화 · 초심의 서(옛 장수 재설계) (2026-09-24, pptx 86~88쪽).
  *
- * 한 판에 넷을 세로로 놓고 오른쪽 나무판으로 **하나를 고른 뒤** [구매하기]를 누른다
- * (전투 아이템·보관함과 같은 몸짓).
+ * ```
+ * 머리 판   [금화] n   [자재] n   [군량] n/최대      ← `GoodsStatus` — 줄마다 붙던 「(현재 : n)」을 걷었다
+ *          [건축 자재 🪙] [군량 🪙]                  ← 두 칸
+ *          [연구 초기화 ............ 🪙]             ← 한 줄
+ *          [초심의 서 .............. 🪙]             ← 한 줄
+ * 바닥     [뒤로 가기]
+ * ```
+ * 꼴은 용병 시장 그대로다(대자보 종이 카드 + 붓 획 가격 띠, 2026-11-25 기획자). 못 사는 칸 — 군량 창고가 참 · 태학이 없거나
+ * 되돌릴 연구가 없음 · Lv2 이상 장수가 없음 · 금화 모자람 — 은 잿빛이고, **눌러도 판이 안 뜨고 내관이 까닭을 말한다**.
  *
  * ────────────────────────────────────────────────────────────────
  * 초기화 둘은 **여기서 사고 여기서 쓴다** ★ (2026-09-24 기획자 확정 — 옛 기획을 엎었다)
@@ -62,6 +69,38 @@ function OkFor({ gold }: { gold: number }): React.JSX.Element {
   return <span className="mkt-buy-lbl">{t('market.confirm.ok')} (<GoldCost gold={gold} times />)</span>;
 }
 
+/**
+ * 머리 판 — 금화 · 건축 자재 · 군량(보유/최대) (2026-11-25 기획자 — 용병 시장 머리 판과 같은 꼴).
+ * 줄마다 붙던 「(현재 : n)」을 여기로 올렸다. `MarketScreen`이 `.place-body` 밖에 그린다
+ */
+export function GoodsStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
+  const cap = grainCap(profile);
+  const can = canBuyGrain(profile, Date.now());
+  /** 창고에 한 묶음이 안 들어가 막혔는가 — 판정은 규칙(`canBuyGrain`)의 것을 그대로 읽는다 */
+  const full = !can.ok && can.code === 'market.grainFull';
+  return (
+    <section className="place-panel mkt-status mkt-merc-status" data-field="goodsStatus">
+      <span className="mkt-cur" data-currency="gold" data-field="gold" data-gold={profile.gold}>
+        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} data-tip={t('market.gold')} />
+        <b className="v">{profile.gold.toLocaleString('en-US')}</b>
+      </span>
+      <span className="mkt-cur" data-field="materialsNow" data-materials={profile.materials}>
+        <GameIcon name="res-materials" label={t('market.goods.materials')} />
+        <b className="v">{profile.materials.toLocaleString('en-US')}</b>
+      </span>
+      <span className="mkt-cur" data-field="grainNow" data-full={full ? '1' : '0'} data-grain={profile.grain} data-cap={cap}>
+        <GameIcon name={full ? 'grain-full' : 'res-grain'} label={t('market.goods.grain')} />
+        <b className="v">{profile.grain}/{cap}</b>
+        {/* 최대 군량 인장 — 눌러도 아무것도 안 산다(인장이 전파를 막는다, 2026-10-15) */}
+        <CityBonusMark profile={profile} keys={['grainCap']} />
+      </span>
+    </section>
+  );
+}
+
+/** 가격 띠의 붓 획 색 — 용병 시장과 같은 그림(`.mkt-pack-price[data-stroke]`) */
+const GOOD_STROKE: Record<Good, number> = { materials: 2, grain: 5, academyReset: 7, respec: 6 };
+
 export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onLevelUp }: {
   profile: PlayerProfile;
   onChange: (next: PlayerProfile) => void;
@@ -74,22 +113,26 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
   onLevelUp: (officer: OfficerId) => void;
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>(null);
+  /** 막힌 칸을 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다(용병 시장과 같은 몸짓) */
+  const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
   const now = Date.now();
 
   /** 재설계는 **장수마다** 되는지가 갈려 여기서는 「되감을 장수가 있는가 + 금화」만 본다 */
   const respecAny: MetaResult = (() => {
-    if (!Object.values(profile.roster).some((i) => i.level >= 2)) return { ok: false, reason: t('market.goods.respecNone') };
-    if (profile.gold < RESPEC_GOLD) return { ok: false, reason: t('market.pull.notEnough', { have: profile.gold, need: RESPEC_GOLD }) };
+    if (!Object.values(profile.roster).some((i) => i.level >= 2)) return { ok: false, reason: t('market.goods.respecNone'), code: 'respecNone' };
+    if (profile.gold < RESPEC_GOLD) {
+      return { ok: false, reason: '', code: 'market.notEnoughGold', params: { have: profile.gold, need: RESPEC_GOLD } };
+    }
     return { ok: true };
   })();
 
-  const goods: { id: Good; icon: string; gold: number; can: MetaResult; desc: string }[] = [
+  const goods: { id: Good; icon: string; gold: number; can: MetaResult; amount?: number; desc: string }[] = [
     {
-      id: 'materials', icon: 'materials', gold: materialPackCost(), can: canBuyMaterials(profile),
+      id: 'materials', icon: 'materials', gold: materialPackCost(), can: canBuyMaterials(profile), amount: MATERIAL_PACK,
       desc: t('market.goods.materials.desc', { n: MATERIAL_PACK }),
     },
     {
-      id: 'grain', icon: 'grain', gold: grainPackCost(), can: canBuyGrain(profile, now),
+      id: 'grain', icon: 'grain', gold: grainPackCost(), can: canBuyGrain(profile, now), amount: GRAIN_PACK,
       desc: t('market.goods.grain.desc', { n: GRAIN_PACK }),
     },
     {
@@ -99,25 +142,27 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
     // 「초심의 서」 (2026-09-25 개명) — 그림도 두루마리에서 책 한 권으로
     { id: 'respec', icon: 'gacha-single', gold: RESPEC_GOLD, can: respecAny, desc: t('market.goods.respec.desc') },
   ];
-  /** 창고에 한 묶음이 안 들어가 막혔는가 — 판정은 규칙(`canBuyGrain`)의 것을 그대로 읽는다 */
-  const grainCan = goods.find((g) => g.id === 'grain')!.can;
-  const grainFull = !grainCan.ok && grainCan.code === 'market.grainFull';
-  /* 줄 · 판 크기는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 줄과 판이 같은 크기다(`useAllLangLayout`, 2026-11-13 기획자).
-     `sig`는 언어와 무관한 값만 — 줄마다 「왜 못 사나」 줄이 붙고 떨어지는 것(`can.ok`)과 수치 */
+  /* 긴 칸 둘(연구 초기화 · 초심의 서)의 높이는 열 언어 가운데 가장 큰 것에 맞춘다 — 어느 언어로 봐도 판이 같은 크기다
+     (`useAllLangLayout`, 2026-11-13 기획자). `sig`는 언어와 무관한 값만 */
   const listRef = useRef<HTMLElement>(null);
   useAllLangLayout(
-    [{ box: listRef, rows: ':scope .mkt-grows > .mkt-grow' }],
+    [{ box: listRef, rows: ':scope .mkt-good-wide' }],
     JSON.stringify([goods.map((g) => [g.id, g.gold, g.can.ok]), profile.materials, profile.grain, profile.gold]),
   );
 
+  /** 못 사는 까닭 — 규칙이 코드를 실었으면 그 언어 문구로, 아니면 화면이 지은 문장(`respecNone`) 그대로 */
+  const whyText = (r: MetaResult): string =>
+    r.ok ? '' : r.code === 'respecNone' ? r.reason : reasonText(r);
+
   /**
-   * 줄을 누르면 다음 판이 곧장 뜬다 (2026-11-13 기획자 — 체크 → [구매하기]의 두 번을 한 번으로).
-   * 자재 · 군량은 **「구매할까요?」 확인 판**(줄 한 번에 금화가 나가면 잘못 누른 것을 되돌릴 수 없다 — 같은 날 기획자),
-   * 연구 초기화는 제 확인 판, 초심의 서는 장수 고르기 판.
+   * 칸을 누르면 다음 판이 곧장 뜬다. 자재 · 군량은 「구매할까요?」 확인 판, 연구 초기화는 제 확인 판, 초심의 서는 장수 고르기 판.
+   * **막힌 칸도 눌린다** — 누르면 내관이 까닭을 말한다(판에 이유 줄을 띄우지 않는다, 2026-11-25 기획자 — 용병 시장과 같은 몸짓).
    */
   const buy = (id: Good): void => {
     const g = goods.find((x) => x.id === id);
-    if (!g || !g.can.ok || busy) return;
+    if (!g || busy) return;
+    if (!g.can.ok) { setWhy({ text: whyText(g.can), code: g.can.code ?? id }); return; }
+    setWhy(null);
     if (id === 'materials' || id === 'grain') {
       setStep({ at: 'goodAsk', good: id });
     } else if (id === 'academyReset') {
@@ -144,63 +189,37 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
   };
   const instantUntil = academyOf(profile).done.length;
 
+  /** 칸 하나 — 용병 시장과 같은 종이 카드. 막힌 칸은 잿빛이지만 눌린다(`data-locked`) */
+  const card = (g: (typeof goods)[number], wide: boolean): React.JSX.Element => (
+    <button key={g.id} type="button" className={`mkt-pack mkt-good${wide ? ' mkt-good-wide' : ''}`}
+      data-action="buyGood" data-good={g.id} data-can={g.can.ok ? '1' : '0'} data-locked={g.can.ok ? undefined : true}
+      aria-label={t(`market.goods.${g.id}`)} disabled={busy} onClick={() => buy(g.id)}>
+      <span className="mkt-good-art"><img src={`market/${g.icon}.png`} alt="" /></span>
+      {/* 받는 양 — 그림에서 떨어져 가격 띠(붓 획)의 오른쪽 끝에 맞춘다 (2026-11-25 기획자) */}
+      {g.amount !== undefined && <span className="mkt-good-qty" data-field="goodQty">+{g.amount}</span>}
+      <span className="mkt-good-body">
+        <span className="mkt-good-nm">{t(`market.goods.${g.id}`)}</span>
+        {wide && <span className="mkt-good-fx">{g.desc}</span>}
+      </span>
+      <span className="mkt-pack-price" data-stroke={GOOD_STROKE[g.id]} data-field="goodCost"><GoldCost gold={g.gold} times /></span>
+    </button>
+  );
+  const byId = (id: Good): (typeof goods)[number] => goods.find((g) => g.id === id)!;
+
   return (
     <>
-      <section ref={listRef} className="place-panel mkt-list" data-field="goods">
-        <h2 className="cap">{t('market.items.buyable')}</h2>
-        <div className="mkt-grows">
-          {goods.map((g) => {
-            // 창고가 모자라 막힌 군량(2026-09-25) — 이유 줄 대신 제목 옆 회색 「(현재 : 20/20)」이 말한다
-            const locked = g.id === 'grain' && grainFull;
-            // 줄 = 사는 단추(2026-11-13). 못 사는 줄은 눌러도 아무 일이 없고, 왜인지는 줄 안의 이유 줄이 말한다.
-            // 단추 안에 단추(인장)를 두지 않으려 줄은 `div`다 — 인장은 제 클릭을 막는다(`CityBonusMark`)
-            return (
-            <div
-              key={g.id}
-              className="mkt-grow"
-              role="button"
-              tabIndex={g.can.ok ? 0 : -1}
-              aria-disabled={!g.can.ok || busy}
-              data-action="buyGood"
-              data-good={g.id}
-              data-can={g.can.ok ? '1' : '0'}
-              data-locked={locked ? '1' : '0'}
-              onClick={() => buy(g.id)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); buy(g.id); } }}
-            >
-              {/* 전투 아이템 줄과 같은 액자 — 검정 바탕 + 금빛 밧줄(`::after`) */}
-              <span className="c-art"><img src={`market/${g.icon}.png`} alt="" /></span>
-              <span className="c-body">
-                <span className="c-nm">
-                  {t(`market.goods.${g.id}`)}
-                  {/* 군량은 제목 옆에 지금 창고를 적는다(2026-09-25 지정). 한 묶음이 안 들어가면
-                      회색 — 그때 막는 이유는 이 숫자가 말하므로 아래 이유 줄은 안 띄운다 */}
-                  {g.id === 'grain' && (
-                    <span className="c-now" data-field="grainNow" data-full={grainFull ? '1' : '0'}>
-                      {' '}{grainFull && <GameIcon name="grain-full" label={t('main.grain')} />}{t('market.goods.grain.now', { have: profile.grain, max: grainCap(profile) })}
-                      {/* 최대 군량 인장 — 눌러도 줄이 안 골라진다(인장이 전파를 막는다, 2026-10-15) */}
-                      <CityBonusMark profile={profile} keys={['grainCap']} />
-                    </span>
-                  )}
-                  {/* 자재는 상한이 없어 보유만 — 막히는 일이 없어 회색도 없다 */}
-                  {g.id === 'materials' && (
-                    <span className="c-now" data-field="materialsNow">
-                      {' '}{t('market.goods.materials.now', { n: profile.materials })}
-                    </span>
-                  )}
-                </span>
-                <span className="c-price"><GoldCost gold={g.gold} times /></span>
-                <span className="c-fx">{g.desc}</span>
-                {/* 안 되는 이유는 **제 줄 안에** — 끝에 몰면 어느 줄 이야기인지 모른다 */}
-                {!g.can.ok && !locked && (
-                  <span className="c-why" data-field="why">{reasonText(g.can)}</span>
-                )}
-              </span>
-            </div>
-            );
-          })}
+      {/* 용병 시장의 꼴 (2026-11-25 기획자) — 첫 줄 건축 자재 · 군량 두 칸, 그 밑 연구 초기화 한 줄, 초심의 서 한 줄 */}
+      <section ref={listRef} className="place-panel mkt-list mkt-charge mkt-merc-shop mkt-goods" data-field="goods">
+        <div className="mkt-packs mkt-goods-pair">
+          {card(byId('materials'), false)}
+          {card(byId('grain'), false)}
+        </div>
+        <div className="mkt-goods-wides">
+          {card(byId('academyReset'), true)}
+          {card(byId('respec'), true)}
         </div>
       </section>
+      <Say text={why?.text ?? null} level={profile.cityLevel} name="goodsWhy" code={why?.code} repeat />
 
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">
