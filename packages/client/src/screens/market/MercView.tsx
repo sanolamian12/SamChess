@@ -26,7 +26,7 @@ import { useState } from 'react';
 import { officerById } from '@samchess/data';
 import type { Grade, OfficerId } from '@samchess/rules';
 import {
-  GACHA_PULL_KINDS, SURPLUS_GRADES, canPullGacha, canExchangeSurplus, gachaPullCost, hasEmperor, poolCap,
+  GACHA_GRADES, GACHA_PULL_KINDS, SURPLUS_GRADES, canPullGacha, canExchangeSurplus, gachaPullCost, poolCap,
   poolSeatsFree, poolUsed, surplusCost, surplusOf,
 } from '@samchess/meta';
 import type { GachaFate, GachaPullKind, MetaResult, PlayerProfile, SurplusGrade } from '@samchess/meta';
@@ -154,7 +154,6 @@ export function MercView({ profile, run, busy, onBack }: {
   /** 막힌 칸을 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다 */
   const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
   const seats = poolSeatsFree(profile);
-  const emperor = hasEmperor(profile);
 
   const refuse = (r: MetaResult): void => {
     if (!r.ok) setWhy({ text: reasonText(r), code: r.code ?? 'refused' });
@@ -211,7 +210,9 @@ export function MercView({ profile, run, busy, onBack }: {
             return (
               <button key={kind} type="button" className="mkt-pack mkt-recruit" data-action={`pull-${kind}`} data-kind={kind}
                 aria-label={t('market.recruit.n', { n: cost.count })}
-                data-count={cost.count} data-gold={cost.gold} data-locked={noSeat || undefined} disabled={busy || noSeat} onClick={() => doPull(kind)}>
+                data-count={cost.count} data-gold={cost.gold} data-locked={noSeat || undefined} disabled={busy}
+                // 막혀도 누를 수 있다 — 누르면 내관이 까닭을 말한다(판에 글을 띄우지 않는다, 2026-11-25 기획자)
+                onClick={() => doPull(kind)}>
                 {noSeat && (
                   <span className="mkt-pack-lock" data-field="noSeat">
                     <GameIcon name="mk-lock" label="" />
@@ -220,6 +221,10 @@ export function MercView({ profile, run, busy, onBack }: {
                 )}
                 {/* 종이 왼쪽 위 — 몇 명인지 숫자만 (2026-11-25 기획자) */}
                 <span className="mkt-pack-no" data-field="recruitCount">{cost.count}</span>
+                {/* 종이 위쪽 — 이 모집에서 나올 수 있는 등급 표(E · S · A · B, 2026-11-25 기획자) */}
+                <span className="mkt-pack-grades" data-field="recruitGrades">
+                  {GACHA_GRADES.map((g) => <GradeBadge key={g} grade={g} />)}
+                </span>
                 <RecruitArt count={cost.count} />
                 <span className="mkt-pack-price" data-stroke={PULL_STROKE[kind]} data-field="pullCost"><GoldCost gold={cost.gold} times /></span>
               </button>
@@ -232,11 +237,12 @@ export function MercView({ profile, run, busy, onBack }: {
         </div>
         <div className="mkt-packs">
           {SURPLUS_GRADES.map((grade) => {
-            const locked = grade === 'E' && !emperor;
+            // 못 사는 칸은 잿빛 — 헌제가 없음 · 받을 장수가 없음 · 잉여 카드가 모자람. **막지는 않는다**: 누르면 내관이 그 까닭을 말한다(2026-11-25 기획자)
+            const locked = !canExchangeSurplus(profile, grade).ok;
             return (
               <button key={grade} type="button" className="mkt-pack mkt-surplus" data-action={`surplus-${grade}`} data-grade={grade}
                 aria-label={t('market.surplus.pick', { grade })}
-                data-cost={surplusCost(grade)} data-locked={locked || undefined} disabled={busy || locked} onClick={() => doExchange(grade)}>
+                data-cost={surplusCost(grade)} data-locked={locked || undefined} disabled={busy} onClick={() => doExchange(grade)}>
                 {/* 등급 표는 카드 한가운데 위에, 1.5배 — 후광은 카드가 아니라 등급 표 뒤에(A 흰 별빛 · S 자주 · E 금) (2026-11-25 기획자) */}
                 <span className="mkt-surplus-art">
                   <img src="market/market_card.png" alt="" />

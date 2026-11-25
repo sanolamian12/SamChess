@@ -38,6 +38,13 @@ import type { MetaResult, PlayerProfile } from './types.ts';
 import { rejectWith } from './reject.ts';
 
 
+/**
+ * 장수 모집에서 나올 수 있는 등급 — 센 것부터(E · S · A · B, C · D는 없다). 데이터(`ECONOMY.gachaGrades`)를 따른다 —
+ * 용병 시장의 모집 칸 위에 이 등급 표를 늘어놓는다(2026-11-25 기획자).
+ */
+export const GACHA_GRADES: readonly string[] = (['E', 'S', 'A', 'B', 'C', 'D'] as const)
+  .filter((g) => (ECONOMY.gachaGrades as readonly string[]).includes(g));
+
 /** 장수 1명당 가챠 배열 슬롯 수 (지금 100 × 2 = 200) */
 export const gachaSlotsPerOfficer = (): number => cardsSpentOn(GROWTH.maxLevel) * ECONOMY.gachaSlotMultiplier;
 

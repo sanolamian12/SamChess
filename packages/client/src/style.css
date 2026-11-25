@@ -3689,7 +3689,7 @@ button.mkt-pack.mkt-recruit[data-locked] > :not(.mkt-pack-lock) { filter: graysc
 /* 이름은 숨긴다 — 「궁궐 증축 필요」와 겹쳐 두 줄로 읽혔다 */
 button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; }
 .mkt-pack-lock {
-  position: absolute; inset: .4rem; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem;
+  position: absolute; inset: .4rem; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem;
   background: #1a1108a6; border-radius: .3rem; pointer-events: none;
 }
 .mkt-pack-lock .gic img { width: 2.4rem; height: 2.4rem; object-fit: contain; filter: drop-shadow(0 2px 3px #000); }
@@ -11325,3 +11325,14 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .rcr-done .cel-stage:has(.rcr-cast[data-count="5"]) { margin-bottom: 4.4rem; }
 /* 여럿이면 말풍선은 제 머리 바로 위(조금 오른쪽) — 옆 장수의 말풍선과 부딪히지 않는다. 1명은 머리 오른쪽 위 그대로 */
 .rcr-cast:not([data-count="1"]) .rcr-new { right: auto; left: 50%; top: -8%; translate: -35% 0; rotate: 5deg; }
+/* 모집 칸 위쪽 — 나올 수 있는 등급 표(E · S · A · B)를 오른쪽 위에 한 줄로. 판 높이는 안 바뀐다(겹쳐 얹는다) (2026-11-25 기획자) */
+/* 1.3배(1rem → 1.3rem) · 오른쪽 끝으로 붙이고, 이웃과 20% 겹친다 — 왼쪽(센 등급)이 위: E가 S를, S가 A를, A가 B를 살짝 덮는다 (2026-11-25 기획자) */
+/* 자리 — 종이 가로 한가운데, 가격 붓 획 바로 위 · 실루엣보다 앞 층(2026-11-25 기획자 — 「붓선 바로 위, 장수 이미지보다 앞으로」).
+   잠긴 칸에서는 자물쇠 덮개(z 5)가 그 위를 덮는다 */
+.mkt-pack-grades { position: absolute; z-index: 4; left: 50%; translate: -50% 0; bottom: 3rem; display: flex; pointer-events: none; }
+.mkt-pack-grades .gr { --gr: 1.3rem; position: relative; }
+.mkt-pack-grades .gr + .gr { margin-left: calc(1.3rem * -.2); }
+.mkt-pack-grades .gr:nth-child(1) { z-index: 4; }
+.mkt-pack-grades .gr:nth-child(2) { z-index: 3; }
+.mkt-pack-grades .gr:nth-child(3) { z-index: 2; }
+.mkt-pack-grades .gr:nth-child(4) { z-index: 1; }

@@ -17,7 +17,7 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { EQUIPMENT, MARKET_ITEMS, OFFICERS } from '@samchess/data';
-import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance, poolCap, poolUsed, surplusCost } from '@samchess/meta';
+import { GACHA_GRADES, academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance, poolCap, poolUsed, surplusCost } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
@@ -261,11 +261,11 @@ try {
     cmds: [...document.querySelectorAll<HTMLElement>('.mkt-cmds [data-action]')].map((b) => b.dataset.action),
     art: Object.fromEntries(['one', 'three', 'five'].map((k) => {
       const b = document.querySelector<HTMLButtonElement>(`[data-action="pull-${k}"]`)!;
-      return [k, [b.querySelectorAll('.mkt-recruit-stand').length, b.disabled && Boolean(b.querySelector('[data-field="noSeat"]'))]];
+      return [k, [b.querySelectorAll('.mkt-recruit-stand').length, b.dataset.locked !== undefined && !b.disabled && Boolean(b.querySelector('[data-field="noSeat"]'))]];
     })),
     eLocked: (() => {
       const e = document.querySelector<HTMLButtonElement>('[data-action="surplus-E"]')!;
-      return e.disabled && e.dataset.locked !== undefined && getComputedStyle(e).filter.includes('grayscale');
+      return !e.disabled && e.dataset.locked !== undefined && getComputedStyle(e).filter.includes('grayscale');
     })(),
     oldDoors: Boolean(document.querySelector('[data-action="openPull"], [data-action="openRecycle"]')),
   }));
@@ -276,6 +276,35 @@ try {
   if (JSON.stringify(shop.art) !== JSON.stringify({ one: [1, false], three: [3, false], five: [5, true] })) fail(`모집 칸 — ${JSON.stringify(shop.art)}`);
   if (!shop.eLocked) fail('헌제가 없는데 E급 칸이 잿빛으로 안 막혔다');
   ok(`현황판 홈과 같음(위 ${mercBox.top.toFixed(0)}px · 높이 ${mercBox.h.toFixed(0)}px) · 칸 여섯 · 꼬마/자물쇠 ${JSON.stringify(shop.art)} · E급 잿빛`);
+  // 잿빛 칸도 누를 수 있다 — 누르면 **내관이** 까닭을 말하고, 판에는 글이 안 뜬다(판 높이 그대로) (2026-11-25 기획자)
+  const shopH = async (): Promise<number> => page.$eval('[data-field="mercShop"]', (e) => e.getBoundingClientRect().height);
+  const h0 = await shopH();
+  await page.click('[data-action="surplus-E"]');
+  await page.waitForSelector('.stw[data-say="mercWhy"][data-say-code="market.surplus.noEmperor"]', { timeout: 5_000 });
+  await page.click('[data-action="pull-five"]');
+  await page.waitForSelector('.stw[data-say="mercWhy"][data-say-code="market.recruit.noSeat"]', { timeout: 5_000 });
+  const h1 = await shopH();
+  if (Math.abs(h1 - h0) > 0.5) fail(`잿빛 칸을 누르자 판 높이가 바뀌었다 — ${h0.toFixed(1)} → ${h1.toFixed(1)}px`);
+  if (await page.$('[data-intro="recruit"], [data-modal="reveal"], [data-modal="surplusDone"]')) fail('막힌 칸을 눌렀는데 모집이 됐다');
+  ok('잿빛 칸 — E급(헌제 없음) · 5명(빈자리 모자람)을 누르면 내관이 까닭을 말하고, 판 높이는 그대로');
+  // 모집 칸마다 나올 수 있는 등급 표(E · S · A · B) — 데이터(`GACHA_GRADES`)와 같은 수
+  const gradeRows = await page.$$eval('[data-field="recruitGrades"]', (els) => els.map((e) => e.querySelectorAll('.gr').length));
+  if (gradeRows.length !== 3 || gradeRows.some((n) => n !== GACHA_GRADES.length)) fail(`모집 칸 등급 표 — ${gradeRows.join(',')} (${GACHA_GRADES.join('')}여야 한다)`);
+  // 자리 — 종이 가로 한가운데, 가격 붓 획 바로 위(0~6px) · 실루엣보다 앞 층 (2026-11-25 기획자). 등급 표는 누름을 안 받아(`pointer-events: none`)
+  // `elementFromPoint`로는 못 잰다 — 같은 쌓임 맥락(단추) 안의 z를 견준다(실루엣 자리 · 후광은 `.mkt-recruit-art`가 z를 안 만들어 단추 맥락에 든다)
+  const gradeSpots = await page.$$eval('[data-action^="pull-"]', (els) => els.map((b) => {
+    const r = b.getBoundingClientRect(), gEl = b.querySelector<HTMLElement>('[data-field="recruitGrades"]')!, g = gEl.getBoundingClientRect();
+    const p = b.querySelector('.mkt-pack-price')!.getBoundingClientRect();
+    const z = (e: Element): number => Number(getComputedStyle(e).zIndex) || 0;
+    const spotMax = Math.max(...[...b.querySelectorAll('.mkt-recruit-spot')].map(z));
+    return {
+      off: Math.round(((g.left + g.right) / 2 - (r.left + r.right) / 2) * 10) / 10,
+      gap: Math.round((p.top - g.bottom) * 10) / 10,
+      front: z(gEl) > spotMax,
+    };
+  }));
+  if (gradeSpots.some((x) => Math.abs(x.off) > 2 || x.gap < 0 || x.gap > 6 || !x.front)) fail(`등급 표 자리 — ${JSON.stringify(gradeSpots)}`);
+  ok(`등급 표 ${GACHA_GRADES.join('')} — 종이 가운데(±${Math.max(...gradeSpots.map((x) => Math.abs(x.off)))}px) · 붓 획 위 ${gradeSpots.map((x) => x.gap).join('/')}px · 실루엣보다 앞`);
   await shot('merc');
   // 후광 (2026-11-25 기획자) — 꼬마마다 뒤에 흰 · 자주 · 금 셋이 겹쳐 하나씩 떠오르고, 잉여 카드는 등급 표 뒤에 하나. 글자 이름 칸은 없다.
   // 섬광은 0.5초에 걸쳐 떠오르므로 기다린 뒤 잰다. 그리고 판은 스크롤 없이 [뒤로 가기]가 화면 바닥에 닿는다
@@ -417,7 +446,7 @@ try {
   await page.click('[data-action="revealClose"]');
   await page.waitForSelector('[data-modal="reveal"]', { state: 'detached', timeout: 3_000 });
   const seatsNow = poolCap(after) - poolUsed(after);
-  const threeLocked = await page.$eval('[data-action="pull-three"]', (b) => (b as HTMLButtonElement).disabled);
+  const threeLocked = await page.$eval('[data-action="pull-three"]', (b) => (b as HTMLElement).dataset.locked !== undefined);
   if (threeLocked !== seatsNow < 3) fail(`빈자리 ${seatsNow} — 3명 칸 잠김 ${threeLocked}`);
   await shot('merc-after');
   ok(`3명 모집 — 실루엣 셋(섬광 ${walkThree.map((w) => w.glow ?? '-').join(' ')}) · 건너뛰기 ${skipMs}ms · 열린 직후 누름 넘김 · 무대 ${cast3.map((c) => `${c.seat}:${c.grade}`).join(' ')} · 금화 −${gachaPullCost('three').gold} · 빈자리 ${seatsNow} → 3명 ${threeLocked ? '자물쇠' : '열림'}`);
