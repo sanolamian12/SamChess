@@ -944,12 +944,25 @@ export class BattleScene extends Phaser.Scene {
     // 5. 내 차례 (28쪽 「내 캐릭터의 차례가 되어 포커스를 받았을 때」)
     //    **공격 중에도 여기 머문다** — 대상은 가까이 있다(Pawn이 가장 멀어 마름모 두 칸, 2026-09-22). 300%에서 위아래로
     //    세 칸씩 보여 닿는다 — 작은 판에서도 확대가 대전 판 기준을 넘지 않게 묶어 둔 것이 그 전제다(`viewOf`)
-    if (this.playback.phase === 'awaitingInput' && this.state.activeUnit) {
+    //    **재생기가 아직 `awaitingInput`에 닿기 전에도** — 엔진이 내 장수에게 차례를 넘겼으면(`state.phase === 'control'`) 여기다
+    //    (2026-11-25 기획자). 평상 동작이 끝난 뒤에도 대화 줄이 다 흐르거나 시계가 따라잡을 때까지 재생기는 잠깐 `advancing`이라,
+    //    그 0.1~0.2초 동안 아래 6(판 전체)로 떨어져 카메라가 물러났다 다시 다가갔다.
+    if (this.state.activeUnit && (this.playback.phase === 'awaitingInput' || this.myControl())) {
       const unit = this.state.units[this.state.activeUnit];
       if (unit?.alive) return { from: 0, scale: SCALE_FOCUS, cell: unit.pos };
     }
     // 6. 그 밖 — 판 전체. 상대 차례와 시간 경과가 여기다
     return FIT_CUE;
+  }
+
+  /** 엔진이 차례를 넘긴 장수를 내가 부리는가 — 재생기의 걸음(`enterControl`)과 같은 셈(빼앗긴 장수는 빼앗은 쪽) */
+  private myControl(): boolean {
+    const side = this.playback.humanSide;
+    if (!side || this.state.phase !== 'control' || !this.state.activeUnit) return false;
+    const unit = this.state.units[this.state.activeUnit];
+    if (!unit || unit.casting) return false;
+    const commander = unit.control ? this.state.units[unit.control.by]?.side ?? unit.side : unit.side;
+    return commander === side;
   }
 
   private syncCamera(deltaMs: number): void {
