@@ -3,8 +3,10 @@
  *
  * ```
  * 현황판   [금화] n   [장수] 풀/상한   [잉여 카드] n
- * 첫 줄    [1명 모집 🪙10] [3명 모집 🪙25] [5명 모집 🪙40]   ← 꼬마 1 · V자 3 · W자 5. 궁궐 빈자리가 모자라면 자물쇠 + 「궁궐 증축 필요」
- * 둘째 줄  [A급 확정 🂠10] [S급 확정 🂠20] [E급 확정 🂠30]   ← 잉여 카드로. E급은 헌제를 거느릴 때만(아니면 잿빛)
+ * 장수 모집 / 신규 또는 기존 인원이 모집됩니다.
+ *          [🪙10] [🪙25] [🪙40]   ← 검은 꼬마 1 · V자 3 · W자 5(글자 없음), 뒤 후광이 흰 → 자주 → 금. 궁궐 빈자리가 모자라면 자물쇠 + 「궁궐 증축 필요」
+ * 장수 레벨업 카드 / 보유 장수 중 랜덤 한 명 카드를 받습니다.
+ *          [🂠10] [🂠20] [🂠30]   ← 잉여 카드로. 카드 가운데 위 등급 표(A · S · E, 글자 없음) + 표 뒤 후광. E급은 헌제를 거느릴 때만(아니면 잿빛)
  * 바닥     [뒤로 가기]
  * ```
  *
@@ -38,6 +40,8 @@ import { BurstStage, DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 import { CelebrateCharge } from '../Celebrate.tsx';
+import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
+import type { BlinkTone } from '../BlinkGlow.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; fates: GachaFate[]; exhausted: boolean };
 
@@ -110,22 +114,35 @@ export function MercStatus({ profile }: { profile: PlayerProfile }): React.JSX.E
   );
 }
 
-/** 모집 칸의 꼬마 — 1명은 하나, 3명은 V자, 5명은 W자(가입 오프닝의 W 대형과 같은 결). 일부러 이름 없는 하급 장수들 */
+/**
+ * 모집 칸의 꼬마 — 1명은 하나, 3명은 V자, 5명은 W자(가입 오프닝의 W 대형과 같은 결).
+ * **검은 그림자**라 누군지 모른다 — 후광이 흰색 → 보라 → 금빛으로 2초마다 부드럽게 바뀌고, 꼬마마다 2초씩 어긋나 한 칸에 세 빛이 섞인다 (2026-11-25 기획자)
+ */
 const RECRUIT_STANDS: readonly OfficerId[] = ['gyeong-mu', 'go-sun', 'gwak-jeok', 'go-chang', 'gwan-hae'] as OfficerId[];
-/** 칸 안 자리 — `x`는 가로 %(가운데), `top`이면 뒷줄(위로 조금, 조금 작게) */
+/** 칸 안 자리 — `x`는 가로 %(가운데), `top`이면 뒷줄(위로 조금, 조금 작게). 서로 엉겨 붙을 만큼 촘촘하게 */
 const RECRUIT_LAYOUT: Record<number, readonly { x: number; top: boolean }[]> = {
   1: [{ x: 50, top: false }],
-  3: [{ x: 22, top: true }, { x: 50, top: false }, { x: 78, top: true }],
-  5: [{ x: 12, top: false }, { x: 31, top: true }, { x: 50, top: false }, { x: 69, top: true }, { x: 88, top: false }],
+  3: [{ x: 33, top: true }, { x: 50, top: false }, { x: 67, top: true }],
+  5: [{ x: 22, top: false }, { x: 36, top: true }, { x: 50, top: false }, { x: 64, top: true }, { x: 78, top: false }],
 };
 
-/** 모집 칸의 그림 — 꼬마 1 · V자 3 · W자 5 */
+/** 꼬마 뒤 후광의 세 빛 — 흰 별빛 → 자주 → 금이 2초마다 부드럽게 넘어간다(셋을 겹쳐 두고 투명도만 돌린다) */
+const RECRUIT_TONES: readonly BlinkTone[] = ['plain', 'purple', 'gold'];
+
+/** 모집 칸의 그림 — 꼬마 1 · V자 3 · W자 5. 후광을 먼저 다 깔고 꼬마를 그 위에 세운다(앞 꼬마의 후광이 뒷 꼬마를 덮지 않게) */
 function RecruitArt({ count }: { count: number }): React.JSX.Element {
   const spots = RECRUIT_LAYOUT[count] ?? RECRUIT_LAYOUT[1]!;
+  const at = (s: { x: number }, i: number): React.CSSProperties =>
+    ({ left: `${s.x}%`, ['--halo-delay' as string]: `${-2 * (i % 3)}s` });
   return (
     <span className="mkt-recruit-art" data-count={count}>
       {spots.map((s, i) => (
-        <span key={i} className="mkt-recruit-spot" data-top={s.top || undefined} style={{ left: `${s.x}%` }}>
+        <span key={`g${i}`} className="mkt-recruit-spot mkt-recruit-glow" data-top={s.top || undefined} style={at(s, i)}>
+          {RECRUIT_TONES.map((tone) => <BlinkGlow key={tone} tone={tone} className="mkt-recruit-halo" />)}
+        </span>
+      ))}
+      {spots.map((s, i) => (
+        <span key={i} className="mkt-recruit-spot" data-top={s.top || undefined} style={at(s, i)}>
           <OfficerStand officer={RECRUIT_STANDS[i]!} className="mkt-recruit-stand" />
         </span>
       ))}
@@ -196,6 +213,10 @@ export function MercView({ profile, run, busy, onBack }: {
   return (
     <>
       <section className="place-panel mkt-list mkt-charge mkt-merc-shop" data-field="mercShop" data-seats={seats}>
+        <div className="mkt-merc-head" data-field="recruitHead">
+          <h3>{t('market.recruit.title')}</h3>
+          <p>{t('market.recruit.desc')}</p>
+        </div>
         <div className="mkt-packs">
           {GACHA_PULL_KINDS.map((kind) => {
             const cost = gachaPullCost(kind);
@@ -203,6 +224,7 @@ export function MercView({ profile, run, busy, onBack }: {
             const noSeat = seats < cost.count;
             return (
               <button key={kind} type="button" className="mkt-pack mkt-recruit" data-action={`pull-${kind}`} data-kind={kind}
+                aria-label={t('market.recruit.n', { n: cost.count })}
                 data-count={cost.count} data-gold={cost.gold} data-locked={noSeat || undefined} disabled={busy || noSeat} onClick={() => doPull(kind)}>
                 {noSeat && (
                   <span className="mkt-pack-lock" data-field="noSeat">
@@ -210,23 +232,35 @@ export function MercView({ profile, run, busy, onBack }: {
                     <span>{t('market.recruit.locked')}</span>
                   </span>
                 )}
+                {/* 종이 왼쪽 위 — 몇 명인지 숫자만 (2026-11-25 기획자) */}
+                <span className="mkt-pack-no" data-field="recruitCount">{cost.count}</span>
                 <RecruitArt count={cost.count} />
-                <span className="mkt-pack-name">{t('market.recruit.n', { n: cost.count })}</span>
                 <span className="mkt-pack-price" data-stroke={PULL_STROKE[kind]} data-field="pullCost"><GoldCost gold={cost.gold} times /></span>
               </button>
             );
           })}
+        </div>
+        <div className="mkt-merc-head" data-field="surplusHead">
+          <h3>{t('market.surplus.title')}</h3>
+          <p>{t('market.surplus.desc')}</p>
+        </div>
+        <div className="mkt-packs">
           {SURPLUS_GRADES.map((grade) => {
             const locked = grade === 'E' && !emperor;
             return (
               <button key={grade} type="button" className="mkt-pack mkt-surplus" data-action={`surplus-${grade}`} data-grade={grade}
+                aria-label={t('market.surplus.pick', { grade })}
                 data-cost={surplusCost(grade)} data-locked={locked || undefined} disabled={busy || locked} onClick={() => doExchange(grade)}>
+                {/* 등급 표는 카드 한가운데 위에, 1.5배 — 후광은 카드가 아니라 등급 표 뒤에(A 흰 별빛 · S 자주 · E 금) (2026-11-25 기획자) */}
                 <span className="mkt-surplus-art">
-                  <Halo grade={grade} />
                   <img src="market/market_card.png" alt="" />
-                  <GradeBadge grade={grade} />
+                  {/* 카드 오른쪽 아래 — 받는 장 수 (2026-11-25 기획자) */}
+                  <span className="mkt-surplus-qty" data-field="surplusQty">×1</span>
+                  <span className="mkt-surplus-mark">
+                    <BlinkGlow tone={officerBlink(grade)} className="mkt-surplus-halo" />
+                    <GradeBadge grade={grade} />
+                  </span>
                 </span>
-                <span className="mkt-pack-name">{t('market.surplus.pick', { grade })}</span>
                 <span className="mkt-pack-price" data-stroke={SURPLUS_STROKE[grade]} data-field="surplusCost">
                   <span className="mkt-gold"><img src="market/market_card.png" alt={t('market.status.surplus')} /> × {surplusCost(grade)}</span>
                 </span>

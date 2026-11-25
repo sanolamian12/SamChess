@@ -37,9 +37,9 @@
   },
   "gachaSlotMultiplier": 2,
   "surplusExchange": {
-    "A": 10,
-    "S": 20,
-    "E": 30
+    "A": 5,
+    "S": 10,
+    "E": 20
   },
   "respecItemGold": 10,
   "battleRewards": {

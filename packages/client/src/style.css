@@ -540,7 +540,7 @@ img.no-art { visibility: hidden; }
 }
 .hist-close:hover { color: #a1301f; }
 .hist-body {
-  flex: 1; min-height: 0; overflow-y: auto; padding: .35rem .1rem 0; display: flex; flex-direction: column; gap: .2rem;
+  flex: 1; min-height: 0; overflow: hidden; padding: .35rem .1rem 0; display: flex; flex-direction: column; gap: .2rem;
   scrollbar-width: thin; scrollbar-color: #8a6a45 transparent;
   /* 위아래 끝은 종이에 스며들듯 흐리게 — 줄이 칸 끝에서 칼로 자른 듯 끊기지 않게 */
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 .6rem, #000 calc(100% - .6rem), transparent);
@@ -960,7 +960,7 @@ img.no-art { visibility: hidden; }
    물음 · 「…을 선택해주세요」 · 목록 · 확인창 · 적이 겨눈 장수의 카드. 비어 있으면 숨는다 — 배치 · 정찰 중에는 `#ctx-prep`이 칸을 쓴다. */
 #ctx-flow {
   flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .35rem;
-  padding: .45rem .5rem .5rem; overflow-y: auto;
+  padding: .45rem .5rem .5rem; overflow: hidden;
 }
 #ctx-flow[data-view="empty"], #ctx-prep[data-phase=""] { display: none; }
 /* 한글은 어절 단위로 접는다 — 안 그러면 「없습니
@@ -1008,7 +1008,7 @@ img.no-art { visibility: hidden; }
 .cx-banner[data-noart] img { display: none; }
 .cx-banner .nm { font-size: .95rem; font-weight: 700; }
 /* 목록은 남은 높이 안에서 스크롤한다 — [취소]가 언제나 바닥에 보인다 */
-.cx-list { flex: 1 1 0; display: flex; flex-direction: column; gap: .25rem; overflow-y: auto; min-height: 0; }
+.cx-list { flex: 1 1 0; display: flex; flex-direction: column; gap: .25rem; overflow: hidden; min-height: 0; }
 .cx-row {
   flex: none; display: flex; align-items: center; gap: .4rem; text-align: left;
   font: inherit; font-size: .8rem; padding: .35rem .5rem; border-radius: .35rem; cursor: pointer;
@@ -1228,7 +1228,7 @@ img.no-art { visibility: hidden; }
 .cx-buttons.cx-stack button { flex: none; }
 .cx-buttons.cx-stack { gap: .22rem; }
 /* 칸이 모자라면 줄어드는 것은 설명문뿐이다 — 단추(진행)는 언제나 바닥에 다 보인다. 설명은 제 안에서 스크롤한다 */
-#ctx-flow[data-view="confirm"] .cx-text { flex: 0 1 auto; min-height: 1.4em; overflow-y: auto; }
+#ctx-flow[data-view="confirm"] .cx-text { flex: 0 1 auto; min-height: 1.4em; overflow: hidden; }
 #ctx-flow[data-view="confirm"] > :not(.cx-text) { flex-shrink: 0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate { padding: .18rem .5rem; }
 /* 책략 확인창의 성공 확률 — 상자 없이 판 바닥에 바로 쓴 글(2026-10-16 기획자 지정). 나무 위에서 읽히게 그림자만 */
@@ -1356,7 +1356,7 @@ img.no-art { visibility: hidden; }
   border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
 .intel-table {
-  min-height: 0; overflow-y: auto; padding: .45rem .6rem .6rem;
+  min-height: 0; overflow: hidden; padding: .45rem .6rem .6rem;
   display: grid; grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 2fr);
   column-gap: .6rem; row-gap: .4rem; align-items: center;
 }
@@ -1596,7 +1596,7 @@ img.no-art { visibility: hidden; }
 
 .scr {
   flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .6rem;
-  padding: .9rem .8rem 1rem; overflow-y: auto;
+  padding: .9rem .8rem 1rem; overflow: hidden;
 }
 .scr .title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.01em; }
 .scr .lede { font-size: .85rem; line-height: 1.6; color: #b6bcc6; }
@@ -1758,7 +1758,7 @@ img.no-art { visibility: hidden; }
   font-size: .8rem; color: #79808b; padding-bottom: 0;
 }
 .ofc-thead:hover { background: none; border-color: transparent; }
-.ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
+.ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow: hidden; }
 
 /* 레벨업 대상 줄 — 예전엔 글자 뱃지("레벨업")를 레벨 칸에 얹었다가, 번역이
    길어지면(포르투갈어 "Subir de nível" 등) 카드 수·이름 칸까지 가려 뷰가
@@ -1900,7 +1900,7 @@ img.no-art { visibility: hidden; }
 .ofc-skill-modal[data-tier-group="b"] { background-image: url(ui/panel-skill-b.jpg); }
 /* 글은 판 안에서 내리고(몽골어 · 긴 유래) 단추 둘은 판 바닥에 */
 .modal.ofc-skill-modal { overflow: hidden; }
-.ofc-skill-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .35rem; scrollbar-width: thin; scrollbar-color: #8a6a2a transparent; }
+.ofc-skill-body { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: .35rem; scrollbar-width: thin; scrollbar-color: #8a6a2a transparent; }
 .ofc-skill-body > * { flex: none; }
 .ofc-skill-modal > .btn.wide { flex: none; }
 .ofc-skill-modal .row .k { color: #b8a97c; }
@@ -2652,7 +2652,7 @@ button.lv-tactic-row {
 /* 도시 관리·건물 관리도 같다 (2026-09-04) — 판때기 셋이 세로로 쌓여
    프레임보다 길어질 수 있다(건물 일곱 줄) */
 .scr-city .place-body {
-  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
 }
 
@@ -3493,7 +3493,7 @@ button.lv-tactic-row {
 
 .mkt-body { display: flex; flex-direction: column; gap: .5rem; }
 /* 판마다 목록(홈은 배너 셋)이 위에 붙고 명령 판이 바닥에 — 대장간 `.frg-body-pinned`와 같은 결 */
-.mkt-body-flow { margin-top: 0; padding-top: .5rem; flex: 1; min-height: 0; overflow-y: auto; }
+.mkt-body-flow { margin-top: 0; padding-top: .5rem; flex: 1; min-height: 0; overflow: hidden; }
 .mkt-body-flow > .mkt-cmds { margin-top: auto; flex: none; }
 /* [금화 충전] — 아이콘은 단추 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자). 그림을 흐름에서 빼 글자만 가운데 선다 */
 .scr-market .btn.mkt-ctr-btn { position: relative; justify-content: center; }
@@ -3627,17 +3627,53 @@ button.lv-tactic-row {
 /* ── 용병 시장 (2026-11-24 기획자 — 금화 충전과 같은 종이 카드, 첫 줄 금화 모집 · 둘째 줄 잉여 카드 모집) ── */
 .mkt-pack-price[data-stroke="8"] { --pack-ink: #b8891c; --pack-stroke: url(ui/era-stroke-b-8.png); }   /* 금 — E급 */
 .mkt-pack-price .mkt-gold img { width: 1.25em; height: 1.25em; }
-/* 그림 칸 — 1명은 하나, 3명은 V자, 5명은 W자. 뒷줄(`data-top`)은 조금 위 · 조금 작게, 앞줄이 위에 겹친다 */
-.mkt-recruit-art { position: relative; display: block; align-self: stretch; height: 3.6rem; --rs: 2.9rem; }
-.mkt-recruit-art[data-count="3"] { --rs: 2.6rem; }
-.mkt-recruit-art[data-count="5"] { --rs: 2.3rem; }
+/* 가격 띠 — 용병 시장은 글자 · 아이콘을 1.3배(.8rem → 1.04rem, 2026-11-25 기획자). 아이콘 · 붓 끝이 em이라 함께 커진다 */
+.mkt-merc-shop .mkt-pack-price { font-size: 1.04rem; }
+/* 줄 머리 — 「장수 모집」 · 「장수 레벨업 카드」 + 작은 설명 (2026-11-25 기획자) */
+.mkt-merc-head { text-align: left; margin: .1rem 0 .35rem .2rem; }
+.mkt-packs + .mkt-merc-head { margin-top: .7rem; }
+.mkt-merc-head h3 { margin: 0; font-size: 1.15rem; font-weight: 800; color: #3a2210; letter-spacing: .04em; }
+.mkt-merc-head p { margin: .1rem 0 0; font-size: .85rem; color: #5a3d22; }
+/* 그림 칸 — 1명은 하나, 3명은 V자, 5명은 W자. 뒷줄(`data-top`)은 조금 위 · 조금 작게, 앞줄이 위에 겹친다.
+   서로 엉겨 붙을 만큼 촘촘하고 크게 (2026-11-25 기획자) */
+.mkt-recruit-art { position: relative; display: block; align-self: stretch; height: 4.3rem; --rs: 3.5rem; }
+.mkt-recruit-art[data-count="3"] { --rs: 3.2rem; }
+.mkt-recruit-art[data-count="5"] { --rs: 2.9rem; }
 .mkt-recruit-spot { position: absolute; bottom: 0; width: var(--rs); height: var(--rs); transform: translateX(-50%); z-index: 2; }
-.mkt-recruit-spot[data-top] { bottom: .75rem; z-index: 1; transform: translateX(-50%) scale(.9); }
-.mkt-recruit-stand.ofc-stand { display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: drop-shadow(0 1px 1px #0006); }
-/* 잉여 카드 모집 — 등급 후광 위 장수 카드 + 등급 배지 */
+.mkt-recruit-spot[data-top] { bottom: .7rem; z-index: 1; transform: translateX(-50%) scale(.9); }
+/* 꼬마는 검은 그림자(누군지 모른다, 2026-11-25 기획자) */
+.mkt-recruit-stand.ofc-stand { position: relative; display: block; width: 100%; height: 100%; background-repeat: no-repeat; filter: brightness(0); }
+/* 꼬마 뒤 후광 — 섬광(`BlinkGlow`) 흰 별빛 · 자주 · 금 셋을 겹쳐 두고 투명도만 돌린다: 2초마다 다음 빛으로 부드럽게(1초 머물고 1초 넘어감).
+   후광 자리(`.mkt-recruit-glow`)는 꼬마들보다 아래 층이고, 꼬마마다 2초씩 어긋난다(`--halo-delay`) */
+.mkt-recruit-spot.mkt-recruit-glow { z-index: 0; }
+/* 섬광은 평소 0.6까지만 떠오르는데(`ngo-halo-in`), 검은 꼬마 뒤 · 밝은 종이 위에서는 묻혀 끝까지 띄운다 */
+.mkt-recruit-halo .blink-halo, .mkt-surplus-halo .blink-halo { opacity: 1; animation: blink-turn 14s linear infinite; }
+.mkt-recruit-halo {
+  inset: 0; --blink-w: 2.7; opacity: 0;
+  animation: mkt-halo-cycle 6s ease-in-out infinite; animation-delay: calc(var(--halo-delay, 0s) + var(--tone-shift, 0s));
+}
+.mkt-recruit-halo[data-blink="purple"] { --tone-shift: -4s; }
+.mkt-recruit-halo[data-blink="gold"] { --tone-shift: -2s; }
+@keyframes mkt-halo-cycle { 0%, 16.667% { opacity: 1; } 33.333%, 83.333% { opacity: 0; } 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .mkt-recruit-halo { animation: none; }
+  .mkt-recruit-halo[data-blink="plain"] { opacity: 1; }
+}
+/* 잉여 카드 모집 — 장수 카드 + 한가운데 위에 등급 표(1.5배, 1.2rem → 1.8rem) · 표 뒤에 등급 후광 (2026-11-25 기획자 — 카드 뒤 후광은 걷었다) */
 .mkt-surplus-art { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 3.6rem; }
 .mkt-surplus-art > img { position: relative; z-index: 1; width: 2.9rem; height: 2.9rem; object-fit: contain; filter: drop-shadow(0 2px 2px #3a240f55); }
-.mkt-surplus-art .gr { position: absolute; z-index: 2; right: -.2rem; bottom: -.1rem; }
+.mkt-surplus-mark { position: absolute; z-index: 2; left: 50%; top: 50%; translate: -50% -50%; width: 1.8rem; height: 1.8rem; }
+.mkt-surplus-mark .gr { position: relative; z-index: 1; --gr: 1.8rem; }
+.mkt-surplus-halo { inset: 0; z-index: 0; --blink-w: 3.4; }
+/* 검은 글자 둘 (2026-11-25 기획자) — 모집 칸은 종이 왼쪽 위에 명 수, 잉여 카드 칸은 카드 그림 오른쪽 아래에 「x1」 */
+button.mkt-pack { position: relative; }
+/* 글꼴은 가격 띠(「× 10」)와 같게 — 굵기 · 자간 · 숫자 폭 · 크기(1.04rem)까지, 색만 검정 */
+.mkt-pack-no, .mkt-surplus-qty {
+  position: absolute; z-index: 3; line-height: 1; color: #000;
+  font-size: 1.04rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.mkt-pack-no { top: .55rem; left: .95rem; }
+.mkt-surplus-qty { right: -.45rem; bottom: -.15rem; }
 /* E급 — 헌제를 거느리지 않으면 잿빛으로 막는다 */
 button.mkt-pack.mkt-surplus[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
 /* 궁궐 빈자리가 모자란 모집 칸 — 자물쇠가 덮고 「궁궐 증축 필요」 (2026-11-24 기획자). 종이 카드는 잿빛으로 가라앉고
@@ -4233,7 +4269,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
    바로 아래에 붙어 있다(`frg-body-flow`). 도시 관리의 `.scr-city .place-panel.cty-acts`와
    같은 결이다. 예전 이름 `frg-body-craft`는 제작만 뜻해 지급이 빠졌다 — 뷰에 매이지 않는 이름으로 바꿨다. */
 .scr-building-forge .frg-body-pinned {
-  flex: 1; min-height: 0; overflow-y: auto;
+  flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column;
 }
 .scr-building-forge .frg-body-pinned > .frg-back { margin-top: auto; flex: none; }
@@ -4679,7 +4715,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
    프레임이 좁으면 그대로 프레임 폭이다. 그래서 이 값을 키워도 작은 폰에서
    가로로 넘치지 않는다. */
 .frg-item-wrap {
-  width: 100%; max-width: 23.4rem; max-height: 100%; overflow-y: auto;
+  width: 100%; max-width: 23.4rem; max-height: 100%; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; gap: .5rem;
 }
 .frg-item { position: relative; align-items: center; text-align: center; gap: .4rem; }
@@ -5091,7 +5127,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
    입히는 이유, `OfficerPickModal` 주석 참조). 여백만 팝업에 맞게 줄인다. */
 .ofcpick-modal .place-body { padding: 0; }
 .modal {
-  width: 100%; max-width: 19rem; max-height: 100%; overflow-y: auto;
+  width: 100%; max-width: 19rem; max-height: 100%; overflow: hidden;
   display: flex; flex-direction: column; gap: .35rem;
   padding: .85rem .8rem .8rem; border-radius: .6rem;
   background: #151a20f5; border: 1px solid #4a5260; color: #e8e8e8;
@@ -5663,7 +5699,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
    (2026-09-18 지정). 몸통이 남는 높이를 채우는 세로 flex라 단추 판은
    `margin-top: auto`로 바닥에 붙고, 둘이 화면보다 길면 몸통이 스크롤한다 */
 .scr-ranking-menu .place-body {
-  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
 }
 .scr-ranking-menu .place-body > .rk-menu { margin-top: auto; flex: none; }
@@ -5842,7 +5878,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
  * 쪽**이 이기는지를 확인하지 않았다.
  */
 .rk-searchbar.rk-searchbar-solo { grid-template-columns: minmax(0, 1fr); }
-.scr-squads .sqd-rows { flex: 1; min-height: 0; overflow-y: auto; }
+.scr-squads .sqd-rows { flex: 1; min-height: 0; overflow: hidden; }
 /* 단추 판은 **화면 바닥**이다 — 목록 판이 더는 남는 높이를 먹지 않아서(2026-09-17)
    부대 현황·편집과 같은 방식(`margin-top: auto`)으로 내려 보낸다 */
 .scr-squads .place-body > .sqd-acts { flex: none; margin-top: auto; }
@@ -6892,7 +6928,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 /* 판때기가 둘 이상이라 위에서부터 쌓고 넘치면 스스로 스크롤한다 (`.sqd-`와 같은 처리) */
 .scr-sortie .place-body,
 .scr-match .place-body {
-  margin-top: 0; flex: 1; min-height: 0; overflow-y: auto;
+  margin-top: 0; flex: 1; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: .5rem;
 }
 
@@ -7104,7 +7140,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-sortie .srt-list { --srt-row-h: 2.3rem; flex: 0 1 auto; min-height: 0; }
 .scr-sortie .srt-page {
   flex: 1 1 calc(var(--srt-row-h) * 5); max-height: calc(var(--srt-row-h) * 5);
-  min-height: 0; overflow-y: auto;
+  min-height: 0; overflow: hidden;
 }
 .scr-sortie .srt-rows { display: flex; flex-direction: column; gap: 0; }
 .scr-sortie .srt-page .srt-row { min-height: var(--srt-row-h); justify-content: center; }
@@ -7131,7 +7167,7 @@ button.sql-row:hover { background: #3a2c1e14; }
  * 붙는다. 제목 줄(`.sqv-head`)이 가운데라 좌우를 X 폭만큼 비워 글자와 안 겹친다.
  */
 /* 폭은 부대 현황 화면의 판과 **거의 같게** — 좁히면 여섯 열이 짓눌려 사진·이름이 겹친다 */
-.srt-peek-wrap { width: 100%; max-width: 34rem; max-height: 100%; overflow-y: auto; }
+.srt-peek-wrap { width: 100%; max-width: 34rem; max-height: 100%; overflow: hidden; }
 .srt-peek { position: relative; gap: .3rem; }
 /* 제목은 판의 먹색 — 이 화면 판때기의 기본 글자색(`#e9dfca`)은 양피지 위에서 사라진다 */
 .srt-peek .sqv-head { padding: 0 1.9rem; color: #221407; }
@@ -7423,7 +7459,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .rk-sortveil { position: fixed; inset: 0; z-index: 39; }
 
 .rk-table-wrap { padding: .5rem; }
-.rk-table { display: flex; flex-direction: column; gap: .2rem; overflow-x: auto; }
+.rk-table { display: flex; flex-direction: column; gap: .2rem; overflow: hidden; }
 /*
  * 열은 **고정 폭이 아니라 비율(`flex-grow`)로** 나눈다(2026-08-27, 두 번째 조정).
  * 처음엔 rem 고정 폭이었는데 — 줄이면 옆으로 남는 여백이 생기고(실기기 스크린샷),
@@ -7472,7 +7508,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .rk-squad-detail { display: flex; flex-direction: column; gap: .2rem; padding: .2rem 0 .2rem .6rem; }
 
 /* `.rk-top`은 남는 높이를 다 먹고 스스로 스크롤한다 — 서버 랭킹 구역 */
-.rk-top { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .5rem; }
+.rk-top { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: .5rem; }
 
 /* `.rk-mine`은 제 내용만큼만 차지해 항상 화면 바닥에 붙는다 — 내 정보 구역.
    위쪽(서버 랭킹)과 눈으로 갈리도록 금색 윗선 + 옅게 밝힌 바탕을 준다. */
@@ -7493,7 +7529,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 /* 팝업 바깥 크기 — `.modal-back`이 화면 전체를 덮는 가리개라, 안쪽 내용에
    너비를 직접 줘야 한다(2026-08-27 열세 번째 지정). `.modal`(19rem)과 같은
    자릿수 감이되 4:6 두 단이 좀 더 넓게 필요해 살짝 키웠다. */
-.ofcard-modal { width: 100%; max-width: 21rem; max-height: 100%; overflow-y: auto; }
+.ofcard-modal { width: 100%; max-width: 21rem; max-height: 100%; overflow: hidden; }
 
 /* 다른 목판 프레임 없이 X 아이콘만(2026-08-27 열세 번째 지정 — "닫기 박스를
    다른 프레임을 씌우지 말고 X자 아이콘만"). `.btn`도 아니다 — 배경·테두리가
@@ -7647,7 +7683,7 @@ button.chip:hover { filter: brightness(1.25); }
    `.lv-tactic-row`는 원래 목록 안의 한 줄이라 폭·가운데 정렬이 없다.
    `position: relative`는 오른쪽 아래 [X]의 기준점이다. */
 .tac-modal {
-  position: relative; width: min(20rem, 88%); max-height: 80%; overflow-y: auto;
+  position: relative; width: min(20rem, 88%); max-height: 80%; overflow: hidden;
   display: flex; flex-direction: column; gap: .15rem;
   padding: .5rem .6rem 1.9rem; text-align: left;
   /* 어느 화면에서 열든 궁궐(`.scr-officers .lv-tactic-row`)과 같은 두루마리다 (2026-10-16 —
@@ -7721,7 +7757,7 @@ button.chip:hover { filter: brightness(1.25); }
 .scr-bg > .lvp-back, .scr-dim > .lvp-back { position: absolute; }
 
 .lvp-modal {
-  position: relative; width: 100%; max-width: 21rem; max-height: 82%; overflow-y: auto;
+  position: relative; width: 100%; max-width: 21rem; max-height: 82%; overflow: hidden;
 }
 
 /* 이름 줄 — 장수 카드의 `.ofcard-title`과 같은 배지 결이되, 패널이 좁아진
@@ -8851,7 +8887,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 입원 팝업 — 판때기는 대장간 확인 팝업(`.modal.frg-confirm`)을 그대로 빌리고 폭만 넓힌다 */
 .modal.frg-confirm.hsp-pick { max-width: 21rem; width: calc(100% - 2rem); }
 .hsp-list {
-  list-style: none; margin: 0 0 .5rem; padding: 0; max-height: 16rem; overflow-y: auto;
+  list-style: none; margin: 0 0 .5rem; padding: 0; max-height: 16rem; overflow: hidden;
   display: flex; flex-direction: column; gap: .3rem;
 }
 .hsp-row {
@@ -9260,7 +9296,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 파수꾼 관리 — 목록은 현황판 바로 밑, 명령 판은 바닥(대장간 제작 목록과 같은 결) */
 .scr-building-farm .place-body.frm-body-guards {
   margin-top: 0; padding-top: .5rem;
-  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+  flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;
 }
 .scr-building-farm .frm-body-guards > .frm-cmd { margin-top: auto; flex: none; }
 /* 제목 — `.scr-bg .cap`의 밝은 회색은 양피지 위에서 사라진다(두 칸 세게 적는다) */
@@ -9629,7 +9665,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-collection .place-body > .pager { flex: none; margin: .35rem 0 .2rem; }
 .scr-collection .place-body > .pager .pager-label { text-shadow: 0 1px 3px #000, 0 0 6px #000c; }
 /* 줄만 굴리고 쪽 넘김(`Pager`)은 판 바닥에 붙여 둔다 — 장수 일람과 같은 자리 */
-.clx-rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.clx-rows { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .clx-empty { margin: 1rem 0; text-align: center; color: #5a4128; }
 /* 한 줄 = 세 줄짜리 격자 (2026-10-14 지정) — 왼쪽 [시대] / 제목 / 설명, 오른쪽 점수 / 장수 카드 / 병기 · 아이템.
    오른쪽 칸은 줄마다 제 높이에 맞춰 선다 — 요건이 위 · 아래로 갈려 있어야 한 줄에 몰리지 않는다 */
@@ -9799,7 +9835,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 
 /* 글은 판 높이를 따라 늘고, 화면보다 길어지면 이 칸만 굴러간다. 아래에 워터마크 여백을 두지 않는다(그림이 머리로 올라갔다) */
 .clx-paper-body {
-  position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden;
   padding: 2.5cqw 4cqw 4cqw; color: #241a10; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 2cqw;   /* 폭 기준 — 위 `--open-h` 참조 */
   scrollbar-width: thin;
@@ -9967,7 +10003,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   filter: drop-shadow(0 .4rem .8rem #000b);
   animation: mkt-rise .3s ease-out both;
 }
-.mail-body-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.mail-body-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .mail-body-ttl { margin: 0; font-size: .86rem; font-weight: 700; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; color: #3a2210; }
 .mail-body-at { margin: .15rem 0 .5rem; padding-bottom: .35rem; border-bottom: 1px solid #c8b08899; font-size: .8rem; color: #6b5536; font-variant-numeric: tabular-nums; }
 .mail-body-txt { margin: 0; font-size: .8rem; line-height: 1.65; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
@@ -10010,7 +10046,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 왼쪽 9 : 오른쪽 11 (2026-11-23 — 2:3에서는 몽골어 「Тариалангийн」 한 단어가 칸보다 길어 두 줄로 접어도 단어 한가운데서 끊겼다) */
 .gdr-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 9fr 11fr; gap: .45rem; }
 .gdr-cols > * { min-width: 0; min-height: 0; }
-.gdr-side { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; overflow-y: auto; }
+.gdr-side { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; overflow: hidden; }
 /* 칸 테두리 — 금빛 밧줄(`ui/frame-gold-1.png`, 2026-10-23 기획자 — 장터 뽑기 칸 `.mkt-pull`과 같은 그림 · 같은 9분할 `4% round`).
    밧줄 안쪽이 투명이라 바탕은 `background`가 테두리 상자까지 칠하고, 모서리는 밧줄의 둥근 귀만큼 깎는다. 바탕색은 테두리 전의 옛 값 그대로.
    **고른 칸은 바깥으로 번지지 않고 칸 안쪽이 금빛 네온으로 차오른다**(안쪽 그림자 — 2026-10-23 기획자) */
@@ -10374,7 +10410,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .gpl-tools .btn { flex: none; white-space: nowrap; }
 .gpl-acts { flex: none; }
 /* 고르는 판 — 행동 · 조건 · 확률 · 추가 걸음 */
-.modal.gpl-modal { display: flex; flex-direction: column; gap: .4rem; max-height: 86%; overflow-y: auto; }
+.modal.gpl-modal { display: flex; flex-direction: column; gap: .4rem; max-height: 86%; overflow: hidden; }
 .gpl-choices { display: flex; flex-direction: column; gap: .3rem; }
 .gpl-choices.gpl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .gpl-choice { flex-direction: column; align-items: center; gap: .1rem; }
@@ -10412,7 +10448,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
    제목 · 승패 칸은 합 화면의 어두운 명판(`plate-wide`), 양쪽 장수는 합 화면의 진영 판(`.dl-side` 그대로),
    [거절]은 붉은 목판(`btn-forcedcancel`) · [수락]은 옥색 목판(`btn-primary`) — 두루마리 단추 틀 `12% 11%` */
 .dl-offer {
-  width: 90%; max-height: 94%; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: .45rem;
+  width: 90%; max-height: 94%; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: .45rem;
   background: transparent; border-style: solid; border-color: transparent; border-width: 2.4rem 1.6rem;
   border-image: url(ui/panel-settings.png) 15% 16% fill; padding: 0 .2rem; color: #efe3c8;
   filter: drop-shadow(0 .5rem 1.2rem rgba(0, 0, 0, .7));
@@ -10775,7 +10811,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
    제목 판 아래 목록 판(병영과 같은 장부 그림 — `.scr-place-barracks .place-panel`), 아래 명령 판에 갈래 단추 둘 + [뒤로 가기].
    줄은 목판 단추가 아니라 장부의 한 줄이다 — 끝냄 · 다음 목표는 단추 그림이 아니라 왼쪽 표와 오른쪽 띠로 가른다 */
 .scr-tutorials .tut-list {
-  margin: .5rem .75rem 0; flex: 0 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; gap: 0;
+  margin: .5rem .75rem 0; flex: 0 1 auto; min-height: 0; overflow: hidden; overflow: hidden; gap: 0;
 }
 .tut-row {
   display: grid; grid-template-columns: 2.34rem minmax(0, 1fr) 3.6rem; align-items: center; gap: .55rem;
@@ -11124,3 +11160,21 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .tap-tip[data-below="1"] { transform: translate(-50%, 0); }
 @keyframes tap-tip-in { from { opacity: 0; scale: .6; } to { opacity: 1; scale: 1; } }
 @media (prefers-reduced-motion: reduce) { .tap-tip { animation: none; } }
+
+/* ── 스크롤 없음 — 모든 화면, 세로 · 가로 모두 (2026-11-25 기획자) ──
+   화면은 스크롤이 생기지 않게 짜고(넘치면 쪽 넘김 `Pager` · 칸을 다시 짠다), 그래도 넘치는 것은 여기서 막는다.
+   스크롤 판이던 자리(`overflow: auto`)는 전부 `hidden`으로 바꿨다 — 넘친 것은 잘려 보이니 화면을 고친다.
+   돌아가는 섬광(`BlinkGlow`)처럼 상자 밖으로 삐져나오는 그림이 가로 스크롤을 만들던 것도 이것이 막는다.
+   스크롤 막대는 어디서도 그리지 않는다 */
+html, body, #root, #frame, .scr { overflow: hidden !important; }
+*, *::before, *::after { scrollbar-width: none !important; }
+*::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+/* ── 머리 명패 ↔ 첫 판 간격 — 모든 화면이 용병 시장과 같게 (2026-11-25 기획자) ──
+   용병 시장은 현황판이 명패 바로 밑에 붙는다(상자 간격 0). 다른 화면은 첫 판이 `.place-body` 안이라 그 위 여백(.7rem)만큼,
+   장터 안쪽 판(아이템 · 물자 · 금화)은 `.mkt-body-flow`의 .5rem만큼, 튜토리얼은 목록의 .5rem만큼 더 떨어져 있었다.
+   명패 바로 뒤에 오는 몸통의 위 여백만 걷는다 — 현황판이 따로 선 화면(장터 홈 · 용병 시장 · 의원 · 대장간)은 그 판 아래 간격이 그대로다.
+   확인은 `tools/font_audit.ts`의 「머리 명패 ↔ 첫 판 간격」 */
+.place-bar + .place-body { padding-top: 0; }
+.mkt-body-flow:is([data-view="items"], [data-view="goods"], [data-view="gold"], [data-view="storage"]) { padding-top: 0; }
+.scr-tutorials .tut-list { margin-top: 0; }

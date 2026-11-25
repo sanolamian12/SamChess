@@ -78,10 +78,10 @@ describe('잉여 카드가 들어오는 길', () => {
 });
 
 describe('잉여 카드로 모집', () => {
-  it('값은 A 10 · S 20 · E 30장이다 (기획자 지정)', () => {
-    assert.equal(surplusCost('A'), 10);
-    assert.equal(surplusCost('S'), 20);
-    assert.equal(surplusCost('E'), 30);
+  it('값은 A 5 · S 10 · E 20장이다 (2026-11-25 기획자 — 10 · 20 · 30에서 내렸다)', () => {
+    assert.equal(surplusCost('A'), 5);
+    assert.equal(surplusCost('S'), 10);
+    assert.equal(surplusCost('E'), 20);
   });
 
   it('보유한 그 등급 장수 중 하나의 카드 1장 — 잉여 카드가 쌓이는 장수(Lv9)는 받지 않는다', () => {
@@ -93,12 +93,12 @@ describe('잉여 카드로 모집', () => {
     assert.deepEqual(surplusTargets(p, 'A'), [other]);
     const r = exchangeSurplus(p, 'A', 12345);
     assert.equal(r.officer, other);
-    assert.equal(surplusOf(r.profile), 15);
+    assert.equal(surplusOf(r.profile), 25 - surplusCost('A'));
     assert.equal(r.profile.cards[other], (p.cards[other] ?? 0) + 1);
   });
 
   it('받을 장수가 없거나 잉여 카드가 모자라면 막는다', () => {
-    let p: PlayerProfile = { ...base(), surplusCards: 5 };
+    let p: PlayerProfile = { ...base(), surplusCards: surplusCost('A') - 1 };
     assert.equal(codeOf(canExchangeSurplus(p, 'A')), 'market.surplus.notEnough');
     p = { ...p, surplusCards: 100 };
     p = seat(p, starterOf(p, 'S'), GROWTH.maxLevel);   // S급이 하나뿐인데 Lv9
@@ -107,7 +107,7 @@ describe('잉여 카드로 모집', () => {
   });
 
   it('E급은 헌제를 거느릴 때만 — 받는 장수는 헌제다', () => {
-    let p: PlayerProfile = { ...base(), surplusCards: 30 };
+    let p: PlayerProfile = { ...base(), surplusCards: surplusCost('E') };
     assert.equal(codeOf(canExchangeSurplus(p, 'E')), 'market.surplus.noEmperor');
     p = addCard(p, EMPEROR);
     const r = exchangeSurplus(p, 'E', 9);

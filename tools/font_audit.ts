@@ -45,6 +45,8 @@ export interface Hit { sel: string; rem: number; px: number; scale: number; text
 const results: Record<string, Hit[]> = {};
 /** 잘림 — `px`는 넘친 폭 */
 const clipResults: Record<string, Hit[]> = {};
+/** 머리 명패 아래 첫 판까지의 간격(rem) */
+const gaps: Record<string, { rem: number; panel: string }> = {};
 let refSeen: number | null = null;
 
 // ── 재기 (페이지 안) ───────────────────────────────────────────────
@@ -117,7 +119,23 @@ async function audit(page: Page, key: string): Promise<void> {
   if (got.story !== null) refSeen = got.story;
   results[key] = got.hits;
   clipResults[key] = got.clips;
-  log(`  · ${key} — 작은 글자 ${got.hits.length}곳 · 잘림 ${got.clips.length}곳 (1rem=${got.rootPx}px)`);
+  // 머리 명패 ↔ 바로 아래 판의 간격 (2026-11-25 기획자 — 모든 화면이 용병 시장과 같은 간격). 명패는 `.place-nm`,
+  // 판은 명패 밑에서 가장 위에 있는 폭 넓은 판(`.place-panel` 또는 이름에 panel이 든 것)
+  const gap = await page.evaluate(() => {
+    const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const nm = [...document.querySelectorAll<HTMLElement>('.place-nm')].find((e) => e.getBoundingClientRect().height > 0);
+    if (!nm) return null;
+    const hb = nm.getBoundingClientRect().bottom;
+    const frameW = document.querySelector('#frame')!.getBoundingClientRect().width;
+    const cands = [...document.querySelectorAll<HTMLElement>('.place-panel, [class*="panel"]')].filter((e) => {
+      const r = e.getBoundingClientRect();
+      return r.height > 0 && r.width > frameW * 0.5 && r.top >= hb - 2 && !e.closest('.modal-back, .modal');
+    }).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    const p = cands[0];
+    if (!p) return null;
+    return { rem: Math.round(((p.getBoundingClientRect().top - hb) / rootPx) * 100) / 100, panel: `${p.tagName.toLowerCase()}.${[...p.classList].join('.')}` };
+  });
+  if (gap) gaps[key] = gap;
   if (SHOTS) await page.screenshot({ path: `${OUT}/${key.replace(/\//g, '_')}.jpg`, type: 'jpeg', quality: 70 });
 }
 
@@ -396,6 +414,8 @@ try {
       clipBy.set(leaf, cur);
     }
   }
+  log(`\n머리 명패 ↔ 첫 판 간격 ${Object.keys(gaps).length}곳`);
+  for (const [k, v] of Object.entries(gaps)) log(`${v.rem.toFixed(2)}rem  ${k}  ${v.panel}`);
   log(`\n잘림 묶음 ${clipBy.size}개`);
   for (const [leaf, v] of [...clipBy.entries()].sort((a, b) => b[1].px - a[1].px)) {
     log(`+${v.px}px  ${leaf}  「${v.text}」  [${[...v.scenes].join(', ')}]`);

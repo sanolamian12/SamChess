@@ -17,7 +17,7 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { EQUIPMENT, MARKET_ITEMS, OFFICERS } from '@samchess/data';
-import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance, poolCap, poolUsed } from '@samchess/meta';
+import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCost, newInstance, poolCap, poolUsed, surplusCost } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
@@ -84,8 +84,8 @@ const brokenImages = async (sel: string): Promise<string[]> => page.$$eval(sel, 
 const gradeOf = (id: string): string | undefined => OFFICERS.find((o) => o.id === id)?.grade;
 /** 용병 시장 — 풀의 빈자리를 이만큼 남긴다(1 · 3명은 열리고 5명은 자물쇠, 3명을 모집하면 3명도 닫히게) */
 const FREE_SEATS = 4;
-/** 심어 둘 잉여 카드 — A급 확정(10) 한 번 뒤 S급 확정(20)에 모자라게 */
-const SURPLUS_SEED = 25;
+/** 심어 둘 잉여 카드 — A급 확정 한 번 뒤 S급 확정에 모자라게(값 A 5 · S 10이면 12 → 7) */
+const SURPLUS_SEED = surplusCost('A') + surplusCost('S') - 3;
 let X: OfficerId | undefined;      // Lv3 · 병기를 든 장수
 const WEAPON = EQUIPMENT[0]!;
 const [ITEM_A, ITEM_B] = [MARKET_ITEMS[0]!, MARKET_ITEMS[5]!];   // 1쪽 · 2쪽 품목
@@ -276,6 +276,52 @@ try {
   if (!shop.eLocked) fail('헌제가 없는데 E급 칸이 잿빛으로 안 막혔다');
   ok(`현황판 홈과 같음(위 ${mercBox.top.toFixed(0)}px · 높이 ${mercBox.h.toFixed(0)}px) · 칸 여섯 · 꼬마/자물쇠 ${JSON.stringify(shop.art)} · E급 잿빛`);
   await shot('merc');
+  // 후광 (2026-11-25 기획자) — 꼬마마다 뒤에 흰 · 자주 · 금 셋이 겹쳐 하나씩 떠오르고, 잉여 카드는 등급 표 뒤에 하나. 글자 이름 칸은 없다.
+  // 섬광은 0.5초에 걸쳐 떠오르므로 기다린 뒤 잰다. 그리고 판은 스크롤 없이 [뒤로 가기]가 화면 바닥에 닿는다
+  await page.waitForTimeout(1_200);
+  const glow = await page.evaluate(() => {
+    const seen = (el: Element): number => {
+      let o = 1;
+      for (let e: Element | null = el; e && e !== document.body; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 ? o : 0;
+    };
+    const one = document.querySelector('[data-action="pull-one"]')!;
+    const tones = [...one.querySelectorAll('.mkt-recruit-halo')].map((b) => [b.getAttribute('data-blink'), seen(b.querySelector('.blink-halo')!)] as const);
+    const marks = ['A', 'S', 'E'].map((g) => {
+      const b = document.querySelector(`[data-action="surplus-${g}"]`)!;
+      const h = b.querySelector('.mkt-surplus-mark .blink-halo');
+      const art = b.querySelector('.mkt-surplus-art')!.getBoundingClientRect(), gr = b.querySelector('.mkt-surplus-mark .gr')!.getBoundingClientRect();
+      return { g, halo: h ? seen(h) : 0, off: Math.hypot((art.left + art.right - gr.left - gr.right) / 2, (art.top + art.bottom - gr.top - gr.bottom) / 2), gr: gr.width };
+    });
+    const body = document.querySelector<HTMLElement>('.mkt-body')!;
+    const cmd = document.querySelector('.mkt-cmds')!.getBoundingClientRect();
+    return {
+      tones, marks, names: document.querySelectorAll('[data-field="mercShop"] .mkt-pack-name').length,
+      cardHalo: document.querySelectorAll('.mkt-surplus-art > .mkt-halo').length,
+      // 스크롤은 어디에도 없다(2026-11-25 기획자) — 세로 · 가로, 판과 화면 둘 다. 돌아가는 섬광이 가로로 넘쳤었다
+      scroll: Math.max(...[body, document.querySelector<HTMLElement>('.scr')!, document.documentElement].map((e) =>
+        Math.max(e.scrollHeight - e.clientHeight, e.scrollWidth - e.clientWidth) * (getComputedStyle(e).overflowX === 'hidden' && getComputedStyle(e).overflowY === 'hidden' ? 0 : 1))),
+      bars: [...document.querySelectorAll<HTMLElement>('[data-field="mercShop"] *, .mkt-body, .scr')].filter((e) => /auto|scroll/.test(getComputedStyle(e).overflowX + getComputedStyle(e).overflowY)).length,
+      labels: [...document.querySelectorAll('[data-field="recruitCount"]')].map((e) => e.textContent).join() + '|' +
+        [...document.querySelectorAll('[data-field="surplusQty"]')].map((e) => e.textContent).join(),
+      // 숫자 글자의 글꼴 = 가격 띠의 글꼴(색만 검정)
+      fontSame: (() => {
+        const f = (s: string): string => { const c = getComputedStyle(document.querySelector(s)!); return `${c.fontFamily}/${c.fontSize}/${c.fontWeight}/${c.letterSpacing}`; };
+        return [f('[data-field="recruitCount"]'), f('[data-field="surplusQty"]'), f('[data-field="pullCost"]')];
+      })(),
+      cmdGap: body.getBoundingClientRect().bottom - cmd.bottom,
+    };
+  });
+  await shot('merc-halo');
+  const lit = glow.tones.filter(([, o]) => o > 0.3).length;
+  if (glow.tones.map(([t]) => t).join() !== 'plain,purple,gold' || lit < 1 || lit > 2) fail(`꼬마 후광 — ${JSON.stringify(glow.tones)}`);
+  if (glow.marks.some((m) => m.halo < 0.3 || m.off > 1.5)) fail(`등급 표 · 후광 — ${JSON.stringify(glow.marks)}`);
+  if (glow.names > 0 || glow.cardHalo > 0) fail(`걷은 것이 남았다 — 이름 칸 ${glow.names} · 카드 후광 ${glow.cardHalo}`);
+  if (glow.scroll > 1 || glow.bars > 0) fail(`용병 시장에 스크롤 — 넘침 ${glow.scroll}px · 스크롤 판 ${glow.bars}`);
+  if (glow.labels !== '1,3,5|×1,×1,×1') fail(`숫자 글자 — ${glow.labels}`);
+  if (new Set(glow.fontSame).size !== 1) fail(`숫자 글자 글꼴이 가격 띠와 다르다 — ${glow.fontSame.join(' | ')}`);
+  ok(`후광 — 꼬마 ${glow.tones.map(([t, o]) => `${t} ${o.toFixed(2)}`).join(' · ')} · 등급 표 ${glow.marks.map((m) => `${m.g} ${m.halo.toFixed(2)}`).join(' · ')}(가운데 ±${Math.max(...glow.marks.map((m) => m.off)).toFixed(1)}px, ${glow.marks[0]!.gr.toFixed(0)}px) · 스크롤 없음 · 명령 판 바닥까지 ${glow.cmdGap.toFixed(0)}px`);
 
   step('1명 모집 — 빈자리가 있으면 곧바로 섬광 → 결과');
   let gold = await goldOf();
@@ -322,7 +368,7 @@ try {
   await shot('surplus-done');
   const got = await page.getAttribute('[data-modal="surplusDone"] [data-officer]', 'data-officer') as OfficerId;
   const s1 = (await getProfile(uid))!;
-  if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - 10) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — 10장 줄어야 한다`);
+  if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - surplusCost('A')) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — ${surplusCost('A')}장 줄어야 한다`);
   if (gradeOf(got) !== 'A') fail(`받은 장수 ${got}가 A급이 아니다`);
   // 풀 장수는 카드 +1, 보관함 장수가 빈자리로 들면 풀에 든다
   const gained = (s1.cards[got] ?? 0) === (s0.cards[got] ?? 0) + 1 || (!s0.roster[got] && Boolean(s1.roster[got]));
@@ -330,8 +376,8 @@ try {
   ok(`A급 확정 — ${got} · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
   await page.click('[data-action="surplusClose"]');
 
-  step('잉여 카드가 모자라면 내관이 말한다 — S급 확정(20장)');
-  if ((s1.surplusCards ?? 0) >= 20) fail(`잉여 카드가 ${s1.surplusCards}장이라 「모자람」을 시험할 수 없다`);
+  step(`잉여 카드가 모자라면 내관이 말한다 — S급 확정(${surplusCost('S')}장)`);
+  if ((s1.surplusCards ?? 0) >= surplusCost('S')) fail(`잉여 카드가 ${s1.surplusCards}장이라 「모자람」을 시험할 수 없다`);
   await page.click('[data-action="surplus-S"]');
   await page.waitForSelector('.stw[data-say="mercWhy"][data-say-code="market.surplus.notEnough"]', { timeout: 5_000 });
   if (await page.$('[data-modal="surplusDone"]')) fail('모자란데 모집됐다');
