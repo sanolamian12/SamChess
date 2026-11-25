@@ -3281,9 +3281,14 @@ button.lv-tactic-row {
 .cty-up-row .nm { min-width: 0; font-weight: 700; font-size: .95rem; line-height: 1.15; overflow-wrap: anywhere; }
 /* 홀수 레벨 증축의 궁궐 — 처음부터 골라져 있고 뺄 수 없다(2026-11-24 기획자) */
 .cty-up-row[data-forced] { cursor: default; }
+/* 「필수」 — 녹슨 갈색 붓 획 위 미색 글씨(2026-11-25 기획자 — 둥근 칸 대신 `ui/era-stroke-b-2.png` ← `era-stroke-녹슨 갈색`).
+   장터 가격 띠(`.mkt-pack-price`)와 같은 9분할 — 붓 끝이 안 눌리고 가운데만 늘어난다. 그림이 없으면 글자 칸에만 같은 색 바탕 */
 .cty-up-must {
-  display: inline-block; margin-left: .35rem; padding: .02rem .4rem; border-radius: .5rem; vertical-align: .08em;
-  background: #8a2a1c; color: #f6ecd2; font-size: .8rem; font-style: normal; font-weight: 800; white-space: nowrap;
+  display: inline-block; margin-left: .35rem; vertical-align: .08em;
+  border: 0 solid transparent; padding: .14rem .95em .16rem .7em;
+  border-image: url(ui/era-stroke-b-2.png) 0 34% 0 12% fill / 0 1.2em 0 .8em stretch;
+  background: #8a4a2a content-box;
+  color: #f6ecd2; text-shadow: 0 1px 1px #000a; font-size: .8rem; font-style: normal; font-weight: 800; white-space: nowrap;
 }
 /* 안 고른 줄 — 흑백 · 회색 글 · 별빛 없음 */
 .cty-up-row:not(.on) .ic img, .cty-up-row:not(.on) .lv .bld-badge > img { filter: grayscale(1) brightness(.85); }
@@ -11186,15 +11191,16 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .cin-recruit { --cir-skip: 0ms; }
 .cin-recruit .cin-whiteout { animation-delay: calc(0ms - var(--cir-skip)); }
 .cir-frame {
-  position: absolute; left: 50%; top: 46%; width: min(94%, 44rem); aspect-ratio: 4 / 3; translate: -50% -50%;
+  /* 가로를 꽉 채운다(2026-11-25 기획자 — 「가로 영역을 전부 채우고 그만큼 그림을 더 키워」). 가로 화면에서는 높이가 넘지 않게 */
+  position: absolute; left: 50%; top: 46%; width: min(100%, 120vh); aspect-ratio: 4 / 3; translate: -50% -50%;
   container-type: size;
 }
-/* 창 — 네 변이 안쪽 9 · 11%에 걸쳐 투명으로 번진다(두 그러데이션이 겹친 곳만 보인다) */
+/* 창 — 위아래는 안쪽 11%에 걸쳐 투명으로 번지고, 양옆은 화면 끝까지 닿으므로 끝 3%만 살짝 번진다(두 그러데이션이 겹친 곳만 보인다) */
 .cir-window {
   position: absolute; inset: 0; overflow: hidden; opacity: 0;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
   mask-composite: intersect;
   animation: cir-open .5s ease-out calc(0ms - var(--cir-skip)) both;
 }
@@ -11221,38 +11227,37 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .cir-dust[data-n="2"] { bottom: -8%; height: 30%; z-index: 3; animation-name: cir-dust-front; }
 @keyframes cir-dust { 0%, 15% { opacity: 0; transform: translateX(0); } 40% { opacity: .55; } 100% { opacity: .8; transform: translateX(-6%); } }
 @keyframes cir-dust-front { 0%, 25% { opacity: 0; transform: translateX(0); } 55% { opacity: .35; } 100% { opacity: .55; transform: translateX(5%); } }
-/* 실루엣 — 지평선(창 높이 52%)에 발을 두고 서서, 원근(크기 · 가운데에서 벌어짐이 같은 비율 K로 자란다)으로 다가온다.
-   K는 거리의 역수라 처음엔 느리고 끝에 빠르다(0.18 → 1). 자리마다 끝 자리(--dx · --dy)와 앞뒤(--kf, 뒷줄은 작고 높게)가 다르다.
-   그림의 발끝이 그림 높이 97%라 그 점을 기준(`transform-origin`)으로 잡는다 */
+/* 실루엣 — 지평선(창 높이 52%)에 발을 두고 서서, 원근(크기 · 가운데에서 벌어짐이 같은 비율 K)으로 다가온다.
+   **정지 장면 넷이 부드럽게 넘어간다**(2026-11-25 기획자 — 「연속으로 다가오기보다 오프닝 애니메이션처럼」): 자리마다 K가 다른 넷(.22 · .36 · .58 · 1)을
+   겹쳐 두고, 0.35초 동안 앞 장면이 사라지며 다음 장면이 떠오른다(오프닝 영상의 디졸브). 장면은 약 1초씩 머문다.
+   자리마다 끝 자리(--dx · --dy)와 앞뒤(--kf, 뒷줄은 작고 높게)가 다르다. 그림의 발끝이 그림 높이 97%라 그 점을 기준으로 잡는다 */
 .cir-walker {
   position: absolute; left: 50%; top: 52%; z-index: 2;
-  width: calc(66cqh * .75); height: 66cqh; margin-left: calc(66cqh * -.375); margin-top: calc(66cqh * -.97);
+  /* 끝 장면의 키 = 창 높이 80%(2026-11-25 기획자 — 「실루엣도 더 크게」, 옛 66%) */
+  width: calc(80cqh * .75); height: 80cqh; margin-left: calc(80cqh * -.375); margin-top: calc(80cqh * -.97);
   transform-origin: 50% 97%; opacity: 0;
-  --dx: 0cqw; --dy: 45cqh; --kf: 1; --lag: 0ms;
-  animation: cir-walk 4.2s linear calc(400ms + var(--lag) - var(--cir-skip)) both;
+  --dx: 0cqw; --dy: 45cqh; --kf: 1; --k: 1;
+  transform: translate(calc(var(--dx) * var(--k)), calc(var(--dy) * var(--k))) scale(calc(var(--k) * var(--kf)));
+  animation: 5s linear calc(0ms - var(--cir-skip)) both;
 }
-@keyframes cir-walk {
-  0%   { opacity: 0; transform: translate(calc(var(--dx) * .18), calc(var(--dy) * .18)) scale(calc(.18 * var(--kf))); }
-  8%   { opacity: 1; }
-  25%  { transform: translate(calc(var(--dx) * .226), calc(var(--dy) * .226)) scale(calc(.226 * var(--kf))); }
-  50%  { transform: translate(calc(var(--dx) * .305), calc(var(--dy) * .305)) scale(calc(.305 * var(--kf))); }
-  70%  { transform: translate(calc(var(--dx) * .42), calc(var(--dy) * .42)) scale(calc(.42 * var(--kf))); }
-  85%  { transform: translate(calc(var(--dx) * .595), calc(var(--dy) * .595)) scale(calc(.595 * var(--kf))); }
-  95%  { transform: translate(calc(var(--dx) * .81), calc(var(--dy) * .81)) scale(calc(.81 * var(--kf))); }
-  100% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(var(--kf)); }
-}
-/* 자리 — 1명 가운데, 3명 V자(가운데가 앞), 5명은 가입 오프닝 끝 장면처럼 한 줄(가운데가 가장 앞). 가운데에서 멀수록 조금 늦게 떠난다 */
-.cin-recruit[data-count="3"] .cir-walker[data-seat="0"] { --dx: -21cqw; --kf: .88; --dy: calc(45cqh * .88); --lag: 120ms; }
-.cin-recruit[data-count="3"] .cir-walker[data-seat="2"] { --dx: 21cqw; --kf: .88; --dy: calc(45cqh * .88); --lag: 200ms; }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="0"] { --dx: -35cqw; --kf: .8; --dy: calc(45cqh * .8); --lag: 260ms; }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="1"] { --dx: -18cqw; --kf: .9; --dy: calc(45cqh * .9); --lag: 120ms; }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="3"] { --dx: 18cqw; --kf: .9; --dy: calc(45cqh * .9); --lag: 180ms; }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="4"] { --dx: 35cqw; --kf: .8; --dy: calc(45cqh * .8); --lag: 320ms; }
+.cir-walker[data-stage="0"] { --k: .22; animation-name: cir-stage-0; }
+.cir-walker[data-stage="1"] { --k: .36; animation-name: cir-stage-1; }
+.cir-walker[data-stage="2"] { --k: .58; animation-name: cir-stage-2; }
+.cir-walker[data-stage="3"] { --k: 1; animation-name: cir-stage-3; }
+/* 5초 중 — 첫 장면 0.4~0.75초 떠오름 · 1.3초부터 다음으로(0.35초씩 겹쳐 넘어감) · 마지막은 3.4초부터 번쩍까지 */
+@keyframes cir-stage-0 { 0%, 8% { opacity: 0; } 15%, 26% { opacity: 1; } 33%, 100% { opacity: 0; } }
+@keyframes cir-stage-1 { 0%, 26% { opacity: 0; } 33%, 47% { opacity: 1; } 54%, 100% { opacity: 0; } }
+@keyframes cir-stage-2 { 0%, 47% { opacity: 0; } 54%, 68% { opacity: 1; } 75%, 100% { opacity: 0; } }
+@keyframes cir-stage-3 { 0%, 68% { opacity: 0; } 75%, 100% { opacity: 1; } }
+/* 자리 — 1명 가운데, 3명 V자(가운데가 앞), 5명은 가입 오프닝 끝 장면처럼 한 줄(가운데가 가장 앞) */
+.cin-recruit[data-count="3"] .cir-walker[data-seat="0"] { --dx: -21cqw; --kf: .88; --dy: calc(45cqh * .88); }
+.cin-recruit[data-count="3"] .cir-walker[data-seat="2"] { --dx: 21cqw; --kf: .88; --dy: calc(45cqh * .88); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="0"] { --dx: -35cqw; --kf: .8; --dy: calc(45cqh * .8); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="1"] { --dx: -18cqw; --kf: .9; --dy: calc(45cqh * .9); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="3"] { --dx: 18cqw; --kf: .9; --dy: calc(45cqh * .9); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="4"] { --dx: 35cqw; --kf: .8; --dy: calc(45cqh * .8); }
 .cin-recruit .cir-walker[data-seat="2"], .cin-recruit[data-count="1"] .cir-walker { z-index: 3; }
 .cin-recruit[data-count="3"] .cir-walker[data-seat="1"] { z-index: 3; }
-/* 한 걸음 — 0.85초마다 위아래로 살짝. 자리마다 박자가 조금 어긋난다 */
-.cir-step { position: absolute; inset: 0; animation: cir-bob .85s ease-in-out infinite; animation-delay: calc(var(--lag) * -1.7); }
-@keyframes cir-bob { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-1.6%) rotate(-.6deg); } 75% { transform: translateY(-1.6%) rotate(.6deg); } }
 .cir-body { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 /* 그림자 — 해를 등지므로 발밑에서 화면 쪽(아래)으로 길게 퍼진다 */
 .cir-shadow {
@@ -11275,7 +11280,7 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 }
 @keyframes cir-flash { 0%, 86% { opacity: 0; transform: scale(.2) rotate(0deg); } 93% { opacity: 1; transform: scale(1.3) rotate(8deg); } 100% { opacity: 1; transform: scale(4) rotate(14deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .cir-step, .cir-glow .blink-halo { animation: none; }
+  .cir-glow .blink-halo { animation: none; }
 }
 
 /* 무대 — 계정 문장(대장간의 모루처럼 어둡게 가라앉힌다) 앞에 장수들이 걸어온 자리 그대로 선다 */
@@ -11295,6 +11300,25 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .rcr-fig .mkt-halo { --blink-w: 2; }
 .rcr-art { position: relative; z-index: 1; display: block; width: 100%; height: 100%; background-repeat: no-repeat; }
 .rcr-name .mkt-who { gap: .2rem; }
+/* 등급 표 1.5배(2026-11-25 기획자 — 1.2rem → 1.8rem) */
+.rcr-name .mkt-who .gr { --gr: 1.8rem; }
 .rcr-name .mkt-who .nm { font-size: .85rem; white-space: nowrap; color: #f6ecd2; text-shadow: 0 1px 2px #000, 0 0 6px #000c; }
 .rcr-cast[data-count="1"] .rcr-name .mkt-who .nm { font-size: 1.15rem; }
 .rcr-member .mkt-fate { margin-top: 0; }
+/* 무대의 섬광은 장수 뒤의 것 하나만 (2026-11-25 기획자 — 「섬광이 두 개 돈다」): 문장 뒤의 큰 빛줄기(`.cel-rays`)를 걷는다 */
+.rcr-done .cel-stage .cel-rays { display: none; }
+/* 새 장수 — 노란 말풍선(`duel/bubble-tie.png`의 꼴을 가림으로 써 속을 노랗게) + 검은 굵은 글씨. 머리 오른쪽 위에서 비스듬히 톡 튀어나온다.
+   테두리는 그림자 둘로(짙은 갈색 외곽 + 아래 그림자) */
+.rcr-new {
+  position: absolute; z-index: 3; right: -26%; top: -6%; display: grid; place-items: center;
+  padding: .32em .9em .38em; rotate: 8deg; pointer-events: none;
+  filter: drop-shadow(0 0 1px #3a2208) drop-shadow(0 0 1px #3a2208) drop-shadow(0 .12rem .2rem #000a);
+  animation: rcr-new-pop .4s cubic-bezier(.3, 1.6, .5, 1) both;
+}
+.rcr-new-bg {
+  position: absolute; inset: 0; background: linear-gradient(#fff27a, #ffd21f 70%, #f0b400);
+  -webkit-mask: url(duel/bubble-tie.png) center / 100% 100% no-repeat; mask: url(duel/bubble-tie.png) center / 100% 100% no-repeat;
+}
+.rcr-new > b { position: relative; font-size: .85rem; font-weight: 900; line-height: 1; letter-spacing: .04em; color: #000; white-space: nowrap; }
+.rcr-cast[data-count="1"] .rcr-new > b { font-size: 1.1rem; }
+@keyframes rcr-new-pop { 0% { opacity: 0; scale: .2; } 70% { opacity: 1; scale: 1.18; } 100% { opacity: 1; scale: 1; } }

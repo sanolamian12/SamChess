@@ -257,6 +257,8 @@ function StarIntro({ intro, plan }: { intro: keyof typeof STAR_PLANS; plan: Star
  * 지평선에서 다가오고, 해가 점점 커지다 4.6초에 번쩍 → 5초 「쾅」. 높은 등급(A · S · E)이 가운데부터 서고 등 뒤에서 그 등급의 섬광이 비친다.
  * 시각은 전부 CSS(`.cir-*`)에 있고 늦춤은 `calc(… - var(--cir-skip))`로 적었다 — 건너뛰면 열쇠를 바꿔 다시 그리며 `--cir-skip`을 4.6초로 둔다.
  */
+/** 다가오는 정지 장면 넷 — 크기 · 시각은 CSS(`.cir-walker[data-stage]`, `cir-stage-*`) */
+const RECRUIT_STAGES = [0, 1, 2, 3] as const;
 /** 걷는 중에 누르면 이 시각(번쩍이 시작하는 자리)으로 건너뛴다 */
 const RECRUIT_SKIP_TO_MS = 4600;
 /** 건너뛸 수 있는 구간 — 창이 열린 뒤부터 번쩍 전까지 */
@@ -309,15 +311,14 @@ function RecruitIntro({ walkers, skipped, onSkip }: {
             <img className="cir-bg" src="ui/intro-recruit-bg.jpg" alt="" />
             <img className="cir-sun" src="ui/intro-recruit-sun.jpg" alt="" />
             <img className="cir-dust" data-n="1" src="ui/intro-recruit-dust-1.jpg" alt="" />
-            {walkers.map((w, seat) => (
-              <div key={seat} className="cir-walker" data-seat={seat} data-art={w.art} data-glow={w.glow ?? undefined}>
-                <div className="cir-step">
-                  <i className="cir-shadow" />
-                  {w.glow && <BlinkGlow tone={w.glow} className="cir-glow" />}
-                  <img className="cir-body" src={`ui/intro-recruit-walker-${w.art}.png`} alt="" />
-                </div>
+            {/* 오프닝 영상처럼 정지 장면 넷이 부드럽게 넘어간다(2026-11-25 기획자 — 「연속으로 다가오기보다」) — 자리마다 크기가 다른 넷을 겹쳐 두고 투명도만 넘긴다 */}
+            {RECRUIT_STAGES.map((stage) => walkers.map((w, seat) => (
+              <div key={`${stage}-${seat}`} className="cir-walker" data-seat={seat} data-stage={stage} data-art={w.art} data-glow={w.glow ?? undefined}>
+                <i className="cir-shadow" />
+                {w.glow && <BlinkGlow tone={w.glow} className="cir-glow" />}
+                <img className="cir-body" src={`ui/intro-recruit-walker-${w.art}.png`} alt="" />
               </div>
-            ))}
+            )))}
             <img className="cir-dust" data-n="2" src="ui/intro-recruit-dust-2.jpg" alt="" />
           </div>
         </div>

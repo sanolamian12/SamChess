@@ -1431,7 +1431,7 @@
   "market.surplus.pick": "Grado {grade}",
   "market.surplus.got": "1 carta ottenuta",
   "market.reveal.surplus": "In eccesso",
-  "market.reveal.new": "Nuovo",
+  "market.reveal.new": "NUOVO",
   "reason.market.surplus.noEmperor": "Serve l'Imperatore per reclutare il grado E",
   "reason.market.surplus.noTarget": "Nessun ufficiale di grado {grade} può ricevere la carta",
   "reason.market.surplus.notEnough": "Carte in eccesso insufficienti ({have}/{need})",

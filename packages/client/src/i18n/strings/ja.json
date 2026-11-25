@@ -1431,7 +1431,7 @@
   "market.surplus.pick": "{grade}級",
   "market.surplus.got": "カード1枚獲得",
   "market.reveal.surplus": "余剰",
-  "market.reveal.new": "新規",
+  "market.reveal.new": "NEW",
   "reason.market.surplus.noEmperor": "皇帝を迎えてこそE級を募集できます",
   "reason.market.surplus.noTarget": "カードを受け取れる{grade}級の武将がいません",
   "reason.market.surplus.notEnough": "余剰カードが足りません（{have}/{need}）",

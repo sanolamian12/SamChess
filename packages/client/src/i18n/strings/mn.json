@@ -1431,7 +1431,7 @@
   "market.surplus.pick": "{grade} зэрэг",
   "market.surplus.got": "1 карт авлаа",
   "market.reveal.surplus": "Илүүдэл",
-  "market.reveal.new": "Шинэ",
+  "market.reveal.new": "ШИНЭ",
   "reason.market.surplus.noEmperor": "E зэрэг элсүүлэхэд Хаан хэрэгтэй",
   "reason.market.surplus.noTarget": "Карт авах {grade} зэргийн жанжин алга",
   "reason.market.surplus.notEnough": "Илүүдэл карт хүрэлцэхгүй ({have}/{need})",

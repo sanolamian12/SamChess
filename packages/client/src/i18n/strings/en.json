@@ -1431,7 +1431,7 @@
   "market.surplus.pick": "Grade {grade}",
   "market.surplus.got": "Got 1 card",
   "market.reveal.surplus": "Surplus",
-  "market.reveal.new": "New",
+  "market.reveal.new": "NEW",
   "reason.market.surplus.noEmperor": "You need the Emperor to recruit grade E",
   "reason.market.surplus.noTarget": "No grade {grade} officer can take the card",
   "reason.market.surplus.notEnough": "Not enough surplus cards ({have}/{need})",

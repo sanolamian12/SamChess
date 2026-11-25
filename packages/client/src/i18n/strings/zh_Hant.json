@@ -1431,7 +1431,7 @@
   "market.surplus.pick": "{grade}級",
   "market.surplus.got": "獲得卡牌1張",
   "market.reveal.surplus": "剩餘",
-  "market.reveal.new": "新武將",
+  "market.reveal.new": "新",
   "reason.market.surplus.noEmperor": "需迎奉皇帝才能招募E級",
   "reason.market.surplus.noTarget": "沒有可接收卡牌的{grade}級武將",
   "reason.market.surplus.notEnough": "剩餘卡牌不足（{have}/{need}）",

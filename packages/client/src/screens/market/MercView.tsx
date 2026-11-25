@@ -307,7 +307,8 @@ const GRADE_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
  * 가운데가 가장 크고 앞, 둘째 · 넷째가 뒷줄). 낮은 등급부터 하나씩 「팡」(등급 후광이 번쩍 뒤 돈다), 발밑에 [등급] 이름과 「새 장수」 · 「잉여 카드」 표
  */
 const CAST_SPOTS: Record<number, readonly { x: number; y: number; s: number }[]> = {
-  1: [{ x: 50, y: 96, s: 1 }],
+  // 1명 — 꼬마 그림의 한가운데가 문장의 한가운데에 오게(2026-11-25 기획자). y는 이름 줄까지 포함한 맨 아래라, 그림(46%) + 이름 줄만큼 내려 잡는다
+  1: [{ x: 50, y: 82, s: 1 }],
   3: [{ x: 20, y: 80, s: 0.86 }, { x: 50, y: 98, s: 1 }, { x: 80, y: 80, s: 0.86 }],
   5: [{ x: 13, y: 90, s: 0.84 }, { x: 31, y: 64, s: 0.9 }, { x: 50, y: 98, s: 1 }, { x: 69, y: 64, s: 0.9 }, { x: 87, y: 90, s: 0.84 }],
 };
@@ -334,11 +335,16 @@ function RecruitCast({ got }: { got: Pulled }): React.JSX.Element {
             <span className="rcr-fig">
               <Halo grade={grades[i]!} burst />
               <OfficerActionArt officer={id} className="rcr-art" />
+              {/* 새 장수 — 노란 말풍선(일기토 「비김」 말풍선 꼴)에 검은 「NEW」, 머리 오른쪽 위에서 톡 (2026-11-25 기획자). 글은 언어마다 짧게 */}
+              {got.fates[i] === 'new' && (
+                <span className="rcr-new" data-fate="new" style={{ animationDelay: `${delay + 260}ms` }}>
+                  <i className="rcr-new-bg" />
+                  <b>{t('market.reveal.new')}</b>
+                </span>
+              )}
             </span>
             <span className="rcr-name"><Who officer={id} /></span>
-            {got.fates[i] === 'surplus'
-              ? <span className="mkt-fate" data-fate="surplus">{t('market.reveal.surplus')}</span>
-              : got.fates[i] === 'new' ? <span className="mkt-fate" data-fate="new">{t('market.reveal.new')}</span> : null}
+            {got.fates[i] === 'surplus' && <span className="mkt-fate" data-fate="surplus">{t('market.reveal.surplus')}</span>}
           </div>
         );
       })}

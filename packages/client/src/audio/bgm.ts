@@ -197,7 +197,8 @@ export function playBgm(track: BgmTrack | null, opts: { fromStart?: boolean } = 
   const playing = el.play();
   if (playing) {
     playing.then(
-      () => { blocked = null; fade(el, level()); },
+      // 트는 사이에 붙들렸으면(장수 모집 · 축하 화면이 막 열렸다) 소리를 올리지 않고 멈춘다 — 풀릴 때 `holdBgm(false)`가 다시 튼다
+      () => { blocked = null; if (held) { el.pause(); return; } fade(el, level()); },
       // 아직 아무도 화면을 건드리지 않았다 — 첫 조작 때 다시 튼다
       () => { blocked = track; },
     );
@@ -227,7 +228,7 @@ export function holdBgm(on: boolean): void {
     return;
   }
   void el.play().then(
-    () => { blocked = null; fade(el, level(), undefined, HOLD_FADE_MS); },
+    () => { blocked = null; if (held) { el.pause(); return; } fade(el, level(), undefined, HOLD_FADE_MS); },
     () => { blocked = current; },
   );
 }
@@ -283,6 +284,9 @@ function start(): void {
     get volume() { return volumeScale('bgm'); },
     get blocked() { return blocked; },
     get boosted() { return bgmBoosted(); },
+    /** 붙들렸는가(`holdBgm`) · 지금 곡이 멈춰 있는가 — 축하 화면 · 장수 모집 동안 곡이 멎는지 검사가 본다 */
+    get held() { return held; },
+    get paused() { return current ? audioOf(current).paused : null; },
   };
 
   const unlock = (): void => {
@@ -290,8 +294,10 @@ function start(): void {
     const track = blocked;
     blocked = null;
     if (track !== current) return;      // 그새 화면이 바뀌었으면 지금 곡을 따른다
+    // 붙들린 동안의 첫 조작(장수 모집 단추 · 축하 화면 누름)은 곡을 틀지 않는다 — 풀릴 때 `holdBgm(false)`가 튼다 (2026-11-25)
+    if (held) return;
     const el = audioOf(track);
-    void el.play().then(() => fade(el, level()), () => { /* 그래도 막히면 포기 */ });
+    void el.play().then(() => { if (held) { el.pause(); return; } fade(el, level()); }, () => { /* 그래도 막히면 포기 */ });
   };
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);

@@ -329,7 +329,7 @@ try {
   const GLOW: Record<string, string> = { A: 'plain', S: 'purple', E: 'gold' };
   const RANK: Record<string, number> = { E: 6, S: 5, A: 4, B: 3, C: 2, D: 1 };
   const CENTER_OUT: Record<number, number[]> = { 1: [0], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
-  const walkersNow = (): Promise<{ seat: number; glow: string | null }[]> => page.$$eval('.cin-recruit .cir-walker',
+  const walkersNow = (): Promise<{ seat: number; glow: string | null }[]> => page.$$eval('.cin-recruit .cir-walker[data-stage="0"]',
     (els) => els.map((e) => ({ seat: Number((e as HTMLElement).dataset.seat), glow: (e as HTMLElement).dataset.glow ?? null })));
   const castNow = (): Promise<{ seat: number; grade: string; fate: string; officer: string }[]> => page.$$eval('[data-modal="reveal"] .rcr-member',
     (els) => els.map((e) => { const d = (e as HTMLElement).dataset; return { seat: Number(d.seat), grade: d.grade!, fate: d.fate!, officer: d.officer! }; }));
@@ -350,20 +350,43 @@ try {
   let gold = await goldOf();
   await page.click('[data-action="pull-one"]');
   await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
-  await page.waitForTimeout(1_600);
+  // 배경 음악은 연출 동안 멎는다(`holdBgm`) — 닫으면 다시
+  await page.waitForTimeout(400);
+  // 「장터의 노래」(`shop`)는 연출이 시작되는 순간부터 용병 시장으로 돌아올 때까지 멎어 있다 — 붙듦 표지만이 아니라 곡이 실제로 멈췄는가
+  type Bgm = { track: string | null; held: boolean; paused: boolean | null };
+  const bgmNow = (): Promise<Bgm> => page.evaluate(() => { const b = (window as any).__bgm; return { track: b?.track ?? null, held: b?.held, paused: b?.paused ?? null }; });
+  const bgmWalk = await bgmNow();
+  if (bgmWalk.track !== 'shop' || !bgmWalk.held || bgmWalk.paused !== true) fail(`걷는 장면에서 배경 음악 — ${JSON.stringify(bgmWalk)}`);
+  // 다가옴은 정지 장면 넷이 디졸브로 넘어간다 — 약 2초엔 둘째 장면만 또렷하다
+  await page.waitForTimeout(1_400);
+  const stageOp = await page.$$eval('.cin-recruit .cir-walker[data-seat="0"]', (els) => els.map((e) => Number(getComputedStyle(e).opacity)));
+  if (stageOp.length !== 4 || stageOp[1]! < 0.9 || stageOp[0]! > 0.1 || stageOp[2]! > 0.1 || stageOp[3]! > 0.1) fail(`2초의 정지 장면 — ${stageOp.map((o) => o.toFixed(2)).join(' ')}`);
   await shot('recruit-walk-one-early');
-  await page.waitForTimeout(2_200);
-  await shot('recruit-walk-one-late');
   const walkOne = await walkersNow();
+  await page.waitForTimeout(1_300);
+  await shot('recruit-walk-one-late');
   await page.waitForSelector('[data-modal="reveal"]', { timeout: 6_000 });
   await page.waitForTimeout(1_400);
   await shot('reveal-one');
-  checkSeats(1, walkOne, await castNow());
+  const bgmStage = await bgmNow();
+  if (!bgmStage.held || bgmStage.paused !== true) fail(`무대에서 배경 음악 — ${JSON.stringify(bgmStage)}`);
+  const cast1 = await castNow();
+  checkSeats(1, walkOne, cast1);
+  const stage1 = await page.evaluate(() => ({
+    rays: [...document.querySelectorAll('[data-modal="reveal"] .cel-rays')].filter((e) => getComputedStyle(e).display !== 'none').length,
+    halos: document.querySelectorAll('[data-modal="reveal"] .rcr-fig .mkt-halo').length,
+    bubbles: [...document.querySelectorAll('[data-modal="reveal"] .rcr-member')].map((m) => Boolean(m.querySelector('.rcr-new'))),
+  }));
+  if (stage1.rays !== 0 || stage1.halos !== 1) fail(`무대 섬광은 장수 뒤 하나만 — 큰 빛줄기 ${stage1.rays} · 장수 후광 ${stage1.halos}`);
+  if (stage1.bubbles.join() !== cast1.map((c) => c.fate === 'new').join()) fail(`「NEW」 말풍선은 새 장수에만 — ${stage1.bubbles.join()} / ${cast1.map((c) => c.fate).join()}`);
   if (await page.$('[data-action="pullAgain"]')) fail('걷어 낸 [다시 뽑기]가 남았다');
   if (await goldOf() !== gold - gachaPullCost('one').gold) fail('1명 모집 값이 안 나갔다');
-  ok(`1명 모집 — 실루엣 하나(섬광 ${walkOne[0]!.glow ?? '없음'}) → 무대 한 명 · 금화 −${gachaPullCost('one').gold} · [다시 뽑기] 없음`);
+  ok(`1명 모집 — 실루엣 하나(섬광 ${walkOne[0]!.glow ?? '없음'}) → 무대 한 명 · 금화 −${gachaPullCost('one').gold} · [다시 뽑기] 없음 · 정지 장면 넷(2초 ${stageOp.map((o) => o.toFixed(1)).join('/')}) · 섬광 하나 · NEW ${stage1.bubbles.filter(Boolean).length} · 「장터의 노래」 걷기 · 무대 동안 멈춤 → 돌아와 다시`);
   await page.click('[data-action="revealClose"]');
   await page.waitForSelector('[data-modal="reveal"]', { state: 'detached', timeout: 3_000 });
+  await page.waitForTimeout(500);
+  const bgmBack = await bgmNow();
+  if (bgmBack.track !== 'shop' || bgmBack.held || bgmBack.paused !== false) fail(`용병 시장으로 돌아왔는데 배경 음악 — ${JSON.stringify(bgmBack)}`);
 
   step('3명 모집 — 걷는 중에 누르면 곧장 번쩍, 무대가 열린 직후의 누름은 넘긴다, 새 장수는 전부 풀에 든다');
   const before = (await getProfile(uid))!;
