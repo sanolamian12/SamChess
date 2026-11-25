@@ -37,12 +37,13 @@ import { pickOfficerName } from '../../i18n/story.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { GradeBadge } from '../GradeBadge.tsx';
 import { OfficerActionArt, OfficerStand } from '../OfficerArt.tsx';
-import { DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
+import { GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 import { Celebrate } from '../Celebrate.tsx';
 import { recruitSeats, recruitWalkers } from './recruitSeats.ts';
-import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
+import { BlinkGlow, STAND_GLOW, officerBlink } from '../BlinkGlow.tsx';
+import { walkerArtOf } from './walkerArt.ts';
 import type { BlinkTone } from '../BlinkGlow.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; fates: GachaFate[]; exhausted: boolean };
@@ -279,19 +280,19 @@ export function MercView({ profile, run, busy, onBack }: {
         </Layer>
       )}
 
-      {/* ── 잉여 카드로 모집한 결과 — 섬광 없이 곧바로 ── */}
+      {/* ── 잉여 카드로 모집한 결과 (2026-11-25 기획자 — 장수 모집 1명과 같은 연출) — 실루엣 하나가 걸어와 번쩍 → 문장 앞에 그 장수.
+          실루엣은 **받는 장수가 드는 무기**로 고른다(`walkerArtOf` — 창 · 부채 · 칼 · 활 · 그 밖). 등 뒤 섬광은 등급(A 흰 · S 자주 · E 금) ── */}
       {got && (
-        <DoneModal
-          title={<Who officer={got} />}
-          field="surplusDone"
-          onClose={() => setGot(null)}
-          actions={<button className="btn wide" data-action="surplusClose" onClick={() => setGot(null)}>{t('market.close')}</button>}
-        >
-          <div className="mkt-reveal-one" data-officer={got}>
-            <Portrait officer={got} />
-          </div>
-          <p className="mkt-done-big" data-field="surplusGot">{t('market.surplus.got')}</p>
-        </DoneModal>
+        <Layer>
+          <Celebrate key={got} modal="surplusDone" okAction="surplusClose" intro="recruit" className="rcr-done" title=""
+            walkers={[{ art: walkerArtOf(got), glow: STAND_GLOW[gradeOf(got)] ?? null }]}
+            tone={officerBlink(gradeOf(got))}
+            art={<img className="cel-art-img" src="ui/cel-recruit.png" alt="" />}
+            cast={<RecruitCast got={{ kind: 'one', drawn: [got], fates: ['card'], exhausted: false }} />}
+            onClose={() => setGot(null)}>
+            <p className="row" data-field="surplusGot">{t('market.surplus.got')}</p>
+          </Celebrate>
+        </Layer>
       )}
     </>
   );

@@ -21,6 +21,7 @@ import { academyTopics, applyLevelUp, cardsSpentOn, cardsToLevelUp, gachaPullCos
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
+import { walkerArtOf } from '../packages/client/src/screens/market/walkerArt.ts';
 
 const BASE = process.env['BASE'] ?? 'http://localhost:5173';
 const SUPABASE_URL = process.env['SUPABASE_URL']!;
@@ -421,21 +422,28 @@ try {
   await shot('merc-after');
   ok(`3명 모집 — 실루엣 셋(섬광 ${walkThree.map((w) => w.glow ?? '-').join(' ')}) · 건너뛰기 ${skipMs}ms · 열린 직후 누름 넘김 · 무대 ${cast3.map((c) => `${c.seat}:${c.grade}`).join(' ')} · 금화 −${gachaPullCost('three').gold} · 빈자리 ${seatsNow} → 3명 ${threeLocked ? '자물쇠' : '열림'}`);
 
-  step('잉여 카드로 A급 확정 — 보유한 A급 장수의 카드 1장, 섬광 없이 곧바로');
+  step('잉여 카드로 A급 확정 — 장수 모집 1명과 같은 연출, 실루엣은 받는 장수의 무기(창 1 · 부채 2 · 그 밖 3 · 칼 4 · 활 5)');
   const s0 = (await getProfile(uid))!;
   await page.click('[data-action="surplus-A"]');
+  await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
+  await page.waitForTimeout(1_500);
+  const surplusWalk = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.cin-recruit .cir-walker[data-stage="0"]')].map((e) => ({ art: Number(e.dataset.art), glow: e.dataset.glow ?? null })));
+  await shot('surplus-walk');
   await page.waitForSelector('[data-modal="surplusDone"]', { timeout: 10_000 });
+  await page.waitForTimeout(900);   // 무대가 열린 직후 0.6초는 누름을 넘긴다
   if (await page.$('[data-modal="burst"]')) fail('잉여 카드 모집에 섬광이 떴다');
   await shot('surplus-done');
   const got = await page.getAttribute('[data-modal="surplusDone"] [data-officer]', 'data-officer') as OfficerId;
   const s1 = (await getProfile(uid))!;
   if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - surplusCost('A')) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — ${surplusCost('A')}장 줄어야 한다`);
   if (gradeOf(got) !== 'A') fail(`받은 장수 ${got}가 A급이 아니다`);
+  if (surplusWalk.length !== 1 || surplusWalk[0]!.art !== walkerArtOf(got) || surplusWalk[0]!.glow !== 'plain') fail(`실루엣이 ${got}(무기 ${walkerArtOf(got)} · A급 흰 별빛)과 다르다 — ${JSON.stringify(surplusWalk)}`);
   // 풀 장수는 카드 +1, 보관함 장수가 빈자리로 들면 풀에 든다
   const gained = (s1.cards[got] ?? 0) === (s0.cards[got] ?? 0) + 1 || (!s0.roster[got] && Boolean(s1.roster[got]));
   if (!gained) fail(`${got}의 카드가 ${s0.cards[got]} → ${s1.cards[got]}다`);
-  ok(`A급 확정 — ${got} · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
+  ok(`A급 확정 — ${got} · 실루엣 ${surplusWalk[0]!.art}(무기) · 흰 별빛 · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
   await page.click('[data-action="surplusClose"]');
+  await page.waitForSelector('[data-modal="surplusDone"]', { state: 'detached', timeout: 3_000 });
 
   step(`잉여 카드가 모자라면 내관이 말한다 — S급 확정(${surplusCost('S')}장)`);
   if ((s1.surplusCards ?? 0) >= surplusCost('S')) fail(`잉여 카드가 ${s1.surplusCards}장이라 「모자람」을 시험할 수 없다`);
