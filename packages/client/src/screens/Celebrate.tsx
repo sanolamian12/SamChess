@@ -45,6 +45,7 @@ import { playSfx } from '../audio/sfx.ts';
 import { holdBgm } from '../audio/bgm.ts';
 import type { SfxId } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
+import type { RecruitWalker } from './market/recruitSeats.ts';
 
 /** 닫히는 연출의 길이 — CSS의 `cel-out`(.36초)과 같다 */
 const LEAVE_MS = 360;
@@ -60,7 +61,7 @@ export const CHARGE_MS_OF: Record<CelebrateTier, number> = { big: CHARGE_MS, sma
 /** 축하음을 어디서부터 트나(초) — 「쾅」이 5.0초에 있으니 작은 급은 4.1초부터 틀어 0.9초에 「쾅」 */
 const SOUND_FROM: Record<CelebrateTier, number> = { big: 0, small: 4.1 };
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
-export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city';
+export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city' | 'recruit';
 /**
  * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
  * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
@@ -251,6 +252,83 @@ function StarIntro({ intro, plan }: { intro: keyof typeof STAR_PLANS; plan: Star
   );
 }
 
+/**
+ * 장수 모집 도입부 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 4:3 창 안에서 석양을 등진 실루엣(뽑는 수만큼)이
+ * 지평선에서 다가오고, 해가 점점 커지다 4.6초에 번쩍 → 5초 「쾅」. 높은 등급(A · S · E)이 가운데부터 서고 등 뒤에서 그 등급의 섬광이 비친다.
+ * 시각은 전부 CSS(`.cir-*`)에 있고 늦춤은 `calc(… - var(--cir-skip))`로 적었다 — 건너뛰면 열쇠를 바꿔 다시 그리며 `--cir-skip`을 4.6초로 둔다.
+ */
+/** 걷는 중에 누르면 이 시각(번쩍이 시작하는 자리)으로 건너뛴다 */
+const RECRUIT_SKIP_TO_MS = 4600;
+/** 건너뛸 수 있는 구간 — 창이 열린 뒤부터 번쩍 전까지 */
+const RECRUIT_SKIP_FROM_MS = 400;
+/** 무대가 열린 뒤 이만큼은 누름을 받지 않는다 — 건너뛰려던 누름이 무대를 닫지 않게 */
+const RECRUIT_OPEN_GUARD_MS = 600;
+/**
+ * 발걸음 — 한 사람 걸음(`walking_edit`, 8.6초, 약 0.85초마다 한 걸음)을 시간차로 겹친다: 1명 하나 · 3명 둘 · 5명 셋(기획자 — 「2개, 3개를 들면 다 커버」).
+ * [트는 시각 ms, 크기, 빠르기] — 빠르기를 조금씩 달리해 같은 소리가 겹친 티가 덜 나게
+ */
+const RECRUIT_STEPS: Record<number, readonly (readonly [number, number, number])[]> = {
+  1: [[400, 0.95, 1]],
+  3: [[400, 0.8, 1], [720, 0.7, 0.96]],
+  5: [[400, 0.72, 1], [640, 0.62, 0.96], [900, 0.55, 1.04]],
+};
+/** 발걸음이 잦아드는 때 · 길이 — 번쩍 직전에 걷힌다 */
+const RECRUIT_STEPS_FADE_AT = 4300;
+const RECRUIT_STEPS_FADE_MS = 500;
+
+/** 소리를 `ms` 동안 줄이다 멈춘다 */
+function fadeOut(el: HTMLAudioElement, msLen: number): number {
+  const from = el.volume;
+  const t0 = performance.now();
+  const id = window.setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / msLen);
+    el.volume = Math.max(0, from * (1 - k));
+    if (k >= 1) { el.pause(); window.clearInterval(id); }
+  }, 40);
+  return id;
+}
+
+/** 장수 모집 도입부 — 걷는 창. 자리 · 시각은 CSS(`.cir-*`) */
+function RecruitIntro({ walkers, skipped, onSkip }: {
+  walkers: readonly RecruitWalker[];
+  skipped: boolean;
+  onSkip: () => void;
+}): React.JSX.Element {
+  const n = walkers.length;
+  return (
+    <div className="modal-back cel-back" data-phase="charge" data-intro="recruit" data-skipped={skipped ? '1' : undefined}
+      onClick={onSkip}>
+      <button type="button" className="cel-hit" data-action="recruitSkip" aria-label={t('celebrate.tap')} />
+      {/* 열쇠를 바꿔 다시 그린다 — 애니메이션이 처음부터, 늦춤에서 `--cir-skip`만큼 빼고 돈다 */}
+      <div key={skipped ? 'skip' : 'run'} className="cel-charge cin-recruit" data-count={n}
+        style={{ '--cir-skip': skipped ? `${RECRUIT_SKIP_TO_MS}ms` : '0ms' } as React.CSSProperties}>
+        {/* 창 틀(4:3) — 창은 가장자리가 번지게 가리고(`mask`), 번쩍은 그 가림 밖까지 터지도록 틀에 따로 */}
+        <div className="cir-frame">
+        <div className="cir-window">
+          <div className="cir-world">
+            <img className="cir-bg" src="ui/intro-recruit-bg.jpg" alt="" />
+            <img className="cir-sun" src="ui/intro-recruit-sun.jpg" alt="" />
+            <img className="cir-dust" data-n="1" src="ui/intro-recruit-dust-1.jpg" alt="" />
+            {walkers.map((w, seat) => (
+              <div key={seat} className="cir-walker" data-seat={seat} data-art={w.art} data-glow={w.glow ?? undefined}>
+                <div className="cir-step">
+                  <i className="cir-shadow" />
+                  {w.glow && <BlinkGlow tone={w.glow} className="cir-glow" />}
+                  <img className="cir-body" src={`ui/intro-recruit-walker-${w.art}.png`} alt="" />
+                </div>
+              </div>
+            ))}
+            <img className="cir-dust" data-n="2" src="ui/intro-recruit-dust-2.jpg" alt="" />
+          </div>
+        </div>
+        <img className="cir-flash" src="ui/intro-recruit-flash.jpg" alt="" />
+        </div>
+        <span className="cin-whiteout" />
+      </div>
+    </div>
+  );
+}
+
 /** 흰 · 보라 · 금 — 삼각형 꼭짓점 셋(120°씩) */
 const FLARES = ['white', 'purple', 'gold'] as const;
 
@@ -264,10 +342,10 @@ const FLAKES = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel', tone = 'plain', okAction = 'doneOk',
-  sound = 'celebrate', intro: introAsked = 'swirl', tier = 'big', onClose, className = '', children }: {
+  sound = 'celebrate', intro: introAsked = 'swirl', tier = 'big', walkers, cast, onClose, className = '', children }: {
   /** `data-modal` — 검사가 이 화면을 찾는 이름 */
   modal: string;
-  /** 큰 제목(「강화 완료」) — 언제나 한 줄, 안 들면 그 글만 줄인다(`FitLine`) */
+  /** 큰 제목(「강화 완료」) — 언제나 한 줄, 안 들면 그 글만 줄인다(`FitLine`). 빈 글이면 제목 줄이 없다(장수 모집) */
   title: string;
   /** 주인공 그림(팔뚝 · 비계 탑 · 병기 …) — 뒤에서 빛줄기가 터진다 */
   art?: ReactNode;
@@ -286,6 +364,10 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   intro?: CelebrateIntro;
   /** 급 — 큰 급(기본, 7초) · 작은 급(2초) */
   tier?: CelebrateTier;
+  /** 장수 모집 도입부(`intro='recruit'`)의 걷는 사람 — 왼쪽부터 자리 순(`recruitWalkers()`) */
+  walkers?: readonly RecruitWalker[];
+  /** 무대 그림 위에 서는 것(장수 모집의 장수들) — 배지와 달리 내려찍지 않는다 */
+  cast?: ReactNode;
   onClose: () => void;
   /** 갈래 클래스(글자 꼴 · 크기) — 예: 도시 증축의 `cty-done` */
   className?: string;
@@ -297,12 +379,19 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   const [leaving, setLeaving] = useState(false);
   const [charging, setCharging] = useState(true);
   const chargingRef = useRef(true);
+  const recruit = intro === 'recruit' && (walkers?.length ?? 0) > 0;
+  // 장수 모집 — 건너뛰기 · 걸음 소리 · 무대가 열린 시각
+  const [skipped, setSkipped] = useState(false);
+  const skipRef = useRef<() => void>(() => {});
+  const openedAt = useRef(0);
   const left = useRef(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
   const leave = useCallback((): void => {
     if (left.current || chargingRef.current) return;   // 두 번 눌러도 한 번만 · 모으는 동안은 안 닫힌다
+    // 장수 모집은 무대가 열린 직후의 누름을 넘긴다 — 걷는 중에 건너뛰려고 누른 손이 무대를 곧장 닫지 않게
+    if (openedAt.current > 0 && performance.now() - openedAt.current < RECRUIT_OPEN_GUARD_MS) return;
     left.current = true;
     setLeaving(true);
     playSfx('woong', { volume: 0.7 });
@@ -316,10 +405,35 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   }, []);
 
   useEffect(() => {
-    if (sound) playSfx(sound, { from: SOUND_FROM[tier] });
+    const t0 = performance.now();
+    const main = sound ? playSfx(sound, { from: SOUND_FROM[tier] }) : null;
+    const fades: number[] = [];
+    // 장수 모집 — 걸음 소리를 시간차로 겹치고, 번쩍 직전에 잦아들게
+    const steps: HTMLAudioElement[] = [];
+    const stepTimers = recruit ? (RECRUIT_STEPS[walkers!.length] ?? RECRUIT_STEPS[1]!).map(([at, volume, rate]) => window.setTimeout(() => {
+      const el = playSfx('walking_edit', { volume, rate });
+      if (el) { steps.push(el); }
+    }, at)) : [];
+    const stepFade = recruit ? window.setTimeout(() => steps.forEach((el) => fades.push(fadeOut(el, RECRUIT_STEPS_FADE_MS))), RECRUIT_STEPS_FADE_AT) : 0;
     const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms))
       : intro === 'city' ? CITY_SOUNDS.map(([id, ms]) => window.setTimeout(() => playSfx(id, { volume: 0.85 }), ms)) : [];
-    const shown = window.setTimeout(() => { chargingRef.current = false; setCharging(false); }, chargeMs);
+    const open = (): void => { chargingRef.current = false; openedAt.current = recruit ? performance.now() : 0; setCharging(false); };
+    let shown = window.setTimeout(open, chargeMs);
+    // 걷는 중에 누르면 곧장 번쩍으로 — 걸음은 끊고, 축하음은 그 자리(4.6초)부터 다시 튼다. 한 번만
+    let skippedOnce = false;
+    skipRef.current = (): void => {
+      const at = performance.now() - t0;
+      if (!recruit || skippedOnce || at < RECRUIT_SKIP_FROM_MS || at >= RECRUIT_SKIP_TO_MS) return;
+      skippedOnce = true;
+      window.clearTimeout(shown);
+      shown = window.setTimeout(open, chargeMs - RECRUIT_SKIP_TO_MS);
+      stepTimers.forEach((c) => window.clearTimeout(c));
+      window.clearTimeout(stepFade);
+      steps.forEach((el) => fades.push(fadeOut(el, 120)));
+      main?.pause();
+      if (sound) playSfx(sound, { from: RECRUIT_SKIP_TO_MS / 1000 });
+      setSkipped(true);
+    };
     // 아무 키나 — 무대가 열리고 한 박자 뒤부터 듣는다(열리는 순간 눌려 있던 키는 넘긴다)
     let on = false;
     const arm = window.setTimeout(() => { on = true; }, chargeMs + 250);
@@ -331,9 +445,13 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
     window.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(shown); window.clearTimeout(arm); clangs.forEach((c) => window.clearTimeout(c));
+      stepTimers.forEach((c) => window.clearTimeout(c)); window.clearTimeout(stepFade);
+      fades.forEach((f) => window.clearInterval(f)); steps.forEach((el) => el.pause());
+      skipRef.current = () => {};
       window.removeEventListener('keydown', onKey);
     };
-  }, [sound, intro, tier, chargeMs, leave]);
+    // 걷는 사람(`walkers`)은 열린 동안 같은 판이라 다시 돌리지 않는다
+  }, [sound, intro, tier, chargeMs, leave, recruit]);
 
   if (charging && intro === 'forge') {
     return (
@@ -387,6 +505,10 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
     );
   }
 
+  if (charging && recruit) {
+    return <RecruitIntro walkers={walkers!} skipped={skipped} onSkip={() => skipRef.current()} />;
+  }
+
   if (charging && (intro === 'academy' || intro === 'academyDipper' || intro === 'academyWeb')) {
     return <StarIntro intro={intro} plan={STAR_PLANS[intro]} />;
   }
@@ -406,14 +528,15 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
         ))}
       </span>
       <div className={`modal cel ${className}`.trim()}>
-        {(art || badge) && (
+        {(art || badge || cast) && (
           <div className="cel-stage">
             <BlinkGlow tone={tone} className="cel-rays" burst />
             {art && <div className="cel-art">{art}</div>}
             {badge && <div className="cel-badge">{badge}</div>}
+            {cast && <div className="cel-cast">{cast}</div>}
           </div>
         )}
-        <FitLine className="modal-ttl cel-ttl" field="doneTitle" text={title} />
+        {title && <FitLine className="modal-ttl cel-ttl" field="doneTitle" text={title} />}
         {typeof big === 'string'
           ? <FitLine className="cty-done-lv cel-big" field={bigField} text={big} />
           : big != null && <div className="cel-big cel-big-node" data-field={bigField}>{big}</div>}

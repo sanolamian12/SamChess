@@ -3,9 +3,9 @@
  *
  * ```
  * 현황판   [금화] n   [장수] 풀/상한   [잉여 카드] n
- * 장수 모집 / 신규 또는 기존 인원이 모집됩니다.
+ * 장수 모집 / 신규 또는 기존 장수
  *          [🪙10] [🪙25] [🪙40]   ← 검은 꼬마 1 · V자 3 · W자 5(글자 없음), 뒤 후광이 흰 → 자주 → 금. 궁궐 빈자리가 모자라면 자물쇠 + 「궁궐 증축 필요」
- * 장수 레벨업 카드 / 보유 장수 중 랜덤 한 명 카드를 받습니다.
+ * 장수 레벨업 카드 / 기존 장수 중 랜덤 한 명
  *          [🂠10] [🂠20] [🂠30]   ← 잉여 카드로. 카드 가운데 위 등급 표(A · S · E, 글자 없음) + 표 뒤 후광. E급은 헌제를 거느릴 때만(아니면 잿빛)
  * 바닥     [뒤로 가기]
  * ```
@@ -13,7 +13,10 @@
  * - 꾸밈은 금화 충전 판과 같다(`.mkt-packs` · `.mkt-pack` — 대자보 종이 카드 + 붓 획 가격 띠).
  * - **궁궐의 빈자리보다 많이는 모집하지 못한다**(`canPullGacha`, 2026-11-24 기획자) — 빈자리 4면 5명이, 2면 3명도 막힌다.
  *   막힌 칸은 자물쇠가 덮고 「궁궐 증축 필요」라고 적는다. 그래서 모집에서는 새 장수가 언제나 풀에 든다.
- * - 모집 결과는 섬광 → 결과 판이고, 칸마다 「새 장수」 · 「잉여 카드」(Lv9 장수의 카드) 표가 붙는다(서버가 준 `fates`).
+ * - 모집 결과는 **걷는 장면 → 번쩍 → 무대**(2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — `Celebrate`의 `recruit` 도입부.
+ *   뽑은 수만큼 실루엣이 걸어오고(높은 등급이 가운데, 등 뒤에 A 흰 · S 자주 · E 금 섬광), 걷는 중에 누르면 곧장 번쩍.
+ *   무대는 계정 문장 앞에 장수들이 걸어온 자리 그대로 서고 「새 장수」 · 「잉여 카드」(Lv9 장수의 카드) 표가 붙는다(서버가 준 `fates`).
+ *   단추 없이 아무 데나 누르면 닫힌다 — 옛 결과 판의 [다시 뽑기]는 걷었다.
  *
  * **판정은 전부 규칙과 서버가 한다** — 모집은 `POST /market/gacha`(시드도 서버가), 잉여 카드 모집은
  * `POST /market/surplus`(받는 장수도 서버가 고른다). 화면은 누르게 하고 보여 줄 뿐이다.
@@ -29,38 +32,21 @@ import {
 import type { GachaFate, GachaPullKind, MetaResult, PlayerProfile, SurplusGrade } from '@samchess/meta';
 import { Say } from '../Steward.tsx';
 import { exchangeSurplusOnServer, pullGachaOnServer } from '../../meta/city.ts';
-import { playSfx } from '../../audio/sfx.ts';
-import type { SfxId } from '../../audio/sfx.ts';
 import { t } from '../../i18n/index.ts';
 import { pickOfficerName } from '../../i18n/story.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { GradeBadge } from '../GradeBadge.tsx';
 import { OfficerActionArt, OfficerStand } from '../OfficerArt.tsx';
-import { BurstStage, DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
+import { DoneModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
-import { CelebrateCharge } from '../Celebrate.tsx';
+import { Celebrate } from '../Celebrate.tsx';
+import { recruitSeats, recruitWalkers } from './recruitSeats.ts';
 import { BlinkGlow, officerBlink } from '../BlinkGlow.tsx';
 import type { BlinkTone } from '../BlinkGlow.tsx';
 
 type Pulled = { kind: GachaPullKind; drawn: OfficerId[]; fates: GachaFate[]; exhausted: boolean };
 
-/**
- * 모집 효과음과 첫 섬광까지의 틈 (2026-09-24 지정). 1명은 소리가 먼저 차오르고 터지고(작은 급, 2초),
- * 여럿은 축하 화면의 모음(`CelebrateCharge`)을 먼저 돌리고 그 「쾅」에 섬광이 터진다(큰 급) — 옛 단발 · 8연의 짜임 그대로.
- */
-const PULL_SOUND: Record<GachaPullKind, { sfx: SfxId; lead: number; from: number }> = {
-  one: { sfx: 'cardx1', lead: 900, from: 0.6 },
-  three: { sfx: 'cardx8', lead: 0, from: 0 },
-  five: { sfx: 'cardx8', lead: 0, from: 0 },
-};
-
-/** 모집의 걸음 — (여럿은 모음) → 섬광 → 결과 */
-type PullStep =
-  | null
-  | { at: 'charge'; got: Pulled }
-  | { at: 'burst'; got: Pulled }
-  | { at: 'result'; got: Pulled };
 
 const gradeOf = (id: OfficerId): Grade => officerById.get(id)?.grade ?? 'B';
 const nameOf = (id: OfficerId): string => {
@@ -161,7 +147,8 @@ export function MercView({ profile, run, busy, onBack }: {
   busy: boolean;
   onBack: () => void;
 }): React.JSX.Element {
-  const [pull, setPull] = useState<PullStep>(null);
+  /** 모집 결과 — 서버가 준 뒤 곧장 걷는 장면(`Celebrate` `recruit`)이 열리고, 닫으면 비운다 */
+  const [pull, setPull] = useState<Pulled | null>(null);
   const [got, setGot] = useState<OfficerId | null>(null);
   /** 막힌 칸을 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다 */
   const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
@@ -185,13 +172,11 @@ export function MercView({ profile, run, busy, onBack }: {
       pulled = { kind, drawn: r.drawn, fates: r.fates, exhausted: r.exhausted };
       return r.profile;
     }, () => {
-      if (!pulled) { setPull(null); return; }
+      if (!pulled) return;
       const g: Pulled = pulled;
-      if (g.drawn.length === 0) { setPull({ at: 'result', got: g }); return; }
-      if (g.drawn.length > 1) { setPull({ at: 'charge', got: g }); return; }
-      // 소리는 무대가 뜨는 바로 그 순간에 — 섬광의 틈(`lead`)이 이 시각부터 잰다
-      playSfx(PULL_SOUND[kind].sfx, { from: PULL_SOUND[kind].from });
-      setPull({ at: 'burst', got: g });
+      // 다 떨어져 아무도 안 왔으면 걷는 장면 없이 내관이 말한다
+      if (g.drawn.length === 0) { setWhy({ text: t('market.reveal.exhausted'), code: 'exhausted' }); return; }
+      setPull(g);
     });
   };
 
@@ -279,30 +264,19 @@ export function MercView({ profile, run, busy, onBack }: {
         </div>
       </section>
 
-      {pull?.at === 'charge' && (
+      {/* 모집 결과 (2026-11-25 기획자 — `Design/장수모집연출/시나리오.html`) — 석양을 등진 실루엣이 뽑은 수만큼 걸어오다(높은 등급이 가운데, 등 뒤에 등급 섬광)
+          해가 번쩍 → 어둠 위 계정 문장(모루처럼 흐리게) 앞에 장수들이 하나씩 선다. 단추 없이 아무 데나 누르면 닫힌다([다시 뽑기]는 걷었다) */}
+      {pull && (
         <Layer>
-          <CelebrateCharge tier="big" onDone={() => {
-            playSfx(PULL_SOUND[pull.got.kind].sfx, { from: PULL_SOUND[pull.got.kind].from });
-            setPull({ at: 'burst', got: pull.got });
-          }} />
+          <Celebrate key={pull.drawn.join()} modal="reveal" okAction="revealClose" intro="recruit" className="rcr-done" title=""
+            walkers={recruitWalkers(pull.drawn.map(gradeOf))}
+            tone={officerBlink(topGrade(pull.drawn))}
+            art={<img className="cel-art-img" src="ui/cel-recruit.png" alt="" />}
+            cast={<RecruitCast got={pull} />}
+            onClose={() => setPull(null)}>
+            {pull.exhausted && <p className="row dim">{t('market.reveal.exhausted')}</p>}
+          </Celebrate>
         </Layer>
-      )}
-      {pull?.at === 'burst' && (
-        <BurstStage
-          grades={pull.got.drawn.map(gradeOf)}
-          lead={PULL_SOUND[pull.got.kind].lead}
-          onDone={() => setPull({ at: 'result', got: pull.got })}
-        />
-      )}
-
-      {pull?.at === 'result' && (
-        <PullResult
-          got={pull.got}
-          profile={profile}
-          busy={busy}
-          onAgain={() => doPull(pull.got.kind)}
-          onClose={() => setPull(null)}
-        />
       )}
 
       {/* ── 잉여 카드로 모집한 결과 — 섬광 없이 곧바로 ── */}
@@ -323,53 +297,51 @@ export function MercView({ profile, run, busy, onBack }: {
   );
 }
 
-/** 모집 결과 — 한 장이면 크게(78쪽), 여럿이면 칸으로. 잉여 카드가 된 장에는 표가 붙는다 */
-function PullResult({ got, profile, busy, onAgain, onClose }: {
-  got: Pulled;
-  profile: PlayerProfile;
-  busy: boolean;
-  onAgain: () => void;
-  onClose: () => void;
-}): React.JSX.Element {
-  const cost = gachaPullCost(got.kind);
-  const can = canPullGacha(profile, got.kind);
-  const one = got.drawn.length === 1;
-  const tag = (i: number): React.ReactNode => got.fates[i] === 'surplus'
-    ? <span className="mkt-fate" data-fate="surplus">{t('market.reveal.surplus')}</span>
-    : got.fates[i] === 'new' ? <span className="mkt-fate" data-fate="new">{t('market.reveal.new')}</span> : null;
+/** 가장 높은 등급 — 무대 빛줄기 색 */
+const topGrade = (drawn: readonly OfficerId[]): Grade =>
+  drawn.map(gradeOf).sort((a, b) => GRADE_ORDER.indexOf(a) - GRADE_ORDER.indexOf(b))[0] ?? 'B';
+const GRADE_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
+
+/**
+ * 무대 위 장수들 — 걸어온 자리(`recruitSeats`) 그대로 선다. 1명은 크게 가운데, 3명은 V자(가운데가 앞), 5명은 W자(가입 오프닝과 같은 결 —
+ * 가운데가 가장 크고 앞, 둘째 · 넷째가 뒷줄). 낮은 등급부터 하나씩 「팡」(등급 후광이 번쩍 뒤 돈다), 발밑에 [등급] 이름과 「새 장수」 · 「잉여 카드」 표
+ */
+const CAST_SPOTS: Record<number, readonly { x: number; y: number; s: number }[]> = {
+  1: [{ x: 50, y: 96, s: 1 }],
+  3: [{ x: 20, y: 80, s: 0.86 }, { x: 50, y: 98, s: 1 }, { x: 80, y: 80, s: 0.86 }],
+  5: [{ x: 13, y: 90, s: 0.84 }, { x: 31, y: 64, s: 0.9 }, { x: 50, y: 98, s: 1 }, { x: 69, y: 64, s: 0.9 }, { x: 87, y: 90, s: 0.84 }],
+};
+/** 장수 하나가 튀어나오는 간격 · 첫 장수까지(무대가 열리고 번쩍이 걷힌 뒤) */
+const CAST_STEP_MS = 180;
+const CAST_FROM_MS = 380;
+
+function RecruitCast({ got }: { got: Pulled }): React.JSX.Element {
+  const n = got.drawn.length >= 5 ? 5 : got.drawn.length >= 3 ? 3 : 1;
+  const grades = got.drawn.map(gradeOf);
+  const seats = recruitSeats(grades);
+  // 낮은 등급부터 — 가장 센 장수가 마지막에
+  const popOrder = grades.map((g, i) => ({ i, r: GRADE_ORDER.indexOf(g) })).sort((a, b) => b.r - a.r || a.i - b.i).map((x) => x.i);
   return (
-    <DoneModal
-      // 「뽑았다」는 보면 안다(2026-09-24 피드백) — 한 장이면 제목 자리에 **등급 표 + 이름**,
-      // 여러 장은 이름이 칸마다 붙으므로 제목 줄이 아예 없다
-      title={one ? <Who officer={got.drawn[0]!} /> : null}
-      field="reveal"
-      onClose={onClose}
-      actions={(
-        <>
-          <button className="btn primary wide" data-action="pullAgain" disabled={busy || !can.ok} onClick={onAgain}>
-            <span className="lbl">{t('market.pull.again')} (<GoldCost gold={cost.gold} times />)</span>
-          </button>
-          <button className="btn wide" data-action="revealClose" onClick={onClose}>{t('market.close')}</button>
-        </>
-      )}
-    >
-      {one ? (
-        <div className="mkt-reveal-one" data-officer={got.drawn[0]} data-fate={got.fates[0]}>
-          <Portrait officer={got.drawn[0]!} />
-          {tag(0)}
-        </div>
-      ) : (
-        <div className="mkt-reveal-grid" data-count={got.drawn.length}>
-          {got.drawn.map((id, i) => (
-            <div key={`${id}-${i}`} className="mkt-reveal-cell" data-officer={id} data-grade={gradeOf(id)} data-fate={got.fates[i]}>
-              <Portrait officer={id} size="sm" />
-              <Who officer={id} />
-              {tag(i)}
-            </div>
-          ))}
-        </div>
-      )}
-      {got.exhausted && <p className="note">{t('market.reveal.exhausted')}</p>}
-    </DoneModal>
+    <div className="rcr-cast" data-count={n} data-field="recruitCast">
+      {got.drawn.map((id, i) => {
+        const seat = seats[i]!;
+        if (seat < 0) return null;
+        const spot = CAST_SPOTS[n]![seat]!;
+        const delay = CAST_FROM_MS + popOrder.indexOf(i) * CAST_STEP_MS;
+        return (
+          <div key={`${id}-${i}`} className="rcr-member" data-officer={id} data-grade={grades[i]} data-fate={got.fates[i]} data-seat={seat}
+            style={{ left: `${spot.x}%`, top: `${spot.y}%`, '--s': spot.s, animationDelay: `${delay}ms` } as React.CSSProperties}>
+            <span className="rcr-fig">
+              <Halo grade={grades[i]!} burst />
+              <OfficerActionArt officer={id} className="rcr-art" />
+            </span>
+            <span className="rcr-name"><Who officer={id} /></span>
+            {got.fates[i] === 'surplus'
+              ? <span className="mkt-fate" data-fate="surplus">{t('market.reveal.surplus')}</span>
+              : got.fates[i] === 'new' ? <span className="mkt-fate" data-fate="new">{t('market.reveal.new')}</span> : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }

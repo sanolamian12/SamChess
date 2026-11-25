@@ -47,6 +47,14 @@ ITEMS: dict[tuple[str, str], tuple[str, int, str]] = {
     ("city", "city_dragon.png"): ("intro-city-dragon.png", 900, "green"),
     ("city", "city_glint.png"): ("intro-city-glint.jpg", 500, "black"),
     ("city", "city_rays.png"): ("intro-city-rays.jpg", 900, "black"),
+    # 장수 모집(2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 석양 광장(4:3 창에 꽉, 해는 그림 안 50% · 41%) ·
+    # 역광 실루엣 다섯(한 명씩, 발끝이 그림 높이 약 97%) · 해 · 번쩍 · 먼지 둘
+    ("recruit", "recruit_bg.png"): ("intro-recruit-bg.jpg", 1448, "photo"),
+    **{("recruit", f"recruit_walker_{i}.png"): (f"intro-recruit-walker-{i}.png", 900, "green") for i in range(1, 6)},
+    ("recruit", "recruit_sun.png"): ("intro-recruit-sun.jpg", 900, "black"),
+    ("recruit", "recruit_flash.png"): ("intro-recruit-flash.jpg", 900, "black"),
+    ("recruit", "recruit_dust.png"): ("intro-recruit-dust-1.jpg", 1200, "black"),
+    ("recruit", "recruit_dust2.png"): ("intro-recruit-dust-2.jpg", 1200, "black"),
 }
 
 # 초록이 이만큼 이하로 섞였으면 불투명, 이만큼 이상이면 투명(바탕 실측 g − max(r,b) ≈ 237)

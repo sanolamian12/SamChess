@@ -228,6 +228,8 @@ FRAMES: dict[str, str] = {
     # 제작 완료(대장간) — 뒤의 모루. 대장간 [병기구 제작] 아이콘의 원본(`facility/ic_forge_craft.png`)을 그대로 크게 굽는다(기획자 지정 —
     # 사본을 두면 아이콘을 다시 그릴 때 한쪽만 낡는다). 앞에는 그 병기 그림(`blacksmith/{id}.png`, 투명)이 내려찍힌다
     "facility/ic_forge_craft": "cel-forge.png",
+    # 장수 모집(2026-11-25 기획자) — 뒤의 계정 문장. 환경설정 [계정] 아이콘의 원본을 그대로 크게 굽는다(모루와 같은 까닭). 앞에 뽑힌 장수들이 선다
+    "control/ic_set_account": "cel-recruit.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
@@ -235,7 +237,7 @@ FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2
                              "dialog_portrait": 480, "dialog_line": 1600, "책략_패널": 600,
                              "celebrate_levelup": 512, "celebrate_build": 512,
                              "celebrate_chest": 512, "celebrate_goldbag": 512, "celebrate_scroll": 256,
-                             "facility/ic_forge_craft": 512}
+                             "facility/ic_forge_craft": 512, "control/ic_set_account": 512}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.

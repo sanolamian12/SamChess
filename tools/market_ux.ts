@@ -323,42 +323,80 @@ try {
   if (new Set(glow.fontSame).size !== 1) fail(`숫자 글자 글꼴이 가격 띠와 다르다 — ${glow.fontSame.join(' | ')}`);
   ok(`후광 — 꼬마 ${glow.tones.map(([t, o]) => `${t} ${o.toFixed(2)}`).join(' · ')} · 등급 표 ${glow.marks.map((m) => `${m.g} ${m.halo.toFixed(2)}`).join(' · ')}(가운데 ±${Math.max(...glow.marks.map((m) => m.off)).toFixed(1)}px, ${glow.marks[0]!.gr.toFixed(0)}px) · 스크롤 없음 · 명령 판 바닥까지 ${glow.cmdGap.toFixed(0)}px`);
 
-  step('1명 모집 — 빈자리가 있으면 곧바로 섬광 → 결과');
+  // 장수 모집 연출 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 걷는 장면(뽑은 수만큼 · 높은 등급이 가운데 · 등 뒤 등급 섬광) →
+  // 번쩍 → 무대(걸어온 자리 그대로). 단추 없이 아무 데나 누르면 닫힘, 걷는 중에 누르면 곧장 번쩍, 무대가 열린 직후 0.6초는 누름을 넘긴다
+  /** 걷는 창의 실루엣(자리 · 섬광)과 무대의 장수(자리 · 등급)가 맞는가 — 높은 등급이 가운데부터, 섬광은 A 흰 · S 자주 · E 금 */
+  const GLOW: Record<string, string> = { A: 'plain', S: 'purple', E: 'gold' };
+  const RANK: Record<string, number> = { E: 6, S: 5, A: 4, B: 3, C: 2, D: 1 };
+  const CENTER_OUT: Record<number, number[]> = { 1: [0], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
+  const walkersNow = (): Promise<{ seat: number; glow: string | null }[]> => page.$$eval('.cin-recruit .cir-walker',
+    (els) => els.map((e) => ({ seat: Number((e as HTMLElement).dataset.seat), glow: (e as HTMLElement).dataset.glow ?? null })));
+  const castNow = (): Promise<{ seat: number; grade: string; fate: string; officer: string }[]> => page.$$eval('[data-modal="reveal"] .rcr-member',
+    (els) => els.map((e) => { const d = (e as HTMLElement).dataset; return { seat: Number(d.seat), grade: d.grade!, fate: d.fate!, officer: d.officer! }; }));
+  const checkSeats = (n: number, walkers: { seat: number; glow: string | null }[], cast: { seat: number; grade: string }[]): void => {
+    if (walkers.length !== n) fail(`걷는 실루엣이 ${walkers.length}이다 — ${n}이라야 한다`);
+    if (cast.length !== n) fail(`무대의 장수가 ${cast.length}이다 — ${n}이라야 한다`);
+    const byRank = [...cast].sort((x, y) => RANK[y.grade]! - RANK[x.grade]!);
+    byRank.forEach((m, k) => {
+      if (RANK[m.grade] !== RANK[cast.find((c) => c.seat === CENTER_OUT[n]![k])!.grade]) fail(`자리 ${CENTER_OUT[n]![k]}의 등급이 순서와 다르다 — ${JSON.stringify(cast)}`);
+    });
+    for (const m of cast) {
+      const w = walkers.find((x) => x.seat === m.seat);
+      if ((w?.glow ?? null) !== (GLOW[m.grade] ?? null)) fail(`자리 ${m.seat}(${m.grade}급)의 등 뒤 섬광이 ${w?.glow} — ${GLOW[m.grade] ?? '없음'}이라야 한다`);
+    }
+  };
+
+  step('1명 모집 — 실루엣 하나가 걸어오고 해가 번쩍 → 무대(계정 문장 앞에 한 명)');
   let gold = await goldOf();
   await page.click('[data-action="pull-one"]');
-  await page.waitForSelector('[data-modal="burst"]', { timeout: 10_000 });
-  if (await page.$('[data-modal="recruitWarn"]')) fail('빈자리가 넉넉한데 경고가 떴다');
-  // **세고 나서 찍는다** — 섬광은 1.1초라, 넓은 화면을 2배로 찍는 동안 끝나 버린다
-  const singles = (await page.$$('.mkt-burst')).length;
-  if (singles !== 1) fail(`1명 모집에 섬광이 ${singles}개다 — 하나라야 한다`);
-  await page.waitForSelector('[data-modal="reveal"]', { timeout: 10_000 });
-  await page.waitForTimeout(700);
+  await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
+  await page.waitForTimeout(1_600);
+  await shot('recruit-walk-one-early');
+  await page.waitForTimeout(2_200);
+  await shot('recruit-walk-one-late');
+  const walkOne = await walkersNow();
+  await page.waitForSelector('[data-modal="reveal"]', { timeout: 6_000 });
+  await page.waitForTimeout(1_400);
   await shot('reveal-one');
+  checkSeats(1, walkOne, await castNow());
+  if (await page.$('[data-action="pullAgain"]')) fail('걷어 낸 [다시 뽑기]가 남았다');
   if (await goldOf() !== gold - gachaPullCost('one').gold) fail('1명 모집 값이 안 나갔다');
-  ok(`1명 모집 — 섬광 하나 · 결과 한 장 · 금화 −${gachaPullCost('one').gold}`);
+  ok(`1명 모집 — 실루엣 하나(섬광 ${walkOne[0]!.glow ?? '없음'}) → 무대 한 명 · 금화 −${gachaPullCost('one').gold} · [다시 뽑기] 없음`);
   await page.click('[data-action="revealClose"]');
+  await page.waitForSelector('[data-modal="reveal"]', { state: 'detached', timeout: 3_000 });
 
-  step('3명 모집 — 새 장수는 전부 풀에 든다, 빈자리가 3보다 적어지면 3명도 자물쇠');
+  step('3명 모집 — 걷는 중에 누르면 곧장 번쩍, 무대가 열린 직후의 누름은 넘긴다, 새 장수는 전부 풀에 든다');
   const before = (await getProfile(uid))!;
   gold = before.gold;
   await page.click('[data-action="pull-three"]');
-  await page.waitForSelector('[data-modal="burst"]', { timeout: 15_000 });
-  const bursts = (await page.$$('.mkt-burst')).length;
-  if (bursts !== 3) fail(`섬광이 ${bursts}개다 — 셋이라야 한다`);
-  await page.waitForSelector('[data-modal="reveal"]', { timeout: 15_000 });
-  await page.waitForTimeout(900);
+  await page.waitForSelector('[data-intro="recruit"]', { timeout: 15_000 });
+  await page.waitForTimeout(1_200);
+  await shot('recruit-walk-three');
+  const walkThree = await walkersNow();
+  const tSkip = Date.now();
+  await page.click('[data-action="recruitSkip"]');
+  await page.waitForSelector('[data-intro="recruit"][data-skipped]', { timeout: 2_000 });
+  await page.waitForSelector('[data-modal="reveal"]', { timeout: 3_000 });
+  const skipMs = Date.now() - tSkip;
+  if (skipMs > 1_200) fail(`건너뛰었는데 무대까지 ${skipMs}ms — 0.4초 남짓이라야 한다`);
+  // 열린 직후의 누름은 넘긴다 — 무대가 그대로 있어야 한다
+  await page.click('[data-action="revealClose"]');
+  await page.waitForTimeout(250);
+  if (!await page.$('[data-modal="reveal"]:not([data-leaving])')) fail('무대가 열리자마자 누름에 닫혔다 — 0.6초는 넘겨야 한다');
+  await page.waitForTimeout(1_200);
   await shot('reveal-three');
-  const cells = await page.$$eval('.mkt-reveal-cell', (els) => els.map((e) => (e as HTMLElement).dataset.fate));
+  const cast3 = await castNow();
+  checkSeats(3, walkThree, cast3);
   const after = (await getProfile(uid))!;
-  if (cells.length !== 3) fail(`결과가 ${cells.length}칸이다 — 셋이라야 한다`);
-  if (poolUsed(after) - poolUsed(before) !== cells.filter((f) => f === 'new').length) fail('「새 장수」 표와 풀에 든 수가 다르다');
+  if (poolUsed(after) - poolUsed(before) !== cast3.filter((c) => c.fate === 'new').length) fail('「새 장수」 표와 풀에 든 수가 다르다');
   if (after.gold !== gold - gachaPullCost('three').gold) fail(`3명 모집이 ${gachaPullCost('three').gold}냥이 아니다`);
   await page.click('[data-action="revealClose"]');
+  await page.waitForSelector('[data-modal="reveal"]', { state: 'detached', timeout: 3_000 });
   const seatsNow = poolCap(after) - poolUsed(after);
   const threeLocked = await page.$eval('[data-action="pull-three"]', (b) => (b as HTMLButtonElement).disabled);
   if (threeLocked !== seatsNow < 3) fail(`빈자리 ${seatsNow} — 3명 칸 잠김 ${threeLocked}`);
   await shot('merc-after');
-  ok(`3명 모집 — 섬광 셋 · 결과 ${cells.join(' ')} · 금화 −${gachaPullCost('three').gold} · 빈자리 ${seatsNow} → 3명 ${threeLocked ? '자물쇠' : '열림'}`);
+  ok(`3명 모집 — 실루엣 셋(섬광 ${walkThree.map((w) => w.glow ?? '-').join(' ')}) · 건너뛰기 ${skipMs}ms · 열린 직후 누름 넘김 · 무대 ${cast3.map((c) => `${c.seat}:${c.grade}`).join(' ')} · 금화 −${gachaPullCost('three').gold} · 빈자리 ${seatsNow} → 3명 ${threeLocked ? '자물쇠' : '열림'}`);
 
   step('잉여 카드로 A급 확정 — 보유한 A급 장수의 카드 1장, 섬광 없이 곧바로');
   const s0 = (await getProfile(uid))!;

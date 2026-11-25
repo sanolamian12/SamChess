@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>장수 모집 연출</title>
+<style>
+  :root {
+    --bg: #f6f1e7; --paper: #fffaf0; --ink: #2b2016; --dim: #6d5a45; --line: #d9ccb4;
+    --accent: #b5562a; --accent-soft: #f4e1d2; --code: #efe6d6; --ok: #2f7f6e; --warn: #a3521c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17130f; --paper: #211b15; --ink: #eee3d0; --dim: #b3a38c; --line: #3b3127;
+      --accent: #e08a55; --accent-soft: #3a2619; --code: #2a221a; --ok: #6cc2ad; --warn: #e5a06a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17130f; --paper: #211b15; --ink: #eee3d0; --dim: #b3a38c; --line: #3b3127;
+    --accent: #e08a55; --accent-soft: #3a2619; --code: #2a221a; --ok: #6cc2ad; --warn: #e5a06a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 "Pretendard", "Noto Sans KR", system-ui, sans-serif; }
+  main { max-width: 920px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 1.9rem; margin: 0 0 .2rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.3rem; margin: 2.6rem 0 .8rem; padding-bottom: .35rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.6rem 0 .5rem; }
+  p, li { color: var(--ink); }
+  .sub { color: var(--dim); margin: 0 0 1.4rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 12px 0; }
+  .note { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: .93rem; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  th { color: var(--dim); font-weight: 600; white-space: nowrap; }
+  td.t { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: .88em; }
+  pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; font-size: .86rem; line-height: 1.55; margin: 6px 0 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .tag { display: inline-block; font-size: .78rem; padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-right: 4px; }
+  .file { font-family: ui-monospace, Consolas, monospace; font-size: .86rem; color: var(--dim); }
+  figure { margin: 10px 0; }
+  figcaption { font-size: .85rem; color: var(--dim); margin-top: 4px; }
+  svg { width: 100%; height: auto; display: block; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 2.2rem; margin: .5rem 0; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: .1rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: .85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .q { font-weight: 600; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 8px 0 14px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); background: #000; }
+  .rec { color: var(--ok); font-weight: 600; }
+  @media (max-width: 520px) { th, td { padding: 6px 5px; } td.t { white-space: normal; } }
+</style>
+</head>
+<body>
+<main>
+
+<h1>장수 모집 연출</h1>
+<p class="sub">용병 시장 [1 · 3 · 5명 모집] 결과 화면 개편 — 시나리오 초안 · 2026-11-25 · 미결 결정 반영(같은 날)</p>
+
+<div class="note">
+  <b>한 줄 요약</b> — 지금의 「섬광 → 붉은 액자 결과 판」을 걷고, <b>4:3 가로 창 안에서 석양을 등진 장수들이 다가오다 태양이 번쩍</b>하면
+  어두운 무대 한가운데 <b>계정 문장(<code>ic_set_account</code>)</b>을 대장간 모루처럼 흐리게 깔고 그 위에 뽑힌 장수들이 <b>주인공으로</b> 선다.
+</div>
+
+<h2>1. 지금과 바뀌는 것</h2>
+<table>
+  <tr><th></th><th>지금</th><th>바뀐 뒤</th></tr>
+  <tr><td>도입</td><td>1명: 효과음 뒤 섬광(약 2초)<br>3 · 5명: 세 빛 나선 모음(5초) → 섬광</td><td><b>세 경우 모두 「다가오는 장수들」 5초</b> — 걸어오는 사람 수 = 뽑는 수</td></tr>
+  <tr><td>결과</td><td>붉은 금박 액자 판(<code>DoneModal</code>) 안에 꼬마 + 이름 + 「새 장수」</td><td>화면 전체 어둠 위 무대(축하 화면 <code>Celebrate</code>의 무대 꼴) — 가운데 문장 + 장수 배치</td></tr>
+  <tr><td>단추</td><td>[다시 뽑기 (금화 × n)] · [닫기]</td><td><b>단추 없음</b> — [다시 뽑기]는 걷는다. 다른 축하 화면처럼 「화면을 터치해주세요.」 → 아무 데나 누르면 닫힌다</td></tr>
+  <tr><td>건너뛰기</td><td>—</td><td>걷는 중에 화면을 누르면 곧장 번쩍으로</td></tr>
+  <tr><td>등급 귀띔</td><td>—</td><td>A · S · E급이 섞였으면 그 수만큼 실루엣 <b>등 뒤에서 등급 섬광</b>이 비친다(가운데부터 높은 등급)</td></tr>
+  <tr><td>잉여 카드 모집</td><td>섬광 없이 붉은 판</td><td>이번 범위 밖 — 연출을 따로 만든다</td></tr>
+</table>
+
+<h2>2. 장면 흐름</h2>
+
+<figure>
+<svg viewBox="0 0 880 300" role="img" aria-label="장면 흐름 다섯 칸">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b3a4a"/><stop offset=".55" stop-color="#e59a5b"/><stop offset="1" stop-color="#c9a77c"/></linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff8d8"/><stop offset=".35" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient>
+    <radialGradient id="feather" cx=".5" cy=".5" r=".62"><stop offset=".72" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <mask id="fm"><rect width="160" height="120" fill="url(#feather)"/></mask>
+  </defs>
+  <g font-family="sans-serif" font-size="13" fill="currentColor">
+    <!-- 1 -->
+    <g transform="translate(8,40)">
+      <rect width="160" height="220" rx="10" fill="#0d0b0a"/>
+      <g transform="translate(0,50)" mask="url(#fm)"><rect width="160" height="120" fill="url(#sky)" opacity=".55"/></g>
+      <text x="80" y="-12" text-anchor="middle">① 열림 0–0.4초</text>
+    </g>
+    <!-- 2 -->
+    <g transform="translate(184,40)">
+      <rect width="160" height="220" rx="10" fill="#0d0b0a"/>
+      <g transform="translate(0,50)" mask="url(#fm)">
+        <rect width="160" height="120" fill="url(#sky)"/>
+        <circle cx="80" cy="44" r="14" fill="url(#sun)"/>
+        <g fill="#1a1412"><rect x="66" y="66" width="5" height="12"/><rect x="77" y="64" width="6" height="14"/><rect x="89" y="66" width="5" height="12"/></g>
+      </g>
+      <text x="80" y="-12" text-anchor="middle">② 다가옴 0.4–4.2초</text>
+    </g>
+    <!-- 3 -->
+    <g transform="translate(360,40)">
+      <rect width="160" height="220" rx="10" fill="#0d0b0a"/>
+      <g transform="translate(0,50)" mask="url(#fm)">
+        <rect width="160" height="120" fill="url(#sky)"/>
+        <circle cx="80" cy="44" r="40" fill="url(#sun)"/>
+        <circle cx="80" cy="62" r="17" fill="#c77dff" opacity=".75"/>
+        <circle cx="50" cy="68" r="12" fill="#ffffff" opacity=".55"/>
+        <g fill="#1a1412"><rect x="44" y="58" width="14" height="40" rx="5"/><rect x="72" y="52" width="16" height="48" rx="6"/><rect x="102" y="58" width="14" height="40" rx="5"/></g>
+      </g>
+      <text x="80" y="-12" text-anchor="middle">③ 태양이 커짐 3.0–4.6초</text>
+    </g>
+    <!-- 4 -->
+    <g transform="translate(536,40)">
+      <rect width="160" height="220" rx="10" fill="#fffdf2"/>
+      <text x="80" y="-12" text-anchor="middle">④ 번쩍 4.6–5.0초</text>
+      <text x="80" y="116" text-anchor="middle" fill="#b5562a" font-size="22" font-weight="700">쾅</text>
+    </g>
+    <!-- 5 -->
+    <g transform="translate(712,40)">
+      <rect width="160" height="220" rx="10" fill="#0d0b0a"/>
+      <circle cx="80" cy="96" r="52" fill="#6b4a2a" opacity=".38"/>
+      <circle cx="80" cy="96" r="40" fill="none" stroke="#8a6a3a" stroke-opacity=".5"/>
+      <g fill="#e9d3a6"><circle cx="50" cy="86" r="10"/><circle cx="80" cy="104" r="13"/><circle cx="110" cy="86" r="10"/></g>
+      <text x="80" y="196" text-anchor="middle" fill="#f3e8c8" font-size="10" opacity=".8">화면을 터치해주세요.</text>
+      <text x="80" y="-12" text-anchor="middle">⑤ 무대 5.0초~</text>
+    </g>
+  </g>
+</svg>
+<figcaption>세로 화면(390×844 기준). ①~④는 가운데 4:3 창 안에서만 일어나고, 창 밖은 내내 어둡다.</figcaption>
+</figure>
+
+<h3>시간표 (큰 급 축하와 같은 5초 — 축하음 「쾅」에 번쩍을 맞춘다)</h3>
+<table>
+  <tr><th>시각</th><th>무엇</th><th>어떻게</th></tr>
+  <tr><td class="t">0.0</td><td>배경이 어두워진다</td><td>화면 전체 <code>#050608</code> 90%. 축하음(<code>celebrate</code>, 7초) 시작 · 배경 음악 멈춤 — 지금 큰 급 축하와 같다</td></tr>
+  <tr><td class="t">0.0–0.4</td><td>4:3 창이 떠오른다</td><td>창 = 화면 폭 92% × (폭 × 3/4), 세로 가운데. <b>가장자리는 부드럽게</b> — 네 변을 안쪽 12%에 걸쳐 투명으로 번지는 마스크(<code>mask-image</code>, 둥근 사각 그러데이션). 석양 광장 배경이 살짝 크게(1.08배)에서 1.0배로</td></tr>
+  <tr><td class="t">0.4–4.2</td><td>장수들이 다가온다</td><td>지평선(창 높이 52%)에서 작게(0.22배) 나타나 발밑이 창 아래쪽(창 높이 96%)에 닿을 때까지 커진다(1.0배). 가속 곡선은 「처음 느리고 끝에 빠름」(가까워질수록 크게 자라는 원근). 걸음마다 위아래로 살짝 흔들림(0.5초 한 걸음). 사람마다 출발을 0.15초씩 어긋나게 해 줄이 살아 보이게. 그림자는 CSS로 — 발밑에서 화면 아래로 길게 늘어진 흐린 띠(햇빛을 등지므로)</td></tr>
+  <tr><td class="t">1.5–4.6</td><td>석양이 점점 강해진다</td><td>장수들 머리 위 지평선의 태양 빛(검정 바탕 그림, <code>screen</code> 더하기)이 0.5 → 2.6배로 커지고 밝아진다. 하늘 전체도 함께 밝아짐(배경 <code>brightness</code> 1 → 1.35). 장수 실루엣은 끝까지 검게 — 누군지는 아직 모른다</td></tr>
+  <tr><td class="t">4.6–5.0</td><td>번쩍</td><td>태양이 창 밖까지 터지며 화면 전체가 흰빛(지금 축하 화면의 하얘지는 끝과 같은 꼴). 5.0초에 「쾅」</td></tr>
+  <tr><td class="t">5.0</td><td>무대가 열린다</td><td>흰빛이 걷히며 어둠 위 무대. 가운데 계정 문장 + 장수들이 「팡」(아래 3절)</td></tr>
+  <tr><td class="t">5.0–6.2</td><td>장수가 하나씩</td><td>가입 오프닝의 팡처럼 낮은 등급부터 0.18초 간격, 각자 등급 후광(흰 · 자주 · 금)이 터진 뒤 돈다</td></tr>
+  <tr><td class="t">6.2~</td><td>닫기</td><td>무대 아래 「화면을 터치해주세요.」가 숨 쉬듯 — 아무 데나 누르거나 아무 키나 누르면 닫힌다(다른 축하 화면과 같다). 단추는 없다</td></tr>
+</table>
+
+<h3>건너뛰기</h3>
+<p>걷는 중(0.4–4.6초)에 화면 아무 데나 누르면 <b>곧장 번쩍(4.6초 자리)</b>으로 넘어간다 — 장수 · 태양 · 소리를 모두 그 시각으로 옮긴다
+(축하음은 4.6초부터 다시 틀어 「쾅」이 0.4초 뒤에 온다). 번쩍이 시작된 뒤의 누름은 무시하고, 무대가 열린 뒤의 누름은 닫기다 —
+같은 누름이 두 번 먹혀 무대를 못 보고 닫히지 않도록 <b>무대가 열린 뒤 0.6초는 누름을 받지 않는다</b>.</p>
+
+<h3>등 뒤의 등급 섬광 — 누가 올지 귀띔</h3>
+<p>뽑기 결과는 연출이 시작되기 <b>전에</b> 서버에서 온다(지금도 결과를 받은 뒤 섬광을 튼다). 그래서 걷기 시작할 때 이미 몇 명이 A · S · E급인지 안다.</p>
+<ul>
+  <li><b>자리 매기기</b> — 뽑힌 장수를 등급 순(E &gt; S &gt; A &gt; B &gt; C &gt; D)으로 줄 세워 <b>가운데부터 가장자리 순</b>으로 앉힌다.
+    5명은 가운데 → 왼쪽 둘째 → 오른쪽 둘째 → 왼쪽 끝 → 오른쪽 끝, 3명은 가운데 → 왼쪽 → 오른쪽. 무대(3절)의 자리도 같은 순서라 <b>걸어온 자리에 그 장수가 선다</b>.</li>
+  <li><b>섬광 색</b> — 등급 후광과 같다: <b>E 금 · S 자주 · A 흰 별빛</b>. B · C · D는 섬광이 없다(부대 화면 꼬마 후광 <code>STAND_GLOW</code>와 같은 규칙).</li>
+  <li><b>비치는 꼴</b> — 실루엣 바로 뒤(실루엣보다 아래 층, 위 몸통 높이)에서 섬광이 <code>screen</code>으로 더해져 어깨 · 머리 둘레로 빛이 새어 나온다. 실루엣 자체는 끝까지 검다 — 누군지는 모르고 「센 장수가 온다」만 안다.</li>
+  <li><b>세기</b> — 1.5초에 희미하게 켜져 태양과 함께 4.6초까지 커진다(0 → 1). 천천히 돈다(지금 섬광 후광과 같은 회전).</li>
+  <li><b>그림</b> — 새로 받을 것 없음. 지금 쓰는 섬광 세 장(<code>ui/glow-blink.png</code> · <code>-purple</code> · <code>-gold</code>)을 그대로 쓴다.</li>
+</ul>
+
+<h3>걸어오는 사람 수와 자리</h3>
+<div class="grid">
+  <div class="card"><b>1명</b><br>가운데 한 사람. 창 폭 50% 자리에서 곧장 다가온다.</div>
+  <div class="card"><b>3명</b><br>V자 — 가운데가 반 걸음 앞. 가로 자리 34 · 50 · 66%(끝에서).</div>
+  <div class="card"><b>5명</b><br>지금 오프닝 영상 8번 장면과 같은 줄 — 가로 16 · 33 · 50 · 67 · 84%, 가운데가 가장 앞.</div>
+</div>
+<p>실루엣 다섯 장(창 · 칼 · 부채 든 책사 · 투구 깃 · 활)은 자리마다 고정으로 쓴다 — 1명은 가운데 장(칼), 3명은 가운데 셋. 실루엣의 생김은 <b>뽑힌 장수와 관계없다</b>(누군지는 번쩍 뒤에야 밝혀진다). 다만 <b>자리는 등급 순</b>이고 높은 등급은 등 뒤에 섬광이 비친다(아래).</p>
+
+<h2>3. 무대 (번쩍 뒤)</h2>
+
+<figure>
+<svg viewBox="0 0 880 330" role="img" aria-label="1·3·5명 무대 배치">
+  <g font-family="sans-serif" font-size="13" fill="currentColor">
+    <g transform="translate(20,20)">
+      <rect width="260" height="290" rx="10" fill="#0d0b0a"/>
+      <circle cx="130" cy="125" r="88" fill="#6b4a2a" opacity=".35"/><circle cx="130" cy="125" r="70" fill="none" stroke="#8a6a3a" stroke-opacity=".5"/>
+      <circle cx="130" cy="122" r="34" fill="#e9d3a6"/>
+      <text x="130" y="190" text-anchor="middle" fill="#f3e8c8">[B] 곽도</text>
+      <rect x="98" y="198" width="64" height="16" rx="8" fill="#2f7f6e"/><text x="130" y="211" text-anchor="middle" fill="#fff" font-size="11">새 장수</text>
+      <text x="130" y="-4" text-anchor="middle">1명</text>
+    </g>
+    <g transform="translate(310,20)">
+      <rect width="260" height="290" rx="10" fill="#0d0b0a"/>
+      <circle cx="130" cy="125" r="88" fill="#6b4a2a" opacity=".35"/><circle cx="130" cy="125" r="70" fill="none" stroke="#8a6a3a" stroke-opacity=".5"/>
+      <g fill="#e9d3a6"><circle cx="68" cy="100" r="24"/><circle cx="130" cy="130" r="29"/><circle cx="192" cy="100" r="24"/></g>
+      <g fill="#f3e8c8" text-anchor="middle" font-size="11"><text x="68" y="142">B 손건</text><text x="130" y="178">A 맹달</text><text x="192" y="142">A 정보</text></g>
+      <text x="130" y="-4" text-anchor="middle">3명 — V자</text>
+    </g>
+    <g transform="translate(600,20)">
+      <rect width="260" height="290" rx="10" fill="#0d0b0a"/>
+      <circle cx="130" cy="125" r="88" fill="#6b4a2a" opacity=".35"/><circle cx="130" cy="125" r="70" fill="none" stroke="#8a6a3a" stroke-opacity=".5"/>
+      <g fill="#e9d3a6"><circle cx="40" cy="135" r="19"/><circle cx="85" cy="92" r="20"/><circle cx="130" cy="140" r="25"/><circle cx="175" cy="92" r="20"/><circle cx="220" cy="135" r="19"/></g>
+      <g fill="#f3e8c8" text-anchor="middle" font-size="10"><text x="40" y="168">D</text><text x="85" y="124">B</text><text x="130" y="180">S</text><text x="175" y="124">A</text><text x="220" y="168">C</text></g>
+      <text x="130" y="-4" text-anchor="middle">5명 — W자 (가입 오프닝과 같은 결)</text>
+    </g>
+  </g>
+</svg>
+<figcaption>갈색 원 = 계정 문장(흐리게). 밝은 원 = 장수 꼬마(액션 시트, 평상 → 동작). 등급이 높은 장수가 가운데 · 앞.</figcaption>
+</figure>
+
+<ul>
+  <li><b>가운데 큰 그림</b> — <code>assets/icons/ui/control/ic_set_account.png</code>(512², 투명)를 <code>public/ui/cel-recruit.png</code>로 굽는다. 대장간 제작 완료의 모루(<code>.frg-done .cel-art-img</code>: <code>brightness(.38) saturate(.6)</code>)와 같은 처리 — <b>진하게 칠하지 않고 어둡게 가라앉혀</b> 장수 뒤의 자리만 잡는다. 무대 폭의 약 80%.</li>
+  <li><b>장수</b> — 지금 결과 판과 같은 꼬마(<code>OfficerActionArt</code>, 평상 5초 → 동작) + 등급 후광(<code>Halo</code>, E 금 · S 자주 · 그 밖 흰 별빛, 나타나며 한 번 번쩍). 크기: 1명 무대 폭 42% · 3명 가운데 30% 양옆 26% · 5명 가운데 24% 그 밖 20% · 뒷줄 18%.</li>
+  <li><b>자리 순서</b> — 등급 높은 장수가 가운데(앞), 그다음이 그 양옆. 5명은 가입 오프닝의 W 대형(가운데 S 1.2배 · 위 줄 1.1배)을 그대로 빌린다.</li>
+  <li><b>이름 줄</b> — 꼬마 발밑에 [등급 표] 이름, 그 밑에 「새 장수」 / 「잉여 카드」 표(서버가 준 <code>fates</code> 그대로). 이름 글자 하한 0.8rem.</li>
+  <li><b>제목</b> — 두지 않는다(지금 결과 판도 「뽑았다」는 보면 안다는 기획에 따라 제목 줄이 없다).</li>
+  <li><b>궁궐이 다 찬 경우</b> (<code>exhausted</code>) — 무대 아래 한 줄 그대로.</li>
+</ul>
+
+<h2>4. 소리</h2>
+<table>
+  <tr><th>지금</th><td>1명 <code>cardx1</code>(0.6초부터) · 3 · 5명 모음 뒤 <code>cardx8</code></td></tr>
+  <tr><th>바뀐 뒤</th><td>세 경우 모두 큰 급 축하음(<code>celebrate</code>, 7초 — 5.0초에 「쾅」) + <b>발소리</b>(<code>recruit-steps</code>, 0.4–4.2초 — <b>기획자가 찾아 준다</b>). 사람 수에 따라 겹치는 수를 바꿀지는 소리를 받은 뒤 정한다. 건너뛰면 발소리는 그 자리에서 멎는다</td></tr>
+</table>
+
+<h2>5. 그림 목록 (생성형 AI로 뽑을 것)</h2>
+<p>대장간 · 태학 · 도시 증축 도입부와 같은 방식이다 — <b>물건은 순수 초록 바탕, 빛은 순수 검정 바탕, 배경은 그대로</b> 받아
+<code>tools/build_celebrate_intro.py</code>가 오리고 굽는다. 원본은 <span class="file">assets/icons/ui/celebrate_intro/recruit/</span>에 둔다.
+<b>사람 수를 그림으로 나누지 않는다</b> — 실루엣을 한 명씩 받아 화면이 1 · 3 · 5명을 고른다(세 벌을 따로 받으면 구도가 서로 안 맞는다).</p>
+
+<table>
+  <tr><th>파일</th><th>바탕</th><th>크기</th><th>쓰임</th></tr>
+  <tr><td class="file">recruit_bg.png</td><td>그림 그대로</td><td>1600×1200 (4:3)</td><td>석양 광장 — 사람 없음, 가운데 길이 비어 있다</td></tr>
+  <tr><td class="file">recruit_walker_1~5.png</td><td>순수 초록</td><td>768×1280 (세로)</td><td>역광 실루엣 장수 한 명씩, 정면으로 걸어오는 자세</td></tr>
+  <tr><td class="file">recruit_sun.png</td><td>순수 검정</td><td>1024×1024</td><td>지평선 태양의 둥근 빛 · 빛살 — 점점 커진다</td></tr>
+  <tr><td class="file">recruit_flash.png</td><td>순수 검정</td><td>1024×1024</td><td>번쩍 — 화면을 덮는 큰 섬광</td></tr>
+  <tr><td class="file">recruit_dust.png <span class="tag">선택</span></td><td>순수 검정</td><td>1024×576</td><td>발밑에서 이는 금빛 먼지 · 역광 입자</td></tr>
+</table>
+
+<div class="note">지금 있는 <span class="file">assets/opening/opening_video/opening_1~8.png</span>(360×640 세로)는 <b>화풍 · 색의 기준</b>으로 함께 넣어 준다(이미지 참조).
+그대로 잘라 쓰기엔 폭이 360px라 4:3 창(휴대폰에서 약 360px × 3배 밀도)에 흐리고, 다섯 명이 그림에 박혀 있어 1 · 3명을 만들 수 없다.</div>
+
+<h2>6. 생성형 AI 프롬프트</h2>
+<p>공통: 참조 이미지로 <code>opening_1.png</code>(배경) · <code>opening_8.png</code>(실루엣)를 붙이면 화풍이 맞는다. 영어 프롬프트가 대체로 결과가 안정적이다.</p>
+
+<h3>6-1. 배경 — recruit_bg.png</h3>
+<pre>Wide 4:3 landscape painting, Three Kingdoms era Chinese military encampment plaza at sunset, viewed from ground level looking toward the horizon.
+A wide empty dirt-and-sand courtyard leads straight from the foreground to the horizon; the center path is completely empty (no people, no animals).
+Low sun sitting just above distant layered mountains at the exact horizontal center, warm orange-gold sky with pink and violet clouds,
+wooden palisade, small tiled-roof barracks and red war banners on both sides near the horizon, a stone drill platform and a wooden signpost on the left middle ground.
+Long soft shadows falling toward the viewer. Painterly semi-realistic digital illustration, soft brush texture, warm cinematic backlight, atmospheric haze near the horizon.
+Same art style and palette as the reference image. Horizon line at about 52% of the image height.
+No people, no text, no watermark, no frame, no vignette.</pre>
+<p class="sub">참조: opening_1.png · 1600×1200</p>
+
+<h3>6-2. 실루엣 장수 다섯 — recruit_walker_1~5.png (한 장에 한 명씩, 다섯 번)</h3>
+<pre>Single full-body figure of a Three Kingdoms era Chinese general walking straight toward the camera, front view, mid-stride,
+strongly backlit by a setting sun behind him so the figure is a near-black silhouette with a thin warm golden rim light on the edges of armor and hair.
+Face and details are hidden in shadow (unrecognizable). [VARIANT]
+Feet fully visible at the bottom, whole body inside the frame with some margin, figure centered.
+Background: perfectly flat pure chroma green (#00FF00), no gradient, no ground, no cast shadow, no floor reflection.
+Painterly semi-realistic style matching the reference image. No text, no watermark.</pre>
+<p><b>[VARIANT]</b> 자리에 하나씩 넣는다:</p>
+<table>
+  <tr><th>1</th><td>Heavy lamellar armor, long spear held upright in the right hand, round helmet with a tall tassel.</td><td>왼쪽 끝 (5명)</td></tr>
+  <tr><th>2</th><td>Scholar-strategist in long flowing robes and a tall official hat, holding a feather fan at chest height.</td><td>왼쪽 둘째 (3 · 5명)</td></tr>
+  <tr><th>3</th><td>Broad-shouldered commander with a cape blowing to one side, sword sheathed at the hip, helmet with a long plume. Slightly larger and more imposing than the others.</td><td>가운데 (1 · 3 · 5명)</td></tr>
+  <tr><th>4</th><td>Lean swordsman in light armor, long straight sword held low in one hand, topknot hair.</td><td>오른쪽 둘째 (3 · 5명)</td></tr>
+  <tr><th>5</th><td>Archer in light armor with a longbow over the shoulder and a quiver on the back, wide-brimmed helmet.</td><td>오른쪽 끝 (5명)</td></tr>
+</table>
+<p class="sub">참조: opening_8.png · 768×1280 · 다섯 장 모두 같은 카메라 높이 · 같은 빛 방향으로(같은 대화에서 이어 뽑으면 맞추기 쉽다)</p>
+
+<h3>6-3. 태양 빛 — recruit_sun.png</h3>
+<pre>A glowing setting sun as pure light on a perfectly flat pure black background (#000000):
+a bright white-gold core, a soft warm orange halo fading outward, and fine thin light rays radiating in all directions, subtle lens glow.
+Centered, symmetrical, nothing else in the image. No horizon, no clouds, no landscape, no text.</pre>
+
+<h3>6-4. 번쩍 — recruit_flash.png</h3>
+<pre>An intense radiant burst of white-gold light on a perfectly flat pure black background (#000000):
+blinding white center, sharp long star-like rays and a wide soft glow that almost fills the whole square, cinematic flare.
+Centered, symmetrical, light only. No objects, no text.</pre>
+
+<h3>6-5. 먼지 (선택) — recruit_dust.png</h3>
+<pre>Backlit golden dust particles and fine sand haze drifting in warm sunset light, wide horizontal band, on a perfectly flat pure black background (#000000).
+Light and particles only, soft and sparse. No ground, no objects, no text.</pre>
+
+<h2>7. 만드는 자리 (구현 메모)</h2>
+<ol class="steps">
+  <li><b>굽기</b> — <code>tools/build_celebrate_intro.py</code>의 <code>ITEMS</code>에 recruit 줄들(bg = photo · walker = green · sun/flash/dust = black). 문장은 <code>cel-recruit.png</code>로.</li>
+  <li><b>도입부</b> — <code>Celebrate</code>의 <code>intro</code>에 <code>recruit</code>를 더한다. 다른 도입부와 달리 <b>사람 수(1 · 3 · 5)를 받는다</b>. 그 밖(5초 · 하얘지는 끝 · 「쾅」 · 무대)은 큰 급 그대로.</li>
+  <li><b>무대</b> — <code>art</code>에 문장, 장수 배치는 <code>children</code>(새 꼴 <code>.rcr-stage</code>). 지금 결과 판(<code>PullResult</code>, [다시 뽑기] 포함) · 모음(<code>CelebrateCharge</code>) · 섬광(<code>BurstStage</code>)은 모집에서 빠진다.</li>
+  <li><b>자리 · 섬광</b> — 등급 순 자리 매기기는 함수 하나(걷는 창과 무대가 같이 부른다 — 따로 셈하면 걸어온 자리와 선 자리가 갈린다). 섬광 색은 <code>STAND_GLOW</code>.</li>
+  <li><b>건너뛰기</b> — 도입부가 누름을 받아 시각을 4.6초로 옮긴다(축하 화면은 지금 모으는 동안 누름을 안 받으므로 도입부 갈래 하나에만 연다).</li>
+  <li><b>검사</b> — <code>tools/market_ux.ts</code>의 모집 결과 검사를 새 무대(<code>data-modal="reveal"</code> 유지)로 옮기고, 걸어오는 사람 수 = 뽑은 수를 본다.</li>
+</ol>
+
+<h2 id="q">8. 결정 (2026-11-25 기획자)</h2>
+<table>
+  <tr><th>#</th><th>물음</th><th>결정</th></tr>
+  <tr><td>1</td><td class="q">[다시 뽑기]를 둘까?</td><td class="rec">없앤다 — 단추 없이 아무 데나 누르면 닫힘(다른 축하 화면과 같다)</td></tr>
+  <tr><td>2</td><td class="q">5초 도입을 매번 보는 번거로움</td><td class="rec">걷는 중에 화면을 누르면 곧장 번쩍으로 (2절 「건너뛰기」)</td></tr>
+  <tr><td>3</td><td class="q">발소리 효과음</td><td class="rec">넣는다 — 소리는 기획자가 찾아 준다</td></tr>
+  <tr><td>4</td><td class="q">잉여 카드 모집도 이 연출로?</td><td class="rec">아니다 — 잉여 카드는 연출을 따로 만든다</td></tr>
+  <tr><td>5</td><td class="q">높은 등급을 미리 귀띔할까?</td><td class="rec">한다 — 높은 등급이 가운데부터 서고, 등 뒤에서 등급 섬광(E 금 · S 자주 · A 흰 별빛) (2절 「등 뒤의 등급 섬광」)</td></tr>
+</table>
+<p class="sub">생성 이미지(5절) · 발소리(<code>walking_edit.mp3</code>)를 받아 같은 날 구현했다 — 아래 9절.</p>
+
+<h2 id="test">9. 시험 결과 (2026-11-25 구현)</h2>
+<div class="note">
+  실제 장터 화면(휴대폰 390×844)에서 1 · 3 · 5명을 모집해 찍었다. 그림은 <code>shots/</code>에 있다.
+  <b>발소리는 화면으로 확인할 수 없어 겹치는 간격 · 크기를 숫자로만 맞췄다</b> — 직접 들어 보고 알려 주기.
+</div>
+
+<h3>직접 해 보기</h3>
+<ol class="steps">
+  <li>개발 서버 둘 — <code>npm run dev</code>(5173) · <code>npm run server-api</code>(8787).</li>
+  <li>로그인 → 장터 → [용병 시장] → [1명] · [3명] · [5명] 중 하나 (금화 · 궁궐 빈자리가 있어야 눌린다).</li>
+  <li>걷는 중에 화면을 누르면 곧장 번쩍으로 · 무대가 뜨면 아무 데나 눌러 닫기.</li>
+  <li>자동 확인 — <code>node --experimental-strip-types --env-file=.env tools/market_ux.ts</code> (1 · 3명 · 건너뛰기 · 자리 · 섬광까지 본다).</li>
+</ol>
+
+<h3>1명 — S급(마초)이 와서 등 뒤가 자주색</h3>
+<div class="shots">
+  <figure><img src="shots/1-walk-a.jpg" alt="1명 걷기 1.6초"><figcaption>1.6초 — 지평선에서 출발</figcaption></figure>
+  <figure><img src="shots/1-walk-b.jpg" alt="1명 걷기 3.8초"><figcaption>3.8초 — 가까이, 해가 커진다</figcaption></figure>
+  <figure><img src="shots/1-stage.jpg" alt="1명 무대"><figcaption>무대 — 문장 앞에 한 명</figcaption></figure>
+</div>
+
+<h3>3명 — A급 하나가 가운데, 그 등 뒤만 흰 별빛</h3>
+<div class="shots">
+  <figure><img src="shots/3-walk-a.jpg" alt="3명 걷기"><figcaption>1.2초 — 셋이 출발(이 판은 여기서 눌러 건너뛰었다)</figcaption></figure>
+  <figure><img src="shots/3-stage.jpg" alt="3명 무대"><figcaption>무대 — V자, 가운데 A급(황개)이 앞</figcaption></figure>
+</div>
+
+<h3>5명 — A급 둘이 가운데 두 자리, 흰 별빛</h3>
+<div class="shots">
+  <figure><img src="shots/5-walk-a.jpg" alt="5명 걷기 1"><figcaption>약 1초</figcaption></figure>
+  <figure><img src="shots/5-walk-b.jpg" alt="5명 걷기 2"><figcaption>약 2.5초</figcaption></figure>
+  <figure><img src="shots/5-walk-c.jpg" alt="5명 걷기 3"><figcaption>약 4초 — 등 뒤 섬광 · 해</figcaption></figure>
+  <figure><img src="shots/5-walk-d.jpg" alt="번쩍"><figcaption>번쩍</figcaption></figure>
+  <figure><img src="shots/5-stage.jpg" alt="5명 무대"><figcaption>무대 — W자</figcaption></figure>
+</div>
+
+<h3>자동 확인 (<code>tools/market_ux.ts</code>)</h3>
+<table>
+  <tr><th>무엇</th><th>결과</th></tr>
+  <tr><td>걸어오는 실루엣 수 = 뽑은 수</td><td class="rec">통과 (1 · 3)</td></tr>
+  <tr><td>높은 등급이 가운데부터 · 무대도 같은 자리</td><td class="rec">통과 — 예: 3명 「0:B 1:A 2:B」</td></tr>
+  <tr><td>자리마다 등 뒤 섬광 = 등급(A 흰 · S 자주 · E 금 · 그 밖 없음)</td><td class="rec">통과 — 1명 S급 자주 · 3명 「- 흰 -」</td></tr>
+  <tr><td>걷는 중에 누르면 곧장 번쩍 → 무대</td><td class="rec">통과 — 누른 뒤 무대까지 약 0.86초(대기 0.4초 + 확인 도구의 기다림)</td></tr>
+  <tr><td>무대가 열린 직후의 누름은 넘김</td><td class="rec">통과</td></tr>
+  <tr><td>[다시 뽑기]가 없다</td><td class="rec">통과</td></tr>
+  <tr><td>금화 · 새 장수가 풀에 든 수</td><td class="rec">통과</td></tr>
+  <tr><td>5명</td><td>시험 계정의 빈자리가 4라 자동 확인 밖 — 따로 한 번 찍어 눈으로 봤다(위)</td></tr>
+</table>
+
+<h3>구현하며 바꾼 것 · 남은 것</h3>
+<ul>
+  <li>실루엣 그림자 — 처음엔 밝은 삼각형처럼 보여 흐리고 옅게(곱하기 섞기) 바꿨다.</li>
+  <li>옛 뽑기 섬광(<code>BurstStage</code>)은 이제 쓰는 곳이 없다 — 잉여 카드 연출을 따로 만들 때 쓸 수도 있어 남겨 두었다.</li>
+  <li>원본 그림을 다시 받으면 <code>python tools/build_celebrate_intro.py</code>로 다시 굽는다(문장은 <code>npm run ui</code>).</li>
+</ul>
+
+</main>
+</body>
+</html>
