@@ -283,6 +283,11 @@ GLOWS: dict[str, tuple[str, int]] = {
     # 후광(2026-10-23 기획자 지정) — S급 장수 · Lv4 병기 · 아이템은 자주, E급 황제 · 최고 레벨은 금. 같은 꼴(16:9)이다
     "blink_purple": ("glow-blink-purple.png", 640),
     "blink_gold": ("glow-blink-gold.png", 640),
+    # 등급 후광 셋(2026-11-25 기획자) — A급 붉은 · B급 푸른 · C급 초록(흰 별빛은 D급). 정사각으로 왔다 — 아래 굽기가 16:9로 양옆에 검정을 덧대
+    # 다른 별빛과 같은 꼴 · 같은 크기로 맞춘다(화면의 `.blink-halo`가 640:357로 깐다 — 정사각을 그대로 펴면 빛줄기가 눌린다)
+    "blink_red": ("glow-blink-red.png", 640),
+    "blink_blue": ("glow-blink-blue.png", 640),
+    "blink_green": ("glow-blink-green.png", 640),
 }
 
 BLACK_BG_LEVEL = 28
@@ -1448,7 +1453,14 @@ def main() -> int:
             skipped += 1
             continue
         with Image.open(src) as im:
-            rgb = np.asarray(fit_resize(im.convert("RGB"), width), dtype=np.float32)
+            pic = im.convert("RGB")
+        # 16:9보다 좁으면(정사각 등) 양옆에 검정을 덧대 16:9로 — 빛은 가운데 그대로, 검정은 밝기 = 투명도라 비친다
+        want_w = round(pic.height * 640 / 357)
+        if pic.width < want_w - 2:
+            pad = Image.new("RGB", (want_w, pic.height), (0, 0, 0))
+            pad.paste(pic, ((want_w - pic.width) // 2, 0))
+            pic = pad
+        rgb = np.asarray(fit_resize(pic, width), dtype=np.float32)
         alpha = rgb.max(axis=2)
         color = np.where(alpha[..., None] > 0, rgb * 255.0 / np.maximum(alpha[..., None], 1.0), 0)
         out = np.dstack([np.clip(color, 0, 255), alpha]).astype(np.uint8)

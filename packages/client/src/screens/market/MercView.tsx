@@ -4,7 +4,7 @@
  * ```
  * 현황판   [금화] n   [장수] 풀/상한   [잉여 카드] n
  * 장수 모집 / 신규 또는 기존 장수
- *          [🪙10] [🪙25] [🪙40]   ← 검은 꼬마 1 · V자 3 · W자 5(글자 없음), 뒤 후광이 흰 → 자주 → 금. 궁궐 빈자리가 모자라면 자물쇠 + 「궁궐 증축 필요」
+ *          [🪙10] [🪙25] [🪙40]   ← 검은 꼬마 1 · V자 3 · W자 5(글자 없음), 뒤 후광이 금 → 자주 → 붉은 → 푸른(E · S · A · B). 궁궐 빈자리가 모자라면 자물쇠 + 「궁궐 증축 필요」
  * 장수 레벨업 카드 / 기존 장수 중 랜덤 한 명
  *          [🂠10] [🂠20] [🂠30]   ← 잉여 카드로. 카드 가운데 위 등급 표(A · S · E, 글자 없음) + 표 뒤 후광. E급은 헌제를 거느릴 때만(아니면 잿빛)
  * 바닥     [뒤로 가기]
@@ -37,7 +37,7 @@ import { pickOfficerName } from '../../i18n/story.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { GradeBadge } from '../GradeBadge.tsx';
 import { OfficerActionArt, OfficerStand } from '../OfficerArt.tsx';
-import { GoldCost, Halo, Layer } from './parts.tsx';
+import { ConfirmModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 import { Celebrate } from '../Celebrate.tsx';
@@ -86,7 +86,7 @@ export function MercStatus({ profile }: { profile: PlayerProfile }): React.JSX.E
   return (
     <section className="place-panel mkt-status mkt-merc-status" data-field="mercStatus">
       <span className="mkt-cur" data-currency="gold" data-field="gold" data-gold={profile.gold}>
-        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} />
+        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} data-tip={t('market.gold')} />
         <b className="v">{profile.gold.toLocaleString('en-US')}</b>
       </span>
       <span className="mkt-cur" data-field="pool" data-used={poolUsed(profile)} data-cap={poolCap(profile)}>
@@ -94,7 +94,7 @@ export function MercStatus({ profile }: { profile: PlayerProfile }): React.JSX.E
         <b className="v">{poolUsed(profile)}/{poolCap(profile)}</b>
       </span>
       <span className="mkt-cur" data-field="surplus" data-surplus={surplusOf(profile)}>
-        <img src="market/market_card.png" alt={t('market.status.surplus')} title={t('market.status.surplus')} />
+        <img src="market/market_card.png" alt={t('market.status.surplus')} title={t('market.status.surplus')} data-tip={t('market.status.surplus')} />
         <b className="v">{surplusOf(profile)}</b>
       </span>
     </section>
@@ -103,7 +103,7 @@ export function MercStatus({ profile }: { profile: PlayerProfile }): React.JSX.E
 
 /**
  * 모집 칸의 꼬마 — 1명은 하나, 3명은 V자, 5명은 W자(가입 오프닝의 W 대형과 같은 결).
- * **검은 그림자**라 누군지 모른다 — 후광이 흰색 → 보라 → 금빛으로 2초마다 부드럽게 바뀌고, 꼬마마다 2초씩 어긋나 한 칸에 세 빛이 섞인다 (2026-11-25 기획자)
+ * **검은 그림자**라 누군지 모른다 — 후광이 나올 수 있는 등급의 빛(금 · 자주 · 붉은 · 푸른)으로 2초마다 부드럽게 바뀌고, 꼬마마다 2초씩 어긋나 한 칸에 여러 빛이 섞인다 (2026-11-25 기획자)
  */
 const RECRUIT_STANDS: readonly OfficerId[] = ['gyeong-mu', 'go-sun', 'gwak-jeok', 'go-chang', 'gwan-hae'] as OfficerId[];
 /** 칸 안 자리 — `x`는 가로 %(가운데), `top`이면 뒷줄(위로 조금, 조금 작게). 서로 엉겨 붙을 만큼 촘촘하게 */
@@ -113,18 +113,33 @@ const RECRUIT_LAYOUT: Record<number, readonly { x: number; top: boolean }[]> = {
   5: [{ x: 22, top: false }, { x: 36, top: true }, { x: 50, top: false }, { x: 64, top: true }, { x: 78, top: false }],
 };
 
-/** 꼬마 뒤 후광의 세 빛 — 흰 별빛 → 자주 → 금이 2초마다 부드럽게 넘어간다(셋을 겹쳐 두고 투명도만 돌린다) */
-const RECRUIT_TONES: readonly BlinkTone[] = ['plain', 'purple', 'gold'];
+/**
+ * 꼬마 뒤 후광 — 이 모집에서 나올 수 있는 등급(E · S · A · B)의 빛이 2초마다 부드럽게 넘어간다: 금 → 자주 → 붉은 → 푸른
+ * (2026-11-25 기획자 — 등급마다 한 색). 넷을 겹쳐 두고 투명도만 돌린다. 등급이 바뀌면 `GACHA_GRADES`를 따른다
+ */
+const RECRUIT_TONES: readonly BlinkTone[] = GACHA_GRADES.map(officerBlink);
+
+/**
+ * 후광 자리 — 꼬마마다 다 달면 정신없다(2026-11-25 기획자): 1명은 그 하나, 3명은 양 끝 둘, 5명은 양 끝 둘 + 가운데 조금 위(`lift`) 하나.
+ * 자리 번호는 `RECRUIT_LAYOUT`의 꼬마 차례다
+ */
+const RECRUIT_GLOWS: Record<number, readonly { spot: number; lift?: boolean }[]> = {
+  1: [{ spot: 0 }],
+  3: [{ spot: 0 }, { spot: 2 }],
+  5: [{ spot: 0 }, { spot: 4 }, { spot: 2, lift: true }],
+};
 
 /** 모집 칸의 그림 — 꼬마 1 · V자 3 · W자 5. 후광을 먼저 다 깔고 꼬마를 그 위에 세운다(앞 꼬마의 후광이 뒷 꼬마를 덮지 않게) */
 function RecruitArt({ count }: { count: number }): React.JSX.Element {
   const spots = RECRUIT_LAYOUT[count] ?? RECRUIT_LAYOUT[1]!;
+  const glows = RECRUIT_GLOWS[count] ?? RECRUIT_GLOWS[1]!;
   const at = (s: { x: number }, i: number): React.CSSProperties =>
     ({ left: `${s.x}%`, ['--halo-delay' as string]: `${-2 * (i % 3)}s` });
   return (
     <span className="mkt-recruit-art" data-count={count}>
-      {spots.map((s, i) => (
-        <span key={`g${i}`} className="mkt-recruit-spot mkt-recruit-glow" data-top={s.top || undefined} style={at(s, i)}>
+      {glows.map((g, i) => (
+        <span key={`g${i}`} className="mkt-recruit-spot mkt-recruit-glow" data-top={spots[g.spot]!.top || undefined}
+          data-lift={g.lift || undefined} style={at(spots[g.spot]!, i)}>
           {RECRUIT_TONES.map((tone) => <BlinkGlow key={tone} tone={tone} className="mkt-recruit-halo" />)}
         </span>
       ))}
@@ -153,17 +168,35 @@ export function MercView({ profile, run, busy, onBack }: {
   const [got, setGot] = useState<OfficerId | null>(null);
   /** 막힌 칸을 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다 */
   const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
+  /** 사기 전에 묻는 판 — 모집(몇 명) · 레벨업 카드(어느 등급) */
+  const [ask, setAsk] = useState<{ at: 'pull'; kind: GachaPullKind } | { at: 'surplus'; grade: SurplusGrade } | null>(null);
   const seats = poolSeatsFree(profile);
 
   const refuse = (r: MetaResult): void => {
     if (!r.ok) setWhy({ text: reasonText(r), code: r.code ?? 'refused' });
   };
 
-  const doPull = (kind: GachaPullKind): void => {
+  // 누르면 먼저 묻는다(확정 · 뒤로 가기, 2026-11-25 기획자 — 금화 · 잉여 카드가 되돌릴 수 없이 나간다). 막힌 칸은 묻지 않고 내관이 까닭만
+  const askPull = (kind: GachaPullKind): void => {
     if (busy) return;
     const can = canPullGacha(profile, kind);
     if (!can.ok) { refuse(can); return; }
     setWhy(null);
+    setAsk({ at: 'pull', kind });
+  };
+  const askExchange = (grade: SurplusGrade): void => {
+    if (busy) return;
+    const can = canExchangeSurplus(profile, grade);
+    if (!can.ok) { refuse(can); return; }
+    setWhy(null);
+    setAsk({ at: 'surplus', grade });
+  };
+
+  const doPull = (kind: GachaPullKind): void => {
+    setAsk(null);
+    if (busy) return;
+    const can = canPullGacha(profile, kind);
+    if (!can.ok) { refuse(can); return; }
     // 모집은 결과(뽑힌 장수)도 함께 온다 — `run`이 프로필만 넘기므로 여기서 한 번 감싼다
     let pulled: Pulled | null = null;
     run(async () => {
@@ -182,10 +215,10 @@ export function MercView({ profile, run, busy, onBack }: {
 
 
   const doExchange = (grade: SurplusGrade): void => {
+    setAsk(null);
     if (busy) return;
     const can = canExchangeSurplus(profile, grade);
     if (!can.ok) { refuse(can); return; }
-    setWhy(null);
     let officer: OfficerId | null = null;
     run(async () => {
       const r = await exchangeSurplusOnServer(grade);
@@ -212,7 +245,7 @@ export function MercView({ profile, run, busy, onBack }: {
                 aria-label={t('market.recruit.n', { n: cost.count })}
                 data-count={cost.count} data-gold={cost.gold} data-locked={noSeat || undefined} disabled={busy}
                 // 막혀도 누를 수 있다 — 누르면 내관이 까닭을 말한다(판에 글을 띄우지 않는다, 2026-11-25 기획자)
-                onClick={() => doPull(kind)}>
+                onClick={() => askPull(kind)}>
                 {noSeat && (
                   <span className="mkt-pack-lock" data-field="noSeat">
                     <GameIcon name="mk-lock" label="" />
@@ -242,7 +275,7 @@ export function MercView({ profile, run, busy, onBack }: {
             return (
               <button key={grade} type="button" className="mkt-pack mkt-surplus" data-action={`surplus-${grade}`} data-grade={grade}
                 aria-label={t('market.surplus.pick', { grade })}
-                data-cost={surplusCost(grade)} data-locked={locked || undefined} disabled={busy} onClick={() => doExchange(grade)}>
+                data-cost={surplusCost(grade)} data-locked={locked || undefined} disabled={busy} onClick={() => askExchange(grade)}>
                 {/* 등급 표는 카드 한가운데 위에, 1.5배 — 후광은 카드가 아니라 등급 표 뒤에(A 흰 별빛 · S 자주 · E 금) (2026-11-25 기획자) */}
                 <span className="mkt-surplus-art">
                   <img src="market/market_card.png" alt="" />
@@ -262,6 +295,35 @@ export function MercView({ profile, run, busy, onBack }: {
         </div>
       </section>
       <Say text={why?.text ?? null} level={profile.cityLevel} name="mercWhy" code={why?.code} repeat />
+
+      {/* ── 사기 전에 묻는다 (2026-11-25 기획자) — 도시 물자의 확인 판과 같은 꼴: 그림 · 한 줄 · 「확정하시겠습니까?」 · [확정 (값)] [뒤로 가기] ── */}
+      {ask?.at === 'pull' && (() => {
+        const cost = gachaPullCost(ask.kind);
+        return (
+          <ConfirmModal title={t('market.recruit.title')} field="recruitAsk" disabled={busy}
+            okLabel={<span className="mkt-buy-lbl">{t('market.confirm.ok')} (<GoldCost gold={cost.gold} times />)</span>}
+            onConfirm={() => doPull(ask.kind)} onClose={() => setAsk(null)}>
+            <span className="mkt-ask-art"><RecruitArt count={cost.count} /></span>
+            <p className="mkt-confirm-lead" data-field="recruitAskWhat">{t('market.recruit.ask', { n: cost.count })}</p>
+            <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
+          </ConfirmModal>
+        );
+      })()}
+      {ask?.at === 'surplus' && (
+        <ConfirmModal title={t('market.surplus.title')} field="surplusAsk" disabled={busy}
+          okLabel={<span className="mkt-buy-lbl">{t('market.confirm.ok')} (<span className="mkt-gold"><img src="market/market_card.png" alt={t('market.status.surplus')} /> × {surplusCost(ask.grade)}</span>)</span>}
+          onConfirm={() => doExchange(ask.grade)} onClose={() => setAsk(null)}>
+          <span className="mkt-surplus-art mkt-ask-card">
+            <img src="market/market_card.png" alt="" />
+            <span className="mkt-surplus-mark">
+              <BlinkGlow tone={officerBlink(ask.grade)} className="mkt-surplus-halo" />
+              <GradeBadge grade={ask.grade} />
+            </span>
+          </span>
+          <p className="mkt-confirm-lead" data-field="surplusAskWhat">{t('market.surplus.ask', { grade: ask.grade })}</p>
+          <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
+        </ConfirmModal>
+      )}
 
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">

@@ -237,7 +237,7 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
     <section className="place-panel mkt-status" data-field="status">
       <span className="mkt-lv" data-field="marketLevel"><BuildingLevel id="market" name={buildingNameText('market')} level={lv} /></span>
       <span className="mkt-cur" data-currency="gold" data-field="gold" data-gold={profile.gold}>
-        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} />
+        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} data-tip={t('market.gold')} />
         <b className="v">{profile.gold.toLocaleString('en-US')}</b>
       </span>
       <span className="mkt-cur mkt-stock" data-field="items">

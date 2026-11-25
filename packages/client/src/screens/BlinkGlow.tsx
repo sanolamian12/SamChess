@@ -4,11 +4,14 @@
  * 예전에는 대장간의 둥근 후광(`blacksmith/lightEffect_lv{1..5}_{색}.png`)을 레벨 · 등급 색에 맞춰 돌렸는데 어색해 보여서,
  * **가입 오프닝의 장수 등장 섬광**(`.ngo-member::after` — `ui/glow-blink.png`)을 그대로 빌렸다. 꼴은 셋뿐이다:
  *
- * | 색 | 장수 | 병기 · 시장 아이템 |
+ * | 색 | 장수 (2026-11-25 기획자 — 등급마다 한 색) | 병기 · 시장 아이템 |
  * |---|---|---|
  * | 금(`glow-blink-gold`) | E급(황제) | 최고 레벨 |
  * | 자주(`glow-blink-purple`) | S급 | 최고 레벨 바로 아래(지금 Lv4) |
- * | 흰 별빛(`glow-blink`) | 나머지 전부 | 나머지 전부 |
+ * | 붉은(`glow-blink-red`) | A급 | — |
+ * | 푸른(`glow-blink-blue`) | B급 | — |
+ * | 초록(`glow-blink-green`) | C급 | — |
+ * | 흰 별빛(`glow-blink`) | D급 | 나머지 전부 |
  *
  * 최고 레벨은 숫자로 적지 않고 데이터(`EQUIPMENT` · `MARKET_ITEMS`의 `unlockLevel`)에서 낸다 — 표가 늘면 따라온다.
  * 그림은 `tools/build_ui.py`의 `GLOWS`가 `assets/icons/ui/blink*.{jpg,png}`를 밝기 = 투명도로 굽는다.
@@ -23,21 +26,22 @@
 import { EQUIPMENT, MARKET_ITEMS } from '@samchess/data';
 import type { Grade } from '@samchess/rules';
 
-export type BlinkTone = 'plain' | 'purple' | 'gold';
+export type BlinkTone = 'plain' | 'purple' | 'gold' | 'red' | 'blue' | 'green';
 
 const FILE: Record<BlinkTone, string> = {
   plain: 'ui/glow-blink.png', purple: 'ui/glow-blink-purple.png', gold: 'ui/glow-blink-gold.png',
+  red: 'ui/glow-blink-red.png', blue: 'ui/glow-blink-blue.png', green: 'ui/glow-blink-green.png',
 };
 
-/** 장수 등급 → 색. E급(황제)만 금, S급만 자주, 나머지는 흰 별빛 */
-export const officerBlink = (grade: Grade | string): BlinkTone =>
-  grade === 'E' ? 'gold' : grade === 'S' ? 'purple' : 'plain';
+/** 장수 등급 → 색 (2026-11-25 기획자) — E 금 · S 자주 · A 붉은 · B 푸른 · C 초록 · D 흰 별빛 */
+const GRADE_BLINK: Record<string, BlinkTone> = { E: 'gold', S: 'purple', A: 'red', B: 'blue', C: 'green', D: 'plain' };
+export const officerBlink = (grade: Grade | string): BlinkTone => GRADE_BLINK[grade] ?? 'plain';
 
 /**
- * 꼬마 뒤 후광 — S급 자주 · A급 흰 별빛 · E급(황제) 금, B · C · D급은 없다(2026-11-13 기획자 — 부대 관리 · 부대원 · 농지, 2026-11-18 배치 편집).
+ * 꼬마 뒤 후광 — S급 자주 · A급 붉은(2026-11-25, 옛 흰 별빛) · E급(황제) 금, B · C · D급은 없다(2026-11-13 기획자 — 부대 관리 · 부대원 · 농지, 2026-11-18 배치 편집).
  * 장수 그림 뒤(`officerBlink`)와 달리 낮은 등급에는 안 단다 — 꼬마가 줄지어 서는 화면이라 다 빛나면 등급이 안 갈린다
  */
-export const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'plain', E: 'gold' };
+export const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'red', E: 'gold' };
 
 const EQUIP_MAX = Math.max(...EQUIPMENT.map((e) => e.unlockLevel));
 const ITEM_MAX = Math.max(...MARKET_ITEMS.map((m) => m.unlockLevel));

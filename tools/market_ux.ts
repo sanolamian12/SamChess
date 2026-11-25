@@ -246,6 +246,17 @@ try {
   await page.click('[data-action="openMerc"]');
   await page.waitForSelector('[data-field="mercShop"]', { timeout: 5_000 });
   const mercBox = await panelBox('[data-field="mercStatus"]');
+  // 현황판 아이콘 셋 — 누르면 이름 말풍선(`TapTip`, 2026-11-25 기획자: 장수만 뜨던 것을 금화 · 잉여 카드도)
+  const tipTexts: string[] = [];
+  for (const f of ['gold', 'pool', 'surplus']) {
+    await page.click(`[data-field="mercStatus"] [data-field="${f}"] img`);
+    const tip = await page.waitForSelector('.tap-tip', { timeout: 2_000 }).catch(() => null);
+    if (!tip) fail(`현황판 ${f} 아이콘을 눌러도 말풍선이 안 뜬다`);
+    tipTexts.push((await tip!.textContent())?.trim() ?? '');
+    await page.mouse.click(5, 5);
+    await page.waitForSelector('.tap-tip', { state: 'detached', timeout: 3_000 }).catch(() => {});
+  }
+  ok(`현황판 아이콘 말풍선 — ${tipTexts.join(' · ')}`);
   if (['top', 'h', 'left', 'w'].some((k) => Math.abs(homeBox[k as 'top'] - mercBox[k as 'top']) > 0.5)) {
     fail(`용병 시장 현황판이 홈과 다르다 — 홈 ${JSON.stringify(homeBox)} · 용병 ${JSON.stringify(mercBox)}`);
   }
@@ -285,11 +296,14 @@ try {
   await page.waitForSelector('.stw[data-say="mercWhy"][data-say-code="market.recruit.noSeat"]', { timeout: 5_000 });
   const h1 = await shopH();
   if (Math.abs(h1 - h0) > 0.5) fail(`잿빛 칸을 누르자 판 높이가 바뀌었다 — ${h0.toFixed(1)} → ${h1.toFixed(1)}px`);
-  if (await page.$('[data-intro="recruit"], [data-modal="reveal"], [data-modal="surplusDone"]')) fail('막힌 칸을 눌렀는데 모집이 됐다');
+  if (await page.$('[data-intro="recruit"], [data-modal="reveal"], [data-modal="surplusDone"], [data-modal="recruitAsk"], [data-modal="surplusAsk"]')) fail('막힌 칸을 눌렀는데 묻는 판 · 모집이 떴다');
   ok('잿빛 칸 — E급(헌제 없음) · 5명(빈자리 모자람)을 누르면 내관이 까닭을 말하고, 판 높이는 그대로');
   // 모집 칸마다 나올 수 있는 등급 표(E · S · A · B) — 데이터(`GACHA_GRADES`)와 같은 수
   const gradeRows = await page.$$eval('[data-field="recruitGrades"]', (els) => els.map((e) => e.querySelectorAll('.gr').length));
   if (gradeRows.length !== 3 || gradeRows.some((n) => n !== GACHA_GRADES.length)) fail(`모집 칸 등급 표 — ${gradeRows.join(',')} (${GACHA_GRADES.join('')}여야 한다)`);
+  // 후광 자리 — 1명 하나 · 3명 양 끝 둘 · 5명 양 끝 + 가운데 조금 위 셋(다 달면 정신없다, 2026-11-25 기획자)
+  const glowSpots = await page.$$eval('[data-action^="pull-"]', (els) => els.map((b) => b.querySelectorAll('.mkt-recruit-glow').length));
+  if (glowSpots.join() !== '1,2,3') fail(`모집 칸 후광 수 — ${glowSpots.join()} (1,2,3이라야 한다)`);
   // 자리 — 종이 가로 한가운데, 가격 붓 획 바로 위(0~6px) · 실루엣보다 앞 층 (2026-11-25 기획자). 등급 표는 누름을 안 받아(`pointer-events: none`)
   // `elementFromPoint`로는 못 잰다 — 같은 쌓임 맥락(단추) 안의 z를 견준다(실루엣 자리 · 후광은 `.mkt-recruit-art`가 z를 안 만들어 단추 맥락에 든다)
   const gradeSpots = await page.$$eval('[data-action^="pull-"]', (els) => els.map((b) => {
@@ -345,7 +359,7 @@ try {
   });
   await shot('merc-halo');
   const lit = glow.tones.filter(([, o]) => o > 0.3).length;
-  if (glow.tones.map(([t]) => t).join() !== 'plain,purple,gold' || lit < 1 || lit > 2) fail(`꼬마 후광 — ${JSON.stringify(glow.tones)}`);
+  if (glow.tones.map(([t]) => t).join() !== 'gold,purple,red,blue' || lit < 1 || lit > 2) fail(`꼬마 후광 — ${JSON.stringify(glow.tones)}`);
   if (glow.marks.some((m) => m.halo < 0.3 || m.off > 1.5)) fail(`등급 표 · 후광 — ${JSON.stringify(glow.marks)}`);
   if (glow.names > 0 || glow.cardHalo > 0) fail(`걷은 것이 남았다 — 이름 칸 ${glow.names} · 카드 후광 ${glow.cardHalo}`);
   if (glow.scroll > 1 || glow.bars > 0) fail(`용병 시장에 스크롤 — 넘침 ${glow.scroll}px · 스크롤 판 ${glow.bars}`);
@@ -356,7 +370,7 @@ try {
   // 장수 모집 연출 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 걷는 장면(뽑은 수만큼 · 높은 등급이 가운데 · 등 뒤 등급 섬광) →
   // 번쩍 → 무대(걸어온 자리 그대로). 단추 없이 아무 데나 누르면 닫힘, 걷는 중에 누르면 곧장 번쩍, 무대가 열린 직후 0.6초는 누름을 넘긴다
   /** 걷는 창의 실루엣(자리 · 섬광)과 무대의 장수(자리 · 등급)가 맞는가 — 높은 등급이 가운데부터, 섬광은 A 흰 · S 자주 · E 금 */
-  const GLOW: Record<string, string> = { A: 'plain', S: 'purple', E: 'gold' };
+  const GLOW: Record<string, string> = { A: 'red', S: 'purple', E: 'gold' };
   const RANK: Record<string, number> = { E: 6, S: 5, A: 4, B: 3, C: 2, D: 1 };
   const CENTER_OUT: Record<number, number[]> = { 1: [0], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
   const walkersNow = (): Promise<{ seat: number; glow: string | null }[]> => page.$$eval('.cin-recruit .cir-walker[data-stage="0"]',
@@ -378,7 +392,26 @@ try {
 
   step('1명 모집 — 실루엣 하나가 걸어오고 해가 번쩍 → 무대(계정 문장 앞에 한 명)');
   let gold = await goldOf();
+  // 사기 전에 묻는다 — [뒤로 가기]면 한 푼도 안 나간다, [확정]이면 산다 (2026-11-25 기획자)
   await page.click('[data-action="pull-one"]');
+  await page.waitForSelector('[data-modal="recruitAsk"]', { timeout: 5_000 });
+  await shot('recruit-ask');
+  // 묻는 판의 한 줄은 판 안에서 가운데 — 일본어 · 중국어는 띄어쓰기가 없어 `keep-all`이면 판 밖으로 넘쳤다 (2026-11-25)
+  const askFits = (field: string) => page.evaluate((f) => {
+    const p = document.querySelector<HTMLElement>(`[data-field="${f}"]`)!;
+    const body = p.closest('.mkt-confirm-body')!.getBoundingClientRect();
+    const range = document.createRange(); range.selectNodeContents(p);
+    const txt = range.getBoundingClientRect();
+    return { inside: txt.left >= body.left - 1 && txt.right <= body.right + 1, off: Math.abs((txt.left + txt.right) / 2 - (body.left + body.right) / 2) };
+  }, field);
+  const recruitFit = await askFits('recruitAskWhat');
+  if (!recruitFit.inside || recruitFit.off > 3) fail(`모집 묻는 판의 글이 판 밖이거나 가운데가 아니다 — ${JSON.stringify(recruitFit)}`);
+  await page.click('[data-modal="recruitAsk"] [data-action="confirmCancel"]');
+  await page.waitForSelector('[data-modal="recruitAsk"]', { state: 'detached', timeout: 3_000 });
+  if (await goldOf() !== gold || await page.$('[data-intro="recruit"]')) fail('묻는 판에서 물렀는데 모집이 됐다');
+  await page.click('[data-action="pull-one"]');
+  await page.waitForSelector('[data-modal="recruitAsk"]', { timeout: 5_000 });
+  await page.click('[data-modal="recruitAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
   // 배경 음악은 연출 동안 멎는다(`holdBgm`) — 닫으면 다시
   await page.waitForTimeout(400);
@@ -422,6 +455,7 @@ try {
   const before = (await getProfile(uid))!;
   gold = before.gold;
   await page.click('[data-action="pull-three"]');
+  await page.click('[data-modal="recruitAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-intro="recruit"]', { timeout: 15_000 });
   await page.waitForTimeout(1_200);
   await shot('recruit-walk-three');
@@ -454,6 +488,11 @@ try {
   step('잉여 카드로 A급 확정 — 장수 모집 1명과 같은 연출, 실루엣은 받는 장수의 무기(창 1 · 부채 2 · 그 밖 3 · 칼 4 · 활 5)');
   const s0 = (await getProfile(uid))!;
   await page.click('[data-action="surplus-A"]');
+  await page.waitForSelector('[data-modal="surplusAsk"]', { timeout: 5_000 });
+  await shot('surplus-ask');
+  const surplusFit = await askFits('surplusAskWhat');
+  if (!surplusFit.inside || surplusFit.off > 3) fail(`레벨업 카드 묻는 판의 글이 판 밖이거나 가운데가 아니다 — ${JSON.stringify(surplusFit)}`);
+  await page.click('[data-modal="surplusAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
   await page.waitForTimeout(1_500);
   const surplusWalk = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.cin-recruit .cir-walker[data-stage="0"]')].map((e) => ({ art: Number(e.dataset.art), glow: e.dataset.glow ?? null })));
@@ -466,11 +505,11 @@ try {
   const s1 = (await getProfile(uid))!;
   if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - surplusCost('A')) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — ${surplusCost('A')}장 줄어야 한다`);
   if (gradeOf(got) !== 'A') fail(`받은 장수 ${got}가 A급이 아니다`);
-  if (surplusWalk.length !== 1 || surplusWalk[0]!.art !== walkerArtOf(got) || surplusWalk[0]!.glow !== 'plain') fail(`실루엣이 ${got}(무기 ${walkerArtOf(got)} · A급 흰 별빛)과 다르다 — ${JSON.stringify(surplusWalk)}`);
+  if (surplusWalk.length !== 1 || surplusWalk[0]!.art !== walkerArtOf(got) || surplusWalk[0]!.glow !== 'red') fail(`실루엣이 ${got}(무기 ${walkerArtOf(got)} · A급 붉은 빛)과 다르다 — ${JSON.stringify(surplusWalk)}`);
   // 풀 장수는 카드 +1, 보관함 장수가 빈자리로 들면 풀에 든다
   const gained = (s1.cards[got] ?? 0) === (s0.cards[got] ?? 0) + 1 || (!s0.roster[got] && Boolean(s1.roster[got]));
   if (!gained) fail(`${got}의 카드가 ${s0.cards[got]} → ${s1.cards[got]}다`);
-  ok(`A급 확정 — ${got} · 실루엣 ${surplusWalk[0]!.art}(무기) · 흰 별빛 · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
+  ok(`A급 확정 — ${got} · 실루엣 ${surplusWalk[0]!.art}(무기) · 붉은 빛 · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
   await page.click('[data-action="surplusClose"]');
   await page.waitForSelector('[data-modal="surplusDone"]', { state: 'detached', timeout: 3_000 });
 

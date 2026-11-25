@@ -3655,14 +3655,16 @@ button.lv-tactic-row {
 .mkt-recruit-halo .blink-halo, .mkt-surplus-halo .blink-halo { opacity: 1; animation: blink-turn 14s linear infinite; }
 .mkt-recruit-halo {
   inset: 0; --blink-w: 2.7; opacity: 0;
-  animation: mkt-halo-cycle 6s ease-in-out infinite; animation-delay: calc(var(--halo-delay, 0s) + var(--tone-shift, 0s));
+  animation: mkt-halo-cycle 8s ease-in-out infinite; animation-delay: calc(var(--halo-delay, 0s) + var(--tone-shift, 0s));
 }
-.mkt-recruit-halo[data-blink="purple"] { --tone-shift: -4s; }
-.mkt-recruit-halo[data-blink="gold"] { --tone-shift: -2s; }
-@keyframes mkt-halo-cycle { 0%, 16.667% { opacity: 1; } 33.333%, 83.333% { opacity: 0; } 100% { opacity: 1; } }
+/* 넷이 차례로 — 금(E) 0초 · 자주(S) 2초 · 붉은(A) 4초 · 푸른(B) 6초에 떠오른다(8초 한 바퀴, 1초 머물고 1초 넘어감) */
+.mkt-recruit-halo[data-blink="purple"] { --tone-shift: -6s; }
+.mkt-recruit-halo[data-blink="red"] { --tone-shift: -4s; }
+.mkt-recruit-halo[data-blink="blue"] { --tone-shift: -2s; }
+@keyframes mkt-halo-cycle { 0%, 12.5% { opacity: 1; } 25%, 87.5% { opacity: 0; } 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .mkt-recruit-halo { animation: none; }
-  .mkt-recruit-halo[data-blink="plain"] { opacity: 1; }
+  .mkt-recruit-halo[data-blink="gold"] { opacity: 1; }
 }
 /* 잉여 카드 모집 — 장수 카드 + 한가운데 위에 등급 표(1.5배, 1.2rem → 1.8rem) · 표 뒤에 등급 후광 (2026-11-25 기획자 — 카드 뒤 후광은 걷었다) */
 .mkt-surplus-art { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 3.6rem; }
@@ -3781,8 +3783,9 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 /* 보관함 — **한 개에 한 줄**: 그림 · 이름(아래 효과) · 타입 · 구매일 · 지급 · 명령 (2026-09-24 지정,
    대장간 지급 관리와 같은 꼴). 칸 이름(`.c-made`·`.c-hold`)도 대장간 것과 같은 뜻이다 —
    다만 대장간 규칙은 `.frg-row`로 묶여 있어 여기서 따로 적는다(이름만 빌려 쓰면 아무것도 안 걸린다) */
+/* 구매일 칸 3.2rem — 몽골어 글꼴(PT Serif)에서 「26.11.25」가 2.8rem을 넘어 잘렸다(2026-11-25) */
 .mkt-irow.mkt-srow {
-  grid-template-columns: 2.6rem minmax(0, 1fr) 3rem 2.8rem 3rem 4.2rem;
+  grid-template-columns: 2.6rem minmax(0, 1fr) 3rem 3.2rem 3rem 4.2rem;
   column-gap: .25rem;
   grid-template-areas: "art nm kd made hold q" "art fx fx fx fx q";
 }
@@ -11336,3 +11339,21 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .mkt-pack-grades .gr:nth-child(2) { z-index: 3; }
 .mkt-pack-grades .gr:nth-child(3) { z-index: 2; }
 .mkt-pack-grades .gr:nth-child(4) { z-index: 1; }
+/* 용병 시장 확인 판의 그림 — 모집은 칸의 꼬마 그대로(검은 실루엣 · 후광), 레벨업 카드는 카드 + 등급 표 (2026-11-25 기획자) */
+.mkt-ask-art { display: block; width: 9rem; }
+.mkt-ask-art .mkt-recruit-art { height: 5rem; --rs: 4rem; }
+.mkt-ask-art .mkt-recruit-art[data-count="3"] { --rs: 3.7rem; }
+.mkt-ask-art .mkt-recruit-art[data-count="5"] { --rs: 3.3rem; }
+.mkt-surplus-art.mkt-ask-card { width: 5rem; height: 5rem; }
+.mkt-surplus-art.mkt-ask-card > img { width: 4rem; height: 4rem; }
+/* 일본어 · 중국어 — 띄어쓰기가 없어 `word-break: keep-all`이면 한 문장이 끊을 자리 없는 한 낱말이 되어 판 밖으로 넘친다
+   (「A級武将のカードを1枚受け取ります。」가 양옆이 잘렸고, 좁은 화면에서는 「武将を1人募集します。」가 가운데에서 밀렸다, 2026-11-25 기획자).
+   글자 사이에서 끊되 문장부호 규칙은 지킨다(`line-break: strict`) — 튜토리얼 말풍선과 같은 처리. 제목은 자간을 줄여 한 줄에 */
+:root:is([data-lang="ja"], [data-lang="zh_Hans"], [data-lang="zh_Hant"]) .mkt-confirm-body { word-break: normal; line-break: strict; }
+:root:is([data-lang="ja"], [data-lang="zh_Hans"], [data-lang="zh_Hant"]) .modal.mkt-confirm .modal-ttl { letter-spacing: .02em; }
+/* 보관함 — 효과 글이 두 줄로 접히는 언어(일본어 · 몽골어 …)에서 여섯 줄 + 쪽 줄이 판을 넘었다(스크롤 없음 규칙에 걸려 아래가 잘렸다, 2026-11-25).
+   줄 위아래 여백과 효과 글 줄 간격을 조금 줄여 담는다 — 글은 자르지 않는다(「+5」 같은 값이 둘째 줄에 있다) */
+.mkt-list[data-field="storage"] .mkt-irow { padding: .14rem 0; }
+.mkt-list[data-field="storage"] .mkt-irow > .c-fx { line-height: 1.18; }
+/* 5명 칸 가운데 후광 — 가운데 꼬마보다 조금 위(뒷줄 머리께)에서 (2026-11-25 기획자) */
+.mkt-recruit-spot.mkt-recruit-glow[data-lift] { bottom: .9rem; }
