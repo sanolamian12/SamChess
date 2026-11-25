@@ -253,8 +253,8 @@ function StarIntro({ intro, plan }: { intro: keyof typeof STAR_PLANS; plan: Star
 }
 
 /**
- * 장수 모집 도입부 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 4:3 창 안에서 석양을 등진 실루엣(뽑는 수만큼)이
- * 지평선에서 다가오고, 해가 점점 커지다 4.6초에 번쩍 → 5초 「쾅」. 높은 등급(A · S · E)이 가운데부터 서고 등 뒤에서 그 등급의 섬광이 비친다.
+ * 장수 모집 도입부 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 화면 전체의 석양 궁성 광장에서 석양을 등진 실루엣(뽑는 수만큼)이
+ * 궁성 문에서 나와 다가오고, 해가 점점 커지다 4.6초에 번쩍 → 5초 「쾅」. 높은 등급(A · S · E)이 가운데부터 서고 등 뒤에서 그 등급의 섬광이 비친다.
  * 시각은 전부 CSS(`.cir-*`)에 있고 늦춤은 `calc(… - var(--cir-skip))`로 적었다 — 건너뛰면 열쇠를 바꿔 다시 그리며 `--cir-skip`을 4.6초로 둔다.
  */
 /** 다가오는 정지 장면 넷 — 크기 · 시각은 CSS(`.cir-walker[data-stage]`, `cir-stage-*`) */
@@ -304,7 +304,7 @@ function RecruitIntro({ walkers, skipped, onSkip }: {
       {/* 열쇠를 바꿔 다시 그린다 — 애니메이션이 처음부터, 늦춤에서 `--cir-skip`만큼 빼고 돈다 */}
       <div key={skipped ? 'skip' : 'run'} className="cel-charge cin-recruit" data-count={n}
         style={{ '--cir-skip': skipped ? `${RECRUIT_SKIP_TO_MS}ms` : '0ms' } as React.CSSProperties}>
-        {/* 창 틀(4:3) — 창은 가장자리가 번지게 가리고(`mask`), 번쩍은 그 가림 밖까지 터지도록 틀에 따로 */}
+        {/* 그림 틀(941:1672, 화면을 덮는다) — 안쪽 자리는 그림 안의 비율. 번쩍은 창(어둠에서 떠오르는 층) 밖, 틀에 따로 */}
         <div className="cir-frame">
         <div className="cir-window">
           <div className="cir-world">
@@ -313,9 +313,9 @@ function RecruitIntro({ walkers, skipped, onSkip }: {
             <img className="cir-dust" data-n="1" src="ui/intro-recruit-dust-1.jpg" alt="" />
             {/* 오프닝 영상처럼 정지 장면 넷이 부드럽게 넘어간다(2026-11-25 기획자 — 「연속으로 다가오기보다」) — 자리마다 크기가 다른 넷을 겹쳐 두고 투명도만 넘긴다 */}
             {RECRUIT_STAGES.map((stage) => walkers.map((w, seat) => (
-              <div key={`${stage}-${seat}`} className="cir-walker" data-seat={seat} data-stage={stage} data-art={w.art} data-glow={w.glow ?? undefined}>
+              <div key={`${stage}-${seat}`} className="cir-walker" data-seat={seat} data-stage={stage} data-art={w.art}>
                 <i className="cir-shadow" />
-                {w.glow && <BlinkGlow tone={w.glow} className="cir-glow" />}
+                {/* 걷는 동안은 등 뒤 섬광이 없다 — 다가오며 크게 불어난 빛이 보기 싫었다(2026-11-25 기획자). 등급 색은 번쩍 뒤 무대의 후광이 맡는다 */}
                 <img className="cir-body" src={`ui/intro-recruit-walker-${w.art}.png`} alt="" />
               </div>
             )))}

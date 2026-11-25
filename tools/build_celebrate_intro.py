@@ -47,9 +47,9 @@ ITEMS: dict[tuple[str, str], tuple[str, int, str]] = {
     ("city", "city_dragon.png"): ("intro-city-dragon.png", 900, "green"),
     ("city", "city_glint.png"): ("intro-city-glint.jpg", 500, "black"),
     ("city", "city_rays.png"): ("intro-city-rays.jpg", 900, "black"),
-    # 장수 모집(2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 석양 광장(4:3 창에 꽉, 해는 그림 안 50% · 41%) ·
+    # 장수 모집(2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 석양의 궁성 광장(세로, 화면 전체) ·
     # 역광 실루엣 다섯(한 명씩, 발끝이 그림 높이 약 97%) · 해 · 번쩍 · 먼지 둘
-    ("recruit", "recruit_bg.png"): ("intro-recruit-bg.jpg", 1448, "photo"),
+    ("recruit", "recruit_bg.png"): ("intro-recruit-bg.jpg", 1672, "photo"),   # 2026-11-25 새 그림 — 세로 9:16 궁성 광장(화면 전체), 해 50% · 29%, 문 40~44%
     **{("recruit", f"recruit_walker_{i}.png"): (f"intro-recruit-walker-{i}.png", 900, "green") for i in range(1, 6)},
     ("recruit", "recruit_sun.png"): ("intro-recruit-sun.jpg", 900, "black"),
     ("recruit", "recruit_flash.png"): ("intro-recruit-flash.jpg", 900, "black"),

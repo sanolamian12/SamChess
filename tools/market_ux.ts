@@ -370,11 +370,11 @@ try {
   // 장수 모집 연출 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) — 걷는 장면(뽑은 수만큼 · 높은 등급이 가운데 · 등 뒤 등급 섬광) →
   // 번쩍 → 무대(걸어온 자리 그대로). 단추 없이 아무 데나 누르면 닫힘, 걷는 중에 누르면 곧장 번쩍, 무대가 열린 직후 0.6초는 누름을 넘긴다
   /** 걷는 창의 실루엣(자리 · 섬광)과 무대의 장수(자리 · 등급)가 맞는가 — 높은 등급이 가운데부터, 섬광은 A 흰 · S 자주 · E 금 */
-  const GLOW: Record<string, string> = { A: 'red', S: 'purple', E: 'gold' };
   const RANK: Record<string, number> = { E: 6, S: 5, A: 4, B: 3, C: 2, D: 1 };
   const CENTER_OUT: Record<number, number[]> = { 1: [0], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
+  // 걷는 동안은 등 뒤 섬광이 없다(2026-11-25 기획자 — 다가오며 불어난 빛이 보기 싫었다) — `glow`는 실루엣 안의 섬광 상자가 있는가
   const walkersNow = (): Promise<{ seat: number; glow: string | null }[]> => page.$$eval('.cin-recruit .cir-walker[data-stage="0"]',
-    (els) => els.map((e) => ({ seat: Number((e as HTMLElement).dataset.seat), glow: (e as HTMLElement).dataset.glow ?? null })));
+    (els) => els.map((e) => ({ seat: Number((e as HTMLElement).dataset.seat), glow: e.querySelector('.blink-box') ? 'yes' : null })));
   const castNow = (): Promise<{ seat: number; grade: string; fate: string; officer: string }[]> => page.$$eval('[data-modal="reveal"] .rcr-member',
     (els) => els.map((e) => { const d = (e as HTMLElement).dataset; return { seat: Number(d.seat), grade: d.grade!, fate: d.fate!, officer: d.officer! }; }));
   const checkSeats = (n: number, walkers: { seat: number; glow: string | null }[], cast: { seat: number; grade: string }[]): void => {
@@ -386,7 +386,7 @@ try {
     });
     for (const m of cast) {
       const w = walkers.find((x) => x.seat === m.seat);
-      if ((w?.glow ?? null) !== (GLOW[m.grade] ?? null)) fail(`자리 ${m.seat}(${m.grade}급)의 등 뒤 섬광이 ${w?.glow} — ${GLOW[m.grade] ?? '없음'}이라야 한다`);
+      if (!w || w.glow !== null) fail(`자리 ${m.seat}의 걷는 실루엣 — ${w ? '섬광이 남았다' : '없다'}`);
     }
   };
 
@@ -423,7 +423,8 @@ try {
   // 다가옴은 정지 장면 넷이 디졸브로 넘어간다 — 약 2초엔 둘째 장면만 또렷하다
   await page.waitForTimeout(1_400);
   const stageOp = await page.$$eval('.cin-recruit .cir-walker[data-seat="0"]', (els) => els.map((e) => Number(getComputedStyle(e).opacity)));
-  if (stageOp.length !== 4 || stageOp[1]! < 0.9 || stageOp[0]! > 0.1 || stageOp[2]! > 0.1 || stageOp[3]! > 0.1) fail(`2초의 정지 장면 — ${stageOp.map((o) => o.toFixed(2)).join(' ')}`);
+  // 약 2초 — 둘째 장면이 또렷하고, 첫 장면은 잔상(불투명도 .5)으로 남는다(2026-11-25 기획자). 셋째 · 넷째는 아직
+  if (stageOp.length !== 4 || stageOp[1]! < 0.9 || Math.abs(stageOp[0]! - 0.5) > 0.08 || stageOp[2]! > 0.1 || stageOp[3]! > 0.1) fail(`2초의 정지 장면 · 잔상 — ${stageOp.map((o) => o.toFixed(2)).join(' ')}`);
   await shot('recruit-walk-one-early');
   const walkOne = await walkersNow();
   await page.waitForTimeout(1_300);
@@ -495,7 +496,7 @@ try {
   await page.click('[data-modal="surplusAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-intro="recruit"]', { timeout: 10_000 });
   await page.waitForTimeout(1_500);
-  const surplusWalk = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.cin-recruit .cir-walker[data-stage="0"]')].map((e) => ({ art: Number(e.dataset.art), glow: e.dataset.glow ?? null })));
+  const surplusWalk = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.cin-recruit .cir-walker[data-stage="0"]')].map((e) => ({ art: Number(e.dataset.art), glow: e.querySelector('.blink-box') ? 'yes' : null })));
   await shot('surplus-walk');
   await page.waitForSelector('[data-modal="surplusDone"]', { timeout: 10_000 });
   await page.waitForTimeout(900);   // 무대가 열린 직후 0.6초는 누름을 넘긴다
@@ -505,11 +506,11 @@ try {
   const s1 = (await getProfile(uid))!;
   if ((s1.surplusCards ?? 0) !== (s0.surplusCards ?? 0) - surplusCost('A')) fail(`잉여 카드가 ${s0.surplusCards} → ${s1.surplusCards}다 — ${surplusCost('A')}장 줄어야 한다`);
   if (gradeOf(got) !== 'A') fail(`받은 장수 ${got}가 A급이 아니다`);
-  if (surplusWalk.length !== 1 || surplusWalk[0]!.art !== walkerArtOf(got) || surplusWalk[0]!.glow !== 'red') fail(`실루엣이 ${got}(무기 ${walkerArtOf(got)} · A급 붉은 빛)과 다르다 — ${JSON.stringify(surplusWalk)}`);
+  if (surplusWalk.length !== 1 || surplusWalk[0]!.art !== walkerArtOf(got) || surplusWalk[0]!.glow !== null) fail(`실루엣이 ${got}(무기 ${walkerArtOf(got)} · 섬광 없음)과 다르다 — ${JSON.stringify(surplusWalk)}`);
   // 풀 장수는 카드 +1, 보관함 장수가 빈자리로 들면 풀에 든다
   const gained = (s1.cards[got] ?? 0) === (s0.cards[got] ?? 0) + 1 || (!s0.roster[got] && Boolean(s1.roster[got]));
   if (!gained) fail(`${got}의 카드가 ${s0.cards[got]} → ${s1.cards[got]}다`);
-  ok(`A급 확정 — ${got} · 실루엣 ${surplusWalk[0]!.art}(무기) · 붉은 빛 · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
+  ok(`A급 확정 — ${got} · 실루엣 ${surplusWalk[0]!.art}(무기) · 걷는 동안 섬광 없음 · 잉여 카드 ${s0.surplusCards} → ${s1.surplusCards}`);
   await page.click('[data-action="surplusClose"]');
   await page.waitForSelector('[data-modal="surplusDone"]', { state: 'detached', timeout: 3_000 });
 

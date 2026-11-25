@@ -1795,16 +1795,14 @@ img.no-art { visibility: hidden; }
    「없다」를 말한다(옆에 숫자를 안 붙인다, 위 컴포넌트 머리말 참조). */
 .ofc-grade-item[data-have="0"] { opacity: .35; }
 /* 등급 보석의 섬광 · 광택 — 장수 일람(줄 · 맨 위 인원 줄, 2026-11-20 기획자). `GlowGrade`.
-   뒤 섬광은 꼬마 뒤 후광과 같은 색 규칙(S 자주 · A 흰 별빛 · E 금, B · C · D 없음), 보석 위에는 4.5초에 한 번 광택이 스친다
+   뒤 섬광은 꼬마 뒤 후광과 같은 색 규칙(E 금 · S 자주 · A 붉은 · B 푸른 · C 초록 · D 흰 별빛), 보석 위에는 4.5초에 한 번 광택이 스친다
    (장수 상세 이름 줄 `.ofcard-title .gr`과 같은 `gr-glint`, 보석 모양으로만). 줄마다 조금씩 늦춰 위에서 아래로 물결처럼 지나간다 */
 .glow-gr { position: relative; display: inline-flex; flex: none; --glint-delay: 0s; }
-.glow-gr-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 3.2; z-index: 0; }
+/* 크기는 색과 상관없이 하나(2026-11-25 기획자 — 섬광 그림의 꼴을 다 같은 정사각으로 맞춘 뒤 A급 붉은 빛(3.2)의 .8배, 그래도 커서 다시 .8배) */
+.glow-gr-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: calc(3.2 * .8 * .8); z-index: 0; }
 /* 밝은 양피지 위라 꼬마 뒤(.6)보다 진하게 — .6이면 흰 별빛이 종이에 묻혀 안 보였다 */
 .glow-gr-halo .blink-halo, .ofc-lv-up-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
 @keyframes glow-gr-in { to { opacity: 1; } }
-/* 크기는 E급 금빛 기준 — S급 자주 90% · A급 흰 별빛 80%(2026-11-20 기획자) */
-.glow-gr-halo[data-blink="purple"] { --blink-w: calc(3.2 * .9); }
-.glow-gr-halo[data-blink="plain"] { --blink-w: calc(3.2 * .8); }
 .glow-gr .gr { position: relative; z-index: 1; }
 .glow-gr .gr::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -11188,79 +11186,91 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .scr-tutorials .tut-list { margin-top: 0; }
 
 /* ── 장수 모집 — 걷는 장면 → 번쩍 → 무대 (2026-11-25 기획자, `Design/장수모집연출/시나리오.html`) ─────────────────────
-   `Celebrate`의 `recruit` 도입부(5초, 「쾅」은 5.0초). 화면 가운데 4:3 창(가장자리는 번진다) 안에서 석양을 등진 실루엣이 지평선에서 다가오고
-   해가 점점 커져 4.6초에 번쩍. **늦춤은 전부 `calc(… - var(--cir-skip))`** — 걷는 중에 누르면 열쇠를 바꿔 다시 그리며 `--cir-skip: 4.6s`로
+   `Celebrate`의 `recruit` 도입부(5초, 「쾅」은 5.0초). **화면 전체의 석양 궁성 광장**(2026-11-25 새 그림 — 첫 도시가 아니라 잘 닦인 궁성) —
+   궁성 문(그림 높이 40~44%)에서 석양을 등진 실루엣이 나와 광장을 걸어 다가오고, 문 위 하늘의 해(50% · 29%)가 커져 4.6초에 번쩍. **늦춤은 전부 `calc(… - var(--cir-skip))`** — 걷는 중에 누르면 열쇠를 바꿔 다시 그리며 `--cir-skip: 4.6s`로
    번쩍 자리부터 돈다(`RECRUIT_SKIP_TO_MS`와 같은 값). 걸음은 0.85초마다 한 걸음 — 발소리(`walking_edit`)의 박자 */
-.cin-recruit { --cir-skip: 0ms; }
+.cin-recruit { --cir-skip: 0ms; container-type: size; }
 .cin-recruit .cin-whiteout { animation-delay: calc(0ms - var(--cir-skip)); }
+/* 틀 = 그림 그대로의 꼴(941:1672)로 화면을 덮는다 — 높이 · 폭 중 모자란 쪽을 채우고 넘치는 쪽은 잘린다(가운데 기준).
+   그래서 안쪽 자리(해 · 문 · 실루엣)는 언제나 **그림 안의 비율**이다(`cqw` · `cqh` = 그림의 폭 · 높이) */
 .cir-frame {
-  /* 가로를 꽉 채운다(2026-11-25 기획자 — 「가로 영역을 전부 채우고 그만큼 그림을 더 키워」). 가로 화면에서는 높이가 넘지 않게 */
-  position: absolute; left: 50%; top: 46%; width: min(100%, 120vh); aspect-ratio: 4 / 3; translate: -50% -50%;
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  aspect-ratio: 941 / 1672; height: max(100cqh, calc(100cqw * 1672 / 941));
   container-type: size;
 }
-/* 창 — 위아래는 안쪽 11%에 걸쳐 투명으로 번지고, 양옆은 화면 끝까지 닿으므로 끝 3%만 살짝 번진다(두 그러데이션이 겹친 곳만 보인다) */
-.cir-window {
-  position: absolute; inset: 0; overflow: hidden; opacity: 0;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent), linear-gradient(to bottom, transparent, #000 11%, #000 89%, transparent);
-  mask-composite: intersect;
-  animation: cir-open .5s ease-out calc(0ms - var(--cir-skip)) both;
-}
+/* 화면 전체라 가장자리를 번지게 가리지 않는다 — 어둠에서 떠오르기만 */
+.cir-window { position: absolute; inset: 0; overflow: hidden; opacity: 0; animation: cir-open .5s ease-out calc(0ms - var(--cir-skip)) both; }
 @keyframes cir-open { to { opacity: 1; } }
 /* 세상 — 해가 커지는 동안 하늘 · 땅이 함께 밝아진다 */
 .cir-world { position: absolute; inset: 0; animation: cir-bright 5s linear calc(0ms - var(--cir-skip)) both; }
-@keyframes cir-bright { 0%, 30% { filter: brightness(1); } 92% { filter: brightness(1.35) saturate(1.1); } 100% { filter: brightness(1.6); } }
+/* 장면마다 한 단계씩 밝아진다(넘어가는 0.35초 동안) — 마지막 장면에서 눈이 부시고 4.6초부터 하얘진다 */
+@keyframes cir-bright {
+  0%, 26% { filter: brightness(1); } 33%, 47% { filter: brightness(1.08); } 54%, 68% { filter: brightness(1.18); }
+  75% { filter: brightness(1.38) saturate(1.1); } 92% { filter: brightness(1.7) saturate(1.15); } 100% { filter: brightness(2.2); }
+}
 .cir-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: cir-bg-in 1.2s ease-out calc(0ms - var(--cir-skip)) both; }
 @keyframes cir-bg-in { from { transform: scale(1.08); } }
-/* 해 — 그림의 해 자리(50% · 41%)에 빛을 더한다. 1.5초부터 커지고 밝아져 번쩍으로 이어진다 */
+/* 해 — 그림의 해 자리(50% · 29%, 궁성 지붕 위)에 빛(`recruit_sun`)을 더한다. **장면마다 한 단계씩** 커지고 밝아진다(2026-11-25 기획자 —
+   「프레임에 따라 점점 강렬하게, 마지막 프레임에서 눈이 부시게」) — 넘어가는 0.35초 동안 오르고 장면 동안 머문다 */
 .cir-sun {
-  position: absolute; left: 50%; top: 41%; width: 70cqw; translate: -50% -50%; mix-blend-mode: screen; pointer-events: none;
+  position: absolute; left: 50%; top: 29%; width: 70cqw; translate: -50% -50%; mix-blend-mode: screen; pointer-events: none;
   animation: cir-sun 5s cubic-bezier(.55, 0, .9, .6) calc(0ms - var(--cir-skip)) both;
 }
 @keyframes cir-sun {
-  0% { opacity: .35; transform: scale(.32); } 30% { opacity: .5; transform: scale(.4); }
-  60% { opacity: .8; transform: scale(.8); } 85% { opacity: 1; transform: scale(1.7); } 100% { opacity: 1; transform: scale(3); }
+  0%, 26% { opacity: .4; transform: scale(.32); }
+  33%, 47% { opacity: .62; transform: scale(.5); }
+  54%, 68% { opacity: .85; transform: scale(.85); }
+  75% { opacity: 1; transform: scale(1.5); } 92% { opacity: 1; transform: scale(2.4); } 100% { opacity: 1; transform: scale(3.4); }
 }
 /* 먼지 — 땅에 낮게, 하나는 실루엣 뒤 · 하나는 앞. 빛만이라 `screen`으로 더한다 */
 .cir-dust {
   position: absolute; left: -10%; width: 120%; height: 34%; bottom: 2%; object-fit: cover; mix-blend-mode: screen; pointer-events: none;
   opacity: 0; animation: cir-dust 5s linear calc(0ms - var(--cir-skip)) both;
 }
-.cir-dust[data-n="2"] { bottom: -8%; height: 30%; z-index: 3; animation-name: cir-dust-front; }
+.cir-dust[data-n="2"] { bottom: -8%; height: 30%; z-index: 40; animation-name: cir-dust-front; }   /* 실루엣(장면 × 10 + 자리)보다 앞 */
 @keyframes cir-dust { 0%, 15% { opacity: 0; transform: translateX(0); } 40% { opacity: .55; } 100% { opacity: .8; transform: translateX(-6%); } }
 @keyframes cir-dust-front { 0%, 25% { opacity: 0; transform: translateX(0); } 55% { opacity: .35; } 100% { opacity: .55; transform: translateX(5%); } }
-/* 실루엣 — 지평선(창 높이 52%)에 발을 두고 서서, 원근(크기 · 가운데에서 벌어짐이 같은 비율 K)으로 다가온다.
-   **정지 장면 넷이 부드럽게 넘어간다**(2026-11-25 기획자 — 「연속으로 다가오기보다 오프닝 애니메이션처럼」): 자리마다 K가 다른 넷(.22 · .36 · .58 · 1)을
+/* 실루엣 — 궁성 문턱(그림 높이 44.5%)에 발을 두고 서서, 원근(크기 · 가운데에서 벌어짐이 같은 비율 K)으로 광장을 걸어 다가온다.
+   **정지 장면 넷이 부드럽게 넘어간다**(2026-11-25 기획자 — 「연속으로 다가오기보다 오프닝 애니메이션처럼」): 자리마다 K가 다른 넷(.09 · .2 · .44 · 1 —
+   첫 장면은 문 안에 들 만큼 작다)을
    겹쳐 두고, 0.35초 동안 앞 장면이 사라지며 다음 장면이 떠오른다(오프닝 영상의 디졸브). 장면은 약 1초씩 머문다.
    자리마다 끝 자리(--dx · --dy)와 앞뒤(--kf, 뒷줄은 작고 높게)가 다르다. 그림의 발끝이 그림 높이 97%라 그 점을 기준으로 잡는다 */
 .cir-walker {
-  position: absolute; left: 50%; top: 52%; z-index: 2;
-  /* 끝 장면의 키 = 창 높이 80%(2026-11-25 기획자 — 「실루엣도 더 크게」, 옛 66%) */
-  width: calc(80cqh * .75); height: 80cqh; margin-left: calc(80cqh * -.375); margin-top: calc(80cqh * -.97);
+  position: absolute; left: 50%; top: 44.5%; z-index: 2;
+  /* 끝 장면의 키 = 그림 높이 44%, 발끝은 그림 높이 91.5%(문턱 44.5% + 47%) — 화면 아래쪽에 크게 선다 */
+  width: calc(44cqh * .75); height: 44cqh; margin-left: calc(44cqh * -.375); margin-top: calc(44cqh * -.97);
   transform-origin: 50% 97%; opacity: 0;
-  --dx: 0cqw; --dy: 45cqh; --kf: 1; --k: 1;
+  --dx: 0cqw; --dy: 47cqh; --kf: 1; --k: 1;
   transform: translate(calc(var(--dx) * var(--k)), calc(var(--dy) * var(--k))) scale(calc(var(--k) * var(--kf)));
   animation: 5s linear calc(0ms - var(--cir-skip)) both;
 }
-.cir-walker[data-stage="0"] { --k: .22; animation-name: cir-stage-0; }
-.cir-walker[data-stage="1"] { --k: .36; animation-name: cir-stage-1; }
-.cir-walker[data-stage="2"] { --k: .58; animation-name: cir-stage-2; }
+.cir-walker[data-stage="0"] { --k: .09; animation-name: cir-stage-0; }
+.cir-walker[data-stage="1"] { --k: .2; animation-name: cir-stage-1; }
+.cir-walker[data-stage="2"] { --k: .44; animation-name: cir-stage-2; }
 .cir-walker[data-stage="3"] { --k: 1; animation-name: cir-stage-3; }
-/* 5초 중 — 첫 장면 0.4~0.75초 떠오름 · 1.3초부터 다음으로(0.35초씩 겹쳐 넘어감) · 마지막은 3.4초부터 번쩍까지 */
-@keyframes cir-stage-0 { 0%, 8% { opacity: 0; } 15%, 26% { opacity: 1; } 33%, 100% { opacity: 0; } }
-@keyframes cir-stage-1 { 0%, 26% { opacity: 0; } 33%, 47% { opacity: 1; } 54%, 100% { opacity: 0; } }
-@keyframes cir-stage-2 { 0%, 47% { opacity: 0; } 54%, 68% { opacity: 1; } 75%, 100% { opacity: 0; } }
+/* 5초 중 — 첫 장면 0.4~0.75초 떠오름 · 1.3초부터 다음으로(0.35초씩 넘어감) · 마지막은 3.4초부터 번쩍까지.
+   **지나간 장면은 잔상으로 남는다**(2026-11-25 기획자): 한 장면 전 것은 불투명도 .5(투명 50%), 두 장면 전 것은 .2(투명 80%), 그보다 앞은 사라진다.
+   가까운(나중) 장면이 앞에 그려진다(`z-index` = 장면 × 10 + 자리) */
+@keyframes cir-stage-0 { 0%, 8% { opacity: 0; } 15%, 26% { opacity: 1; } 33%, 47% { opacity: .5; } 54%, 68% { opacity: .2; } 75%, 100% { opacity: 0; } }
+@keyframes cir-stage-1 { 0%, 26% { opacity: 0; } 33%, 47% { opacity: 1; } 54%, 68% { opacity: .5; } 75%, 100% { opacity: .2; } }
+@keyframes cir-stage-2 { 0%, 47% { opacity: 0; } 54%, 68% { opacity: 1; } 75%, 100% { opacity: .5; } }
 @keyframes cir-stage-3 { 0%, 68% { opacity: 0; } 75%, 100% { opacity: 1; } }
-/* 자리 — 1명 가운데, 3명 V자(가운데가 앞), 5명은 가입 오프닝 끝 장면처럼 한 줄(가운데가 가장 앞) */
-.cin-recruit[data-count="3"] .cir-walker[data-seat="0"] { --dx: -21cqw; --kf: .88; --dy: calc(45cqh * .88); }
-.cin-recruit[data-count="3"] .cir-walker[data-seat="2"] { --dx: 21cqw; --kf: .88; --dy: calc(45cqh * .88); }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="0"] { --dx: -35cqw; --kf: .8; --dy: calc(45cqh * .8); }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="1"] { --dx: -18cqw; --kf: .9; --dy: calc(45cqh * .9); }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="3"] { --dx: 18cqw; --kf: .9; --dy: calc(45cqh * .9); }
-.cin-recruit[data-count="5"] .cir-walker[data-seat="4"] { --dx: 35cqw; --kf: .8; --dy: calc(45cqh * .8); }
-.cin-recruit .cir-walker[data-seat="2"], .cin-recruit[data-count="1"] .cir-walker { z-index: 3; }
-.cin-recruit[data-count="3"] .cir-walker[data-seat="1"] { z-index: 3; }
+.cir-walker { z-index: calc(var(--stz, 0) * 10 + var(--sz, 0)); }
+.cir-walker[data-stage="1"] { --stz: 1; }
+.cir-walker[data-stage="2"] { --stz: 2; }
+.cir-walker[data-stage="3"] { --stz: 3; }
+/* 자리 — 1명 가운데, 3명 V자(가운데가 앞), 5명은 가입 오프닝 끝 장면처럼 한 줄(가운데가 가장 앞).
+   그림은 휴대폰에서 양옆이 약 9%씩 잘리므로(세로가 더 길다) 바깥 자리를 ±28%까지만 벌린다 */
+.cin-recruit[data-count="3"] .cir-walker[data-seat="0"] { --dx: -20cqw; --kf: .9; --dy: calc(47cqh * .9); }
+.cin-recruit[data-count="3"] .cir-walker[data-seat="2"] { --dx: 20cqw; --kf: .9; --dy: calc(47cqh * .9); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="0"] { --dx: -28cqw; --kf: .82; --dy: calc(47cqh * .82); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="1"] { --dx: -14cqw; --kf: .91; --dy: calc(47cqh * .91); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="3"] { --dx: 14cqw; --kf: .91; --dy: calc(47cqh * .91); }
+.cin-recruit[data-count="5"] .cir-walker[data-seat="4"] { --dx: 28cqw; --kf: .82; --dy: calc(47cqh * .82); }
+/* 같은 장면 안에서는 가운데(앞)가 위 */
+.cin-recruit .cir-walker[data-seat="2"], .cin-recruit[data-count="1"] .cir-walker { --sz: 2; }
+.cin-recruit[data-count="3"] .cir-walker[data-seat="1"] { --sz: 2; }
+.cin-recruit[data-count="5"] .cir-walker:is([data-seat="1"], [data-seat="3"]) { --sz: 1; }
 .cir-body { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 /* 그림자 — 해를 등지므로 발밑에서 화면 쪽(아래)으로 길게 퍼진다 */
 .cir-shadow {
@@ -11268,20 +11278,17 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
   background: linear-gradient(to bottom, #2a140699, #2a140600 85%); clip-path: polygon(40% 0, 60% 0, 88% 100%, 12% 100%);
   filter: blur(4px); mix-blend-mode: multiply;
 }
-/* 등 뒤의 등급 섬광 — A 흰 · S 자주 · E 금(B · C · D는 없다, `STAND_GLOW`). 위 몸통 높이에서 실루엣 뒤로 비친다.
-   1.5초에 희미하게 켜져 해와 함께 커진다. 섬광 그림은 평소 0.6까지만 떠오르니 끝까지 띄운다 */
-.cir-glow {
-  left: 0; right: 0; top: 10%; height: 40%; z-index: 1; --blink-w: 2.6;
-  opacity: 0; animation: cir-glow 5s linear calc(0ms - var(--cir-skip)) both;
-}
-.cir-glow .blink-halo { opacity: 1; animation: blink-turn 14s linear infinite; }
-@keyframes cir-glow { 0%, 30% { opacity: 0; transform: scale(.7); } 60% { opacity: .75; transform: scale(.9); } 92%, 100% { opacity: 1; transform: scale(1.15); } }
-/* 번쩍 — 해 자리에서 창 밖까지 터진다(창의 번지는 가림 밖, 틀에 붙어 있다). 4.4초에 일어나 5초에 하얘진 화면으로 이어진다 */
+/* 번쩍(`recruit_flash`) — 마지막 장면이 떠오르는 3.4초부터 해 자리(50% · 29%)에서 눈부시게 피어나, 4.6초부터 화면을 덮고 5초에 하얘진 화면으로 이어진다.
+   그 뒤 무대가 흰빛에서 어두워지며 떠오른다(`.cel-unwhite`) */
 .cir-flash {
-  position: absolute; left: 50%; top: 41%; width: 90cqw; translate: -50% -50%; mix-blend-mode: screen; pointer-events: none;
+  position: absolute; left: 50%; top: 29%; width: 90cqw; translate: -50% -50%; mix-blend-mode: screen; pointer-events: none;
   opacity: 0; animation: cir-flash 5s ease-in calc(0ms - var(--cir-skip)) both;
 }
-@keyframes cir-flash { 0%, 86% { opacity: 0; transform: scale(.2) rotate(0deg); } 93% { opacity: 1; transform: scale(1.3) rotate(8deg); } 100% { opacity: 1; transform: scale(4) rotate(14deg); } }
+@keyframes cir-flash {
+  0%, 68% { opacity: 0; transform: scale(.3) rotate(0deg); }
+  75% { opacity: .75; transform: scale(.9) rotate(4deg); } 88% { opacity: .9; transform: scale(1.3) rotate(9deg); }
+  94% { opacity: 1; transform: scale(2.2) rotate(12deg); } 100% { opacity: 1; transform: scale(4.5) rotate(16deg); }
+}
 @media (prefers-reduced-motion: reduce) {
   .cir-glow .blink-halo { animation: none; }
 }
@@ -11357,3 +11364,9 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .mkt-list[data-field="storage"] .mkt-irow > .c-fx { line-height: 1.18; }
 /* 5명 칸 가운데 후광 — 가운데 꼬마보다 조금 위(뒷줄 머리께)에서 (2026-11-25 기획자) */
 .mkt-recruit-spot.mkt-recruit-glow[data-lift] { bottom: .9rem; }
+/* 장수 모집 무대 — 하얘진 화면에서 곧장 어둠으로(2026-11-25 기획자 — 「아주 하얘졌다가 어두워지면서 미니 캐릭터 화면」). 축하 화면은 어둠이 투명에서
+   .3초에 걸쳐 깔리는데(`cel-dim`), 그 사이 흰빛 너머로 용병 시장이 비쳤다 — 이 무대는 처음부터 어둡게 깔고 흰빛(`.cel-unwhite`)만 걷힌다 */
+.modal-back.cel-back:has(> .modal.rcr-done) { animation: none; }
+/* 흰빛을 잠깐 그대로 두었다가(.2초) 걷는다 — 「아주 하얘졌다가」가 보이게 */
+.modal-back.cel-back:has(> .modal.rcr-done) .cel-unwhite { animation: rcr-unwhite 1.1s ease-out both; }
+@keyframes rcr-unwhite { 0%, 18% { opacity: 1; } 100% { opacity: 0; } }

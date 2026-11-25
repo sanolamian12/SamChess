@@ -38,10 +38,11 @@ const GRADE_BLINK: Record<string, BlinkTone> = { E: 'gold', S: 'purple', A: 'red
 export const officerBlink = (grade: Grade | string): BlinkTone => GRADE_BLINK[grade] ?? 'plain';
 
 /**
- * 꼬마 뒤 후광 — S급 자주 · A급 붉은(2026-11-25, 옛 흰 별빛) · E급(황제) 금, B · C · D급은 없다(2026-11-13 기획자 — 부대 관리 · 부대원 · 농지, 2026-11-18 배치 편집).
- * 장수 그림 뒤(`officerBlink`)와 달리 낮은 등급에는 안 단다 — 꼬마가 줄지어 서는 화면이라 다 빛나면 등급이 안 갈린다
+ * 꼬마 뒤 후광 · 등급 보석 뒤 섬광 — 부대 관리 · 부대원 · 농지 · 배치 편집 · 랭킹 · 장수 일람.
+ * 처음(2026-11-13)엔 S · A · E만 빛나고 B · C · D는 없었다(다 흰 별빛이면 등급이 안 갈렸다). **등급마다 제 색이 생겨** 이제 전부 단다
+ * (2026-11-25 기획자) — 장수 그림 뒤(`officerBlink`)와 같은 표
  */
-export const STAND_GLOW: Partial<Record<string, BlinkTone>> = { S: 'purple', A: 'red', E: 'gold' };
+export const STAND_GLOW: Partial<Record<string, BlinkTone>> = { ...GRADE_BLINK };
 
 const EQUIP_MAX = Math.max(...EQUIPMENT.map((e) => e.unlockLevel));
 const ITEM_MAX = Math.max(...MARKET_ITEMS.map((m) => m.unlockLevel));
