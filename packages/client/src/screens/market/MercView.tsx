@@ -303,14 +303,16 @@ const topGrade = (drawn: readonly OfficerId[]): Grade =>
 const GRADE_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
 
 /**
- * 무대 위 장수들 — 걸어온 자리(`recruitSeats`) 그대로 선다. 1명은 크게 가운데, 3명은 V자(가운데가 앞), 5명은 W자(가입 오프닝과 같은 결 —
- * 가운데가 가장 크고 앞, 둘째 · 넷째가 뒷줄). 낮은 등급부터 하나씩 「팡」(등급 후광이 번쩍 뒤 돈다), 발밑에 [등급] 이름과 「새 장수」 · 「잉여 카드」 표
+ * 무대 위 장수들 — 걸어온 자리(`recruitSeats`) 그대로 선다. 꼬마 크기는 몇 명이든 같다. 1명은 문장 한가운데, 3명은 V자(가운데가 앞),
+ * 5명은 두 줄 — 뒷줄 둘(둘째 · 넷째 자리) · 앞줄 셋(가운데가 가장 센 장수). 「NEW」 말풍선은 1명이면 머리 오른쪽 위, 여럿이면 제 머리 바로 위(옆 장수 말풍선과 안 부딪히게). 낮은 등급부터 하나씩 「팡」(등급 후광이 번쩍 뒤 돈다), 발밑에 [등급] 이름과 「새 장수」 · 「잉여 카드」 표
  */
 const CAST_SPOTS: Record<number, readonly { x: number; y: number; s: number }[]> = {
   // 1명 — 꼬마 그림의 한가운데가 문장의 한가운데에 오게(2026-11-25 기획자). y는 이름 줄까지 포함한 맨 아래라, 그림(46%) + 이름 줄만큼 내려 잡는다
   1: [{ x: 50, y: 82, s: 1 }],
-  3: [{ x: 20, y: 80, s: 0.86 }, { x: 50, y: 98, s: 1 }, { x: 80, y: 80, s: 0.86 }],
-  5: [{ x: 13, y: 90, s: 0.84 }, { x: 31, y: 64, s: 0.9 }, { x: 50, y: 98, s: 1 }, { x: 69, y: 64, s: 0.9 }, { x: 87, y: 90, s: 0.84 }],
+  // 3 · 5명도 꼬마 크기는 1명과 같다(2026-11-25 기획자 — 「작아질 필요가 없다」) — 겹치는 만큼 앞뒤 줄의 높이를 더 벌린다
+  3: [{ x: 21, y: 70, s: 1 }, { x: 50, y: 100, s: 1 }, { x: 79, y: 70, s: 1 }],
+  // 5명은 같은 크기로 한 줄 W자에 안 든다(이름이 앞 꼬마에 가렸다) — 뒷줄 둘 · 앞줄 셋, 앞줄은 무대 아래로 조금 내려선다(`.rcr-done`의 아래 여백)
+  5: [{ x: 16, y: 118, s: 1 }, { x: 31, y: 54, s: 1 }, { x: 50, y: 118, s: 1 }, { x: 69, y: 54, s: 1 }, { x: 84, y: 118, s: 1 }],
 };
 /** 장수 하나가 튀어나오는 간격 · 첫 장수까지(무대가 열리고 번쩍이 걷힌 뒤) */
 const CAST_STEP_MS = 180;
@@ -331,7 +333,7 @@ function RecruitCast({ got }: { got: Pulled }): React.JSX.Element {
         const delay = CAST_FROM_MS + popOrder.indexOf(i) * CAST_STEP_MS;
         return (
           <div key={`${id}-${i}`} className="rcr-member" data-officer={id} data-grade={grades[i]} data-fate={got.fates[i]} data-seat={seat}
-            style={{ left: `${spot.x}%`, top: `${spot.y}%`, '--s': spot.s, animationDelay: `${delay}ms` } as React.CSSProperties}>
+            style={{ left: `${spot.x}%`, top: `${spot.y}%`, zIndex: Math.round(spot.y), '--s': spot.s, animationDelay: `${delay}ms` } as React.CSSProperties}>
             <span className="rcr-fig">
               <Halo grade={grades[i]!} burst />
               <OfficerActionArt officer={id} className="rcr-art" />
