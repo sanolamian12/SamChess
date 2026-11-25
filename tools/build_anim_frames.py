@@ -23,7 +23,10 @@
 굽기의 판단:
 - 바탕: 가장자리에서 이어진 어두운 곳(`BLACK`)을 지운다. 안쪽에 갇힌 넓은 순검정(팔과 몸 사이 틈)도 지운다.
 - 칸 가르기: 줄 · 열마다 「기대 자리 근처에서 그림이 가장 적은 세로(가로)줄」을 경계로 잡는다.
-- 크기: 원본 한 장에 배율 하나 — 그 동작의 기준 자세(평상 · 이동 · 공격 · 마법 · 피격)와 몸 덩어리 키가 같아지게. 쓰러짐은 첫 칸만 잰다.
+- 크기: 원본 한 장에 배율 하나 — **머리 크기**가 그 동작의 기준 자세(평상 · 이동 · 공격 · 마법 · 피격)와 같아지게(2026-11-25
+  기획자 — 칼을 휘둘러 그림 면적이 커지는 장에서 사람이 작아졌다). 칸마다 다섯 자세의 머리를 SIFT 특징점으로 찾아 닮음 변환의
+  배율을 재고, 믿을 칸(맞는 점 ≥ `HEAD_INLIERS`)들의 가운데값을 쓴다. 믿을 칸이 없는 장(웅크린 정면 · 쓰러지며 기운 머리)만
+  몸 덩어리 키로 잰다(쓰러짐은 첫 칸만).
 - 발 · 가운데: 몸 덩어리의 바닥을 **기준 자세의 몸 바닥**에, 무게 중심을 기준 자세의 무게 중심에. 지금 시트의 발은 장수마다
   그림자 위로 0~20px(240 해상도) 떠 있다 — 칸의 95%(`FOOT`)에 박으면 평상 동작 때 몸이 내려앉았다 올라왔다(감택 17px, 2026-11-16).
   그림자는 `FOOT`(지금 시트의 그림자 자리) 그대로.
@@ -32,8 +35,8 @@
   (`BattleScene`의 `FRAME_H` · 원점). 지금 다섯 자세는 여백을 안 쓴다.
 - 옆 여백(`SIDE`): 같은 까닭으로 양옆에도(2026-11-17 기획자 — 관우 · 기령처럼 창을 휘두르거나 뻗고 넘어지는 장수). 이것이
   없을 때는 옆으로 넘친 칸을 안쪽으로 밀어 넣어 **몸이 옆으로 튀거나**(관우 피격 52px) 장 전체를 줄였다(기령 피격 ×0.90).
-- 칸 넘침: 줄일 칸이 있으면 그 장 전체를 같은 비율로 줄인다(한 동작 안의 크기를 지킨다).
-- 손 보정: `tools/anim_frames_fix.tsv`(이름 · 동작 · 배율 곱)가 원본 한 장의 배율에 곱해진다 — 기준 자세와 몸 생김이 달라
+- 칸 넘침: 여백까지 넘는 것(크게 휘두른 칼끝)은 **잘린다** — 줄이지 않는다(2026-11-25, 예전에는 장 전체를 줄여 사람이 작아졌다). 잘린 양은 굽기 기록에 남는다.
+- 손 보정: 머리로 못 잰 장에만 — `tools/anim_frames_fix.tsv`(이름 · 동작 · 배율 곱)가 원본 한 장의 배율에 곱해진다 — 기준 자세와 몸 생김이 달라
   키로 잰 배율이 어긋나는 장(감녕 평상: 0칸은 웅크린 정면, 사이 칸은 선 자세라 머리가 0.75배로 작게 구워졌다).
   눈으로 본 머리 크기로 맞춘다.
 - 방향: 칸을 기준 자세 · 그 좌우 반전과 견줘 반전 쪽이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다(한 장 안은 같은 쪽).
@@ -165,12 +168,19 @@ def signature(rgba: np.ndarray) -> np.ndarray:
 
 def foreground(rgb: np.ndarray) -> np.ndarray:
     mx = rgb.max(-1)
-    dark = mx <= BLACK
+    # 바탕이 순검정이 아닌 장 — 가장자리의 밝기만큼 문턱을 올린다(2026-11-25, 왕평 피격: 바탕이 38~39의 짙은 회색이라
+    # 네모 판째 몸으로 잡혔다). 무채색 바탕일 때만(가장자리까지 그린 장은 안 건드린다)
+    border = np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]]).astype(int)
+    lift = 0
+    bmx = np.median(border.max(-1))
+    if BLACK - 8 < bmx < 70 and np.median(border.max(-1) - border.min(-1)) <= 6:
+        lift = int(bmx) + 12 - BLACK
+    dark = mx <= BLACK + lift
     lab, _ = ndimage.label(dark)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     bg = np.isin(lab, edge[edge > 0])
     # 안쪽에 갇힌 넓은 순검정(팔과 몸 사이의 틈)
-    hole_lab, hn = ndimage.label((mx <= HOLE_BLACK) & ~bg)
+    hole_lab, hn = ndimage.label((mx <= HOLE_BLACK + lift) & ~bg)
     if hn:
         sizes = ndimage.sum(np.ones_like(hole_lab), hole_lab, range(1, hn + 1))
         big = np.nonzero(sizes >= HOLE_MIN)[0] + 1
@@ -236,34 +246,99 @@ def split_cells(path: Path, rows: int, cols: int) -> list[np.ndarray]:
 
 # ───────────────────────────── 맞추기 ─────────────────────────────
 
-def fit_of(cell: np.ndarray, scale: float, foot: float) -> float:
-    """이 칸을 이 배율로 놓으면 칸에 들어가려고 더 줄여야 하는 비율(1이면 그대로) — 폭, 그리고 발 위 높이."""
+# ───────────────────────────── 머리 크기 ─────────────────────────────
+# 크기의 기준은 머리다(2026-11-25 기획자 — 칼을 휘둘러 그림 면적이 커지는 장에서 사람이 작아졌다). 몸 덩어리 키는
+# 치켜든 칼 · 뻗은 창까지 키로 재서(이동 · 공격) 그만큼 사람을 줄였고, 칸 밖으로 나간 칼은 장 전체를 또 줄였다
+# (관우 · 기령 · 조조 공격 머리 0.85배 안팎). 기준 자세의 머리를 SIFT 특징점으로 원본 칸에서 찾아 닮음 변환의 배율을 잰다 —
+# Gemini가 다시 그린 머리라도 투구 · 얼굴 무늬가 같아 맞는 점이 수십~수백 개 잡힌다. 맞는 점이 적은 칸(쓰러지며 기운 머리,
+# 웅크린 정면)은 안 믿고, 믿을 칸이 하나도 없는 장은 예전처럼 몸 키(+ 손 보정)로 잰다.
+HEAD_UP = 3          # 특징점을 잡기 전에 키우는 배 — 240 해상도의 머리는 100px 안팎이라 그대로는 점이 적다
+HEAD_INLIERS = 12    # 이만큼 이상 맞아야 그 칸의 머리 배율을 믿는다(실측: 맞는 칸 19~280 · 틀린 칸 2~11)
+_SIFT = None
+
+
+def _gray8(rgba: np.ndarray) -> np.ndarray:
+    import cv2
+    a = rgba[..., 3:4].astype(np.float32) / 255.0
+    g = (rgba[..., :3].astype(np.float32) * a).mean(-1) + (1.0 - a[..., 0]) * 128.0   # 바탕은 중간 회색
+    g = np.clip(g, 0, 255).astype(np.uint8)
+    return cv2.resize(g, None, fx=HEAD_UP, fy=HEAD_UP, interpolation=cv2.INTER_CUBIC)
+
+
+def head_crop(base_rgba: np.ndarray) -> np.ndarray:
+    """기준 자세의 머리 — 몸통 줄(가는 무기를 뺀 줄)의 위 45%."""
+    m = body_of(base_rgba[..., 3])
+    w = m.sum(1)
+    rows = np.nonzero(w >= w.max() * BODY_ROW)[0]
+    top, bot = int(rows.min()), int(rows.max())
+    hb = top + int((bot - top) * 0.45)
+    xs = np.nonzero(m[top:hb].any(0))[0]
+    return base_rgba[max(0, top - 6):hb, max(0, xs.min() - 6):xs.max() + 7]
+
+
+def head_ratio(head: np.ndarray, frame: np.ndarray) -> tuple[float | None, int]:
+    """frame 속 머리가 head의 몇 배인지(같은 해상도로 놓인 둘) — (배율, 맞는 점 수). 못 재면 (None, 점 수)."""
+    import cv2
+    global _SIFT
+    if _SIFT is None:
+        _SIFT = cv2.SIFT_create()
+    ka, da = _SIFT.detectAndCompute(_gray8(head), None)
+    kb, db = _SIFT.detectAndCompute(_gray8(frame), None)
+    if da is None or db is None or len(ka) < 4 or len(kb) < 4:
+        return None, 0
+    pairs = cv2.BFMatcher().knnMatch(da, db, k=2)
+    good = [p[0] for p in pairs if len(p) == 2 and p[0].distance < 0.8 * p[1].distance]
+    if len(good) < 4:
+        return None, len(good)
+    pa = np.float32([ka[g.queryIdx].pt for g in good])
+    pb = np.float32([kb[g.trainIdx].pt for g in good])
+    M, inl = cv2.estimateAffinePartial2D(pa, pb, method=cv2.RANSAC, ransacReprojThreshold=6)
+    if M is None:
+        return None, 0
+    n = int(inl.sum())
+    return (float(np.hypot(M[0, 0], M[1, 0])) if n >= HEAD_INLIERS else None), n
+
+
+def resized(cell: np.ndarray, scale: float) -> Image.Image:
     h, w = cell.shape[:2]
-    nw = max(1, round(w * scale))
-    ys = np.nonzero(body_of(cell[..., 3]).any(1))[0]
-    above = (ys.max() + 1) * scale   # 몸 바닥이 기준 자세의 발에 오므로, 칸 꼭대기(여백 위끝)까지 남는 높이는 foot
-    return min(1.0, CELL_W / nw, foot / above if above > foot else 1.0)
+    nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
+    return Image.fromarray(cell, "RGBA").convert("RGBa").resize((nw, nh), Image.LANCZOS).convert("RGBA")
 
 
 def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note: list[str], tag: str,
           shadow_w: float) -> np.ndarray:
-    """원본 칸을 배율대로 줄여 240² 칸에 — 몸 바닥은 발 자리, 무게 중심은 기준 자세의 것."""
-    h, w = cell.shape[:2]
-    nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
-    im = Image.fromarray(cell, "RGBA").convert("RGBa").resize((nw, nh), Image.LANCZOS).convert("RGBA")
+    """원본 칸을 배율대로 줄여 240² 칸에 — 몸 바닥은 발 자리, 무게 중심은 기준 자세의 것.
+    칸(여백 포함) 밖으로 나가는 것은 잘린다 — 줄이지 않는다(머리 크기를 지킨다, 2026-11-25)."""
+    im = resized(cell, scale)
     a = np.asarray(im)
     _, cx, bottom = measure(body_of(a[..., 3]))
+    # 바닥은 큰 덩어리 전부에서 — 쓰러져 누운 칸은 몸이 여러 덩어리로 나뉘어, 가장 큰 덩어리(머리 · 어깨)의 바닥을 발에
+    # 맞추면 나머지가 칸 아래로 빠져 잘렸다(2026-11-25, 공융 · 만총 피격 마지막 칸)
+    lab, n = ndimage.label(a[..., 3] > 160)
+    if n > 1:
+        sizes = ndimage.sum(np.ones_like(lab), lab, range(1, n + 1))
+        big = np.isin(lab, np.nonzero(sizes >= sizes.max() * 0.08)[0] + 1)
+        bottom = max(bottom, float(np.nonzero(big.any(1))[0].max()))
     ox = round(base[1] - cx)
     foot = base[2]   # 기준 자세의 몸 바닥 — 발이 그림자 위에 뜬 만큼까지 같게
     oy = round(foot - bottom)
-    # 그래도 칸을 넘으면 그 칸만 줄인다(앞에서 장 전체를 맞추므로 대개 안 온다 — 안전장치)
-    fit = min(1.0, CELL_W / nw, (foot + (nh - bottom)) / nh if oy < 0 else 1.0)
-    if fit < 0.999:
-        note.append(f"{tag} 칸에 맞춰 ×{fit:.2f}")
-        return place(cell, scale * fit, base, note, tag + "'", shadow_w) if fit > 0.3 else np.zeros((CELL_H, CELL_W, 4), np.uint8)
-    ox = min(max(ox, 0), CELL_W - nw)
+    total = float(a[..., 3].sum())
+    x0, y0 = max(0, -ox), max(0, -oy)
+    x1, y1 = min(im.width, CELL_W - ox), min(im.height, CELL_H - oy)
+    kept = float(a[y0:y1, x0:x1, 3].sum()) if x1 > x0 and y1 > y0 else 0.0
+    lost = 1.0 - kept / max(total, 1.0)
+    if lost > 0.002:
+        note.append(f"{tag} 칸 밖 {lost * 100:.1f}% 잘림")
+    if lost > 0.002 and im.width <= CELL_W:
+        # 칸 폭 안에 드는데 옆으로 넘친 칸(쓰러져 누운 마지막 칸)은 자르지 않고 안쪽으로 민다
+        ox = min(max(ox, 0), CELL_W - im.width)
+        x0, x1 = 0, im.width
+        kept = float(a[y0:y1, x0:x1, 3].sum()) if y1 > y0 else 0.0
+        lost = 1.0 - kept / max(total, 1.0)
+        note[-1] = f"{tag} 칸 안으로 밀어 넣음{f' · {lost * 100:.1f}% 잘림' if lost > 0.002 else ''}"
     canvas = Image.new("RGBA", (CELL_W, CELL_H))
-    canvas.alpha_composite(im, (ox, max(oy, 0)))
+    if x1 > x0 and y1 > y0:
+        canvas.alpha_composite(im.crop((x0, y0, x1, y1)), (ox + x0, oy + y0))
     # 발밑 그림자 — 지금 자세에는 있고 Gemini 칸에는 없다(프롬프트가 막는다). 크기는 장수의 평상 자세 폭으로 하나
     c = np.asarray(canvas).astype(np.float32)
     a = c[..., 3] / 255.0
@@ -274,7 +349,9 @@ def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note
     return np.dstack([rgb, out_a * 255.0]).round().clip(0, 255).astype(np.uint8)
 
 
-def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str], shadow_w: float) -> list[np.ndarray] | None:
+def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str], shadow_w: float,
+                  refs: list[tuple[np.ndarray, float]] | None = None) -> list[np.ndarray] | None:
+    """refs — 머리를 찾을 기준 머리들(머리 그림, 이 동작 기준 자세 머리에 대한 크기 비). 없으면 기준 자세의 머리 하나."""
     path = next((p for d in (SRC, DONE) for p in (d / f"{name}_{motion}.{e}" for e in EXTS) if p.exists()), None)
     if path is None:
         return None
@@ -287,22 +364,36 @@ def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str]
     hs = [measure(body_of(c[..., 3]), trunk)[0] for c in cells]
     src_h = hs[0] if motion == "피격" else float(np.median(hs))
     scale = base[0] / src_h
-    mul = FIXES.get((name, motion))
-    if mul:
-        scale *= mul
     # 방향 — 기준 자세와 견줘 반전이 더 닮은 칸이 많으면 그 장 전체를 뒤집는다
     sig = signature(base_rgba)
     flips = sum(float((signature(c) * sig).mean()) < float((signature(c[:, ::-1]) * sig).mean()) for c in cells)
     flip = flips * 2 > len(cells) and (name, motion) not in NO_FLIP
     if flip:
         cells = [np.ascontiguousarray(c[:, ::-1]) for c in cells]
-    # 칸을 넘는 칸이 있으면 그 장 전체를 같은 비율로 — 칸마다 따로 줄이면 한 동작 안에서 몸이 커졌다 작아졌다 한다
-    # (감녕 평상: 손 보정 뒤 치켜든 철퇴 칸만 줄어 머리가 1.0 · 0.88 · 0.78 · 0.97로 출렁였다)
-    fit = min(fit_of(c, scale, base[2]) for c in cells)
-    if fit < 0.999:
-        scale *= fit
-        note.append(f"{motion}: 칸을 넘는 칸이 있어 장 전체 ×{fit:.2f}")
-    note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f}{f' (손 보정 ×{mul})' if mul else ''}{' · 좌우 뒤집음' if flip else ''}")
+    # 머리 크기 — 몸 키로 잡은 배율로 놓아 본 칸에서 머리가 기준 자세의 몇 배인지 재고, 믿을 칸들의 가운데값으로 고친다.
+    # 한 장에 배율 하나(칸마다 따로 맞추면 잰 값의 흔들림이 그대로 몸의 출렁임이 된다)
+    # 칸마다 다섯 자세의 머리 중 가장 잘 맞는 것으로 잰다 — Gemini 칸이 기준 자세와 다른 쪽 얼굴(옆모습 공격 자세 · 정면
+    # 사이 칸)이면 그 자세의 머리로는 점이 안 잡힌다(기령 · 조조 공격). 다른 자세의 머리로 잰 값은 그 자세와 기준 자세의
+    # 머리 크기 비로 바꾼다
+    refs = refs or [(head_crop(base_rgba), 1.0)]
+    ratios = []
+    for c in cells:
+        f = np.asarray(resized(c, scale))
+        tries = [(head_ratio(h, f), k) for h, k in refs]
+        (r, _), k = max(tries, key=lambda t: t[0][1])
+        ratios.append(r * k if r is not None else None)
+    sure = [r for r in ratios if r is not None and 0.5 < r < 2.0]
+    mul = FIXES.get((name, motion))
+    if sure:
+        scale /= float(np.median(sure))
+        how = f"머리 {len(sure)}/{len(cells)}칸 ×{1 / float(np.median(sure)):.2f}"
+        if mul:
+            how += f" (손 보정 ×{mul}은 안 씀)"
+    else:
+        if mul:
+            scale *= mul
+        how = f"몸 키{f' · 손 보정 ×{mul}' if mul else ''}"
+    note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f} · {how}{' · 좌우 뒤집음' if flip else ''}")
     return [place(c, scale, base, note, f"{motion}{i + 1}", shadow_w) for i, c in enumerate(cells)]
 
 # ───────────────────────────── 장수 하나 ─────────────────────────────
@@ -316,9 +407,18 @@ def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
     xs = np.nonzero(body_of(poses[0][..., 3]).any(0))[0]
     shadow_w = float(xs.max() - xs.min() + 1)
     got: dict[str, list[np.ndarray] | None] = {}
+    heads = [head_crop(p) for p in poses]
     for m in GRID:
         try:
-            got[m] = motion_frames(o["name"], m, poses[BASE[m]], note, shadow_w)
+            # 기준 머리들 — 이 동작의 기준 자세 머리(비 1)와, 그 자세에서 크기 비를 잴 수 있는 다른 자세의 머리
+            b = BASE[m]
+            refs = [(heads[b], 1.0)]
+            for k in range(5):
+                if k != b:
+                    r, _ = head_ratio(heads[b], poses[k])   # 자세 k 속 머리 ÷ 기준 자세 머리
+                    if r is not None and 0.6 < r < 1.6:
+                        refs.append((heads[k], r))
+            got[m] = motion_frames(o["name"], m, poses[b], note, shadow_w, refs)
             order = ORDER.get((o["name"], m))
             if got[m] and order:
                 got[m] = [got[m][j] for j in order]
