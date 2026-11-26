@@ -205,37 +205,37 @@ async function run(id: string): Promise<void> {
         const won = await page.waitForSelector('[data-screen="tutorialResult"][data-page="title"]', { timeout: 8_000 }).then(() => true, () => false);
         check(won, `${id} — 이기면 승리 두루마리가 뜬다`);
         if (won) {
-          await page.waitForTimeout(1_500);
+          // 「승 리」 → 「임무 완료」 → 받은 보상 줄이 하나씩 튀어나온다(2026-11-26) — 다 선 뒤 읽는다
+          await page.waitForSelector('[data-screen="tutorialResult"][data-settled="1"]', { timeout: 10_000 }).catch(() => {});
           await page.screenshot({ path: join(OUT, `${id}-result-title.png`) });
-          // 장을 넘긴다 — 카드 공개(연출)는 누르거나 끝나기를 기다린다
+          const gains = await page.evaluate(() => ({
+            why: document.querySelector('[data-screen="tutorialResult"] .brs-beat:not([data-wait]) [data-field="tutorial"]')?.getAttribute('data-outcome') ?? '',
+            grain: document.querySelector('.brs-beat:not([data-wait]) [data-field="grain"]')?.textContent ?? '',
+            materials: document.querySelector('.brs-beat:not([data-wait]) [data-field="materials"]')?.textContent ?? '',
+            cardCount: Number(document.querySelector('.brs-beat:not([data-wait]) [data-field="cardCount"]')?.getAttribute('data-n') ?? 0),
+          }));
+          check(gains.why === 'objective', `${id} — 사유는 「임무 완료」 (${gains.why})`);
+          // 장을 넘긴다 — 「보상」이 선 뒤 어두워지고 캐릭터 보상(장수 모집 결과와 같은 무대)
           await page.click('[data-screen="tutorialResult"] [data-action="next"]');
-          // 받은 카드 공개 — 판에 쓸데없는 세로 스크롤이 없다(돌아가는 후광이 판보다 커 `.modal`의 세로 스크롤이 떴다, 2026-11-12 기획자)
-          const reveal = await page.waitForSelector('.brs-gacha .mkt-reward', { timeout: 8_000 }).then(() => true, () => false);
+          const reveal = await page.waitForSelector('.brs-gacha [data-modal="rewardCards"]', { timeout: 8_000 }).then(() => true, () => false);
           if (reveal) {
             await page.waitForTimeout(900);
             await page.screenshot({ path: join(OUT, `${id}-result-card.png`) });
-            const sc = await page.evaluate(() => {
-              const m = document.querySelector<HTMLElement>('.brs-gacha .mkt-reward')!;
-              return { overflowY: getComputedStyle(m).overflowY, extra: m.scrollHeight - m.clientHeight };
-            });
-            check(sc.overflowY === 'hidden' || sc.extra <= 0, `${id} — 카드 공개 판에 세로 스크롤이 없다 (${JSON.stringify(sc)})`);
           }
           const reward = await page.waitForFunction(() => {
-            const gacha = document.querySelector<HTMLElement>('.brs-gacha button, .brs-gacha [data-action]');
+            const gacha = document.querySelector<HTMLElement>('.brs-gacha [data-action]');
             if (gacha) gacha.click();
-            return !!document.querySelector('[data-screen="tutorialResult"][data-page="reward"] [data-field="rewards"]');
+            return !!document.querySelector('[data-screen="tutorialResult"][data-page="reward"] .brs-beat:not([data-wait]) [data-field="rewards"]');
           }, null, { timeout: 20_000, polling: 400 }).then(() => true, () => false);
           await page.waitForTimeout(1_200);
           await page.screenshot({ path: join(OUT, `${id}-result-reward.png`) });
           const got = await page.evaluate(() => ({
             cards: [...document.querySelectorAll<HTMLElement>('[data-field="rewards"] [data-field="card"][data-grade]')].map((c) => c.dataset.grade),
-            grain: document.querySelector('[data-field="grain"]')?.textContent ?? '',
-            materials: document.querySelector('[data-field="materials"]')?.textContent ?? '',
             back: !!document.querySelector('[data-screen="tutorialResult"] [data-action="tutorials"]'),
           }));
           check(reward && got.back, `${id} — 보상 장 · [튜토리얼 목록으로] (${JSON.stringify(got)})`);
           if (id.startsWith('basic')) {
-            check(got.cards.length === 1 && ['C', 'D'].includes(got.cards[0]!) && got.grain === '+1' && got.materials === '+1',
+            check(got.cards.length === 1 && ['C', 'D'].includes(got.cards[0]!) && gains.cardCount === 1 && gains.grain === '+1' && gains.materials === '+1',
               `${id} — 첫 클리어 보상은 C~D급 카드 1장 · 군량 +1 · 자재 +1`);
           }
         }

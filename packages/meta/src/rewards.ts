@@ -85,6 +85,35 @@ export const REWARD_TABLE: Readonly<Record<RewardKey, RewardSpec>> = {
 };
 
 /**
+ * **이긴 판의 카드 — 판의 갈래가 정한다** (2026-11-26 기획자 — 도적떼 승리가 두 장씩이라 장수가 너무 빨리 늘었다).
+ *
+ * | 갈래 | 카드 |
+ * |---|---|
+ * | 도적떼 | C~D 한 장 |
+ * | 공성전(AI 수비군) | B~D 한 장 |
+ * | 야전(사람) | 두 장 — 첫 장 B~D, 둘째 C~D (B는 많아야 한 장) |
+ *
+ * 보유 · 새 장수가 같은 등급이다(궁궐에 빈자리가 없으면 새 장수는 후보가 아니다 — `cardCandidates`).
+ * **카드만** 이 표가 정하고 군량 · 자재는 여전히 보상표의 승리 줄(센가 약한가)이다. 무 · 패는 보상표 그대로다.
+ * 엑셀(`economy.json`)에는 안 옮긴다 — 기획자가 더는 엑셀을 안 본다(2026-11-24).
+ */
+export type WinKind = 'raid' | 'siege' | 'field';
+const pool = (grades: readonly Grade[]): CardPool => ({ owned: grades, fresh: grades });
+export const WIN_CARDS: Readonly<Record<WinKind, readonly CardPool[]>> = {
+  raid: [pool(['C', 'D'])],
+  siege: [pool(['B', 'C', 'D'])],
+  field: [pool(['B', 'C', 'D']), pool(['C', 'D'])],
+};
+
+/** 판의 상대 → 이긴 판의 카드 갈래. 사람 없는 AI 야전(`ai`)은 AI와 싸운 판이라 공성전 줄이다 */
+export const winKindOf = (opponent: BattleOutcome['opponent']): WinKind =>
+  (opponent === 'field' ? 'field' : 'siege');
+
+/** 보상 한 줄 — 이긴 판이면 카드만 갈래의 것으로 바꾼다 */
+export const rewardSpecOf = (key: RewardKey, kind: WinKind): RewardSpec =>
+  (key.endsWith('Win') ? { ...REWARD_TABLE[key], cards: WIN_CARDS[kind] } : REWARD_TABLE[key]);
+
+/**
  * **센 상대인가** — 상대 전투력이 내 전투력보다 `MATCH_BAND` 넘게 낮을 때만 약한 상대다.
  * 화면이 「보상이 줄어듭니다」를 미리 띄울 때도 이것을 부른다 — 경계를 다시 적지 않는다.
  */
@@ -190,7 +219,7 @@ export function applyBattleResult(
   }
 
   // ── 이력 한 줄 (DB 한 행) — AI 대전은 안 남긴다 ──
-  if (opponent === 'ai') return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed);
+  if (opponent === 'ai') return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed, winKindOf(opponent));
   const row: MatchRow = {
     seq: next.matchSeq,
     at: outcome.at,
@@ -214,7 +243,7 @@ export function applyBattleResult(
   if (next.matches.length > MATCH_LOG_CAP) next.matches = next.matches.slice(-MATCH_LOG_CAP);
 
   // ── 보상 ──
-  return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed);
+  return grantBattleRewards(next, rewardKey(result, rewardTier(outcome.power)), seed, winKindOf(opponent));
 }
 
 /**
@@ -228,8 +257,9 @@ export function grantBattleRewards(
   profile: PlayerProfile,
   key: RewardKey,
   seed: number,
+  kind: WinKind,
 ): { profile: PlayerProfile; rewards: BattleRewards } {
-  return grantRewards(profile, REWARD_TABLE[key], seed);
+  return grantRewards(profile, rewardSpecOf(key, kind), seed);
 }
 
 /**

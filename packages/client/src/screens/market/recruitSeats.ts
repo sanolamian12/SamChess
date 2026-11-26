@@ -15,13 +15,13 @@ import type { BlinkTone } from '../BlinkGlow.tsx';
 const RANK: Record<string, number> = { E: 6, S: 5, A: 4, B: 3, C: 2, D: 1 };
 
 /** 가운데부터 가장자리 순의 자리(왼쪽 0부터) — 몇 명이냐에 따라 */
-const CENTER_OUT: Record<number, readonly number[]> = { 1: [0], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
+const CENTER_OUT: Record<number, readonly number[]> = { 1: [0], 2: [0, 1], 3: [1, 0, 2], 5: [2, 1, 3, 0, 4] };
 
 /** 자리마다 걷는 실루엣 그림 번호(`ui/intro-recruit-walker-{n}.png`) */
-const WALKER_ART: Record<number, readonly number[]> = { 1: [3], 3: [2, 3, 4], 5: [1, 2, 3, 4, 5] };
+const WALKER_ART: Record<number, readonly number[]> = { 1: [3], 2: [2, 4], 3: [2, 3, 4], 5: [1, 2, 3, 4, 5] };
 
-/** 몇 명을 위한 자리인가 — 1 · 3 · 5 밖이면 가장 가까운 아래 칸(서버가 정한 수라 실제로는 셋뿐이다) */
-const seatsFor = (n: number): number => (n >= 5 ? 5 : n >= 3 ? 3 : 1);
+/** 몇 명을 위한 자리인가 — 1 · 2 · 3 · 5 밖이면 가장 가까운 아래 칸. 2명은 야전 승리의 캐릭터 보상(2026-11-26) — 모집에는 없다 */
+export const seatsFor = (n: number): number => (n >= 5 ? 5 : n >= 3 ? 3 : n >= 2 ? 2 : 1);
 
 /**
  * 뽑힌 순서(i)마다 앉을 자리(왼쪽 0부터). 같은 등급은 뽑힌 순서대로 가운데에 가깝게.

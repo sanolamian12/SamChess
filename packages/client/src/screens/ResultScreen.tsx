@@ -1,5 +1,5 @@
 /**
- * 전투 결과 — 세 결말과 보상 (GDD §6.4, 2026-08-18 개편 · 2026-10-12 화풍)
+ * 전투 결과 — 세 결말과 보상 (GDD §6.4, 2026-08-18 개편 · 2026-10-12 화풍 · 2026-11-26 연출)
  *
  * ────────────────────────────────────────────────────────────────
  * 보상은 **이미 반영된 채로** 온다
@@ -9,21 +9,30 @@
  * 무승부의 「셋 중 택1」은 2026-10-27에 없어졌다 — 무승부는 패배와 같은 보상이다(GDD §6.4).
  *
  * ────────────────────────────────────────────────────────────────
- * 두루마리 한 장을 넘겨 읽는다 (2026-10-12 기획자 확정)
+ * 두루마리 위로 하나씩 「쿵」 튀어나온다 (2026-11-26 기획자)
  * ────────────────────────────────────────────────────────────────
  *
- * 결말마다 다른 배경(`resultBackdrop`) 위에 두루마리가 가운데에서 펼쳐지고, 글자만
- * 지웠다 다시 쓰며 장을 넘긴다: **결말 → 보상 → 전과.** 누르거나 `PAGE_MS`가 지나면
- * 다음 장이다. 나가는 단추 [도시로]는 **마지막 장에서만** 선다.
+ * ```
+ * 0초     두루마리가 번쩍하며 조금 커졌다 제 크기로 · 「결과표출」         (승리면 승리 곡 + 0.5초 뒤 환호)
+ * 1초     큰 글씨 「승 리」 — 같은 강조 · 같은 소리
+ * +0.7초  이긴 사유(적 전멸 · 군량고 탈취 · 적 King 격퇴 · 임무 완료) — 같은 강조 · 같은 소리
+ * +0.7초씩 받은 보상 줄(군량 +n · 재료 +n · 캐릭터 보상 n명) — **안 준 보상은 줄째 없다**
+ * 누르면   글자가 슬며시 사라지고 「보상」이 「승 리」처럼 튀어나온 뒤 → 화면이 어두워지고 캐릭터 보상(장수 모집 결과와 같은 무대)
+ * 닫으면   다시 밝아지며 「보상」 아래 받은 장수 줄 → (대전이면) 전과 장
+ * ```
  *
- * 두루마리는 승리 = 황금, 무승부·성립 안 함 = 비취, 패배 = 낡은 것(`SKIN`). 낙관(勝·和·敗)은
- * 한자를 읽는 사람만 알아봐서 뺐다(기획자 지정).
+ * 줄 하나가 튀어나오는 것과 그 소리는 **같은 타이머 한 번**이 낸다(`ResultScroll`의 `popped`) — CSS 늦춤과 소리 시각을 따로 적으면
+ * 둘이 갈린다. 튀어나오는 중에 누르면 남은 줄이 한꺼번에 서고(소리는 그 한 번), 다 선 뒤에 누르면 다음 장이다.
+ * 캐릭터 보상이 없으면 「보상」 장은 없다 — 받은 것은 이미 첫 장에 다 적혔다.
+ *
+ * 두루마리는 승리 = 황금, 무승부·성립 안 함 = 비취, 패배 = 낡은 것(`SKIN`). 글자는 굵은 명조(견명조 결)다 —
+ * 웹에서 어느 기기든 같게 「Nanum Myeongjo」 800을 쓰고, 한글 밖의 문자는 언어마다 세리프로 물러난다.
  *
  * **성립하지 않은 판은 결말이 아니다** — 승/무/패 제목도, 보상도, 예상 승률도, 전과도
- * 뜨지 않는다. 뜨면 「무승부를 당했다」로 읽히고, 그건 §5-68이 일부러 안 준 것이다.
+ * 뜨지 않는다. 뜨면 「무승부를 당했다」로 읽히고, 그건 §5-68이 일부러 안 준 것이다. 그 장은 예전처럼 쓸어 입힌다(`plain`).
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { officerById } from '@samchess/data';
 import { grainCost } from '@samchess/meta';
 import type { BattleOutcome, BattleResult, BattleRewards, PlayerProfile, TutorialId } from '@samchess/meta';
@@ -37,10 +46,12 @@ import { ScreenChrome } from './ScreenChrome.tsx';
 import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
 import { t } from '../i18n/index.ts';
+import type { StringKey } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
-import { pickOfficerName, pickOfficerNameById } from '../i18n/story.ts';
+import { pickOfficerName } from '../i18n/story.ts';
 import { GameIcon } from './GameIcon.tsx';
 import type { GameIconName } from '../ui/gameIcon.ts';
+import { playSfx } from '../audio/sfx.ts';
 
 /** 결말 → 메달 (`battle.outcome.*`와 같은 열쇠). 무승부는 전적의 「무」 메달 */
 const OUTCOME_ICON: Record<string, GameIconName> = {
@@ -48,52 +59,151 @@ const OUTCOME_ICON: Record<string, GameIconName> = {
   timeLimit: 'out-timelimit', draw: 'rec-draw', objective: 'out-objective',
 };
 
-const TITLE: Record<BattleResult, 'result.win' | 'result.draw' | 'result.lose'> = {
-  win: 'result.win', draw: 'result.draw', lose: 'result.lose',
+/** 큰 글씨 — 「승 리」처럼 한 글자씩 띄운다(한 · 중 · 일, 2026-11-26 기획자) */
+const BIG: Record<BattleResult, StringKey> = {
+  win: 'result.big.win', draw: 'result.big.draw', lose: 'result.big.lose',
 };
+
+/**
+ * **이긴 사유** (2026-11-26 기획자) — 적 전멸(도적떼 · 사람 대전 · 공성전) · 군량고 탈취(사람 대전) · 적 King 격퇴(사람 대전 · 공성전) ·
+ * 임무 완료(튜토리얼) · 상대 항복 · 판정승. **진 판 · 비긴 판은 사유 줄이 없다**(같은 날 기획자 — 옛 결말 글 「군주 격파」가
+ * 진 쪽에서 내가 이긴 것처럼 읽혔고, 비긴 판의 「무승부」는 큰 글씨와 같은 말이다).
+ */
+const WIN_WHY: Record<string, StringKey> = {
+  wipeOut: 'result.why.wipeOut', supplyTaken: 'result.why.supplyTaken', kingDown: 'result.why.kingDown', objective: 'result.why.objective',
+  // 같은 날 기획자 — 상대 항복(누른 항복 · 정찰 뒤 이탈 · 턴 넘김 3번이 다 이것) · 판정승(시간 상한의 HP 합)도 사유를 붙인다
+  surrender: 'result.why.surrender', timeLimit: 'result.why.timeLimit',
+};
+
+/** 이긴 사유 줄의 글 — 넷 밖이면 `null`(줄째 없다) */
+export const winWhy = (kind: string | null | undefined): string | null =>
+  (kind && WIN_WHY[kind] ? t(WIN_WHY[kind]!) : null);
 
 /** 결말 → 두루마리. 성립하지 않은 판은 무승부와 같은 비취 두루마리다(기획자 지정) */
 const SKIN: Record<ResultBackdropId, 'win' | 'draw' | 'lose'> = {
   win: 'win', draw: 'draw', lose: 'lose', void: 'draw',
 };
 
-/** 한 장이 머무는 시간 — 누르면 그 전에 넘어간다 */
-export const PAGE_MS = 5000;
-/** 두루마리가 가운데에서 다 펼쳐지는 시간. 첫 장의 글자는 그 뒤에 쓰인다 */
-export const UNROLL_MS = 900;
-/** 글자를 쓸어 지우는 시간 — 다음 장은 그 뒤에 들어온다 */
-export const WIPE_OUT_MS = 450;
-/** 글자를 쓸어 입히는 시간 */
-export const WIPE_IN_MS = 800;
-/** 두루마리째 어두워지는 시간 — 사이 연출(받은 카드 공개)은 다 어두워진 뒤에 뜬다 */
+/** 줄이 다 선 뒤 이만큼 머물면 저절로 다음 장 — 누르면 그 전에 넘어간다 */
+export const PAGE_MS = 3500;
+/** 두루마리가 번쩍하며 서는 시간 — CSS `brs-scroll-pop`과 같은 값 */
+export const SCROLL_POP_MS = 600;
+/** 두루마리가 선 뒤 첫 줄(큰 글씨)까지 — 「두루마리가 보인 뒤 1초 뒤」 */
+export const FIRST_BEAT_MS = 1000;
+/** 다음 장의 첫 줄까지 — 앞 장의 글자가 다 사라진 뒤 */
+export const NEXT_BEAT_MS = 250;
+/** 줄과 줄 사이 */
+export const BEAT_STEP_MS = 700;
+/** 승리 곡이 시작되고 환호가 얹히기까지 */
+export const CHEER_DELAY_MS = 500;
+/** 글자가 슬며시 사라지는 시간 — CSS `brs-fade-out`과 같은 값. 다음 장은 그 뒤에 */
+export const FADE_OUT_MS = 650;
+/** 「보상」이 선 뒤 화면이 어두워지기 시작하기까지 */
+export const INTERLUDE_AFTER_MS = 900;
+/** 두루마리째 어두워지는 시간 — 사이 연출(캐릭터 보상)은 다 어두워진 뒤에 뜬다 */
 export const VEIL_IN_MS = 450;
-/** 다시 밝아지는 시간 — 다음 장의 글자를 쓸어 입히는 시간과 같다(밝아지며 글자가 쓰인다) */
-export const VEIL_OUT_MS = WIPE_IN_MS;
+/** 다시 밝아지는 시간 */
+export const VEIL_OUT_MS = 700;
+/** 밝아지기 시작하고 받은 장수 줄(`tail`)이 튀어나오기까지 */
+const TAIL_AFTER_MS = 300;
+/** 성립하지 않은 판의 장 — 예전처럼 쓸어 입히는 시간 */
+const WIPE_IN_MS = 800;
 
 type Page = 'title' | 'reward' | 'record';
 
 /**
- * 결말 제목의 글자 크기(cqw). 한국어 「승리」는 붓글씨로 크게 쓰는데, 다른 언어는 글자 수가 많고
- * 붓글씨 서체가 없는 글자(키릴 · 로마자)는 넓은 세리프로 물러나 종이를 넘친다(「Ялагдал」 실측).
- * 종이 안쪽 폭(약 70cqw)의 85%에 들게 줄인다 — 한자 · 가나 · 한글은 한 글자가 1em, 나머지는 약 0.65em.
+ * 한 장의 내용.
+ * - `beats` — 차례로 「쿵」 튀어나오는 줄들(소리와 함께). 자리는 처음부터 잡혀 있어 줄이 설 때 다른 줄이 밀리지 않는다
+ * - `tail` — 사이 연출(캐릭터 보상)이 끝나고 밝아질 때 튀어나오는 줄
+ * - `plain` — 튀어나오지 않고 쓸어 입히는 장(전과 · 성립 안 한 판)
+ * - `extra` — 장에 함께 그리되 튀어나오지 않는 것(내관의 말)
+ */
+export interface ResultSheet {
+  beats?: readonly React.ReactNode[];
+  tail?: React.ReactNode;
+  plain?: React.ReactNode;
+  extra?: React.ReactNode;
+}
+
+/**
+ * 결말 제목의 글자 크기(cqw). 다른 언어는 글자 수가 많고 키릴 · 로마자는 넓어 종이를 넘친다(「Ялагдал」 실측).
+ * 종이 안쪽 폭(약 70cqw)의 85%에 들게 줄인다 — 한자 · 가나 · 한글은 한 글자가 1em, 나머지(띄어쓰기 포함)는 약 0.65em.
  */
 export function titleSize(text: string): number {
-  const em = [...text].reduce((n, ch) => n + (/[\u1100-\u11ff\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/.test(ch) ? 1 : 0.65), 0);
-  return Math.min(17, 60 / Math.max(em, 1));
+  const em = [...text].reduce((n, ch) => n + (/[ᄀ-ᇿ぀-ヿ㐀-鿿가-힯]/.test(ch) ? 1 : 0.65), 0);
+  return Math.min(15, 60 / Math.max(em, 1));
 }
 
 const reducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
+/** 큰 글씨 한 줄 — 「승 리」 · 「보 상」 자리 */
+export function BigLine({ text, max = 15, field }: { text: string; max?: number; field?: string }): React.JSX.Element {
+  return <h1 className="brs-ttl" data-field={field} style={{ fontSize: `${Math.min(max, titleSize(text))}cqw` }}>{text}</h1>;
+}
+
+/** 사유 한 줄 — 메달이 있으면 앞에 */
+function WhyLine({ text, kind, field }: { text: string; kind?: string | undefined; field?: string }): React.JSX.Element {
+  const icon = kind ? OUTCOME_ICON[kind] : undefined;
+  return (
+    <p className="brs-lede" data-outcome={kind} data-field={field}>
+      {icon ? <GameIcon name={icon} label={text} text /> : text}
+    </p>
+  );
+}
+
+/**
+ * 받은 보상 줄들 — **준 것만**(0이면 줄째 없다, 2026-11-26 기획자). 캐릭터 보상은 이름 없이 수만(「캐릭터 보상 1명」) —
+ * 누구인지는 「보상」 장의 연출이 보여 준다. 한 줄씩 튀어나오도록 배열로 돌려준다.
+ */
+export function gainBeats(given: BattleRewards | null): React.ReactNode[] {
+  if (!given) return [];
+  const out: React.ReactNode[] = [];
+  if (given.grain > 0) {
+    out.push(
+      <p className="brs-gain" data-field="gain-grain">
+        <img src="market/grain.png" alt="" />
+        <span className="k">{t('result.grain')}</span> <b className="v" data-field="grain">+{given.grain}</b>
+      </p>,
+    );
+  }
+  if (given.materials > 0) {
+    out.push(
+      <p className="brs-gain" data-field="gain-materials">
+        <img src="market/materials.png" alt="" />
+        <span className="k">{t('result.materials')}</span> <b className="v" data-field="materials">+{given.materials}</b>
+      </p>,
+    );
+  }
+  if (given.cards.length > 0) {
+    out.push(
+      <p className="brs-gain" data-field="cardCount" data-n={given.cards.length}>
+        <img src="market/market_card.png" alt="" />
+        <span className="k">{t('result.cardCount', { n: given.cards.length })}</span>
+      </p>,
+    );
+  }
+  return out;
+}
+
+/** 「보상」 장 — 큰 글씨 「보 상」, 캐릭터 보상 연출이 끝나면 그 아래 받은 장수 줄 */
+export function rewardSheet(given: BattleRewards): ResultSheet {
+  return {
+    beats: [<BigLine key="t" text={t('result.rewards')} max={13} field="rewardsTitle" />],
+    tail: <RewardCards cards={given.cards} />,
+  };
+}
+
 export function ResultScreen({
-  profile, mode, result, outcome, outcomeKind, rewards, record, voided, onHome,
+  profile, mode, result, outcomeKind, rewards, record, voided, onHome,
 }: {
   profile: PlayerProfile;
   /** 이 판의 규모 — 환불액(참가비)이 여기서 나온다 */
   mode: BattleMode;
   result: BattleResult;
+  /** 결말 글 — 지금은 안 그린다(사유 줄은 `outcomeKind`에서 낸다). 부르는 자리가 여럿이라 받기는 한다 */
   outcome: string;
-  /** 결말 판정값 — 결말 줄 앞의 메달(`OUTCOME_ICON`) */
+  /** 결말 판정값 — 사유 줄의 글 · 메달(`WIN_WHY` · `OUTCOME_ICON`) */
   outcomeKind?: string | undefined;
   /** 이미 반영된 보상. 성립하지 않은 판은 `null`이다 */
   rewards: BattleRewards | null;
@@ -109,52 +219,49 @@ export function ResultScreen({
   onHome: () => void;
 }): React.JSX.Element {
   useLang();
-  const pages: Page[] = voided ? ['title', 'reward'] : ['title', 'reward', 'record'];
-
+  const cards = !voided && rewards ? rewards.cards : [];
+  const pages: Page[] = voided ? ['title', 'reward'] : cards.length > 0 ? ['title', 'reward', 'record'] : ['title', 'record'];
   const bg: ResultBackdropId = voided ? 'void' : result;
+  const why = result === 'win' ? winWhy(outcomeKind) : null;
 
-  const render = (page: Page): React.ReactNode => {
-    let sheet: React.ReactNode;
+  const render = (page: Page): ResultSheet => {
     if (voided) {
-      sheet = page === 'title' ? (
-        <>
-          <h1 className="brs-ttl small">{t('result.void')}</h1>
-          <p className="brs-lede" data-field="voidWhy">{t(`result.void.${voided.reason}`)}</p>
-        </>
-      ) : (
-        <div className="brs-refund" data-field="voidSettle">
-          <img src="market/grain.png" alt="" />
-          <p data-field="refund">
-            {voided.refunded ? t('result.void.refunded', { n: grainCost(mode) }) : t('result.void.kept')}
-          </p>
-        </div>
-      );
-    } else if (page === 'title') {
-      sheet = (
-        <>
-          <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t(TITLE[result]))}cqw` }}>{t(TITLE[result])}</h1>
-          {outcome && (
-            <p className="brs-lede" data-outcome={outcomeKind}>
-              {outcomeKind && OUTCOME_ICON[outcomeKind] ? <GameIcon name={OUTCOME_ICON[outcomeKind]!} label={outcome} text /> : outcome}
+      return {
+        plain: page === 'title' ? (
+          <>
+            <h1 className="brs-ttl small">{t('result.void')}</h1>
+            <p className="brs-lede" data-field="voidWhy">{t(`result.void.${voided.reason}`)}</p>
+          </>
+        ) : (
+          <div className="brs-refund" data-field="voidSettle">
+            <img src="market/grain.png" alt="" />
+            <p data-field="refund">
+              {voided.refunded ? t('result.void.refunded', { n: grainCost(mode) }) : t('result.void.kept')}
             </p>
-          )}
-        </>
-      );
-    } else if (page === 'reward') {
-      sheet = <RewardsPage given={rewards} />;
-    } else {
-      sheet = <RecordPage record={record!} />;
+          </div>
+        ),
+      };
     }
-    return sheet;
+    if (page === 'title') {
+      return {
+        beats: [
+          <BigLine key="big" text={t(BIG[result])} field="verdict" />,
+          ...(why ? [<WhyLine key="why" text={why} kind={outcomeKind} field="why" />] : []),
+          ...gainBeats(rewards),
+        ],
+      };
+    }
+    if (page === 'reward') return rewardSheet(rewards!);
+    return { plain: <RecordPage record={record!} /> };
   };
 
   return (
     <ResultScroll
       bg={bg}
       pages={pages}
-      // 받은 장수 카드는 카드 판으로 — 결말 장과 보상 장 사이에 (2026-10-15 · 10-20 기획자 지정, 농지 승리와 같다)
-      interlude={!voided && rewards && rewards.cards.length > 0
-        ? { at: 'reward', render: (done) => <CardRewardReveal cards={rewards.cards} onDone={done} /> }
+      // 받은 장수 카드는 「보상」이 선 뒤 화면을 어둡게 하고 장수 모집 결과와 같은 무대로 (2026-11-26 기획자)
+      interlude={cards.length > 0
+        ? { at: 'reward', render: (done) => <CardRewardReveal cards={cards} onDone={done} /> }
         : null}
       render={render}
       attrs={{ 'data-screen': 'result', 'data-result': voided ? 'void' : result, 'data-void': voided?.reason }}
@@ -169,9 +276,9 @@ export function ResultScreen({
 }
 
 /**
- * **튜토리얼 승리** (2026-11-11 기획자) — 대전 · 도적떼를 이겼을 때와 같은 승리 두루마리: 「승리」 → 보상.
+ * **튜토리얼 승리** (2026-11-11 기획자) — 대전 · 도적떼를 이겼을 때와 같은 승리 두루마리: 「승 리」 → 「임무 완료」 → 보상.
  * 보상은 처음 끝낸 판만이다(군량 1 · 자재 1 · C~D급 카드 1장, 서버가 이미 반영해 보낸다 — `meta/tutorial.ts`의
- * `completeTutorial`). 다시 한 판이면 보상 장에 「이미 받았다」고 적는다. 전과 장은 없다(전적에 안 센다).
+ * `completeTutorial`). 다시 한 판이면 보상 줄 대신 「이미 받았다」고 적는다. 전과 장은 없다(전적에 안 센다).
  * 나가는 길은 튜토리얼 목록이다 — 다음 판을 고르러 간다.
  */
 export function TutorialResultScreen({ id, rewards, onBack }: {
@@ -180,26 +287,21 @@ export function TutorialResultScreen({ id, rewards, onBack }: {
   onBack: () => void;
 }): React.JSX.Element {
   useLang();
-  const name = id.startsWith('s-')
-    ? t('tut.s', { name: pickOfficerNameById(id.slice(2), id.slice(2)) })
-    : t(`tut.${id}` as 'tut.basic-1');
-  const render = (page: 'title' | 'reward'): React.ReactNode => page === 'title' ? (
-    <>
-      <h1 className="brs-ttl" style={{ fontSize: `${titleSize(t('result.win'))}cqw` }}>{t('result.win')}</h1>
-      <p className="brs-lede" data-field="tutorial">{t('tut.result.cleared', { name })}</p>
-    </>
-  ) : rewards ? <RewardsPage given={rewards} /> : (
-    <div className="brs-rewards" data-field="rewards" data-already="1">
-      <h1 className="brs-ttl brs-ttl-sub" style={{ fontSize: `${Math.min(12, titleSize(t('result.rewards')))}cqw` }}>{t('result.rewards')}</h1>
-      <p className="brs-lede">{t('tut.result.already')}</p>
-    </div>
-  );
+  const cards = rewards?.cards ?? [];
+  const pages: ('title' | 'reward')[] = cards.length > 0 ? ['title', 'reward'] : ['title'];
+  const render = (page: 'title' | 'reward'): ResultSheet => page === 'title' ? {
+    beats: [
+      <BigLine key="big" text={t('result.big.win')} field="verdict" />,
+      <WhyLine key="why" text={t('result.why.objective')} kind="objective" field="tutorial" />,
+      ...(rewards ? gainBeats(rewards) : [<p key="already" className="brs-lede brs-already" data-field="rewards" data-already="1">{t('tut.result.already')}</p>]),
+    ],
+  } : rewardSheet(rewards!);
   return (
     <ResultScroll
       bg="win"
-      pages={['title', 'reward'] as const}
-      interlude={rewards && rewards.cards.length > 0
-        ? { at: 'reward', render: (done) => <CardRewardReveal cards={rewards.cards} onDone={done} /> }
+      pages={pages}
+      interlude={cards.length > 0
+        ? { at: 'reward', render: (done) => <CardRewardReveal cards={cards} onDone={done} /> }
         : null}
       render={render}
       attrs={{ 'data-screen': 'tutorialResult', 'data-result': 'win', 'data-tutorial': id }}
@@ -213,22 +315,21 @@ export function TutorialResultScreen({ id, rewards, onBack }: {
 }
 
 /**
- * 두루마리 껍데기 — 결말별 배경 · 펼침 · 장 넘기기 · 마지막 장의 나가는 단추.
+ * 두루마리 껍데기 — 결말별 배경 · 번쩍 서기 · 줄마다 「쿵」 · 장 넘기기 · 사이 연출 · 마지막 장의 나가는 단추.
  *
- * 대전 결과(`ResultScreen`)와 도적떼 방어전 결과(`RaidResultScreen`, 2026-10-13)가 함께 쓴다.
- * 장의 차례와 내용만 부르는 쪽이 정하고, 넘기는 시간표(`PAGE_MS` · 펼침 · 쓸어 입히기)는 여기 하나다 —
- * 두 화면이 따로 들고 있으면 한쪽만 낡는다.
+ * 대전 결과(`ResultScreen`) · 도적떼 방어전 결과(`RaidResultScreen`) · 튜토리얼 결과가 함께 쓴다.
+ * 장의 차례와 내용만 부르는 쪽이 정하고, 시간표(줄 사이 · 머무는 시간 · 사이 연출)는 여기 하나다 —
+ * 세 화면이 따로 들고 있으면 한쪽만 낡는다.
  */
 export function ResultScroll<P extends string>({ bg, pages, interlude, render, attrs, acts }: {
   bg: ResultBackdropId;
   pages: readonly P[];
   /**
-   * **장 사이의 연출** — `at` 장으로 넘어갈 때 한 번 (2026-10-20 기획자 지정: 받은 카드 공개).
-   * 앞 장의 글자를 지운 뒤 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다.
-   * `done`이 오면 어둠이 걷히면서 `at` 장의 글자가 쓰인다 — 연출 동안 그 장의 글자는 그리지 않는다.
+   * **장 사이의 연출** — `at` 장의 줄(`beats`)이 다 선 뒤 한 번 (2026-11-26 기획자: 「보상」 → 캐릭터 보상).
+   * 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다. `done`이 오면 어둠이 걷히며 그 장의 `tail`이 튀어나온다.
    */
   interlude?: { at: P; render: (done: () => void) => React.ReactNode } | null;
-  render: (page: P) => React.ReactNode;
+  render: (page: P) => ResultSheet;
   /** 틀(`.brs-frame`)에 다는 `data-*` — 스모크가 고르는 자리 */
   attrs: Record<`data-${string}`, string | undefined>;
   /** 마지막 장에서만 서는 나가는 단추 */
@@ -236,39 +337,95 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
 }): React.JSX.Element {
   const [idx, setIdx] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  /** 이 장에서 선 줄의 수 — 줄이 서는 것과 그 소리를 **같은 타이머**가 낸다 */
+  const [popped, setPopped] = useState(0);
+  const [tailShown, setTailShown] = useState(false);
   /** 장 사이 연출의 걸음 — 어두워지는 중 → 연출 → 밝아지는 중 → 끝(`null`) */
   const [veil, setVeil] = useState<'dim' | 'show' | 'lift' | null>(null);
   const [interluded, setInterluded] = useState(false);
+  const timers = useRef<number[]>([]);
   const page = pages[idx]!;
   const last = idx === pages.length - 1;
   const held = veil !== null;
-  const veiled = veil === 'dim' || veil === 'show';
   const skin = SKIN[bg];
+  const sheet = render(page);
+  const beats = sheet.beats ?? [];
+  const gated = interlude != null && interlude.at === page && !interluded;
+  const settled = popped >= beats.length && (!sheet.tail || tailShown);
+
+  const clearTimers = (): void => { timers.current.forEach((id) => window.clearTimeout(id)); timers.current = []; };
+
+  // 두루마리가 서는 소리 · 승리면 곡 0.5초 뒤 환호 (곡은 `App`이 화면을 바꾸며 이미 틀었다)
+  useEffect(() => {
+    playSfx('result_pop');
+    const cheer = bg === 'win' ? window.setTimeout(() => playSfx('victory_cheer'), CHEER_DELAY_MS) : 0;
+    return () => window.clearTimeout(cheer);
+  }, [bg]);
+
+  // 이 장의 줄을 하나씩 세운다 — 서는 순간 「결과표출」
+  useEffect(() => {
+    if (leaving) return undefined;
+    const n = (render(pages[idx]!).beats ?? []).length;
+    const from = idx === 0 ? SCROLL_POP_MS + FIRST_BEAT_MS : NEXT_BEAT_MS;
+    const quick = reducedMotion();
+    for (let i = 0; i < n; i++) {
+      timers.current.push(window.setTimeout(() => {
+        setPopped(i + 1);
+        playSfx('result_pop');
+      }, quick ? 0 : from + i * BEAT_STEP_MS));
+    }
+    return clearTimers;
+    // 장이 바뀔 때만 — `render`는 렌더마다 새 함수다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, leaving]);
+
+  // 줄이 다 섰고 사이 연출이 걸린 장이면 — 잠시 뒤 어두워진다
+  useEffect(() => {
+    if (!gated || held || leaving || popped < beats.length) return undefined;
+    const id = window.setTimeout(() => { setInterluded(true); setVeil('dim'); }, reducedMotion() ? 0 : INTERLUDE_AFTER_MS);
+    return () => window.clearTimeout(id);
+  }, [gated, held, leaving, popped, beats.length]);
+
+  // 어두워지기 · 밝아지기는 시간으로만 넘어간다. 연출(`show`)은 `done`이 넘긴다. 밝아지기 시작하면 `tail`이 튀어나온다
+  useEffect(() => {
+    if (veil !== 'dim' && veil !== 'lift') return undefined;
+    const quick = reducedMotion();
+    const ids: number[] = [];
+    if (veil === 'lift') {
+      ids.push(window.setTimeout(() => { setTailShown(true); playSfx('result_pop'); }, quick ? 0 : TAIL_AFTER_MS));
+    }
+    const ms = quick ? 0 : veil === 'dim' ? VEIL_IN_MS : VEIL_OUT_MS;
+    ids.push(window.setTimeout(() => setVeil(veil === 'dim' ? 'show' : null), ms));
+    return () => ids.forEach((id) => window.clearTimeout(id));
+  }, [veil]);
 
   const next = useCallback((): void => {
     if (last || held || leaving) return;
-    const out = reducedMotion() ? 0 : WIPE_OUT_MS;
-    const gate = interlude != null && !interluded && pages[idx + 1] === interlude.at;
     setLeaving(true);
     window.setTimeout(() => {
       setIdx((i) => i + 1);
+      setPopped(0);
+      setTailShown(false);
       setLeaving(false);
-      if (gate) { setInterluded(true); setVeil('dim'); }
-    }, out);
-  }, [last, held, leaving, interlude, interluded, pages, idx]);
+    }, reducedMotion() ? 0 : FADE_OUT_MS);
+  }, [last, held, leaving]);
 
-  // 어두워지기 · 밝아지기는 시간으로만 넘어간다. 연출(`show`)은 `done`이 넘긴다
-  useEffect(() => {
-    if (veil !== 'dim' && veil !== 'lift') return;
-    const ms = reducedMotion() ? 0 : veil === 'dim' ? VEIL_IN_MS : VEIL_OUT_MS;
-    const timer = window.setTimeout(() => setVeil(veil === 'dim' ? 'show' : null), ms);
-    return () => window.clearTimeout(timer);
-  }, [veil]);
+  /** 누르기 — 줄이 서는 중이면 남은 줄을 한꺼번에, 사이 연출을 기다리는 중이면 곧장 어둡게, 다 섰으면 다음 장 */
+  const tap = (): void => {
+    if (held || leaving) return;
+    if (popped < beats.length) {
+      clearTimers();
+      setPopped(beats.length);
+      playSfx('result_pop');
+      return;
+    }
+    if (gated) { setInterluded(true); setVeil('dim'); return; }
+    next();
+  };
 
-  // 장마다 `PAGE_MS` 뒤 저절로 넘긴다. 첫 장은 두루마리가 펼쳐지는 시간만큼 더 머문다
+  // 다 서면 `PAGE_MS` 뒤 저절로 넘긴다
   useEffect(() => {
-    if (last || held || leaving) return;
-    const extra = idx === 0 && !reducedMotion() ? UNROLL_MS : 0;
+    if (last || held || leaving || !settled || gated) return undefined;
     // 안내 내관이 이 장을 말하는 동안은 넘기지 않는다 (2026-11-14 — 첫 결과 안내가 가리킨 보상 칸이 말하는 도중 넘어갔다).
     // 기다리는 내관(`data-phase="wait"`)은 세지 않는다 — 결말 장에서는 내관이 넘어가기를 기다린다(`Steward`의 `HOLD_SELECTOR`)
     let timer = 0;
@@ -276,39 +433,46 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
       if (document.querySelector('.stw:not([data-phase="wait"])')) timer = window.setTimeout(tick, 500);
       else next();
     };
-    timer = window.setTimeout(tick, PAGE_MS + extra);
+    timer = window.setTimeout(tick, PAGE_MS);
     return () => window.clearTimeout(timer);
-  }, [idx, last, held, leaving, next]);
+  }, [idx, last, held, leaving, settled, gated, next]);
 
   return (
     <ScreenChrome backdrop={resultBackdrop(bg)} className="scr-result" account={currentSession()?.email ?? null}>
-      <div className="brs-frame" {...attrs} data-page={page} data-last={last ? '1' : '0'} data-veil={veil ?? undefined}>
-        <div className="brs-stage" data-action="next" onClick={next}>
+      <div className="brs-frame" {...attrs} data-page={page} data-last={last ? '1' : '0'} data-veil={veil ?? undefined}
+        data-settled={settled ? '1' : '0'}>
+        <div className="brs-stage" data-action="next" onClick={tap}>
           <figure
             className="brs-scroll"
             data-skin={skin}
-            style={{
-              '--brs-unroll': `${UNROLL_MS}ms`, '--brs-in': `${WIPE_IN_MS}ms`, '--brs-out': `${WIPE_OUT_MS}ms`,
-            } as React.CSSProperties}
+            style={{ '--brs-pop': `${SCROLL_POP_MS}ms`, '--brs-in': `${WIPE_IN_MS}ms`, '--brs-out': `${FADE_OUT_MS}ms` } as React.CSSProperties}
           >
-            {/* 그림자는 세 겹을 **감싼 이 층**에 건다 — 그림마다 걸면 펼침의 `clip-path`가 그림자를 그림 상자(네모)로 자른다 */}
+            {/* 그림자는 세 겹을 **감싼 이 층**에 건다 */}
             <div className="brs-art">
               <img className="brs-paper" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
-              <img className="brs-roll l" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
-              <img className="brs-roll r" src={`ui/result-scroll-${skin}.png`} alt="" draggable={false} />
             </div>
-            {/* 장이 바뀌면 `key`로 새로 만든다 — 쓸어 입히는 애니메이션이 처음부터 다시 돈다 */}
-            {/* 장 사이 연출 동안은 다음 장의 글자를 그리지 않는다 — 밝아지기 시작할 때 새로 붙어 쓸어 입혀진다 */}
-            {!veiled && (
-              <div key={idx} className={`brs-sheet${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
-                {render(page)}
-              </div>
-            )}
+            {/* 서는 순간의 번쩍 — 두루마리 위에 한 번 */}
+            <span className="brs-flash" aria-hidden />
+            {/* 장이 바뀌면 `key`로 새로 만든다 */}
+            <div key={idx} className={`brs-sheet${sheet.plain ? ' plain' : ''}${leaving ? ' out' : ''}${idx === 0 ? ' first' : ''}`}>
+              {sheet.plain ?? (
+                <>
+                  {/* 서기 전의 줄도 자리는 잡아 둔다 — 줄이 설 때 다른 줄이 밀리지 않게 */}
+                  {beats.map((b, i) => (
+                    <div key={i} className="brs-beat" data-wait={i < popped ? undefined : '1'} aria-hidden={i < popped ? undefined : true}>{b}</div>
+                  ))}
+                  {sheet.tail && (
+                    <div className="brs-beat brs-tail" data-wait={tailShown ? undefined : '1'} aria-hidden={tailShown ? undefined : true}>{sheet.tail}</div>
+                  )}
+                </>
+              )}
+              {sheet.extra}
+            </div>
           </figure>
-          {!last && !held && <p className="brs-tap">{t('result.tap')}</p>}
+          {!last && !held && settled && !gated && <p className="brs-tap">{t('result.tap')}</p>}
         </div>
 
-        {last && !leaving && <div className="brs-acts">{acts}</div>}
+        {last && !leaving && settled && <div className="brs-acts">{acts}</div>}
       </div>
       {/* 두루마리까지 배경으로 보고 어둡게 — 연출은 이 어둠 위에 뜬다(연출 제 가리개는 `.brs-gacha`가 걷는다) */}
       {veil && <div className="brs-veil" data-veil={veil} style={{ '--brs-veil-in': `${VEIL_IN_MS}ms`, '--brs-veil-out': `${VEIL_OUT_MS}ms` } as React.CSSProperties} />}
@@ -318,28 +482,17 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
 }
 
 /**
- * 보상 장 — 「승리」처럼 **「보상」을 크게** 쓰고, 그 아래 한 줄에 **장수 · 군량 · 재료** (2026-10-12 기획자 지정).
- * 받은 장수는 카드 액자가 아니라 **판 위의 꼬마 캐릭터**로 서고 이름은 그 오른쪽이다. 카드가 2장(승리에서 C·D가 나와 덤이
- * 붙은 경우)이어도 한 줄에 들도록 군량 · 재료는 아이콘 아래 글자로 세운다 — 옆으로 눕히면 종이 폭을 넘는다.
+ * 받은 장수 줄 — 「보상」 장에서 캐릭터 보상 연출이 끝난 뒤 튀어나온다. 장수는 판 위의 꼬마 캐릭터로 서고 이름은 그 오른쪽이다.
+ * 줄마다 `data-grade`를 단다: 스모크가 글자가 아니라 속성으로 등급을 본다.
  */
-export function RewardsPage({ given }: { given: BattleRewards | null }): React.JSX.Element {
-  const cards = given?.cards ?? [];
+function RewardCards({ cards }: { cards: BattleRewards['cards'] }): React.JSX.Element {
   return (
     <div className="brs-rewards" data-field="rewards">
-      <h1 className="brs-ttl brs-ttl-sub" style={{ fontSize: `${Math.min(12, titleSize(t('result.rewards')))}cqw` }}>
-        {t('result.rewards')}
-      </h1>
       <div className="brs-rewardrow" data-cards={cards.length}>
-        {/* 줄마다 `data-grade`를 단다: 스모크가 글자가 아니라 속성으로 등급을 본다 */}
         {cards.map((c, i) => {
           const o = officerById.get(c.officer);
           return (
-            <div
-              key={`${c.officer}-${i}`}
-              className="brs-card"
-              data-field="card" data-officer={c.officer} data-grade={c.grade}
-              style={{ animationDelay: `${250 + i * 160}ms` }}
-            >
+            <div key={`${c.officer}-${i}`} className="brs-card" data-field="card" data-officer={c.officer} data-grade={c.grade}>
               <span className="brs-card-fig">
                 <Halo grade={c.grade as Grade} />
                 <OfficerActionArt officer={c.officer} className="brs-chibi" />
@@ -351,20 +504,6 @@ export function RewardsPage({ given }: { given: BattleRewards | null }): React.J
             </div>
           );
         })}
-        {cards.length === 0 && <p className="brs-nocard" data-field="card">{t('result.noCard')}</p>}
-        {/* 군량 · 재료 — 카드가 2장이면 두 줄로 겹쳐 한 칸이 된다(`style.css`의 `[data-cards="2"]`) */}
-        <div className="brs-gainset">
-          <div className="brs-gain">
-            <img src="market/grain.png" alt="" />
-            <span><span className="k">{t('result.grain')}</span>{' '}
-              <b className="v" data-field="grain">{given && given.grain > 0 ? `+${given.grain}` : t('result.none')}</b></span>
-          </div>
-          <div className="brs-gain">
-            <img src="market/materials.png" alt="" />
-            <span><span className="k">{t('result.materials')}</span>{' '}
-              <b className="v" data-field="materials">{given && given.materials > 0 ? `+${given.materials}` : t('result.none')}</b></span>
-          </div>
-        </div>
       </div>
     </div>
   );

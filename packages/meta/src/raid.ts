@@ -32,7 +32,7 @@ import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samche
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield, settleCarried } from './market.ts';
-import { REWARD_TABLE, grantBattleRewards } from './rewards.ts';
+import { grantBattleRewards, rewardSpecOf } from './rewards.ts';
 import type { RewardKey, RewardSpec } from './rewards.ts';
 import { toRosterEntries } from './roster.ts';
 import { appendIntentLog, startsWithIntents } from './intentLog.ts';
@@ -51,7 +51,7 @@ export const RAID_ABANDON_MS = RAID.abandonMinutes * MS_PER_MIN;
 export const RAID_LOOT_PCT = RAID.lootPct;
 /** 막아 내면 받는 보상의 줄 — 정산(`settleRaid`)과 알림의 「승리 시」 요약이 같은 줄을 본다 */
 export const RAID_WIN_REWARD: RewardKey = 'weakWin';
-export const raidWinReward = (): RewardSpec => REWARD_TABLE[RAID_WIN_REWARD];
+export const raidWinReward = (): RewardSpec => rewardSpecOf(RAID_WIN_REWARD, 'raid');
 
 const DAY_OFFSET_MS = RAID.dayUtcOffsetHours * 3_600_000;
 
@@ -395,7 +395,7 @@ export interface RaidBattleEnd {
  *
  * | 결말 | |
  * |---|---|
- * | 승리 | 대전의 「약한 상대에게 승」 보상 (`grantBattleRewards(…, 'weakWin')` — 보상 식을 두 벌 적지 않는다, 2026-10-27 기획자 확정) |
+ * | 승리 | 대전의 「약한 상대에게 승」 군량 · 자재 + 카드는 C~D 한 장 (`grantBattleRewards(…, 'weakWin', …, 'raid')` — 2026-11-26 기획자) |
  * | 패배 | 살아 있는 도적 × 10% 약탈. 패배 카드는 없다 |
  * | 무승부 | 없음 |
  */
@@ -408,7 +408,7 @@ export function settleRaid(profile: PlayerProfile, end: RaidBattleEnd, nowMs: nu
   let next = hurt.length ? applyInjuries(profile, hurt, at) : profile;
 
   if (end.winner === GUARD_SIDE) {
-    const { profile: rewarded, rewards } = grantBattleRewards(next, RAID_WIN_REWARD, raid.battle.seed);
+    const { profile: rewarded, rewards } = grantBattleRewards(next, RAID_WIN_REWARD, raid.battle.seed, 'raid');
     return { ...rewarded, raid: { ...raid, status: 'won', loot: 0, rewards, settledAt: at } };
   }
   if (end.winner === null) {

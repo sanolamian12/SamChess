@@ -15,7 +15,7 @@ import { describe, it } from 'node:test';
 import { ECONOMY, officerById } from '@samchess/data';
 import type { BattleMode, OfficerId } from '@samchess/rules';
 import {
-  PROFILE_VERSION, CARD_WEIGHT, MATCH_BAND, REWARD_TABLE, ownedOfficers, rewardKey, rewardTier, winPoints,
+  PROFILE_VERSION, CARD_WEIGHT, MATCH_BAND, REWARD_TABLE, WIN_CARDS, ownedOfficers, rewardKey, rewardSpecOf, rewardTier, winKindOf, winPoints,
   MATCH_LOG_CAP, accountTally, applyBattleResult,
   createProfile, migrateProfile, recentMatches, winChance,
 } from '../src/index.ts';
@@ -73,7 +73,7 @@ describe('보상표 네 줄 (2026-10-27)', () => {
   for (const opponent of SIDES) {
     for (const mode of MODES) {
       for (const { result, power, key } of CASES) {
-        const spec = REWARD_TABLE[key];
+        const spec = rewardSpecOf(key, winKindOf(opponent));
         it(`${opponent} ${mode} ${result} (${key}) — 카드 ${spec.cards.length} · 자재 ${spec.materials} · 군량 ${spec.grain}`, () => {
           // 새 계정은 군량이 상한에 붙어 있다 — 받은 양을 재려면 비워 두어야 한다
           const p = { ...profile(), grain: 0 };
@@ -102,6 +102,19 @@ describe('보상표 네 줄 (2026-10-27)', () => {
     assert.deepEqual(REWARD_TABLE.weakLose, { cards: [{ owned: ['C', 'D'], fresh: ['D'] }], materials: 0, grain: 0 });
   });
 
+  it('이긴 판의 카드는 갈래가 정한다 — 도적떼 C~D 1 · 공성전 B~D 1 · 야전 B~D + C~D (2026-11-26)', () => {
+    const P = (g: string[]) => ({ owned: g, fresh: g });
+    assert.deepEqual(WIN_CARDS, {
+      raid: [P(['C', 'D'])], siege: [P(['B', 'C', 'D'])], field: [P(['B', 'C', 'D']), P(['C', 'D'])],
+    });
+    assert.equal(winKindOf('field'), 'field');
+    assert.equal(winKindOf('siege'), 'siege');
+    assert.equal(winKindOf('ai'), 'siege', 'AI와 싸운 판은 공성전 줄');
+    // 군량 · 자재는 보상표 그대로, 진 판은 보상표 그대로
+    assert.equal(rewardSpecOf('strongWin', 'siege').grain, REWARD_TABLE.strongWin.grain);
+    assert.equal(rewardSpecOf('strongLose', 'field'), REWARD_TABLE.strongLose);
+  });
+
   it('센가 약한가의 경계는 MATCH_BAND — 비슷한 상대는 센 쪽이다', () => {
     assert.equal(rewardTier({ mine: 600, theirs: 600 }), 'strong');
     assert.equal(rewardTier({ mine: 600, theirs: 900 }), 'strong');
@@ -116,7 +129,7 @@ describe('보상표 네 줄 (2026-10-27)', () => {
    */
   for (const key of ['strongWin', 'weakWin', 'strongLose', 'weakLose'] as RewardKey[]) {
     it(`${key} — 백 번 굴려도 카드가 그 줄의 풀 밖으로 안 나간다 ★`, () => {
-      const spec = REWARD_TABLE[key];
+      const spec = rewardSpecOf(key, 'field');
       const result: BattleResult = key.endsWith('Win') ? 'win' : 'lose';
       const power = key.startsWith('strong') ? EVEN : WEAK;
       let p: PlayerProfile = { ...profile(), grain: 0 };
@@ -144,14 +157,17 @@ describe('보상표 네 줄 (2026-10-27)', () => {
     }
   });
 
-  it('AI와 온라인의 보상이 **한 글자도 다르지 않다** (2026-08-18, §5-8을 뒤집는다)', () => {
-    // 상대가 사람인지 AI인지로 보상이 갈리면 접속 시간대가 곧 보상이 된다. 갈리는 것은 전투력뿐이다
-    for (const result of ['win', 'draw', 'lose'] as BattleResult[]) {
-      for (const mode of MODES) {
+  it('진 판 · 비긴 판의 보상은 상대를 안 본다 — 이긴 판의 카드만 갈래로 갈린다 (2026-11-26)', () => {
+    // 2026-08-18의 「AI와 온라인이 갈리지 않는다」는 2026-11-26에 이긴 판의 카드에서만 풀렸다(야전 두 장 · AI 한 장)
+    for (const mode of MODES) {
+      for (const result of ['draw', 'lose'] as BattleResult[]) {
         const online = fight(profile(), { result, mode, opponent: 'field' });
         const ai = fight(profile(), { result, mode, opponent: 'ai' });
         assert.deepEqual(ai.rewards, online.rewards, `${result} ${mode}에서 AI만 다르다`);
       }
+      assert.equal(fight(profile(), { mode, opponent: 'field' }).rewards.cards.length, 2);
+      assert.equal(fight(profile(), { mode, opponent: 'ai' }).rewards.cards.length, 1);
+      assert.equal(fight(profile(), { mode, opponent: 'siege' }).rewards.cards.length, 1);
     }
   });
 

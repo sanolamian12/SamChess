@@ -1475,37 +1475,51 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   await page.waitForSelector('[data-screen="result"][data-page="title"]', { timeout: 5_000 })
     .catch(() => fail('결과 화면이 첫 장(결말)으로 시작하지 않는다'));
   /*
-   * 받은 카드는 **결말 장과 보상 장 사이**에 카드 판으로 (2026-10-20 기획자 지정, 섬광은 2026-10-23에 뺐다 · 판 어디든 누르면 넘어간다 —
-   * 두루마리째 어두워진 뒤 연출, 밝아지며 보상 글자가 쓰인다). 패배도 카드 한 장이라 언제나 뜬다 —
-   * 아래에서 「보상 장의 카드 = 연출의 카드」를 보고, 연출 동안 보상 글자가 안 쓰였는지도 본다
+   * 결말 장 — 「승 리 / 패 배」 → 사유 → 받은 보상 줄이 하나씩 튀어나온다(2026-11-26 기획자). 받은 보상은 **이 장에** 적힌다(군량 · 재료 ·
+   * 「캐릭터 보상 n명」 — 안 준 것은 줄째 없다). 다 선 뒤 누르면 「보상」이 서고 화면째 어두워져 캐릭터 보상(장수 모집 결과와 같은 무대),
+   * 닫으면 밝아지며 「보상」 아래 받은 장수 줄. 패배도 카드 한 장이라 언제나 뜬다 — 「보상 장의 장수 = 연출의 장수 = 결말 장의 수」를 본다
    */
   const revealed: string[] = [];
-  await page.waitForTimeout(1200);
+  await page.waitForSelector('[data-screen="result"][data-page="title"][data-settled="1"]', { timeout: 10_000 })
+    .catch(() => fail('결말 장의 줄이 다 서지 않는다'));
   await shot('result-1-title');
+  const gains = await page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
+    const shown = (sel: string): Element | null => scr.querySelector(`.brs-beat:not([data-wait]) ${sel}`);
+    return {
+      grain: shown('[data-field="grain"]')?.textContent?.trim() ?? '',
+      cardCount: Number(shown('[data-field="cardCount"]')?.getAttribute('data-n') ?? 0),
+      // 안 준 보상은 줄째 없다 — 「없음」이 보이면 안 된다
+      none: [...scr.querySelectorAll('.brs-beat')].some((b) => /없음/.test(b.textContent ?? '')),
+    };
+  });
+  if (gains.none) fail('결말 장에 「없음」 줄이 있다 — 안 준 보상은 줄째 빼야 한다');
   await page.click('[data-screen="result"] .brs-stage');
+  await page.waitForSelector('[data-screen="result"][data-page="reward"] .brs-beat:not([data-wait]) [data-field="rewardsTitle"]', { timeout: 5_000 })
+    .catch(() => fail('결말 장을 넘겼는데 「보상」이 안 선다'));
+  if (await page.$('[data-modal="rewardCards"]')) fail('「보상」이 서기도 전에 캐릭터 보상이 떴다');
   await page.waitForSelector('[data-screen="result"][data-veil]', { timeout: 5_000 })
-    .catch(() => fail('결말 장을 넘겼는데 두루마리가 어두워지지 않는다'));
+    .catch(() => fail('「보상」이 섰는데 두루마리가 어두워지지 않는다'));
   await page.waitForTimeout(300);
   await shot('result-2-veil');
   await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
-    .catch(() => fail('어두워진 뒤 카드 판이 안 뜬다'));
-  if (await page.$('[data-screen="result"] [data-field="rewards"]')) fail('카드 공개 중인데 보상 글자가 이미 쓰여 있다');
+    .catch(() => fail('어두워진 뒤 캐릭터 보상이 안 뜬다'));
+  if (await page.$('[data-screen="result"] .brs-beat:not([data-wait]) [data-field="rewards"]')) fail('캐릭터 보상 중인데 받은 장수 줄이 이미 섰다');
   if (await page.$('[data-modal="burst"]')) fail('전투 보상 카드에 섬광이 떴다 — 2026-10-23에 뺐다');
-  if (await page.$('[data-modal="rewardCards"] button')) fail('카드 판에 단추가 있다 — 「누르면 다음으로」여야 한다');
+  await page.waitForTimeout(900);
   await shot('result-3-cards');
-  revealed.push(...await page.$$eval('[data-modal="rewardCards"] [data-officer]',
+  revealed.push(...await page.$$eval('[data-modal="rewardCards"] .rcr-member[data-officer]',
     (els) => els.map((el) => (el as HTMLElement).dataset.officer ?? '')));
   await page.click('[data-action="rewardCardsOk"]');
   await page.waitForTimeout(350);
   await shot('result-4-lift');
-  await page.waitForSelector('[data-screen="result"][data-page="reward"]:not([data-veil]) [data-field="rewards"]', { timeout: 5_000 })
-    .catch(() => fail('카드 판을 닫았는데 밝아지며 보상 장이 안 쓰인다'));
+  await page.waitForSelector('[data-screen="result"][data-page="reward"]:not([data-veil]) .brs-beat:not([data-wait]) [data-field="rewards"]', { timeout: 5_000 })
+    .catch(() => fail('캐릭터 보상을 닫았는데 밝아지며 받은 장수 줄이 안 선다'));
   await page.waitForTimeout(900);
   await shot('result-5-reward');
   const reward = await page.evaluate(() => {
     const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
     return {
-      grain: scr.querySelector('[data-field="grain"]')?.textContent?.trim() ?? '',
       // 받은 카드의 등급 — **글자가 아니라 속성**으로 본다 (2026-09-14, 카드가 0~2장이 됐다)
       cards: [...scr.querySelectorAll('[data-field="card"][data-officer]')]
         .map((el) => (el as HTMLElement).dataset.grade ?? ''),
@@ -1514,8 +1528,9 @@ let aiIntentsBeforeSurrender: unknown[] = [];
     };
   });
   if (revealed.join(',') !== reward.cardOfficers.join(',')) {
-    fail(`카드 공개 연출 [${revealed}]과 보상 장의 카드 [${reward.cardOfficers}]가 다르다 — 카드가 있으면 연출이 먼저 떠야 한다`);
+    fail(`캐릭터 보상 연출 [${revealed}]과 보상 장의 장수 [${reward.cardOfficers}]가 다르다`);
   }
+  if (gains.cardCount !== reward.cardOfficers.length) fail(`결말 장의 「캐릭터 보상 ${gains.cardCount}명」과 받은 장수 ${reward.cardOfficers.length}명이 다르다`);
   console.log(`  ✓ 받은 카드 공개 — 카드 판 [${revealed}] → 두루마리 보상 장과 같다`);
   await turn('record');
   if (!(await page.$('[data-screen="result"][data-last="1"] [data-action="home"]'))) fail('마지막 장(전과)에 [도시로]가 없다');
@@ -1539,7 +1554,7 @@ let aiIntentsBeforeSurrender: unknown[] = [];
       grainSaved: p.grain as number,
     };
   });
-  const result = seen && { ...seen, ...reward };
+  const result = seen && { ...seen, ...reward, grain: gains.grain };
   if (!result) fail(`항복했는데 결과 화면이 뜨지 않는다 — 콘솔 [${errors.join(' | ')}]`);
   // 전과 장의 칸은 **판 전 명단**이 아니라 이 판에 낸 셋이다 — 3v3 AI
   if (result!.units.length !== 3) fail(`전과 장에 장수가 셋이 아니다: ${JSON.stringify(result!.units)}`);

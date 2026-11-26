@@ -41,7 +41,7 @@ import { ConfirmModal, GoldCost, Halo, Layer } from './parts.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 import { Celebrate } from '../Celebrate.tsx';
-import { recruitSeats, recruitWalkers } from './recruitSeats.ts';
+import { recruitSeats, recruitWalkers, seatsFor } from './recruitSeats.ts';
 import { BlinkGlow, STAND_GLOW, officerBlink } from '../BlinkGlow.tsx';
 import { walkerArtOf } from './walkerArt.ts';
 import type { BlinkTone } from '../BlinkGlow.tsx';
@@ -356,7 +356,7 @@ export function MercView({ profile, run, busy, onBack }: {
             walkers={[{ art: walkerArtOf(got), glow: STAND_GLOW[gradeOf(got)] ?? null }]}
             tone={officerBlink(gradeOf(got))}
             art={<img className="cel-art-img" src="ui/cel-recruit.png" alt="" />}
-            cast={<RecruitCast got={{ kind: 'one', drawn: [got], fates: ['card'], exhausted: false }} />}
+            cast={<RecruitCast got={{ drawn: [got], fates: ['card'] }} />}
             onClose={() => setGot(null)}>
             <p className="row" data-field="surplusGot">{t('market.surplus.got')}</p>
           </Celebrate>
@@ -378,17 +378,19 @@ const GRADE_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
 const CAST_SPOTS: Record<number, readonly { x: number; y: number; s: number }[]> = {
   // 1명 — 꼬마 그림의 한가운데가 문장의 한가운데에 오게(2026-11-25 기획자). y는 이름 줄까지 포함한 맨 아래라, 그림(46%) + 이름 줄만큼 내려 잡는다
   1: [{ x: 50, y: 82, s: 1 }],
+  // 2명 — 야전 승리의 캐릭터 보상(2026-11-26, 모집에는 없다). 나란히 한 줄, 높은 등급이 왼쪽
+  2: [{ x: 27, y: 86, s: 1 }, { x: 73, y: 86, s: 1 }],
   // 3 · 5명도 꼬마 크기는 1명과 같다(2026-11-25 기획자 — 「작아질 필요가 없다」) — 겹치는 만큼 앞뒤 줄의 높이를 더 벌린다
   3: [{ x: 21, y: 70, s: 1 }, { x: 50, y: 100, s: 1 }, { x: 79, y: 70, s: 1 }],
   // 5명은 같은 크기로 한 줄 W자에 안 든다(이름이 앞 꼬마에 가렸다) — 뒷줄 둘 · 앞줄 셋, 앞줄은 무대 아래로 조금 내려선다(`.rcr-done`의 아래 여백)
   5: [{ x: 16, y: 118, s: 1 }, { x: 31, y: 54, s: 1 }, { x: 50, y: 118, s: 1 }, { x: 69, y: 54, s: 1 }, { x: 84, y: 118, s: 1 }],
 };
 /** 장수 하나가 튀어나오는 간격 · 첫 장수까지(무대가 열리고 번쩍이 걷힌 뒤) */
-const CAST_STEP_MS = 180;
-const CAST_FROM_MS = 380;
+export const CAST_STEP_MS = 180;
+export const CAST_FROM_MS = 380;
 
-function RecruitCast({ got }: { got: Pulled }): React.JSX.Element {
-  const n = got.drawn.length >= 5 ? 5 : got.drawn.length >= 3 ? 3 : 1;
+export function RecruitCast({ got }: { got: Pick<Pulled, 'drawn' | 'fates'> }): React.JSX.Element {
+  const n = seatsFor(got.drawn.length);
   const grades = got.drawn.map(gradeOf);
   const seats = recruitSeats(grades);
   // 낮은 등급부터 — 가장 센 장수가 마지막에

@@ -343,7 +343,7 @@ const FLAKES = Array.from({ length: 16 }, (_, i) => ({
 }));
 
 export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel', tone = 'plain', okAction = 'doneOk',
-  sound = 'celebrate', intro: introAsked = 'swirl', tier = 'big', walkers, cast, onClose, className = '', children }: {
+  sound = 'celebrate', intro: introAsked = 'swirl', tier = 'big', instant = false, walkers, cast, onClose, className = '', children }: {
   /** `data-modal` — 검사가 이 화면을 찾는 이름 */
   modal: string;
   /** 큰 제목(「강화 완료」) — 언제나 한 줄, 안 들면 그 글만 줄인다(`FitLine`). 빈 글이면 제목 줄이 없다(장수 모집) */
@@ -365,6 +365,11 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   intro?: CelebrateIntro;
   /** 급 — 큰 급(기본, 7초) · 작은 급(2초) */
   tier?: CelebrateTier;
+  /**
+   * **모음 없이 곧장 무대** (2026-11-26 기획자 — 전투 결과의 캐릭터 보상). 부르는 쪽이 이미 화면을 어둡게 깔아 두었고
+   * 그 곡(승리 곡)이 이어져야 해서 **배경 음악을 멈추지 않는다.** 소리(`sound`)는 무대가 열리는 순간 처음부터.
+   */
+  instant?: boolean;
   /** 장수 모집 도입부(`intro='recruit'`)의 걷는 사람 — 왼쪽부터 자리 순(`recruitWalkers()`) */
   walkers?: readonly RecruitWalker[];
   /** 무대 그림 위에 서는 것(장수 모집의 장수들) — 배지와 달리 내려찍지 않는다 */
@@ -376,10 +381,10 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   children?: ReactNode;
 }): React.JSX.Element {
   const intro: CelebrateIntro = tier === 'small' ? 'swirl' : introAsked;
-  const chargeMs = CHARGE_MS_OF[tier];
+  const chargeMs = instant ? 0 : CHARGE_MS_OF[tier];
   const [leaving, setLeaving] = useState(false);
-  const [charging, setCharging] = useState(true);
-  const chargingRef = useRef(true);
+  const [charging, setCharging] = useState(!instant);
+  const chargingRef = useRef(!instant);
   const recruit = intro === 'recruit' && (walkers?.length ?? 0) > 0;
   // 장수 모집 — 건너뛰기 · 걸음 소리 · 무대가 열린 시각
   const [skipped, setSkipped] = useState(false);
@@ -401,13 +406,14 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
 
   // 배경 음악 — 열리면 멈추고, **이 화면이 사라질 때**(닫힘 연출까지 끝나 부르는 쪽이 내릴 때) 다시 튼다
   useEffect(() => {
+    if (instant) return undefined;
     holdBgm(true);
     return () => holdBgm(false);
-  }, []);
+  }, [instant]);
 
   useEffect(() => {
     const t0 = performance.now();
-    const main = sound ? playSfx(sound, { from: SOUND_FROM[tier] }) : null;
+    const main = sound ? playSfx(sound, { from: instant ? 0 : SOUND_FROM[tier] }) : null;
     const fades: number[] = [];
     // 장수 모집 — 걸음 소리를 시간차로 겹치고, 번쩍 직전에 잦아들게
     const steps: HTMLAudioElement[] = [];
@@ -419,7 +425,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
     const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms))
       : intro === 'city' ? CITY_SOUNDS.map(([id, ms]) => window.setTimeout(() => playSfx(id, { volume: 0.85 }), ms)) : [];
     const open = (): void => { chargingRef.current = false; openedAt.current = recruit ? performance.now() : 0; setCharging(false); };
-    let shown = window.setTimeout(open, chargeMs);
+    let shown = instant ? 0 : window.setTimeout(open, chargeMs);
     // 걷는 중에 누르면 곧장 번쩍으로 — 걸음은 끊고, 축하음은 그 자리(4.6초)부터 다시 튼다. 한 번만
     let skippedOnce = false;
     skipRef.current = (): void => {
@@ -452,7 +458,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
       window.removeEventListener('keydown', onKey);
     };
     // 걷는 사람(`walkers`)은 열린 동안 같은 판이라 다시 돌리지 않는다
-  }, [sound, intro, tier, chargeMs, leave, recruit]);
+  }, [sound, intro, tier, chargeMs, leave, recruit, instant]);
 
   if (charging && intro === 'forge') {
     return (
@@ -517,7 +523,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   if (charging) return <SwirlCharge tier={tier} />;
 
   return (
-    <div className="modal-back cel-back" data-modal={modal} data-phase="show" data-leaving={leaving ? '1' : undefined} onClick={leave}>
+    <div className="modal-back cel-back" data-modal={modal} data-phase="show" data-instant={instant ? '1' : undefined} data-leaving={leaving ? '1' : undefined} onClick={leave}>
       {/* 화면 전체를 덮는 누름 칸 — 맨 위에 서서 어디를 눌러도 닫힌다. 검사는 옛 [확인]처럼 이 칸을 `data-action`으로 찾는다 */}
       <button type="button" className="cel-hit" data-action={okAction} aria-label={t('celebrate.tap')} />
       <span className="cel-flash" aria-hidden />

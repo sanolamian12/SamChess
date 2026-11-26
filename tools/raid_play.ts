@@ -365,10 +365,12 @@ try {
   ok(`패배 — 살아 있는 도적 2명 몫 = 군량 ${wantLoot} 약탈 (재생 검증을 지나 서버가 정산)`);
 
   step('끝나면 출정이 다시 열린다');
-  // 나가는 길은 마지막 장의 [농지로] 하나다(2026-10-13) — 장을 눌러 넘기고, 농지에서 뒤로 메인으로
+  // 나가는 길은 마지막 장의 [농지로] 하나다(2026-10-13). 약탈당한 판은 한 장뿐이다(2026-11-26 — 약탈 줄이 결말 장에 함께 튀어나온다).
+  // 줄이 다 서야 단추가 선다 — 누르면 남은 줄이 한꺼번에 선다
   await page.click('[data-screen="raidResult"] [data-action="next"]');
-  await page.waitForSelector('[data-screen="raidResult"][data-last="1"] .brs-acts', { timeout: 5_000 })
-    .catch(() => fail('둘째 장(약탈)으로 안 넘어간다'));
+  await page.waitForSelector('[data-screen="raidResult"][data-last="1"] .brs-acts', { timeout: 8_000 })
+    .catch(() => fail('결말 장의 줄이 다 서도 [농지로]가 안 선다'));
+  if (!(await page.$('[data-screen="raidResult"] .brs-beat:not([data-wait]) [data-field="lootPage"]'))) await fail('결말 장에 약탈 줄이 없다');
   await page.waitForTimeout(900);
   await shot('raid-07b-loot');
   await page.click('[data-screen="raidResult"][data-last="1"] [data-action="farm"]', { timeout: 5_000 })

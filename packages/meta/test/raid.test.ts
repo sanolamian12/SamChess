@@ -268,8 +268,8 @@ describe('결말', () => {
     assert.equal(next.raid!.loot, 0);
     assert.equal(next.materials, p.materials, '자재는 센 상대에게 이긴 판에만');
     assert.equal(next.grain, p.grain + REWARD_TABLE.weakWin.grain);
-    assert.equal(next.raid!.rewards?.cards.length, 2, '카드 두 장 — 둘째는 D급');
-    assert.equal(next.raid!.rewards?.cards[1]?.grade, 'D');
+    assert.equal(next.raid!.rewards?.cards.length, 1, '카드 한 장 — C~D급 (2026-11-26)');
+    assert.ok(['C', 'D'].includes(next.raid!.rewards!.cards[0]!.grade));
     assert.deepEqual(next.record, p.record);
     assert.deepEqual(next.matches, p.matches);
     assert.equal(next.matchSeq, p.matchSeq);
@@ -281,21 +281,21 @@ describe('결말', () => {
     assert.equal(next.grain, p.grain + REWARD_TABLE.weakWin.grain);
   });
 
-  it('승리 — 보유 장수 카드는 B급까지다, S·A·E는 안 나온다 (2026-10-27)', () => {
+  it('승리 — 카드는 C~D급뿐이다, S·A·B·E는 안 나온다 (2026-11-26)', () => {
     const grades = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
       const p = startRaid(setGuards(spawned(3), [P('King', 'yu-bi')]), T0 + MIN, seed);
       const next = settleRaid(p, { winner: 'P1', banditsAlive: 0, fallen: [] }, T0 + 5 * MIN);
       for (const c of next.raid!.rewards!.cards) grades.add(c.grade);
     }
-    assert.ok(!grades.has('S') && !grades.has('A') && !grades.has('E'), `나온 등급: ${[...grades].join(',')}`);
-    assert.ok(grades.has('B'), '보유한 B는 나온다');
+    assert.ok(!grades.has('S') && !grades.has('A') && !grades.has('B') && !grades.has('E'), `나온 등급: ${[...grades].join(',')}`);
+    assert.ok(grades.has('C') && grades.has('D'), 'C · D는 나온다');
     // 같은 계정의 대전 승리는 보유 S를 낸다 — 위 검사가 헛돌지 않는다는 짝
     const cityGrades = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
-      for (const c of grantBattleRewards(city(3), 'strongWin', seed).rewards.cards) cityGrades.add(c.grade);
+      for (const c of grantBattleRewards(city(3), 'strongLose', seed, 'field').rewards.cards) cityGrades.add(c.grade);
     }
-    assert.ok(cityGrades.has('S'), '대전 승리에서는 보유 S가 나온다');
+    assert.ok(cityGrades.has('B'), '대전 패배에서는 보유 B가 나온다');
   });
 
   it('패배 — 살아 있는 도적 × 10%, 쓰러진 파수꾼은 부상', () => {

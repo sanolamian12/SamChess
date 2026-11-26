@@ -1,52 +1,51 @@
 /**
- * 보상 카드 공개 — 전투 보상으로 받은 장수 카드를 붉은 금박 판(`panel-done`)에 보여 준다.
+ * 캐릭터 보상 공개 — 전투 · 도적떼 · 튜토리얼 결과에서 받은 장수 카드를 **장수 모집 결과와 같은 무대**로 보여 준다
+ * (2026-11-26 기획자 — 옛 붉은 금박 판(`panel-done`)은 걷었다).
  *
- * 도적떼 방어전 승리처럼 보상에 장수 카드가 있으면, 결과 두루마리를 펴기 **전에** 이것이 먼저 뜬다.
- * 한 장이면 제목 자리에 등급 표 + 이름, 두 장(C·D 덤)이면 장터 8연처럼 칸마다 이름이 붙는다.
+ * 결과 두루마리가 「보상」을 크게 쓴 뒤 화면째 어두워지면(`ResultScroll`의 `interlude`) **걷는 장면 없이 곧장** 무대가 열린다 —
+ * 계정 문장 앞에 받은 장수가 낮은 등급부터 하나씩 「팡」(`RecruitCast`), 뒤에서 가장 높은 등급의 빛줄기가 돈다.
+ * 장수가 하나 튀어나올 때마다 결과 두루마리와 같은 「결과표출」 소리. 승리 곡은 멈추지 않는다(`Celebrate`의 `instant`).
+ * 단추 없이 화면 어디를 누르거나 아무 키나 누르면 닫히고, 두루마리가 다시 밝아진다.
  *
- * 2026-10-23 기획자 지정 — 장터 1회 뽑기에서 빌려 오던 **섬광(폭죽) · 효과음은 뺐다**. 판과 그림은 장터 판의 70%이고,
- * [확인] 단추 대신 결과 두루마리와 같은 「누르면 다음으로」 — 화면 어디를 눌러도 넘어간다.
+ * 검사가 거는 이름은 옛 판과 같다 — `data-modal="rewardCards"` · 누름 칸 `data-action="rewardCardsOk"` · 장수마다 `data-officer`.
  */
 
+import { useEffect } from 'react';
+import { officerById } from '@samchess/data';
 import type { OfficerId, Grade } from '@samchess/rules';
 import { t } from '../../i18n/index.ts';
-import { Portrait, Who } from './MercView.tsx';
+import { playSfx } from '../../audio/sfx.ts';
+import { Celebrate } from '../Celebrate.tsx';
+import { officerBlink } from '../BlinkGlow.tsx';
+import { CAST_FROM_MS, CAST_STEP_MS, RecruitCast } from './MercView.tsx';
 import { Layer } from './parts.tsx';
+
+const GRADE_ORDER: readonly Grade[] = ['E', 'S', 'A', 'B', 'C', 'D'];
 
 export function CardRewardReveal({ cards, onDone }: {
   cards: readonly { officer: OfficerId; grade: Grade }[];
   onDone: () => void;
 }): React.JSX.Element {
-  const one = cards.length === 1;
+  const drawn = cards.map((c) => c.officer);
+  const top = [...cards].map((c) => officerById.get(c.officer)?.grade ?? c.grade)
+    .sort((a, b) => GRADE_ORDER.indexOf(a) - GRADE_ORDER.indexOf(b))[0] ?? 'B';
+
+  // 무대가 열리는 소리는 `Celebrate`가(`sound`), 둘째 장수부터는 튀어나오는 박자에 맞춰 여기서 — `RecruitCast`의 늦춤과 같은 값
+  useEffect(() => {
+    const timers = cards.slice(1).map((_, i) => window.setTimeout(() => playSfx('result_pop'), CAST_FROM_MS + (i + 1) * CAST_STEP_MS));
+    return () => timers.forEach((id) => window.clearTimeout(id));
+    // 열린 동안 같은 카드다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Layer>
-      {/* `data-action`을 가리개에 단다 — 누르는 자리가 화면 전체다(스모크가 이것을 누른다) */}
-      <div className="modal-back mkt-reward-back" data-modal="rewardCards" data-action="rewardCardsOk" onClick={onDone}>
-        <div className="mkt-reward-col">
-          {/* 판 위의 제목 — 2026-11-06 기획자 지정 */}
-          <p className="mkt-reward-head" data-role="rewardCardsTitle">{t('result.cardReward')}</p>
-          <div className="modal mkt-done mkt-reward">
-            {one && <p className="modal-ttl"><Who officer={cards[0]!.officer} /></p>}
-            <div className="mkt-done-body">
-              {one ? (
-                <div className="mkt-reveal-one" data-officer={cards[0]!.officer}>
-                  <Portrait officer={cards[0]!.officer} />
-                </div>
-              ) : (
-                <div className="mkt-reveal-grid" data-count={cards.length}>
-                  {cards.map((c, i) => (
-                    <div key={`${c.officer}-${i}`} className="mkt-reveal-cell" data-officer={c.officer} data-grade={c.grade}>
-                      <Portrait officer={c.officer} size="sm" />
-                      <Who officer={c.officer} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <p className="brs-tap">{t('result.tap')}</p>
-        </div>
-      </div>
+      <Celebrate modal="rewardCards" okAction="rewardCardsOk" className="rcr-done brs-cel" title={t('result.cardReward')}
+        instant sound="result_pop"
+        tone={officerBlink(top)}
+        art={<img className="cel-art-img" src="ui/cel-recruit.png" alt="" />}
+        cast={<RecruitCast got={{ drawn, fates: drawn.map(() => 'card' as const) }} />}
+        onClose={onDone} />
     </Layer>
   );
 }

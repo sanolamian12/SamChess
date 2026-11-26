@@ -16,6 +16,7 @@
  *   ?demo=1&status=1                   남군 군주가 버프·디버프 하나씩을 든 채 시작 — 상태 배지 확인
  *   ?demo=1&deploy=1&late=1            상대가 내 [준비완료] 2.5초 뒤에 준비 — 배치 대기(waiting) 확인
  *   ?demo=1&siege=1&mode=3v3&level=1   수성전 연습 — 나는 남군(공격), 북군은 기본 방침 AI, 전투력을 맞춘 명단 · [적 방침] 팝업 (level 1 · 2)
+ *   ?result=win                        결과 두루마리만 로그인 없이 — `screens/ResultDemo.tsx`(win · siege · lose · draw · raid · raidLost · tutorial)
  *   ?demo=1&supply=1                   남군 장수가 적 군량고 앞에서 먼저 움직인다 — 탈취 장면 확인 (`2`면 북군 AI가 들어간다)
  */
 
@@ -23,6 +24,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './screens/App.tsx';
 import { DemoBattle } from './screens/DemoBattle.tsx';
 import { TutorialDemo } from './screens/TutorialDemo.tsx';
+import { ResultDemo } from './screens/ResultDemo.tsx';
 import './style.css';
 // 가로 모드 가안(2026-11-14) — `:root[data-orient="landscape"]` 아래에서만 걸린다. 세로 화면은 그대로다
 import './landscape.css';
@@ -41,5 +43,6 @@ applyOrientation(readOrientation());
 createRoot(document.getElementById('root')!).render(
   params.has('demo') ? <DemoBattle params={params} />
     : params.has('tutorial') ? <TutorialDemo params={params} />
+    : params.has('result') ? <ResultDemo params={params} />
     : <App />,
 );

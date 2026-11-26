@@ -212,7 +212,7 @@ export type Screen =
   | { name: 'tutorialResult'; id: TutorialId; rewards: BattleRewards | null }
   /** 도적떼 방어전 (GDD §5.11) — 판은 서버가 굳혀 둔 `raid.battle`로 만든다 */
   | { name: 'raidBattle' }
-  | { name: 'raidResult'; banditsLeft: number; error: string | null };
+  | { name: 'raidResult'; banditsLeft: number; outcomeKind: string | null; error: string | null };
 
 /**
  * **지금 어느 건물 안인가** — 한 마디 안내(`Say`)가 「이 건물 안에서 이미 섰다」를 세는 단위(`setSayVisit`, 2026-11-23 기획자).
@@ -1053,12 +1053,13 @@ export function App(): React.JSX.Element {
         <RaidBattleScreen
           profile={profile}
           // 서버가 정산한 계정이다 — `PUT`으로 되올릴 까닭이 없다
-          onDone={(done) => { setProfileState(done.profile); setScreen({ name: 'raidResult', banditsLeft: done.banditsLeft, error: done.error }); }}
+          onDone={(done) => { setProfileState(done.profile); setScreen({ name: 'raidResult', banditsLeft: done.banditsLeft, outcomeKind: done.outcomeKind, error: done.error }); }}
         />
       ) : screen.name === 'raidResult' ? (
         <RaidResultScreen
           profile={profile}
           banditsLeft={screen.banditsLeft}
+          outcomeKind={screen.outcomeKind}
           error={screen.error}
           onFarm={() => setScreen({ name: 'building', building: 'farm' })}
         />

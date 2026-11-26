@@ -8265,6 +8265,10 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   animation: cel-unwhite .7s ease-out both;
 }
 @keyframes cel-unwhite { from { opacity: 1; } to { opacity: 0; } }
+/* 모음 없이 곧장 여는 무대(`instant` — 전투 결과의 캐릭터 보상)는 흰빛에서 걷히지 않는다 — 어둠 위에 곧장 선다 */
+.cel-back[data-instant] .cel-unwhite { display: none; }
+/* 전투 결과의 캐릭터 보상 — 제목 「캐릭터 보상」은 무대 아래, 결과 두루마리와 같은 명조 */
+.cel-back .brs-cel .cel-ttl { font-family: 'Nanum Myeongjo', var(--serif); font-weight: 800; color: #f3d58a; }
 @media (prefers-reduced-motion: reduce) {
   .cel-swirl, .cel-swirl > i > b, .cel-swirl span { animation: none; }
   .cel-swirl span { opacity: .8; }
@@ -9166,37 +9170,65 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .brs-art > img {
   position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none;
 }
-.brs-paper { animation: brs-unroll-paper var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
-.brs-roll.l { clip-path: inset(0 87.5% 0 0); animation: brs-roll-l var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
-.brs-roll.r { clip-path: inset(0 0 0 87.5%); animation: brs-roll-r var(--brs-unroll, 900ms) cubic-bezier(.3, .7, .3, 1) both; }
-@keyframes brs-unroll-paper { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
-@keyframes brs-roll-l { from { transform: translateX(37.5%); } to { transform: none; } }
-@keyframes brs-roll-r { from { transform: translateX(-37.5%); } to { transform: none; } }
+.brs-paper { animation: none; }
+/* 서기 (2026-11-26 기획자 — 펼침 대신) — 번쩍하며 조금 커졌다가 제 크기로. 글자 · 보상 줄의 「쿵」(`brs-pop`)과 같은 결이다.
+   길이는 `ResultScreen.tsx`의 `SCROLL_POP_MS`와 같은 값(`--brs-pop`) */
+.brs-art { animation: brs-scroll-pop var(--brs-pop, 600ms) cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes brs-scroll-pop {
+  0% { transform: scale(.82); opacity: 0; filter: drop-shadow(0 .3rem .6rem #000a) brightness(2.2); }
+  45% { transform: scale(1.07); opacity: 1; filter: drop-shadow(0 .3rem .6rem #000a) brightness(1.6); }
+  100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 .3rem .6rem #000a) brightness(1); }
+}
+.brs-flash {
+  position: absolute; inset: -12% -6%; z-index: 2; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 50%, #fffdf0 0%, #fff6c8cc 30%, #fff0 70%); mix-blend-mode: screen;
+  animation: brs-flash .7s ease-out .12s both;
+}
+@keyframes brs-flash { 0% { opacity: 0; transform: scale(.7); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
 
 /* 종이 안쪽 — 위아래 무늬 띠와 축을 피한 자리. 글자 크기는 두루마리 폭(`cqw`)을 따른다(격언 두루마리와 같은 결) */
 .brs-sheet {
-  position: absolute; inset: 19% 14.5% 18%;
+  position: absolute; inset: 19% 14.5% 18%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2cqw;
   text-align: center; color: #3a1d06;
-  /* 쓸어 입히기 — `QuoteScroll`(`.srl-`)과 같은 마스크. 들고 나는 키프레임 이름이 갈려 있어 다시 돈다 */
+  /* 글꼴 — 굵은 명조(견명조 결, 2026-11-26 기획자). 한글 밖의 문자는 언어마다 물러난다(아래 `:root[data-lang]`) */
+  font-family: 'Nanum Myeongjo', var(--serif); font-weight: 700;
+}
+:root[data-lang="ja"] .brs-sheet { font-family: 'Noto Serif JP', var(--serif); }
+:root[data-lang="zh_Hans"] .brs-sheet { font-family: 'Noto Serif SC', var(--serif); }
+:root[data-lang="zh_Hant"] .brs-sheet { font-family: 'Noto Serif TC', var(--serif); }
+:root[data-lang="mn"] .brs-sheet { font-family: 'PT Serif', var(--serif); }
+/* 줄마다 「쿵」 튀어나오는 장 — 큰 글씨 · 사유는 한 줄을 다 쓰고, 보상 줄은 한 줄에 나란히(넘치면 다음 줄로) */
+.brs-sheet:not(.plain) { flex-flow: row wrap; align-content: center; column-gap: 3.2cqw; row-gap: 1.6cqw; }
+.brs-beat { flex: 0 0 auto; display: flex; justify-content: center; min-width: 0; }
+.brs-beat:has(> .brs-ttl), .brs-beat:has(> .brs-lede), .brs-beat.brs-tail { flex-basis: 100%; }
+.brs-beat[data-wait] { visibility: hidden; }
+.brs-beat:not([data-wait]) { animation: brs-pop .55s cubic-bezier(.2, .9, .3, 1) both; }
+/* 「쿵」 — 번쩍하며 조금 커졌다가 제 크기로 (두루마리의 `brs-scroll-pop`과 같은 결) */
+@keyframes brs-pop {
+  0% { transform: scale(.55); opacity: 0; filter: brightness(2.4) drop-shadow(0 0 1.5cqw #fff7d6); }
+  40% { transform: scale(1.16); opacity: 1; filter: brightness(1.7) drop-shadow(0 0 2.5cqw #fff2b8); }
+  100% { transform: scale(1); opacity: 1; filter: none; }
+}
+/* 쓸어 입히는 장(전과 · 성립 안 한 판) — `QuoteScroll`(`.srl-`)과 같은 마스크 */
+.brs-sheet.plain {
   mask-image: linear-gradient(to right, #000 45%, transparent 55%);
   mask-size: 300% 100%; mask-repeat: no-repeat;
   animation: brs-wipe-in var(--brs-in, 800ms) linear both;
 }
 .brs-scroll[data-skin="draw"] .brs-sheet { color: #1d2a20; }
 .brs-scroll[data-skin="lose"] .brs-sheet { inset: 16% 14.5% 15%; color: #2b2318; }
-.brs-sheet.first { animation-delay: var(--brs-unroll, 900ms); }
-.brs-sheet.out {
-  mask-image: linear-gradient(to right, transparent 45%, #000 55%);
-  animation: brs-wipe-out var(--brs-out, 450ms) linear both;
-}
+.brs-sheet.plain.first { animation-delay: var(--brs-pop, 600ms); }
+/* 다음 장으로 — 글자가 슬며시 사라진다(2026-11-26 기획자). 길이는 `FADE_OUT_MS`(`--brs-out`) */
+.brs-sheet.out { mask-image: none; animation: brs-fade-out var(--brs-out, 650ms) ease-in both; }
+@keyframes brs-fade-out { from { opacity: 1; } to { opacity: 0; filter: blur(.3cqw); } }
 @keyframes brs-wipe-in { from { mask-position: 82.5% 0; } to { mask-position: 17.5% 0; } }
 @keyframes brs-wipe-out { from { mask-position: 82.5% 0; } to { mask-position: 17.5% 0; } }
 
-.brs-ttl { margin: 0; font: 17cqw/1 'Nanum Brush Script', var(--serif); letter-spacing: .04em; }
+.brs-ttl { margin: 0; font-weight: 800; font-size: 15cqw; line-height: 1.05; letter-spacing: .04em; white-space: nowrap; }
 .brs-scroll[data-skin="win"] .brs-ttl { color: #4a1606; text-shadow: 0 0 2cqw #fff3c4; }
-.brs-ttl.small { font: 700 5.4cqw/1.3 var(--serif); }
-.brs-lede { margin: 0; font-size: 3.6cqw; line-height: 1.35; }
+.brs-ttl.small { font-weight: 800; font-size: 5.4cqw; line-height: 1.3; white-space: normal; }
+.brs-lede { margin: 0; font-size: 4cqw; line-height: 1.3; }
 .brs-cap { margin: 0; font-size: 3.6cqw; font-weight: 700; }
 
 /* 보상 장 — 「보상」을 크게, 그 아래 한 줄에 장수(꼬마 캐릭터 + 오른쪽 이름) · 군량 · 재료 (2026-10-12 기획자 지정).
@@ -9204,7 +9236,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .brs-rewards { display: flex; flex-direction: column; align-items: center; gap: 1.6cqw; width: 100%; }
 .brs-ttl-sub { line-height: 1; }
 .brs-rewardrow { display: flex; align-items: center; justify-content: center; gap: 3cqw; width: 100%; }
-.brs-card { display: flex; align-items: center; gap: 1cqw; animation: mkt-rise .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.brs-card { display: flex; align-items: center; gap: 1cqw; }
 .brs-card-fig { position: relative; flex: none; width: 13cqw; }
 .brs-card-fig .mkt-halo { --blink-w: 2.2; }
 .brs-card-fig .brs-chibi { position: relative; z-index: 1; }
@@ -9221,8 +9253,11 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .brs-rewardrow[data-cards="2"] .brs-gain img { width: 5.5cqw; height: 5.5cqw; }
 .brs-card-id .gr { --gr: 4.4cqw; }
 .brs-nocard { margin: 0; font-size: 3.2cqw; opacity: .75; }
-.brs-gain { display: flex; flex-direction: column; align-items: center; gap: .6cqw; font-size: 3.2cqw; white-space: nowrap; }
-.brs-gain img { width: 7cqw; height: 7cqw; object-fit: contain; }
+.brs-gain { display: flex; align-items: center; gap: .8cqw; margin: 0; font-size: 3.4cqw; line-height: 1.2; white-space: nowrap; }
+.brs-gain img { width: 5cqw; height: 5cqw; object-fit: contain; }
+/* 사유 줄의 메달 — 큰 글씨와 보상 줄 사이라 한 줄 높이를 넘지 않게(전과 장 · 옛 결말 줄의 2.2em보다 작게) */
+.brs-sheet:not(.plain) .brs-lede .gic img { height: 1.5em; }
+.brs-gain.brs-loot { font-size: 4cqw; }
 .brs-gain .k { font-weight: 700; }
 .brs-gain .v { color: #1f4f8f; font-variant-numeric: tabular-nums; }
 .brs-scroll[data-skin="win"] .brs-gain .v { color: #6b1a08; }
@@ -9284,7 +9319,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 
 /* 움직임 줄이기 — 다 펼친 두루마리 · 다 쓴 글자로 곧장 선다(장은 그대로 넘어간다) */
 @media (prefers-reduced-motion: reduce) {
-  .brs-paper, .brs-roll.l, .brs-roll.r, .brs-sheet, .brs-sheet.out, .brs-card, .brs-acts, .brs-tap, .brs-veil, .brs-veil[data-veil="lift"] { animation: none; }
+  .brs-art, .brs-flash, .brs-beat:not([data-wait]), .brs-sheet, .brs-sheet.out, .brs-card, .brs-acts, .brs-tap, .brs-veil, .brs-veil[data-veil="lift"] { animation: none; }
   .brs-sheet, .brs-sheet.out { mask-image: none; }
 }
 

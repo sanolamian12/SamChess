@@ -40,7 +40,8 @@ import { useLang } from '../i18n/useLang.ts';
 import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
 import { BattleStage } from './BattleStage.tsx';
-import { ResultScroll, RewardsPage, titleSize } from './ResultScreen.tsx';
+import { BigLine, ResultScroll, gainBeats, rewardSheet, winWhy } from './ResultScreen.tsx';
+import type { ResultSheet } from './ResultScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { CardRewardReveal } from './market/CardRewardReveal.tsx';
 
@@ -48,6 +49,8 @@ export interface RaidBattleDone {
   profile: PlayerProfile;
   /** 판이 끝났을 때 살아 있던 도적 수 — 결과 화면이 보여 준다 */
   banditsLeft: number;
+  /** 판이 끝난 방식(`BattleState.outcome`) — 이긴 사유 줄(적 전멸 · 적 King 격퇴). 판 없이 끝났으면 `null` */
+  outcomeKind: string | null;
   /** 서버가 결과를 못 받았거나 거절했다 — 사람에게 보여 줄 말 */
   error: string | null;
 }
@@ -66,7 +69,7 @@ export function RaidBattleScreen({ profile, onDone }: {
     const saved = raidIntentsOf(profile.raid);
     const resumed = saved.length > 0 ? resumeRaidState(profile, saved) : null;
     if (resumed && !resumed.ok) {
-      done.current({ profile, banditsLeft: profile.raid?.bandits ?? 0, error: resumed.reason });
+      done.current({ profile, banditsLeft: profile.raid?.bandits ?? 0, outcomeKind: null, error: resumed.reason });
       return undefined;
     }
     const initial = resumed?.ok ? resumed.state : createBattle(config);
@@ -80,15 +83,17 @@ export function RaidBattleScreen({ profile, onDone }: {
     const settle = async (state: typeof initial): Promise<void> => {
       await uploader?.drain();
       const banditsLeft = Object.values(state.units).filter((u) => u.side === BANDIT_SIDE && u.alive).length;
+      const outcomeKind = state.outcome ?? null;
       try {
         const next = await settleRaidOnServer(transport.getIntentLog());
-        done.current({ profile: next, banditsLeft, error: null });
+        done.current({ profile: next, banditsLeft, outcomeKind, error: null });
       } catch (e) {
         // 재생이 어긋나 서버가 항복으로 정산했을 수도 있다 — 어느 쪽이든 서버 값을 다시 읽는다
         const fresh = await loadProfile().catch(() => null);
         done.current({
           profile: fresh ?? profile,
           banditsLeft,
+          outcomeKind,
           error: e instanceof RaidRequestFailed ? e.message : String(e),
         });
       }
@@ -105,11 +110,10 @@ export function RaidBattleScreen({ profile, onDone }: {
   return <BattleStage />;
 }
 
-const TITLE: Partial<Record<RaidState['status'], StringKey>> = {
-  won: 'raid.result.won',
-  lost: 'raid.result.lost',
-  drawn: 'raid.result.drawn',
-  surrendered: 'raid.result.surrendered',
+/** 결말 → 큰 글씨 — 막아 냈으면 「승 리」, 물러갔으면 「무승부」, 그 밖은 「패 배」 */
+const BIG: Record<RaidState['status'], StringKey> = {
+  pending: 'result.big.lose', fighting: 'result.big.lose', won: 'result.big.win', drawn: 'result.big.draw',
+  lost: 'result.big.lose', surrendered: 'result.big.lose',
 };
 
 /**
@@ -121,23 +125,21 @@ const BG: Record<RaidState['status'], ResultBackdropId> = {
 };
 
 type RaidPage = 'title' | 'reward';
-const PAGES: readonly RaidPage[] = ['title', 'reward'];
 
 /**
- * 방어전 결과 (2026-10-13 — 대전 결과의 두루마리로 옮겼다. 옛 농지 화풍 판은 걷었다).
+ * 방어전 결과 (2026-10-13 — 대전 결과의 두루마리로 옮겼다. 2026-11-26 — 대전과 같은 「쿵」 연출).
  *
  * 껍데기는 대전 결과와 같은 `ResultScroll`이고 장만 다르다:
- * **결말**(판정 · 남은 도적 · 약탈당한 군량) → **보상**(막아 냈으면 대전과 같은 보상 장, 아니면 약탈당한 군량).
- * 전과 장은 없다 — 방어전은 장수 전적에 안 들어가 통산 승무패를 보여 주면 「안 오른 숫자」가 된다.
- * 나가는 길은 [농지로] 하나다(기획자 지정).
- *
- * **보상에 장수 카드가 있으면 결말 장과 보상 장 사이에** 카드 판이 뜬다(`CardRewardReveal` — 섬광은 2026-10-23에 뺐다)
- * (2026-10-14 지정, 2026-10-20에 두루마리 앞에서 장 사이로 옮겼다 — 「승리!」를 쓴 두루마리째 어두워진 뒤 연출,
- * 밝아지며 보상 글자가 쓰인다. `ResultScroll`의 `interlude`).
+ * **결말**(「승 리」 · 사유 — 막아 냈으면 「적 전멸」, 아니면 물러갔다 · 약탈당했다 + 약탈당한 군량 — · 받은 보상 줄)
+ * → 캐릭터 보상이 있으면 **「보상」**(어두워진 뒤 장수 모집 결과와 같은 무대 → 받은 장수 줄).
+ * 막아 낸 판의 카드는 C~D 한 장이다(2026-11-26 기획자 — 두 장씩이라 장수가 너무 빨리 늘었다).
+ * 전과 장은 없다 — 방어전은 전적에 안 들어간다. 나가는 길은 [농지로] 하나다(기획자 지정).
  */
-export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
+export function RaidResultScreen({ profile, banditsLeft, outcomeKind = null, error, onFarm }: {
   profile: PlayerProfile;
   banditsLeft: number;
+  /** 판이 끝난 방식 — 막아 냈으면 사유 줄(적 전멸 · 적 King 격퇴). 도적에게도 두목(King)이 있다 */
+  outcomeKind?: string | null;
   error: string | null;
   onFarm: () => void;
 }): React.JSX.Element {
@@ -145,33 +147,36 @@ export function RaidResultScreen({ profile, banditsLeft, error, onFarm }: {
   const raid = profile.raid;
   const status = raid?.status ?? 'surrendered';
   const loot = raid?.loot ?? 0;
-  const lootLine = loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot');
-  const verdict = t(TITLE[status] ?? 'raid.result.surrendered');
-  const cards = status === 'won' ? raid?.rewards?.cards ?? [] : [];
+  const won = status === 'won';
+  const given = won ? raid?.rewards ?? null : null;
+  const cards = given?.cards ?? [];
+  const pages: readonly RaidPage[] = cards.length > 0 ? ['title', 'reward'] : ['title'];
 
-  const render = (page: RaidPage): React.ReactNode => {
-    if (page === 'title') {
-      return (
-        <>
-          <h1 className="brs-ttl" style={{ fontSize: `${Math.min(12, titleSize(verdict))}cqw` }}>{verdict}</h1>
-          <p className="brs-lede" data-field="bandits" data-n={banditsLeft}>{t('raid.result.bandits', { n: banditsLeft })}</p>
-          <Say text={error} name="error" repeat />
-        </>
-      );
-    }
-    if (status === 'won') return <RewardsPage given={raid?.rewards ?? null} />;
-    return (
-      <div className="brs-refund brs-loot" data-field="lootPage">
-        <img src="market/grain.png" alt="" />
-        <p>{lootLine}</p>
-      </div>
-    );
+  const render = (page: RaidPage): ResultSheet => {
+    if (page === 'reward') return rewardSheet(given!);
+    // 막아 낸 판의 사유는 넷 중 하나일 때만(그 밖 — 시간 상한의 HP 합 판정 · 정산 오류로 판을 모름 — 은 줄째 없다, 2026-11-26 기획자)
+    // 진 판(약탈당함 · 항복)은 사유 줄이 없다 — 약탈 줄이 남는다. 물러간 판(무승부)만 「도적떼가 물러갔다」 (2026-11-26 기획자)
+    const why = won ? winWhy(outcomeKind) : status === 'drawn' ? t('raid.result.drawn') : null;
+    return {
+      beats: [
+        <BigLine key="big" text={t(BIG[status])} field="verdict" />,
+        ...(why ? [<p key="why" className="brs-lede" data-field="bandits" data-n={banditsLeft} data-outcome={won ? outcomeKind ?? undefined : status}>{why}</p>] : []),
+        ...(won ? gainBeats(given) : []),
+        ...(status === 'lost' || status === 'surrendered'
+          ? [<p key="loot" className="brs-gain brs-loot" data-field="lootPage">
+              <img src="market/grain.png" alt="" />
+              <span>{loot > 0 ? t('raid.result.loot', { n: loot }) : t('raid.result.noLoot')}</span>
+            </p>]
+          : []),
+      ],
+      extra: <Say text={error} name="error" repeat />,
+    };
   };
 
   return (
     <ResultScroll
       bg={BG[status]}
-      pages={PAGES}
+      pages={pages}
       interlude={cards.length > 0 ? { at: 'reward', render: (done) => <CardRewardReveal cards={cards} onDone={done} /> } : null}
       render={render}
       // 약탈량은 장과 상관없이 틀에 단다 — 스모크가 첫 장에서 읽는다

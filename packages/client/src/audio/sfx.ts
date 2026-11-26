@@ -49,7 +49,10 @@ export type SfxId =
   // 도시 증축 축하 도입부의 공사 소리 넷 (2026-11-23 기획자 — 원본 `assets/Audio/new/construction_톱질 · 못질 · 해머질 · 큰못질.mp3`)
   | 'construction_saw' | 'construction_nail' | 'construction_hammer' | 'construction_bignail'
   // 장수 모집 도입부의 발걸음 — 한 사람 걸음(울림 있음, 8.6초). 3 · 5명은 시간차를 두고 둘 · 셋을 겹친다 (2026-11-25 기획자)
-  | 'walking_edit';
+  | 'walking_edit'
+  // 전투 결과 (2026-11-26 기획자) — 두루마리 · 글자 · 보상 줄 · 캐릭터 보상이 「쿵」 튀어나올 때마다(원본 `assets/Audio/new/결과표출.mp3`),
+  // 승리 곡 0.5초 뒤의 환호(원본 `assets/Audio/new/승리_환호성.mp3`)
+  | 'result_pop' | 'victory_cheer';
 
 const VOLUME = 0.8;
 
