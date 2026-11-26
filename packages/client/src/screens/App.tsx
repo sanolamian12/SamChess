@@ -898,8 +898,6 @@ export function App(): React.JSX.Element {
           onBack={() => setScreen({ name: 'main' })}
           onChange={setProfile}
           onAcademy={() => setScreen({ name: 'building', building: 'academy' })}
-          // 전면 레벨업 화면(`levelup`)이 아니라 장수 일람 + 그 장수의 카드로 (2026-09-25 지정)
-          onLevelUp={(officer) => setScreen({ name: 'officers', officer })}
         />
       ) : screen.name === 'city' ? (
         <CityScreen

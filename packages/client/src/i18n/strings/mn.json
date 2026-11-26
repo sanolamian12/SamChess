@@ -1496,6 +1496,8 @@
   "market.respec.what": "{name} (Lv{level})-г шинэчилнэ.",
   "market.respec.refund": "{n} карт буцаж ирнэ. Lv1 болж чадвар, заль мэхээ эхнээс нь дахин сонгоно.",
   "market.respec.done": "Шинэчлэл дууслаа",
+  "market.respec.lead": "Чадварыг шинэчилнэ.",
+  "market.respec.ask": "Үргэлжлүүлэх үү?",
   "market.respec.go": "Ордон руу",
   "market.respec.refunded": "Буцсан карт",
   "reason.market.badCount": "Тоо буруу байна",

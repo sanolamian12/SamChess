@@ -1496,6 +1496,8 @@
   "market.respec.what": "重置{name}（Lv{level}）的屬性。",
   "market.respec.refund": "將收回{n}張卡片。回到Lv1，從頭重新選擇能力與策略。",
   "market.respec.done": "屬性重置完成",
+  "market.respec.lead": "將重置能力值。",
+  "market.respec.ask": "確定要執行嗎？",
   "market.respec.go": "前往宮殿",
   "market.respec.refunded": "收回的卡片",
   "reason.market.badCount": "數量不正確",

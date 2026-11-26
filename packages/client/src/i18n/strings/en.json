@@ -1496,6 +1496,8 @@
   "market.respec.what": "Reset {name} (Lv{level}).",
   "market.respec.refund": "{n} cards are returned. The officer returns to Lv1 and picks stats and tactics again from the start.",
   "market.respec.done": "Respec complete",
+  "market.respec.lead": "Stats will be reset.",
+  "market.respec.ask": "Do you want to proceed?",
   "market.respec.go": "Go to Palace",
   "market.respec.refunded": "Cards returned",
   "reason.market.badCount": "That quantity is invalid",

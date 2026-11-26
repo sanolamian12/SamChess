@@ -2248,6 +2248,8 @@
   "market.respec.what": "{name}(Lv{level})의 스탯을 초기화합니다.",
   "market.respec.refund": "카드 {n}장이 회수됩니다. Lv1이 되고 능력과 책략을 처음부터 다시 고릅니다.",
   "market.respec.done": "스탯 초기화 완료",
+  "market.respec.lead": "능력치를 초기화합니다.",
+  "market.respec.ask": "실행하시겠습니까?",
   "market.respec.go": "궁궐로 이동",
   "market.respec.refunded": "회수된 카드",
   "reason.market.badCount": "수량이 올바르지 않습니다",

@@ -1496,6 +1496,8 @@
   "market.respec.what": "Reiniciar a {name} (Nv{level}).",
   "market.respec.refund": "Se devuelven {n} cartas. Vuelve a Nv1 y elige atributos y tácticas desde el principio.",
   "market.respec.done": "Rediseño completado",
+  "market.respec.lead": "Se reiniciarán las estadísticas.",
+  "market.respec.ask": "¿Desea continuar?",
   "market.respec.go": "Ir al Palacio",
   "market.respec.refunded": "Cartas recuperadas",
   "reason.market.badCount": "Esa cantidad no es válida",

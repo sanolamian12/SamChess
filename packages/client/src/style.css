@@ -11519,7 +11519,6 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 
 /* 무대 — 장수 모집과 같은 바탕(`rcr-done` — 어둠 위 가라앉힌 계정 문장)에 장수 꼬마와 장수 카드 묶음이 나란히 서고(`.rsp-cast`),
    제목 밑 붓 획 두 줄 — 「(카드 메달) ×26」 · 「[등급][레벨 — 옛 레벨에서 1까지 내려간다][이름]」(2026-11-26 기획자) */
-.modal-back.cel-back .modal.cel.rsp-done { z-index: 6; pointer-events: none; }   /* 단추만 누름 칸(`.cel-hit`, 5) 위로 — 나머지는 눌러도 닫힌다 */
 .rsp-cast { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 1.2rem; }
 .rsp-cast .mkt-portrait { margin: 0; animation: ngo-member .45s ease-out .35s both; }
 .rsp-stack { position: relative; display: block; width: 6.5rem; aspect-ratio: 1; animation: ngo-member .45s ease-out .6s both; }
@@ -11530,7 +11529,7 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .rsp-done .rsp-row { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .45rem; font-size: 1.05rem; animation: cel-rise .45s ease-out .85s both; }
 .rsp-done .rsp-row + .rsp-row { --lvd-stroke: url(ui/era-stroke-b-7.png); animation-delay: 1s; }
 .rsp-done .rsp-row .lvd-medal { width: 2.2rem; height: 2.2rem; }
-.rsp-done .rsp-row .gr { --gr: 1.5rem; }
+.rsp-done .rsp-row .gr { --gr: 1.95rem; }   /* 1.5rem의 1.3배 + 뒤 섬광 · 광택(`GlowGrade`, 2026-11-26 기획자) */
 .rsp-done .rsp-row .lv-badge { height: 1.9rem; width: auto; }
 .rsp-done .rsp-row [data-final] .lv-badge { animation: rsp-lv-glow 1.2s ease-out both; }
 @keyframes rsp-lv-glow {
@@ -11538,6 +11537,24 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
   100% { scale: 1; filter: drop-shadow(0 0 .2rem #ffe9a855); }
 }
 .rsp-lvslot { display: inline-flex; }
-.rsp-done .cel-tap { display: none; }
-.rsp-actions { position: relative; z-index: 6; pointer-events: auto; display: flex; gap: .6rem; justify-content: center; margin-top: .8rem; animation: cel-rise .45s ease-out 1.3s both; }
-.rsp-actions .btn { min-width: 8.5rem; }
+
+/* 초심의 서 「확정할까」 — 판은 화면의 폭 80% × 높이 70%, 가운데 (2026-11-26 기획자). 위에서부터 「스탯 초기화」 · 장수 꼬마(장수 상세와 같은 크기 · 같은 별빛) ·
+   [등급][레벨] 이름 · [지금 레벨] → [Lv1], [카드] ×N(화살촉은 좌우로 살짝) · 단추 둘 */
+.modal-back:has(> .modal.mkt-respec-ask) { padding: 0; }   /* 80%는 화면 전체의 80% — 가리개의 안쪽 여백을 빼지 않는다 */
+.modal.mkt-confirm.mkt-respec-ask { width: 80%; height: 70%; max-width: none; max-height: none; display: flex; flex-direction: column; container-type: inline-size; }
+.mkt-respec-ask .mkt-confirm-body { flex: 1 1 auto; min-height: 0; justify-content: flex-start; gap: .7rem; }
+/* 안내 · 꼬마 · 두 줄은 가운데 무리로, 「실행하시겠습니까?」는 판 바닥(확정 단추 바로 위)으로 */
+.mkt-respec-ask .rsp-ask-lead { margin-top: auto; font-size: 1.15rem; letter-spacing: .04em; white-space: nowrap; }
+.mkt-respec-ask .rsp-ask-q { margin-top: auto !important; font-size: 1rem; white-space: nowrap; }
+.rsp-ask-fig { position: relative; display: flex; align-items: center; justify-content: center; width: 6.05rem; aspect-ratio: 1; isolation: isolate; }   /* 장수 상세의 꼬마(`.ofcard-art` — 판 폭의 30%)와 같은 크기, respec_ux가 잰다 */
+.rsp-ask-art { position: relative; z-index: 1; width: 100%; aspect-ratio: 1; display: block; }
+.rsp-ask-glow { left: 0; top: 50%; width: 100%; aspect-ratio: 1; height: auto; translate: 0 -50%; z-index: 0; --blink-w: 2.4; }
+.rsp-ask-who, .rsp-ask-change { display: flex; align-items: center; justify-content: center; gap: .35rem; margin: 0; white-space: nowrap; }
+.rsp-ask-who b { font-size: 1.1rem; color: #f3e8c8; }
+.rsp-ask-who .gr { --gr: 1.95rem; }   /* 1.5rem의 1.3배 + 뒤 섬광 · 광택(`GlowGrade`, 2026-11-26 기획자) */
+.mkt-respec-ask .lv-badge { height: 1.9rem; width: auto; }
+.rsp-ask-arrow { width: 1.4rem; height: 1.4rem; rotate: -90deg; object-fit: contain; animation: rsp-nudge 1.1s ease-in-out infinite; }
+@keyframes rsp-nudge { 0%, 100% { translate: -.18rem 0; } 50% { translate: .18rem 0; } }
+.rsp-ask-sep { font-size: 1.1rem; font-weight: 700; color: #f3e8c8; margin: 0 .15rem 0 -.15rem; }
+.rsp-ask-card { width: 1.8rem; height: 1.8rem; object-fit: contain; }
+.rsp-ask-change b { font-size: 1.15rem; color: #f0c674; }

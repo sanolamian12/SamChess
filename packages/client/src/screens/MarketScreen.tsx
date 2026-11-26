@@ -82,15 +82,13 @@ const GOLD_SHOP = [
 /** 가격 — 환율은 아직 안 따진다. 원화 그대로 「₩1,000」(언어와 무관하게 같은 꼴) */
 const krwText = (krw: number): string => `₩${krw.toLocaleString('en-US')}`;
 
-export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }: {
+export function MarketScreen({ profile, onBack, onChange, onAcademy }: {
   profile: PlayerProfile;
   /** 「도시로」 */
   onBack: () => void;
   onChange: (next: PlayerProfile) => void;
   /** 태학 연구 초기화 뒤 [태학으로 이동] */
   onAcademy: () => void;
-  /** 재설계 뒤 [궁궐로 이동] — 그 장수의 레벨/스킬 관리 */
-  onLevelUp: (officer: OfficerId) => void;
 }): React.JSX.Element {
   useLang();
   const [view, setView] = useState<View>('home');
@@ -211,7 +209,6 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
             run={run}
             onBack={up}
             onAcademy={onAcademy}
-            onLevelUp={onLevelUp}
           />
         )}
 

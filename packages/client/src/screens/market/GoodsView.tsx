@@ -26,7 +26,7 @@
 
 import { useRef, useState } from 'react';
 import { officerById } from '@samchess/data';
-import type { OfficerId } from '@samchess/rules';
+import type { Grade, OfficerId } from '@samchess/rules';
 import {
   ACADEMY_RESET_GOLD, GRAIN_PACK, MATERIAL_PACK, RESPEC_GOLD, academyOf, canBuyGrain, canBuyMaterials,
   canResetAcademy, canRespec, cardsSpentOn, grainCap, grainPackCost, materialPackCost,
@@ -42,7 +42,10 @@ import { pickOfficerName } from '../../i18n/story.ts';
 import { CityBonusMark } from '../CityBonus.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
-import { Portrait } from './MercView.tsx';
+import { BlinkGlow, STAND_GLOW } from '../BlinkGlow.tsx';
+import { GlowGrade } from '../GlowGrade.tsx';
+import { LevelBadge } from '../LevelBadge.tsx';
+import { OfficerActionArt } from '../OfficerArt.tsx';
 import { RespecDone } from './RespecDone.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
@@ -101,7 +104,7 @@ export function GoodsStatus({ profile }: { profile: PlayerProfile }): React.JSX.
 /** 가격 띠의 붓 획 색 — 용병 시장과 같은 그림(`.mkt-pack-price[data-stroke]`) */
 const GOOD_STROKE: Record<Good, number> = { materials: 2, grain: 5, academyReset: 7, respec: 6 };
 
-export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onLevelUp }: {
+export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy }: {
   profile: PlayerProfile;
   onChange: (next: PlayerProfile) => void;
   busy: boolean;
@@ -109,8 +112,6 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
   onBack: () => void;
   /** [태학으로 이동] */
   onAcademy: () => void;
-  /** [궁궐로 이동] — 방금 되감은 그 장수의 레벨/스킬 관리로 곧장 */
-  onLevelUp: (officer: OfficerId) => void;
 }): React.JSX.Element {
   const [step, setStep] = useState<Step>(null);
   /** 막힌 칸을 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다(용병 시장과 같은 몸짓) */
@@ -183,6 +184,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
     }
   };
 
+  const gradeOf = (id: OfficerId): Grade => officerById.get(id)?.grade ?? 'B';
   const nameOf = (id: OfficerId): string => {
     const o = officerById.get(id);
     return o ? pickOfficerName(o) : id;
@@ -319,23 +321,40 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
           <ConfirmModal
             title={t('market.goods.respec')}
             field="respecAsk"
+            className="mkt-respec-ask"
             okLabel={<OkFor gold={RESPEC_GOLD} />}
             disabled={busy || !can.ok}
             onConfirm={() => run(() => respecOnServer(officer), () => setStep({ at: 'respecDone', officer, refund, fromLevel: level }))}
             onClose={() => setStep({ at: 'respecPick' })}
           >
-            <p className="mkt-confirm-lead">{t('market.respec.what', { name: nameOf(officer), level })}</p>
-            <Portrait officer={officer} size="sm" />
-            <p>{t('market.respec.refund', { n: refund })}</p>
+            {/* 판은 화면의 폭 80% × 높이 70%, 가운데 (2026-11-26 기획자) — 「스탯 초기화」 · 장수 꼬마(장수 상세와 같은 크기 · 같은 별빛) ·
+                [등급(섬광 · 광택)] 이름 · [지금 레벨] → [Lv1], [카드] ×돌려받는 수 */}
+            <p className="mkt-confirm-lead rsp-ask-lead">{t('market.respec.lead')}</p>
+            <span className="rsp-ask-fig">
+              {STAND_GLOW[gradeOf(officer)] && <BlinkGlow tone={STAND_GLOW[gradeOf(officer)]!} className="rsp-ask-glow" />}
+              <OfficerActionArt officer={officer} className="rsp-ask-art" />
+            </span>
+            <p className="rsp-ask-who" data-field="respecWho">
+              <GlowGrade grade={gradeOf(officer)} />
+              <b>{nameOf(officer)}</b>
+            </p>
+            <p className="rsp-ask-change" data-field="respecChange" data-refund={refund}>
+              <LevelBadge level={level} />
+              <img className="rsp-ask-arrow" src="ui/turn/arrowhead.png" alt="→" />
+              <LevelBadge level={1} />
+              <span className="rsp-ask-sep">,</span>
+              <img className="rsp-ask-card" src="market/market_card.png" alt="" />
+              <b>×{refund}</b>
+            </p>
             <Say text={can.ok ? null : reasonText(can)} level={profile.cityLevel} name="respecWhy" />
-            <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
+            {/* 확정 단추 바로 위 — 가운데 무리와 떨어져 판 바닥에 붙는다 */}
+            <p className="mkt-confirm-ask rsp-ask-q" data-field="respecQ">{t('market.respec.ask')}</p>
           </ConfirmModal>
         );
       })()}
       {/* 명상하는 선비 → 기의 구슬 → 어두운 무대의 장수 · 돌려받은 카드 (2026-11-26 기획자, `RespecDone`) */}
       {step?.at === 'respecDone' && (
-        <RespecDone officer={step.officer} fromLevel={step.fromLevel} refund={step.refund}
-          onPalace={() => onLevelUp(step.officer)} onClose={() => setStep(null)} />
+        <RespecDone officer={step.officer} fromLevel={step.fromLevel} refund={step.refund} onClose={() => setStep(null)} />
       )}
     </>
   );

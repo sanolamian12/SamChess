@@ -761,7 +761,7 @@ try {
   await page.waitForSelector('.scr-building-academy', { timeout: 10_000 });
   ok('[태학으로 이동] → 태학');
 
-  step('장수 재설계 (88쪽) — Lv2 이상만, [궁궐로 이동]');
+  step('장수 재설계 (88쪽) — Lv2 이상만, 무대는 눌러서 닫힌다');
   await page.goto(BASE, { waitUntil: 'networkidle' });
   await page.waitForSelector('.scr-main', { timeout: 20_000 });
   await openMarket();
@@ -790,14 +790,11 @@ try {
   const refund = await page.getAttribute('[data-field="refund"]', 'data-refund');   // 글자는 ×0에서 세어 오른다(초심의 서 무대, 2026-11-26)
   if (!refund?.includes(String(cardsSpentOn(3)))) fail(`돌려받은 카드가 「${refund}」다 — ×${cardsSpentOn(3)}이라야 한다`);
   if ((await getProfile(uid))!.roster[X!]!.level !== 1) fail('서버에서 Lv1이 안 됐다');
-  // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 지정 — 예전엔 전면 레벨/스킬 관리 화면이었고,
-  // 그 화면은 2026-10-06에 지웠다). 카드에 [재설계]가 없어야 한다
-  await page.click('[data-action="toPalace"]');
-  await page.waitForSelector(`.ofcard-modal[data-officer="${X}"]`, { timeout: 10_000 })
-    .catch(() => fail('[궁궐로 이동]을 눌렀는데 그 장수의 카드가 안 열린다'));
-  // 카드의 [강화](옛 [레벨/스킬 관리], 2026-11-20)는 곧장 레벨업 고르기라 [재설계]가 설 자리가 없다 — 카드에 없는 것만 본다
-  if (await page.$('.ofcard-modal [data-action="respec"]')) fail('장수 카드에 [재설계]가 남아 있다 — 장터로 옮겼다');
-  ok(`재설계 — Lv2 이상만 · ×${cardsSpentOn(3)} · [궁궐로 이동] → 장수 카드 · 궁궐의 [재설계]는 없다`);
+  // 무대는 단추 없이 「화면을 터치해주세요」(2026-11-26 기획자 — 옛 [궁궐로 이동] · [닫기]를 걷었다)
+  await page.click('[data-modal="respecDone"] .cel-hit');
+  await page.waitForSelector('[data-modal="respecDone"]', { state: 'detached', timeout: 5_000 })
+    .catch(() => fail('초심의 서 무대가 눌러도 안 닫힌다'));
+  ok(`재설계 — Lv2 이상만 · ×${cardsSpentOn(3)} · 무대는 눌러서 닫힌다`);
 
   if (errors.length > 0) fail(`콘솔 오류 ${errors.length}건 — ${errors.slice(0, 3).join(' | ')}`);
   console.log('\n장터 UX 통과 — 홈 · 용병 시장(1 · 3명 모집 · 빈자리 자물쇠 · 잉여 카드 모집) · 아이템 장바구니 · 보관함 지급 · 도시 물자 · 초기화 둘');
