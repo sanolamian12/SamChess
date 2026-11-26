@@ -941,6 +941,7 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
 
       s.sp[unit.side] -= uniqueSkillCost(unit)!;
       unit.uniqueSkillUses -= 1;
+      delete unit.freeUniqueSkill;   // 차동풍이 준 SP 0은 한 번뿐이다
       s.activeTurn!.usedUniqueSkill = true;
       events.push(
         { e: 'spChanged', side: unit.side, to: s.sp[unit.side] },

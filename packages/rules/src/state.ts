@@ -729,6 +729,8 @@ export function uniqueSkillCost(unit: UnitState): number | null {
   const skillId = combatantById.get(unit.officer)?.uniqueSkill;
   const skill = skillId ? skillById.get(skillId) : undefined;
   if (!skill) return null;
+  // 제갈량 「차동풍」이 되살린 기술은 공짜다 — 컬렉션 할인보다 앞선다(0 밑으로는 안 간다)
+  if (unit.freeUniqueSkill) return 0;
   const delta = (unit.bonuses ?? []).reduce(
     (n, b) => (b.kind === 'skillSp' && b.skill === skill.id ? n + b.delta : n), 0);
   return Math.max(0, skill.spCost + delta);

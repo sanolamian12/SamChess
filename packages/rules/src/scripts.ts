@@ -54,6 +54,8 @@ export const SKILL_SCRIPTS: Record<string, SkillScript> = {
    *
    * 안 쓴 스킬을 2회로 만드는 게 아니다. 그리고 제갈량 본인은 이 대가로
    * **게임이 끝날 때까지 비활성화**된다 — 자기 자신은 복구 대상에서 뺀다.
+   * **되살린 기술은 SP 0으로 다시 쓴다** (2026-11-25 기획자) — 진영 SP가 함께 쓰는 값이라, 되살려도 다시 쓸 SP(6씩)가
+   * 모자라 판이 끝나기 일쑤였다. 공짜 표식(`freeUniqueSkill`)은 시전하면 지워진다.
    */
   restoreAllyUniqueSkills(state, ctx, events) {
     for (const ally of unitsOf(state, ctx.caster.side)) {
@@ -61,6 +63,7 @@ export const SKILL_SCRIPTS: Record<string, SkillScript> = {
       if (ally.uniqueSkillUses > 0) continue;              // 아직 안 쓴 유닛은 그대로
       if (!combatantById.get(ally.officer)?.uniqueSkill) continue;  // C·D급은 스킬이 없다
       ally.uniqueSkillUses = 1;
+      ally.freeUniqueSkill = true;
       events.push({ e: 'uniqueSkillRestored', unit: ally.id });
     }
     ctx.caster.uniqueSkillUses = 0;

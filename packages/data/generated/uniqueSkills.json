@@ -933,7 +933,7 @@
     "hanja": "借東風",
     "tier": "S",
     "spCost": 6,
-    "text": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
+    "text": "고유기술을 이미 쓴 아군 전원이 SP 0으로 한 번 더 쓸 수 있음 (제갈량 제외)",
     "effects": [],
     "scriptId": "restoreAllyUniqueSkills",
     "castDelay": 0,
@@ -965,16 +965,16 @@
       "mn": "Ча-дон-пун"
     },
     "textI18n": {
-      "ko": "모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
-      "en": "All allies can use their unique skill twice this game.",
-      "pt_BR": "Todos os aliados podem usar sua habilidade única duas vezes nesta partida.",
-      "pt_PT": "Todos os aliados podem usar a sua habilidade única duas vezes nesta partida.",
-      "ja": "全ての味方が、このゲーム中に固有スキルを2回使用できるようになる。",
-      "zh_Hant": "本局中，所有我方單位的專屬技能可使用2次。",
-      "zh_Hans": "本局中，所有我方单位的专属技能可使用2次。",
-      "it": "Tutti gli alleati possono usare la propria abilità unica due volte in questa partita.",
-      "es_419": "Todos los aliados pueden usar su habilidad única dos veces en esta partida.",
-      "mn": "Энэ тоглолтод бүх нөхөд өөрийн давхардаагүй ур чадвараа хоёр удаа ашиглаж чадна."
+      "ko": "고유기술을 이미 쓴 아군 전원이 SP 0으로 한 번 더 쓸 수 있음 (제갈량 제외)",
+      "en": "Every ally who has already used their unique skill can use it once more at SP 0 (except Zhuge Liang).",
+      "pt_BR": "Todos os aliados que já usaram sua habilidade única podem usá-la mais uma vez com SP 0 (exceto Zhuge Liang).",
+      "pt_PT": "Todos os aliados que já usaram a sua habilidade única podem usá-la mais uma vez com SP 0 (exceto Zhuge Liang).",
+      "ja": "固有スキルを使用済みの味方全員が、SP 0でもう1回使用できる（諸葛亮を除く）。",
+      "zh_Hant": "已使用專屬技能的所有我方單位，可再以SP 0使用1次（諸葛亮除外）。",
+      "zh_Hans": "已使用专属技能的所有我方单位，可再以SP 0使用1次（诸葛亮除外）。",
+      "it": "Tutti gli alleati che hanno già usato la propria abilità unica possono usarla ancora una volta con SP 0 (escluso Zhuge Liang).",
+      "es_419": "Todos los aliados que ya usaron su habilidad única pueden usarla una vez más con SP 0 (excepto Zhuge Liang).",
+      "mn": "Давхардаагүй ур чадвараа аль хэдийн ашигласан бүх нөхөд түүнийг SP 0-ээр дахин нэг удаа ашиглаж чадна (Чжугэ Лянаас бусад)."
     }
   },
   {

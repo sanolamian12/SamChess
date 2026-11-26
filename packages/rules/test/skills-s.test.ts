@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 
 import { UNIQUE_SKILLS, officerById } from '@samchess/data';
 import { advanceTime, apply, legalMovesFor, legalTargetsFor, validate } from '../src/battle.ts';
-import { aurasOn, effectiveAt, findStatus, forecastAttack } from '../src/state.ts';
+import { aurasOn, effectiveAt, findStatus, forecastAttack, uniqueSkillCost } from '../src/state.ts';
 import { FORMULA, type BattleState, type UnitId, type Vec2 } from '../src/types.ts';
 import { eventsFor, toWire } from '../src/wire.ts';
 import { R, T, U, battle, castSkill, giveControl, place, running } from './fixtures.ts';
@@ -666,6 +666,17 @@ test('차동풍(제갈량) — 써버린 아군 스킬만 되살리고, 본인�
   // 다시 차례가 와도 본인은 못 쓴다
   const again = giveControl(r.state, U('P1-Rock'));
   assert.equal(validate(again, 'P1', { t: 'castUniqueSkill' }).ok, false);
+
+  // 되살린 기술은 SP 0으로 다시 쓴다 (2026-11-25 기획자) — 안 쓴 쪽은 그대로 6
+  assert.equal(uniqueSkillCost(r.state.units[U('P1-King')]!), 0, '되살린 기술은 공짜');
+  assert.equal(uniqueSkillCost(r.state.units[U('P1-Pawn')]!), uniqueSkillCost(t.units[U('P1-Pawn')]!), '안 쓴 쪽은 그대로');
+  assert.ok(uniqueSkillCost(t.units[U('P1-Pawn')]!)! > 0);
+  const broke = giveControl(r.state, U('P1-King'));
+  broke.sp.P1 = 0;
+  assert.ok(validate(broke, 'P1', { t: 'castUniqueSkill' }).ok, 'SP가 0이어도 쓸 수 있다');
+  const recast = apply(broke, 'P1', { t: 'castUniqueSkill' }).state;
+  assert.equal(recast.sp.P1, 0, 'SP가 안 나간다');
+  assert.equal(recast.units[U('P1-King')]!.freeUniqueSkill, undefined, '공짜는 한 번뿐');
 });
 
 // ── 데이터로 접힌 것들 (표본) ──────────────────────────────────

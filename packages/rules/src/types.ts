@@ -813,6 +813,11 @@ export interface UnitState {
   statuses: ActiveStatus[];
   /** 남은 고유기술 사용 횟수. 기본 1, 「차동풍」으로 증가 */
   uniqueSkillUses: number;
+  /**
+   * 「차동풍」이 되살린 고유기술 — 다음 시전이 **SP 0**이다 (2026-11-25 기획자). 비용은 `uniqueSkillCost()`가 읽고,
+   * 시전하면 `apply()`가 지운다. 횟수(`uniqueSkillUses`)와 따로 두는 것은 「되살아났다」와 「공짜다」가 다른 사실이라서다.
+   */
+  freeUniqueSkill?: true;
   alive: boolean;
   /**
    * 부상 — 무·지·통이 깎여 있다. `officerStats()` 참조.

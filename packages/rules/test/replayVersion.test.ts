@@ -43,6 +43,8 @@ const CASES: { seed: number; mode: '3v3' | '5v5'; P1: RosterEntry[]; P2: RosterE
   { seed: 11, mode: '3v3', P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn')], P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen')] },
   { seed: 29, mode: '3v3', P1: [R('jo-jo', 'King', 5, ['hp', 'at', 'hp', 'mp']), R('jang-hap', 'Knight'), R('yu-bi', 'Pawn')], P2: [R('gwan-u', 'King'), R('jo-sik', 'Queen'), R('heon-je', 'Rock')] },
   { seed: 7, mode: '5v5', P1: [R('yu-bi', 'King'), R('gwan-u', 'Rock'), R('jo-sik', 'Pawn'), R('jang-bi', 'Knight'), R('jo-un', 'Bishop')], P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen'), R('ha-hu-don', 'Rock'), R('heo-jeo', 'Knight')] },
+  // 제갈량 「차동풍」이 되살린 기술을 SP 0으로 다시 쓰는 판(2026-11-25) — 위 판들은 차동풍이 없어 그 규칙을 바꿔도 지문이 그대로였다
+  { seed: 9, mode: '5v5', P1: [R('yu-bi', 'King'), R('je-gal-ryang', 'Queen'), R('gwan-u', 'Rock'), R('jang-bi', 'Knight'), R('jo-un', 'Bishop')], P2: [R('jo-jo', 'King'), R('jang-hap', 'Bishop'), R('heon-je', 'Queen'), R('ha-hu-don', 'Rock'), R('heo-jeo', 'Knight')] },
   {
     seed: 13, mode: '5v5', siege: SIEGE_POLICY, P2: SIEGE_P2,
     P1: [R('yu-bi', 'King', 5, LV5, T('hoe-bok')), R('gwan-u', 'Rock', 5, LV5), R('jo-sik', 'Pawn', 5, LV5), R('jang-bi', 'Knight', 5, LV5), R('jo-un', 'Bishop', 5, LV5)],
@@ -105,9 +107,9 @@ function digest(): string {
 
 /** 이 엔진 몫 · 데이터 몫에서 고정된 지문. 바뀌면 위 머리말대로 갈아 적는다 */
 const GOLDEN = {
-  engine: 6,
+  engine: 7,
   data: '66333356',
-  digest: 'P1/kingDown/1122/54/18/P1-King:10,P1-Pawn:2,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1930/93/38/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:10 | P1/kingDown/1031/83/28/P1-Bishop:6,P1-King:10,P1-Knight:6,P1-Pawn:4,P1-Rock:4,P2-Bishop:0,P2-King:0,P2-Knight:8,P2-Queen:0,P2-Rock:5 | P2/supplyTaken/514/43/27/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:18,P2-Queen:15,P2-Rock:20 | P2/kingDown/1248/duels2/32/P1-Bishop:10,P1-King:0,P1-Knight:0,P2-Bishop:10,P2-King:10,P2-Knight:10',
+  digest: 'P1/kingDown/1122/54/18/P1-King:10,P1-Pawn:2,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Queen:0 | P1/kingDown/1930/93/38/P1-King:20,P1-Knight:0,P1-Pawn:10,P2-King:0,P2-Queen:0,P2-Rock:10 | P1/kingDown/1031/83/28/P1-Bishop:6,P1-King:10,P1-Knight:6,P1-Pawn:4,P1-Rock:4,P2-Bishop:0,P2-King:0,P2-Knight:8,P2-Queen:0,P2-Rock:5 | P1/kingDown/1364/107/38/P1-Bishop:4,P1-King:10,P1-Knight:2,P1-Queen:0,P1-Rock:6,P2-Bishop:0,P2-King:0,P2-Knight:0,P2-Queen:0,P2-Rock:0 | P2/supplyTaken/514/43/27/P1-Bishop:20,P1-King:20,P1-Knight:20,P1-Pawn:20,P1-Rock:10,P2-Bishop:19,P2-King:20,P2-Knight:18,P2-Queen:15,P2-Rock:20 | P2/kingDown/1248/duels2/32/P1-Bishop:10,P1-King:0,P1-Knight:0,P2-Bishop:10,P2-King:10,P2-Knight:10',
 };
 
 test('황금 재생 — 엔진이 같은 수에서 같은 판을 낸다', () => {

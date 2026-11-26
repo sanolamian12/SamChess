@@ -98,6 +98,30 @@ SKILL_NAME_FIXES = {
 # `note()`가 「이 정정은 이제 필요 없다」고 찍는다. 안 그러면 원본이 갱신된 뒤에도
 # 이 표가 남아 다음 사람을 헷갈리게 한다.
 SKILL_TEXT_FIXES: dict[str, list[tuple[str, str]]] = {
+    # 2026-11-25 기획자 — 되살린 고유기술은 SP 0으로 다시 쓴다(엔진 `freeUniqueSkill`). 옛 글 「두 번 사용할 수 있음」은 처음부터
+    # 엔진과 달랐다 — 안 쓴 아군은 2회가 되지 않고(이미 쓴 아군만 되살린다) 제갈량 본인은 빠진다
+    "차동풍": [
+        ("모든 아군이 이번 게임에서 고유 스킬을 두 번 사용할 수 있음",
+         "고유기술을 이미 쓴 아군 전원이 SP 0으로 한 번 더 쓸 수 있음 (제갈량 제외)"),
+        ("All allies can use their unique skill twice this game.",
+         "Every ally who has already used their unique skill can use it once more at SP 0 (except Zhuge Liang)."),
+        ("Todos os aliados podem usar sua habilidade única duas vezes nesta partida.",
+         "Todos os aliados que já usaram sua habilidade única podem usá-la mais uma vez com SP 0 (exceto Zhuge Liang)."),
+        ("Todos os aliados podem usar a sua habilidade única duas vezes nesta partida.",
+         "Todos os aliados que já usaram a sua habilidade única podem usá-la mais uma vez com SP 0 (exceto Zhuge Liang)."),
+        ("全ての味方が、このゲーム中に固有スキルを2回使用できるようになる。",
+         "固有スキルを使用済みの味方全員が、SP 0でもう1回使用できる（諸葛亮を除く）。"),
+        ("本局中，所有我方單位的專屬技能可使用2次。",
+         "已使用專屬技能的所有我方單位，可再以SP 0使用1次（諸葛亮除外）。"),
+        ("本局中，所有我方单位的专属技能可使用2次。",
+         "已使用专属技能的所有我方单位，可再以SP 0使用1次（诸葛亮除外）。"),
+        ("Tutti gli alleati possono usare la propria abilità unica due volte in questa partita.",
+         "Tutti gli alleati che hanno già usato la propria abilità unica possono usarla ancora una volta con SP 0 (escluso Zhuge Liang)."),
+        ("Todos los aliados pueden usar su habilidad única dos veces en esta partida.",
+         "Todos los aliados que ya usaron su habilidad única pueden usarla una vez más con SP 0 (excepto Zhuge Liang)."),
+        ("Энэ тоглолтод бүх нөхөд өөрийн давхардаагүй ур чадвараа хоёр удаа ашиглаж чадна.",
+         "Давхардаагүй ур чадвараа аль хэдийн ашигласан бүх нөхөд түүнийг SP 0-ээр дахин нэг удаа ашиглаж чадна (Чжугэ Лянаас бусад)."),
+    ],
     # 2026-11-10 기획자 — 짝을 지정해 주유가 친다(옛 「피해 절반 + 대신 맞기」를 갈아 끼웠다)
     "고육지책": [
         ("아군 1명을 지정. 2.9일 동안 그가 받는 데미지가 절반이 됨, 모든 적군의 공격 데미지를 그가 대신 받음",
