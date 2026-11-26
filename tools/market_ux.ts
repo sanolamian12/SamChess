@@ -770,7 +770,18 @@ try {
   await page.waitForSelector('[data-modal="officerPick"]', { timeout: 5_000 });
   const lv2 = await pickRows();
   if (lv2.length !== 1 || lv2[0] !== X) fail(`재설계 목록이 ${JSON.stringify(lv2)}다 — Lv3 ${X} 하나라야 한다`);
-  await pickOfficer(X!);
+  // 열은 이름 · 카드 수 · HP · MP · AT(2026-11-25 기획자) — 병기 · 선택 칸과 [선택하기]가 없고, 바닥 [뒤로 가기]는 판 안에 하나
+  const pickCols = await page.evaluate(() => {
+    const m = document.querySelector('[data-modal="officerPick"]')!;
+    const seen = (sel: string): number => [...m.querySelectorAll<HTMLElement>(sel)].filter((e) => e.offsetParent !== null).length;
+    return {
+      head: seen('.ofc-thead > *'), stats: seen('.ofc-rows .ofc-row [data-field="hp"], .ofc-rows .ofc-row [data-field="mp"], .ofc-rows .ofc-row [data-field="at"]'),
+      eq: seen('.c-eq'), pick: seen('.c-pick'), confirm: seen('[data-action="equipConfirm"]'), back: seen('[data-action="closeOfficerPickBottom"]'),
+    };
+  });
+  if (pickCols.head !== 5 || pickCols.stats !== 3 || pickCols.eq || pickCols.pick || pickCols.confirm || pickCols.back !== 1) fail(`초심의 서 장수 목록의 열이 다르다 — ${JSON.stringify(pickCols)}`);
+  await shot('respec-pick');
+  await page.click(`[data-modal="officerPick"] .ofc-row[data-officer="${X}"]`);
   await page.waitForSelector('[data-modal="respecAsk"]', { timeout: 5_000 });
   await shot('respec-ask');
   await page.click('[data-modal="respecAsk"] [data-action="confirmOk"]');

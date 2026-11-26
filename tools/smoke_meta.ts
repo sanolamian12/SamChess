@@ -2082,8 +2082,8 @@ console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은
     // Lv2 이상만 뜬다 — 지금 올린 장수 하나뿐이다
     const rows = await page.$$eval('[data-modal="officerPick"] .ofc-rows .ofc-row[data-officer]', (els) => els.map((e) => e.getAttribute('data-officer')));
     if (rows.length !== 1 || rows[0] !== who) fail(`재설계 목록이 ${JSON.stringify(rows)}다 — Lv2인 ${who} 하나라야 한다`);
-    await page.click(`[data-modal="officerPick"] .ofc-row[data-officer="${who}"] [data-action="equipPick"]`);
-    await page.click('[data-modal="officerPick"] [data-action="equipConfirm"]');
+    // 줄을 누르면 곧장 확인 판(2026-11-25 기획자 — 체크 칸 · [선택하기]를 걷었다)
+    await page.click(`[data-modal="officerPick"] .ofc-row[data-officer="${who}"]`);
     await page.waitForSelector('[data-modal="respecAsk"]', { timeout: 5_000 });
   };
 

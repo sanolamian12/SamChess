@@ -2234,7 +2234,7 @@
   "market.academyReset.noInstant": "진행 중인 연구를 비우고 Lv1부터 다시 고릅니다.",
   "market.academyReset.done": "연구 초기화 완료",
   "market.academyReset.go": "태학으로 이동",
-  "market.respec.pickTitle": "초심의 서 — Lv2 이상 장수 한 명을 선택하세요.",
+  "market.respec.pickTitle": "장수를 선택하세요.",
   "market.respec.what": "{name}(Lv{level})의 스탯을 초기화합니다.",
   "market.respec.refund": "카드 {n}장이 회수됩니다. Lv1이 되고 능력과 책략을 처음부터 다시 고릅니다.",
   "market.respec.done": "스탯 초기화 완료",

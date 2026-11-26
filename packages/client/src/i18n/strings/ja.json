@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "進行中の研究を消し、Lv1から選び直します。",
   "market.academyReset.done": "研究の初期化完了",
   "market.academyReset.go": "太学へ移動",
-  "market.respec.pickTitle": "初心の書 — Lv2以上の武将を一人選んでください。",
+  "market.respec.pickTitle": "武将を選んでください。",
   "market.respec.what": "{name}（Lv{level}）のステータスを初期化します。",
   "market.respec.refund": "カード{n}枚が戻ります。Lv1に戻り、能力と策略を最初から選び直します。",
   "market.respec.done": "ステータス初期化完了",

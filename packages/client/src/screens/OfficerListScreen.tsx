@@ -96,7 +96,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canLevelUp, equippedBy, gradeTally, guideSeen, isInjured, officerRows, poolCap, poolUsed,
+  canLevelUp, equippedBy, gradeTally, guideSeen, isInjured, officerRows, poolCap, poolUsed, statsOf,
 } from '@samchess/meta';
 import type { OfficerRow, PlayerProfile } from '@samchess/meta';
 import { SortHead, useColumnSort } from './SortHead.tsx';
@@ -122,23 +122,31 @@ import { useFitText } from './useFitText.ts';
  * 정렬하는 열 — 머리를 눌러 고른다(`SortHead`, 2026-11-19 기획자). 초록이 자연스러운 순서다: 이름은 가나다(알파벳)순,
  * 카드 · 삼능력은 큰 것이 위. 같으면 이름순. 이름은 **화면에 보이는 이름**(지금 언어)으로 견준다
  */
-type OfficerCol = 'name' | 'cards' | 'might' | 'intellect' | 'leadership';
+type OfficerCol = 'name' | 'cards' | 'might' | 'intellect' | 'leadership' | 'hp' | 'mp' | 'at';
+/** 줄 + 지금 레벨의 HP · MP · AT(`statsOf` — 성장치 열을 보는 고르기 팝업이 쓴다, 2026-11-25 초심의 서) */
+type ListRow = OfficerRow & { hp: number; mp: number; at: number };
+/** 성장치 열 — HP · MP · AT. 머리는 레벨업 판과 같은 금테 메달, 이름(`title`)은 언어와 무관한 약자 */
+const GROWTH_COLS = [
+  ['hp', 'icons/stat/stat-hp-badge.png', 'HP'],
+  ['mp', 'icons/stat/stat-mp-badge.png', 'MP'],
+  ['at', 'icons/stat/stat-at-badge.png', 'AT'],
+] as const;
 const STAT_COLS = [
   ['might', 'officers.sort.might'],
   ['intellect', 'officers.sort.intellect'],
   ['leadership', 'officers.sort.leadership'],
 ] as const;
 
-function sortOfficers(rows: readonly OfficerRow[], key: OfficerCol, flip: boolean, lang: string): OfficerRow[] {
+function sortOfficers(rows: readonly ListRow[], key: OfficerCol, flip: boolean, lang: string): ListRow[] {
   const collator = new Intl.Collator(lang.replace('_', '-'));
-  const nameOf = (r: OfficerRow): string => pickOfficerNameById(r.officer, r.name);
-  const byName = (a: OfficerRow, b: OfficerRow): number => collator.compare(nameOf(a), nameOf(b));
-  const natural = key === 'name' ? byName : (a: OfficerRow, b: OfficerRow): number => b[key] - a[key] || byName(a, b);
+  const nameOf = (r: ListRow): string => pickOfficerNameById(r.officer, r.name);
+  const byName = (a: ListRow, b: ListRow): number => collator.compare(nameOf(a), nameOf(b));
+  const natural = key === 'name' ? byName : (a: ListRow, b: ListRow): number => b[key] - a[key] || byName(a, b);
   return [...rows].sort(flip ? (a, b) => natural(b, a) : natural);
 }
 
 /** 이름 찾기 — 화면에 보이는 이름(지금 언어)과 한국어 이름 둘 다 본다 */
-function searchOfficers(rows: readonly OfficerRow[], query: string): OfficerRow[] {
+function searchOfficers(rows: readonly ListRow[], query: string): ListRow[] {
   const q = query.trim().toLowerCase();
   if (!q) return [...rows];
   return rows.filter((r) => r.name.toLowerCase().includes(q) || pickOfficerNameById(r.officer, r.name).toLowerCase().includes(q));
@@ -193,6 +201,11 @@ interface PickMode {
    * 못 고르는 장수(`blocked`)는 줄째로 눌리지 않는다 — 카드도 안 열린다
    */
   cardPick?: boolean;
+  /**
+   * **성장치를 보고 고른다** (2026-11-25 기획자, 장터 초심의 서) — 열이 카드 수 · HP · MP · AT(전부 정렬)이고 병기 · 선택 칸이 없다.
+   * 줄을 누르면 바로 고르고(`direct`처럼 — 확인은 부르는 쪽이 묻는다), 목록 맨 아래 [선택하기] 자리에 [뒤로 가기]가 선다
+   */
+  growth?: boolean;
 }
 
 /**
@@ -251,14 +264,21 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   const health = !!equipPick?.health;
   const direct = !!equipPick?.direct;
   const cardPick = !!equipPick?.cardPick;
-  const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${direct || cardPick ? ' ofc-row-direct' : ''}`;
+  const growth = !!equipPick?.growth;
+  const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${growth ? ' ofc-row-growth' : ''}${direct || cardPick || growth ? ' ofc-row-direct' : ''}`;
   // 체크 칸 · 맨 아래 [선택하기] — 두 번 누르는 고르기(대장간 · 장터)만. 바로 고르기 · 카드에서 고르기는 없다
-  const checkPick = !!equipPick && !direct && !cardPick;
+  const checkPick = !!equipPick && !direct && !cardPick && !growth;
   // 부상은 시각으로 풀린다 — 화면 층이 시계를 읽는다(meta는 시계를 안 든다).
   // 카드가 열려 있는 동안 남은 시간이 흘러야 하므로 상태로 들고 주기적으로 다시 읽는다(아래 effect)
   const [now] = useState(() => Date.now());
   const rows = useMemo(
-    () => sortOfficers(searchOfficers(officerRows(profile).filter((r) => !only || only(r.officer)), query), sort.key, sort.flip, lang),
+    () => {
+      const list: ListRow[] = officerRows(profile).filter((r) => !only || only(r.officer)).map((r) => {
+        const inst = profile.roster[r.officer];
+        return { ...r, ...(inst ? statsOf(inst) : { hp: 0, mp: 0, at: 0 }) };
+      });
+      return sortOfficers(searchOfficers(list, query), sort.key, sort.flip, lang);
+    },
     [profile, query, sort.key, sort.flip, only, lang],
   );
   const tally = useMemo(() => gradeTally(profile), [profile]);
@@ -371,12 +391,17 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
               <img src="market/market_card.png" alt="" />
             </SortHead>
             {health && <span className="c-hs" title={t('officers.col.status')}>{t('officers.col.status')}</span>}
-            {!health && STAT_COLS.map(([key, label]) => (
+            {growth && GROWTH_COLS.map(([key, src, label]) => (
+              <SortHead key={key} col={key} sort={sort} label={label} className="c-st ic">
+                <img src={src} alt="" />
+              </SortHead>
+            ))}
+            {!health && !growth && STAT_COLS.map(([key, label]) => (
               <SortHead key={key} col={key} sort={sort} label={t(label)} className="c-st ic">
                 <img src={`icons/stat-${key}.png`} alt="" />
               </SortHead>
             ))}
-            {equipPick && <span className="c-eq" title={t('officers.col.equip')}>{t('officers.col.equip')}</span>}
+            {equipPick && !growth && <span className="c-eq" title={t('officers.col.equip')}>{t('officers.col.equip')}</span>}
             {/* 체크 칸의 제목 「선택」(2026-09-17 지정) — 부대 편집과 대장간 지급이 같은 팝업이라
                 **어느 쪽에도 맞는 낱말**(`squad.pick`)을 쓴다. `officers.equip.pick`은 영어가
                 「Assign」이라 부대에 장수를 넣는 자리에서는 뜻이 어긋난다 */}
@@ -403,7 +428,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                 data-grade={r.grade}
                 data-levelup={r.canLevelUp ? '1' : '0'}
                 data-picked={equipPick && picked === r.officer ? '1' : '0'}
-                data-action={direct ? 'directPick' : undefined}
+                data-action={direct || growth ? 'directPick' : undefined}
                 data-blocked={blocked ? '1' : undefined}
                 title={blocked ?? undefined}
                 role={equipPick ? 'button' : undefined}
@@ -411,7 +436,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                 aria-disabled={cardPick && blocked ? true : undefined}
                 onClick={() => {
                   // 바로 고르기 — 못 고르는 장수는 아무 일도 안 한다(이유는 `title` · 흐림이 말한다)
-                  if (direct) { if (!blocked) equipPick!.onPick(r.officer); return; }
+                  if (direct || growth) { if (!blocked) equipPick!.onPick(r.officer); return; }
                   // 카드에서 고르기 — 못 고르는 장수는 카드도 안 연다
                   if (cardPick && blocked) return;
                   openCard(r.officer);
@@ -451,7 +476,13 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                       <HealthIcon hurt={hurt} label={t(hurt ? 'squad.status.injured' : 'squad.status.ok')} />
                     </span>
                   );
-                })() : (
+                })() : growth ? (
+                  <>
+                    <span className="c-st" data-field="hp">{r.hp}</span>
+                    <span className="c-st" data-field="mp">{r.mp}</span>
+                    <span className="c-st" data-field="at">{r.at}</span>
+                  </>
+                ) : (
                   <>
                     <span className="c-st">{r.might}</span>
                     <span className="c-st">{r.intellect}</span>
@@ -462,7 +493,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                     **같은 색·같은 크기**라, 고르면 그 병기가 조용히 벗겨진다는 것을
                     알아채기 어려웠다(2026-09-10, 장수 124명 계정으로 확인). 글자로
                     한 번 더 적는 대신 색으로 가른다 — 칸이 좁아 문장이 안 들어간다. */}
-                {equipPick && (
+                {equipPick && !growth && (
                   <span className="c-eq" data-held={held ? '1' : '0'}>
                     {held ? pickEquipName(held) : t('officers.equip.none')}
                   </span>
@@ -504,6 +535,14 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
               그림·슬라이스). 아무도 안 골랐으면 눌리지 않는다 — 눌리는데
               아무 일이 없으면 「고장인가」가 남는다. */}
+          {/* 성장치 고르기 — [선택하기] 자리에 [뒤로 가기](글자 가운데, 2026-11-25 기획자). 판 밖 바닥의 [뒤로 가기]는 안 그린다 */}
+          {growth && chrome && (
+            <div className="ofc-pickacts ofc-pickacts-back">
+              <button className="btn wide" data-action="closeOfficerPickBottom" onClick={chrome.onClose}>
+                <span className="lbl">{stripBackArrow(t('match.back'))}</span>
+              </button>
+            </div>
+          )}
           {checkPick && equipPick && (
             <div className="ofc-pickacts">
               <button
@@ -591,7 +630,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, onClose, pageSize, className }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, growth, onClose, pageSize, className }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -607,6 +646,8 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   direct?: boolean;
   /** `PickMode.cardPick` — 카드의 [선택하기]로 고른다 */
   cardPick?: boolean;
+  /** `PickMode.growth` — 카드 수 · HP · MP · AT 열, 줄을 누르면 고르고 [뒤로 가기]는 판 안에 */
+  growth?: boolean;
   onClose: () => void;
   /** 한 쪽의 줄 수 — 없으면 여덟(`PICK_PAGE_SIZE`). 장터 아이템 지급은 여섯이다(2026-09-24 지정) */
   pageSize?: number;
@@ -628,13 +669,14 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}) }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}), ...(growth ? { growth } : {}) }}
           chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다
             (2026-09-11 지정). 대장간의 다른 화면들이 판 아래에 같은 단추를
             갖게 되면서, 이 팝업만 [X]뿐이면 「여기서는 어떻게 나가지」가 남는다.
             판때기·단추 그림은 대장간의 것(`.frg-back`)을 그대로 빌린다. */}
+        {!growth && (
         <section className="place-panel frg-back">
           <div className="frg-buttons">
             <button className="btn wide" data-action="closeOfficerPickBottom" onClick={onClose}>
@@ -642,6 +684,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
             </button>
           </div>
         </section>
+        )}
       </div>
     </div>
   );

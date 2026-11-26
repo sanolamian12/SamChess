@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "La ricerca in corso viene cancellata e sceglie di nuovo dal Lv1.",
   "market.academyReset.done": "Ricerche azzerate",
   "market.academyReset.go": "Vai all'Accademia",
-  "market.respec.pickTitle": "Libro degli inizi — scelga un ufficiale di Lv2 o superiore.",
+  "market.respec.pickTitle": "Scelga un ufficiale.",
   "market.respec.what": "Azzera {name} (Lv{level}).",
   "market.respec.refund": "Le vengono restituite {n} carte. Torna al Lv1 e sceglie di nuovo statistiche e tattiche da capo.",
   "market.respec.done": "Riprogettazione completata",

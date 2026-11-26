@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "The research in progress is cleared and you pick again from Lv1.",
   "market.academyReset.done": "Research reset",
   "market.academyReset.go": "Go to Academy",
-  "market.respec.pickTitle": "Tome of Beginnings — pick an officer of Lv2 or higher.",
+  "market.respec.pickTitle": "Select an officer.",
   "market.respec.what": "Reset {name} (Lv{level}).",
   "market.respec.refund": "{n} cards are returned. The officer returns to Lv1 and picks stats and tactics again from the start.",
   "market.respec.done": "Respec complete",

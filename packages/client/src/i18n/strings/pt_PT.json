@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "A investigação em curso é apagada e escolhe de novo a partir do Nv1.",
   "market.academyReset.done": "Investigação reiniciada",
   "market.academyReset.go": "Ir para a Academia",
-  "market.respec.pickTitle": "Livro dos começos — escolha um oficial Nv2 ou superior.",
+  "market.respec.pickTitle": "Escolha um oficial.",
   "market.respec.what": "Reiniciar {name} (Nv{level}).",
   "market.respec.refund": "{n} cartas regressam. Volta ao Nv1 e escolhe atributos e táticas desde o início.",
   "market.respec.done": "Redesenho concluído",

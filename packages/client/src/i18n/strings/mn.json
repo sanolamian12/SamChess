@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "Явагдаж буй судалгааг арилгаж Lv1-ээс дахин сонгоно.",
   "market.academyReset.done": "Судалгаа шинэчлэгдлээ",
   "market.academyReset.go": "Академи руу",
-  "market.respec.pickTitle": "Анхны сэтгэлийн ном — Lv2-оос дээш жанжин сонгоно уу.",
+  "market.respec.pickTitle": "Жанжин сонгоно уу.",
   "market.respec.what": "{name} (Lv{level})-г шинэчилнэ.",
   "market.respec.refund": "{n} карт буцаж ирнэ. Lv1 болж чадвар, заль мэхээ эхнээс нь дахин сонгоно.",
   "market.respec.done": "Шинэчлэл дууслаа",

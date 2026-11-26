@@ -1482,7 +1482,7 @@
   "market.academyReset.noInstant": "清空进行中的研究，从Lv1重新选择。",
   "market.academyReset.done": "研究重置完成",
   "market.academyReset.go": "前往太学",
-  "market.respec.pickTitle": "初心之书 — 请选择一名Lv2以上的武将。",
+  "market.respec.pickTitle": "请选择武将。",
   "market.respec.what": "重置{name}（Lv{level}）的属性。",
   "market.respec.refund": "将收回{n}张卡片。回到Lv1，从头重新选择能力与策略。",
   "market.respec.done": "属性重置完成",

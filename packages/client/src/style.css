@@ -4971,6 +4971,13 @@ button.mkt-pack.mkt-good[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3
 /* 바로 고르기(`PickMode.direct`, 부대 편성 2026-10-22) — 체크 칸이 없어 마지막 칸을 덜고, 줄 전체가 단추다 */
 .ofc-row.ofc-row-equip.ofc-row-direct { grid-template-columns: minmax(0, 1fr) 1.8rem 1.8rem 1.8rem 3rem; }
 .ofc-row-direct:not(.ofc-thead) { cursor: pointer; }
+/* 성장치 고르기(`PickMode.growth`, 2026-11-25 장터 초심의 서) — 이름 · 카드 수 · HP · MP · AT. 카드 칸을 되살린다 */
+.ofc-row.ofc-row-equip.ofc-row-growth { grid-template-columns: minmax(0, 1fr) 2.3rem 2.3rem 2.3rem 2.3rem; gap: .3rem; }
+.ofc-row-growth .c-cd, .ofc-thead.ofc-row-growth .c-cd.ic { display: block; text-align: right; font-variant-numeric: tabular-nums; }
+.ofc-thead.ofc-row-growth .c-cd.ic { display: flex; }
+/* [선택하기] 자리의 [뒤로 가기] — 글자 가운데 */
+.ofc-pickacts-back .btn { width: 100%; justify-content: center; text-align: center; }
+.ofc-pickacts-back .btn .lbl { flex: none; margin: 0 auto; }
 /* 장터 아이템 지급(`PickMode.health`, 2026-09-24 지정) — 삼능력 세 칸(1.8rem × 3)을 걷고 상태 한 칸을
    넣는다. 남는 폭은 [병기]가 받는다 — 이름과 병기가 **같이 늘어나는**(1fr : 1fr) 칸이라 긴 병기
    이름도 말줄임 없이 선다. 상태 칸 3.8rem은 가장 긴 번역(「Saudável」·「Шархтай」)이 드는 폭이다 —

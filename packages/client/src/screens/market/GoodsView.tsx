@@ -301,10 +301,12 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
           onChange={onChange}
           title={t('market.respec.pickTitle')}
           only={(id) => (profile.roster[id]?.level ?? 1) >= 2}
+          // 열은 카드 수 · HP · MP · AT, 줄을 누르면 곧장 「확정하시겠습니까?」 (2026-11-25 기획자)
+          growth
           onPick={(officer) => setStep({ at: 'respecAsk', officer })}
           onClose={() => setStep(null)}
-          // 판은 「도시 물자」 제목 바 바로 아래, [뒤로 가기] 판은 바닥에 (2026-09-25 지정)
-          className="mkt-pick-back mkt-pick-fill"
+          // 판은 「도시 물자」 제목 바 바로 아래, [뒤로 가기]는 판 안 맨 아래 (2026-11-25 기획자)
+          className="mkt-pick-back"
         />
         </Layer>
       )}
