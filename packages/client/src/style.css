@@ -9200,7 +9200,8 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 줄마다 「쿵」 튀어나오는 장 — 큰 글씨 · 사유는 한 줄을 다 쓰고, 보상 줄은 한 줄에 나란히(넘치면 다음 줄로) */
 .brs-sheet:not(.plain) { flex-flow: row wrap; align-content: center; column-gap: 3.2cqw; row-gap: 1.6cqw; }
 .brs-beat { flex: 0 0 auto; display: flex; justify-content: center; min-width: 0; }
-.brs-beat:has(> .brs-ttl), .brs-beat:has(> .brs-lede), .brs-beat.brs-tail { flex-basis: 100%; }
+.brs-beat:has(> .brs-ttl), .brs-beat:has(> .brs-lede), .brs-beat:has(> .brs-rewards) { flex-basis: 100%; }
+.brs-tap[data-hide] { visibility: hidden; animation: none; }
 .brs-beat[data-wait] { visibility: hidden; }
 .brs-beat:not([data-wait]) { animation: brs-pop .55s cubic-bezier(.2, .9, .3, 1) both; }
 /* 「쿵」 — 번쩍하며 조금 커졌다가 제 크기로 (두루마리의 `brs-scroll-pop`과 같은 결) */

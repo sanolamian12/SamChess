@@ -1475,31 +1475,19 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   await page.waitForSelector('[data-screen="result"][data-page="title"]', { timeout: 5_000 })
     .catch(() => fail('결과 화면이 첫 장(결말)으로 시작하지 않는다'));
   /*
-   * 결말 장 — 「승 리 / 패 배」 → 사유 → 받은 보상 줄이 하나씩 튀어나온다(2026-11-26 기획자). 받은 보상은 **이 장에** 적힌다(군량 · 재료 ·
-   * 「캐릭터 보상 n명」 — 안 준 것은 줄째 없다). 다 선 뒤 누르면 「보상」이 서고 화면째 어두워져 캐릭터 보상(장수 모집 결과와 같은 무대),
-   * 닫으면 밝아지며 「보상」 아래 받은 장수 줄. 패배도 카드 한 장이라 언제나 뜬다 — 「보상 장의 장수 = 연출의 장수 = 결말 장의 수」를 본다
+   * 결말 장 — 「승 리 / 패 배」 → (이긴 판이면) 사유가 하나씩 튀어나온다(2026-11-26 기획자). 다 선 뒤 누르면 **캐릭터 보상이 먼저**
+   * (화면째 어둡게 · 장수 모집 결과와 같은 무대), 닫으면 두루마리에 「보 상」 · 군량 · 재료 · 받은 장수가 **한꺼번에** 찍힌다(2026-11-27 기획자 —
+   * 안 준 것은 줄째 없다). 패배도 카드 한 장이라 언제나 뜬다 — 「보상 장의 장수 = 연출의 장수」를 본다
    */
   const revealed: string[] = [];
   await page.waitForSelector('[data-screen="result"][data-page="title"][data-settled="1"]', { timeout: 10_000 })
     .catch(() => fail('결말 장의 줄이 다 서지 않는다'));
   await shot('result-1-title');
-  const gains = await page.evaluate(() => {
-    const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
-    const shown = (sel: string): Element | null => scr.querySelector(`.brs-beat:not([data-wait]) ${sel}`);
-    return {
-      grain: shown('[data-field="grain"]')?.textContent?.trim() ?? '',
-      cardCount: Number(shown('[data-field="cardCount"]')?.getAttribute('data-n') ?? 0),
-      // 안 준 보상은 줄째 없다 — 「없음」이 보이면 안 된다
-      none: [...scr.querySelectorAll('.brs-beat')].some((b) => /없음/.test(b.textContent ?? '')),
-    };
-  });
-  if (gains.none) fail('결말 장에 「없음」 줄이 있다 — 안 준 보상은 줄째 빼야 한다');
+  if (await page.$('[data-screen="result"] [data-field="grain"]')) fail('결말 장에 보상 줄이 있다 — 보상은 캐릭터 보상 뒤 「보상」 장에 찍힌다');
   await page.click('[data-screen="result"] .brs-stage');
-  await page.waitForSelector('[data-screen="result"][data-page="reward"] .brs-beat:not([data-wait]) [data-field="rewardsTitle"]', { timeout: 5_000 })
-    .catch(() => fail('결말 장을 넘겼는데 「보상」이 안 선다'));
-  if (await page.$('[data-modal="rewardCards"]')) fail('「보상」이 서기도 전에 캐릭터 보상이 떴다');
-  await page.waitForSelector('[data-screen="result"][data-veil]', { timeout: 5_000 })
-    .catch(() => fail('「보상」이 섰는데 두루마리가 어두워지지 않는다'));
+  await page.waitForSelector('[data-screen="result"][data-page="reward"][data-veil]', { timeout: 5_000 })
+    .catch(() => fail('결말 장을 넘겼는데 두루마리가 어두워지지 않는다(캐릭터 보상이 먼저다)'));
+  if (await page.$('[data-screen="result"] .brs-beat:not([data-wait]) [data-field="rewardsTitle"]')) fail('캐릭터 보상보다 「보상」 글자가 먼저 찍혔다');
   await page.waitForTimeout(300);
   await shot('result-2-veil');
   await page.waitForSelector('[data-modal="rewardCards"]', { timeout: 10_000 })
@@ -1530,7 +1518,18 @@ let aiIntentsBeforeSurrender: unknown[] = [];
   if (revealed.join(',') !== reward.cardOfficers.join(',')) {
     fail(`캐릭터 보상 연출 [${revealed}]과 보상 장의 장수 [${reward.cardOfficers}]가 다르다`);
   }
-  if (gains.cardCount !== reward.cardOfficers.length) fail(`결말 장의 「캐릭터 보상 ${gains.cardCount}명」과 받은 장수 ${reward.cardOfficers.length}명이 다르다`);
+  // 「보 상」 · 군량 · 받은 장수가 한꺼번에 — 같은 순간에 다 서 있어야 한다. 안 준 보상은 줄째 없다(「없음」이 보이면 안 된다)
+  const gains = await page.evaluate(() => {
+    const scr = document.querySelector('[data-screen="result"]') as HTMLElement;
+    return {
+      title: !!scr.querySelector('.brs-beat:not([data-wait]) [data-field="rewardsTitle"]'),
+      waiting: scr.querySelectorAll('.brs-beat[data-wait]').length,
+      grain: scr.querySelector('.brs-beat:not([data-wait]) [data-field="grain"]')?.textContent?.trim() ?? '',
+      none: [...scr.querySelectorAll('.brs-beat')].some((b) => /없음/.test(b.textContent ?? '')),
+    };
+  });
+  if (!gains.title || gains.waiting > 0) fail(`캐릭터 보상을 닫았는데 「보상」 장이 한꺼번에 안 섰다 — ${JSON.stringify(gains)}`);
+  if (gains.none) fail('「보상」 장에 「없음」 줄이 있다 — 안 준 보상은 줄째 빼야 한다');
   console.log(`  ✓ 받은 카드 공개 — 카드 판 [${revealed}] → 두루마리 보상 장과 같다`);
   await turn('record');
   if (!(await page.$('[data-screen="result"][data-last="1"] [data-action="home"]'))) fail('마지막 장(전과)에 [도시로]가 없다');

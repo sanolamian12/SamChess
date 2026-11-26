@@ -15,10 +15,10 @@
  * ```
  * 0초     두루마리가 번쩍하며 조금 커졌다 제 크기로 · 「결과표출」         (승리면 승리 곡 + 0.5초 뒤 환호)
  * 1초     큰 글씨 「승 리」 — 같은 강조 · 같은 소리
- * +0.7초  이긴 사유(적 전멸 · 군량고 탈취 · 적 King 격퇴 · 임무 완료) — 같은 강조 · 같은 소리
- * +0.7초씩 받은 보상 줄(군량 +n · 재료 +n · 캐릭터 보상 n명) — **안 준 보상은 줄째 없다**
- * 누르면   글자가 슬며시 사라지고 「보상」이 「승 리」처럼 튀어나온 뒤 → 화면이 어두워지고 캐릭터 보상(장수 모집 결과와 같은 무대)
- * 닫으면   다시 밝아지며 「보상」 아래 받은 장수 줄 → (대전이면) 전과 장
+ * +0.7초  이긴 사유(적 전멸 · 군량고 탈취 · 적 King 격퇴 · 임무 완료 · 상대 항복 · 판정승) — 같은 강조 · 같은 소리
+ * 누르면   글자가 슬며시 사라지고 → 받은 장수가 있으면 화면이 어두워지고 캐릭터 보상(장수 모집 결과와 같은 무대)
+ * 닫으면   다시 밝아지며 「보 상」 · 군량 +n · 재료 +n · 받은 장수 줄이 **한꺼번에** 찍힌다(2026-11-27 기획자) — 안 준 보상은 줄째 없다
+ *          → (대전이면) 전과 장
  * ```
  *
  * 줄 하나가 튀어나오는 것과 그 소리는 **같은 타이머 한 번**이 낸다(`ResultScroll`의 `popped`) — CSS 늦춤과 소리 시각을 따로 적으면
@@ -98,14 +98,12 @@ export const BEAT_STEP_MS = 700;
 export const CHEER_DELAY_MS = 500;
 /** 글자가 슬며시 사라지는 시간 — CSS `brs-fade-out`과 같은 값. 다음 장은 그 뒤에 */
 export const FADE_OUT_MS = 650;
-/** 「보상」이 선 뒤 화면이 어두워지기 시작하기까지 */
-export const INTERLUDE_AFTER_MS = 900;
 /** 두루마리째 어두워지는 시간 — 사이 연출(캐릭터 보상)은 다 어두워진 뒤에 뜬다 */
 export const VEIL_IN_MS = 450;
 /** 다시 밝아지는 시간 */
 export const VEIL_OUT_MS = 700;
-/** 밝아지기 시작하고 받은 장수 줄(`tail`)이 튀어나오기까지 */
-const TAIL_AFTER_MS = 300;
+/** 밝아지기 시작하고 「보상」 장의 글자가 찍히기까지 */
+const LIFT_BEAT_MS = 150;
 /** 성립하지 않은 판의 장 — 예전처럼 쓸어 입히는 시간 */
 const WIPE_IN_MS = 800;
 
@@ -114,13 +112,13 @@ type Page = 'title' | 'reward' | 'record';
 /**
  * 한 장의 내용.
  * - `beats` — 차례로 「쿵」 튀어나오는 줄들(소리와 함께). 자리는 처음부터 잡혀 있어 줄이 설 때 다른 줄이 밀리지 않는다
- * - `tail` — 사이 연출(캐릭터 보상)이 끝나고 밝아질 때 튀어나오는 줄
+ * - `together` — 줄을 하나씩이 아니라 **한꺼번에** 찍는다(「보상」 장 — 캐릭터 보상을 닫는 순간, 2026-11-27 기획자)
  * - `plain` — 튀어나오지 않고 쓸어 입히는 장(전과 · 성립 안 한 판)
  * - `extra` — 장에 함께 그리되 튀어나오지 않는 것(내관의 말)
  */
 export interface ResultSheet {
   beats?: readonly React.ReactNode[];
-  tail?: React.ReactNode;
+  together?: boolean;
   plain?: React.ReactNode;
   extra?: React.ReactNode;
 }
@@ -153,8 +151,7 @@ function WhyLine({ text, kind, field }: { text: string; kind?: string | undefine
 }
 
 /**
- * 받은 보상 줄들 — **준 것만**(0이면 줄째 없다, 2026-11-26 기획자). 캐릭터 보상은 이름 없이 수만(「캐릭터 보상 1명」) —
- * 누구인지는 「보상」 장의 연출이 보여 준다. 한 줄씩 튀어나오도록 배열로 돌려준다.
+ * 받은 군량 · 재료 줄 — **준 것만**(0이면 줄째 없다, 2026-11-26 기획자). 받은 장수는 그 아래 꼬마 줄(`RewardCards`)이 보여 준다.
  */
 export function gainBeats(given: BattleRewards | null): React.ReactNode[] {
   if (!given) return [];
@@ -175,22 +172,26 @@ export function gainBeats(given: BattleRewards | null): React.ReactNode[] {
       </p>,
     );
   }
-  if (given.cards.length > 0) {
-    out.push(
-      <p className="brs-gain" data-field="cardCount" data-n={given.cards.length}>
-        <img src="market/market_card.png" alt="" />
-        <span className="k">{t('result.cardCount', { n: given.cards.length })}</span>
-      </p>,
-    );
-  }
   return out;
 }
 
-/** 「보상」 장 — 큰 글씨 「보 상」, 캐릭터 보상 연출이 끝나면 그 아래 받은 장수 줄 */
+/** 받은 것이 하나라도 있는가 — 없으면 「보상」 장이 없다 */
+export const hasRewards = (given: BattleRewards | null | undefined): given is BattleRewards =>
+  !!given && (given.grain > 0 || given.materials > 0 || given.cards.length > 0);
+
+/**
+ * 「보상」 장 (2026-11-27 기획자) — 캐릭터 보상 연출(있으면)이 **먼저** 뜨고, 닫는 순간 두루마리에 「보 상」 · 군량 · 재료 · 받은 장수가
+ * **한꺼번에** 찍힌다. 캐릭터 보상이 없으면 장이 열리자마자 한꺼번에.
+ */
 export function rewardSheet(given: BattleRewards): ResultSheet {
+  const gains = gainBeats(given);
   return {
-    beats: [<BigLine key="t" text={t('result.rewards')} max={13} field="rewardsTitle" />],
-    tail: <RewardCards cards={given.cards} />,
+    together: true,
+    beats: [
+      <BigLine key="t" text={t('result.rewards')} max={11} field="rewardsTitle" />,
+      ...gains,
+      ...(given.cards.length > 0 ? [<RewardCards key="c" cards={given.cards} />] : []),
+    ],
   };
 }
 
@@ -220,7 +221,7 @@ export function ResultScreen({
 }): React.JSX.Element {
   useLang();
   const cards = !voided && rewards ? rewards.cards : [];
-  const pages: Page[] = voided ? ['title', 'reward'] : cards.length > 0 ? ['title', 'reward', 'record'] : ['title', 'record'];
+  const pages: Page[] = voided ? ['title', 'reward'] : hasRewards(rewards) ? ['title', 'reward', 'record'] : ['title', 'record'];
   const bg: ResultBackdropId = voided ? 'void' : result;
   const why = result === 'win' ? winWhy(outcomeKind) : null;
 
@@ -247,7 +248,6 @@ export function ResultScreen({
         beats: [
           <BigLine key="big" text={t(BIG[result])} field="verdict" />,
           ...(why ? [<WhyLine key="why" text={why} kind={outcomeKind} field="why" />] : []),
-          ...gainBeats(rewards),
         ],
       };
     }
@@ -259,7 +259,7 @@ export function ResultScreen({
     <ResultScroll
       bg={bg}
       pages={pages}
-      // 받은 장수 카드는 「보상」이 선 뒤 화면을 어둡게 하고 장수 모집 결과와 같은 무대로 (2026-11-26 기획자)
+      // 받은 장수 카드는 「보상」 장에 들어서자마자 화면을 어둡게 하고 장수 모집 결과와 같은 무대로 — 닫으면 두루마리에 보상이 찍힌다 (2026-11-27 기획자)
       interlude={cards.length > 0
         ? { at: 'reward', render: (done) => <CardRewardReveal cards={cards} onDone={done} /> }
         : null}
@@ -288,12 +288,12 @@ export function TutorialResultScreen({ id, rewards, onBack }: {
 }): React.JSX.Element {
   useLang();
   const cards = rewards?.cards ?? [];
-  const pages: ('title' | 'reward')[] = cards.length > 0 ? ['title', 'reward'] : ['title'];
+  const pages: ('title' | 'reward')[] = hasRewards(rewards) ? ['title', 'reward'] : ['title'];
   const render = (page: 'title' | 'reward'): ResultSheet => page === 'title' ? {
     beats: [
       <BigLine key="big" text={t('result.big.win')} field="verdict" />,
       <WhyLine key="why" text={t('result.why.objective')} kind="objective" field="tutorial" />,
-      ...(rewards ? gainBeats(rewards) : [<p key="already" className="brs-lede brs-already" data-field="rewards" data-already="1">{t('tut.result.already')}</p>]),
+      ...(rewards ? [] : [<p key="already" className="brs-lede brs-already" data-field="rewards" data-already="1">{t('tut.result.already')}</p>]),
     ],
   } : rewardSheet(rewards!);
   return (
@@ -325,8 +325,8 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
   bg: ResultBackdropId;
   pages: readonly P[];
   /**
-   * **장 사이의 연출** — `at` 장의 줄(`beats`)이 다 선 뒤 한 번 (2026-11-26 기획자: 「보상」 → 캐릭터 보상).
-   * 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다. `done`이 오면 어둠이 걷히며 그 장의 `tail`이 튀어나온다.
+   * **장 사이의 연출** — `at` 장에 들어서자마자 한 번, **그 장의 글자보다 먼저** (2026-11-27 기획자: 캐릭터 보상 → 「보상」).
+   * 두루마리째 어두워지고(`VEIL_IN_MS`), 다 어두워지면 `render(done)`이 뜬다. `done`이 오면 어둠이 걷히며 그 장의 줄이 찍힌다.
    */
   interlude?: { at: P; render: (done: () => void) => React.ReactNode } | null;
   render: (page: P) => ResultSheet;
@@ -339,7 +339,6 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
   const [leaving, setLeaving] = useState(false);
   /** 이 장에서 선 줄의 수 — 줄이 서는 것과 그 소리를 **같은 타이머**가 낸다 */
   const [popped, setPopped] = useState(0);
-  const [tailShown, setTailShown] = useState(false);
   /** 장 사이 연출의 걸음 — 어두워지는 중 → 연출 → 밝아지는 중 → 끝(`null`) */
   const [veil, setVeil] = useState<'dim' | 'show' | 'lift' | null>(null);
   const [interluded, setInterluded] = useState(false);
@@ -351,7 +350,9 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
   const sheet = render(page);
   const beats = sheet.beats ?? [];
   const gated = interlude != null && interlude.at === page && !interluded;
-  const settled = popped >= beats.length && (!sheet.tail || tailShown);
+  const settled = popped >= beats.length;
+  /** 줄을 찍어도 되는가 — 사이 연출이 걸린 장은 어둠이 걷히기 시작한 뒤에 */
+  const open = !gated && (veil === null || veil === 'lift');
 
   const clearTimers = (): void => { timers.current.forEach((id) => window.clearTimeout(id)); timers.current = []; };
 
@@ -362,41 +363,41 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
     return () => window.clearTimeout(cheer);
   }, [bg]);
 
-  // 이 장의 줄을 하나씩 세운다 — 서는 순간 「결과표출」
+  // 사이 연출이 걸린 장 — 들어서자마자 어두워진다(글자는 연출이 끝난 뒤)
   useEffect(() => {
-    if (leaving) return undefined;
-    const n = (render(pages[idx]!).beats ?? []).length;
-    const from = idx === 0 ? SCROLL_POP_MS + FIRST_BEAT_MS : NEXT_BEAT_MS;
+    if (!gated || held || leaving) return;
+    setInterluded(true);
+    setVeil('dim');
+  }, [gated, held, leaving]);
+
+  // 이 장의 줄을 세운다 — 하나씩(또는 `together`면 한꺼번에), 서는 순간 「결과표출」
+  useEffect(() => {
+    if (leaving || !open) return undefined;
+    const sh = render(pages[idx]!);
+    const n = (sh.beats ?? []).length;
+    const from = idx === 0 ? SCROLL_POP_MS + FIRST_BEAT_MS : veil === 'lift' ? LIFT_BEAT_MS : NEXT_BEAT_MS;
     const quick = reducedMotion();
-    for (let i = 0; i < n; i++) {
-      timers.current.push(window.setTimeout(() => {
-        setPopped(i + 1);
-        playSfx('result_pop');
-      }, quick ? 0 : from + i * BEAT_STEP_MS));
+    if (sh.together) {
+      if (n > 0) timers.current.push(window.setTimeout(() => { setPopped(n); playSfx('result_pop'); }, quick ? 0 : from));
+    } else {
+      for (let i = 0; i < n; i++) {
+        timers.current.push(window.setTimeout(() => {
+          setPopped(i + 1);
+          playSfx('result_pop');
+        }, quick ? 0 : from + i * BEAT_STEP_MS));
+      }
     }
     return clearTimers;
-    // 장이 바뀔 때만 — `render`는 렌더마다 새 함수다
+    // 장이 바뀌거나 찍어도 되게 될 때만 — `render`는 렌더마다 새 함수다. 밝아지는 중 → 끝(`lift` → `null`)에는 다시 돌지 않는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, leaving]);
+  }, [idx, leaving, open]);
 
-  // 줄이 다 섰고 사이 연출이 걸린 장이면 — 잠시 뒤 어두워진다
-  useEffect(() => {
-    if (!gated || held || leaving || popped < beats.length) return undefined;
-    const id = window.setTimeout(() => { setInterluded(true); setVeil('dim'); }, reducedMotion() ? 0 : INTERLUDE_AFTER_MS);
-    return () => window.clearTimeout(id);
-  }, [gated, held, leaving, popped, beats.length]);
-
-  // 어두워지기 · 밝아지기는 시간으로만 넘어간다. 연출(`show`)은 `done`이 넘긴다. 밝아지기 시작하면 `tail`이 튀어나온다
+  // 어두워지기 · 밝아지기는 시간으로만 넘어간다. 연출(`show`)은 `done`이 넘긴다
   useEffect(() => {
     if (veil !== 'dim' && veil !== 'lift') return undefined;
-    const quick = reducedMotion();
-    const ids: number[] = [];
-    if (veil === 'lift') {
-      ids.push(window.setTimeout(() => { setTailShown(true); playSfx('result_pop'); }, quick ? 0 : TAIL_AFTER_MS));
-    }
-    const ms = quick ? 0 : veil === 'dim' ? VEIL_IN_MS : VEIL_OUT_MS;
-    ids.push(window.setTimeout(() => setVeil(veil === 'dim' ? 'show' : null), ms));
-    return () => ids.forEach((id) => window.clearTimeout(id));
+    const ms = reducedMotion() ? 0 : veil === 'dim' ? VEIL_IN_MS : VEIL_OUT_MS;
+    const id = window.setTimeout(() => setVeil(veil === 'dim' ? 'show' : null), ms);
+    return () => window.clearTimeout(id);
   }, [veil]);
 
   const next = useCallback((): void => {
@@ -405,21 +406,19 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
     window.setTimeout(() => {
       setIdx((i) => i + 1);
       setPopped(0);
-      setTailShown(false);
       setLeaving(false);
     }, reducedMotion() ? 0 : FADE_OUT_MS);
   }, [last, held, leaving]);
 
-  /** 누르기 — 줄이 서는 중이면 남은 줄을 한꺼번에, 사이 연출을 기다리는 중이면 곧장 어둡게, 다 섰으면 다음 장 */
+  /** 누르기 — 줄이 서는 중이면 남은 줄을 한꺼번에, 다 섰으면 다음 장 */
   const tap = (): void => {
-    if (held || leaving) return;
+    if (held || leaving || !open) return;
     if (popped < beats.length) {
       clearTimers();
       setPopped(beats.length);
       playSfx('result_pop');
       return;
     }
-    if (gated) { setInterluded(true); setVeil('dim'); return; }
     next();
   };
 
@@ -461,15 +460,13 @@ export function ResultScroll<P extends string>({ bg, pages, interlude, render, a
                   {beats.map((b, i) => (
                     <div key={i} className="brs-beat" data-wait={i < popped ? undefined : '1'} aria-hidden={i < popped ? undefined : true}>{b}</div>
                   ))}
-                  {sheet.tail && (
-                    <div className="brs-beat brs-tail" data-wait={tailShown ? undefined : '1'} aria-hidden={tailShown ? undefined : true}>{sheet.tail}</div>
-                  )}
                 </>
               )}
               {sheet.extra}
             </div>
           </figure>
-          {!last && !held && settled && !gated && <p className="brs-tap">{t('result.tap')}</p>}
+          {/* 「누르면 다음으로」는 **언제나 자리를 잡고** 보이기만 바꾼다 — 줄이 다 선 순간 생기면 가운데 맞춤인 두루마리가 그만큼 위로 밀렸다(2026-11-27 기획자) */}
+          <p className="brs-tap" data-hide={!last && !held && settled ? undefined : '1'} aria-hidden={!last && !held && settled ? undefined : true}>{t('result.tap')}</p>
         </div>
 
         {last && !leaving && settled && <div className="brs-acts">{acts}</div>}

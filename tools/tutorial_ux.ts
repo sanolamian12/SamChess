@@ -205,17 +205,13 @@ async function run(id: string): Promise<void> {
         const won = await page.waitForSelector('[data-screen="tutorialResult"][data-page="title"]', { timeout: 8_000 }).then(() => true, () => false);
         check(won, `${id} — 이기면 승리 두루마리가 뜬다`);
         if (won) {
-          // 「승 리」 → 「임무 완료」 → 받은 보상 줄이 하나씩 튀어나온다(2026-11-26) — 다 선 뒤 읽는다
+          // 「승 리」 → 「임무 완료」가 하나씩 튀어나온다(2026-11-26) — 다 선 뒤 읽는다
           await page.waitForSelector('[data-screen="tutorialResult"][data-settled="1"]', { timeout: 10_000 }).catch(() => {});
           await page.screenshot({ path: join(OUT, `${id}-result-title.png`) });
-          const gains = await page.evaluate(() => ({
-            why: document.querySelector('[data-screen="tutorialResult"] .brs-beat:not([data-wait]) [data-field="tutorial"]')?.getAttribute('data-outcome') ?? '',
-            grain: document.querySelector('.brs-beat:not([data-wait]) [data-field="grain"]')?.textContent ?? '',
-            materials: document.querySelector('.brs-beat:not([data-wait]) [data-field="materials"]')?.textContent ?? '',
-            cardCount: Number(document.querySelector('.brs-beat:not([data-wait]) [data-field="cardCount"]')?.getAttribute('data-n') ?? 0),
-          }));
-          check(gains.why === 'objective', `${id} — 사유는 「임무 완료」 (${gains.why})`);
-          // 장을 넘긴다 — 「보상」이 선 뒤 어두워지고 캐릭터 보상(장수 모집 결과와 같은 무대)
+          const why = await page.evaluate(() =>
+            document.querySelector('[data-screen="tutorialResult"] .brs-beat:not([data-wait]) [data-field="tutorial"]')?.getAttribute('data-outcome') ?? '');
+          check(why === 'objective', `${id} — 사유는 「임무 완료」 (${why})`);
+          // 장을 넘긴다 — 캐릭터 보상(장수 모집 결과와 같은 무대)이 먼저, 닫으면 「보상」 장이 한꺼번에 찍힌다(2026-11-27)
           await page.click('[data-screen="tutorialResult"] [data-action="next"]');
           const reveal = await page.waitForSelector('.brs-gacha [data-modal="rewardCards"]', { timeout: 8_000 }).then(() => true, () => false);
           if (reveal) {
@@ -233,9 +229,13 @@ async function run(id: string): Promise<void> {
             cards: [...document.querySelectorAll<HTMLElement>('[data-field="rewards"] [data-field="card"][data-grade]')].map((c) => c.dataset.grade),
             back: !!document.querySelector('[data-screen="tutorialResult"] [data-action="tutorials"]'),
           }));
+          const gains = await page.evaluate(() => ({
+            grain: document.querySelector('.brs-beat:not([data-wait]) [data-field="grain"]')?.textContent ?? '',
+            materials: document.querySelector('.brs-beat:not([data-wait]) [data-field="materials"]')?.textContent ?? '',
+          }));
           check(reward && got.back, `${id} — 보상 장 · [튜토리얼 목록으로] (${JSON.stringify(got)})`);
           if (id.startsWith('basic')) {
-            check(got.cards.length === 1 && ['C', 'D'].includes(got.cards[0]!) && gains.cardCount === 1 && gains.grain === '+1' && gains.materials === '+1',
+            check(got.cards.length === 1 && ['C', 'D'].includes(got.cards[0]!) && gains.grain === '+1' && gains.materials === '+1',
               `${id} — 첫 클리어 보상은 C~D급 카드 1장 · 군량 +1 · 자재 +1`);
           }
         }

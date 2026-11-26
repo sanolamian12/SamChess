@@ -22,6 +22,17 @@ page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 await page.goto(`http://localhost:5173/?result=${kind}&lang=${lang}${process.argv[4] ? `&why=${process.argv[4]}` : ''}`);
 await page.waitForSelector('.brs-frame');
+// 두루마리 자리를 프레임마다 잰다 — 줄이 서는 동안 위아래로 밀리면 안 된다(2026-11-27 기획자). 서기 연출(scale)은 레이아웃이 아니라 잰 값에 안 든다
+await page.evaluate(() => {
+  const w = window as unknown as { __brsY: Set<string> };
+  w.__brsY = new Set();
+  const tick = (): void => {
+    const el = document.querySelector('.brs-scroll');
+    if (el) { const r = (el as HTMLElement).offsetTop; w.__brsY.add(`${r}/${(el as HTMLElement).offsetHeight}`); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+});
 const t0 = Date.now();
 const shot = async (name: string): Promise<void> => {
   await page.screenshot({ path: join(OUT, `${kind}-${lang}-${name}.png`) });
@@ -59,5 +70,7 @@ for (let step = 0; step < 6; step++) {
   await shot(`c${step}-next`);
   await page.waitForTimeout(1300);
 }
+const ys = await page.evaluate(() => [...(window as unknown as { __brsY: Set<string> }).__brsY]);
+console.log(ys.length === 1 ? `두루마리 자리 고정 — 위/높이 ${ys[0]}` : `✗ 두루마리 자리가 움직였다 — ${ys.join(' · ')}`);
 console.log(errors.length ? `콘솔 오류 ${errors.join(' | ')}` : '콘솔 오류 없음', '→', OUT);
 await browser.close();

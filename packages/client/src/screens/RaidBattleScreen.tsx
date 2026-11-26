@@ -40,7 +40,7 @@ import { useLang } from '../i18n/useLang.ts';
 import { resultBackdrop } from './backdrop.ts';
 import type { ResultBackdropId } from './backdrop.ts';
 import { BattleStage } from './BattleStage.tsx';
-import { BigLine, ResultScroll, gainBeats, rewardSheet, winWhy } from './ResultScreen.tsx';
+import { BigLine, ResultScroll, hasRewards, rewardSheet, winWhy } from './ResultScreen.tsx';
 import type { ResultSheet } from './ResultScreen.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { CardRewardReveal } from './market/CardRewardReveal.tsx';
@@ -130,8 +130,8 @@ type RaidPage = 'title' | 'reward';
  * 방어전 결과 (2026-10-13 — 대전 결과의 두루마리로 옮겼다. 2026-11-26 — 대전과 같은 「쿵」 연출).
  *
  * 껍데기는 대전 결과와 같은 `ResultScroll`이고 장만 다르다:
- * **결말**(「승 리」 · 사유 — 막아 냈으면 「적 전멸」, 아니면 물러갔다 · 약탈당했다 + 약탈당한 군량 — · 받은 보상 줄)
- * → 캐릭터 보상이 있으면 **「보상」**(어두워진 뒤 장수 모집 결과와 같은 무대 → 받은 장수 줄).
+ * **결말**(「승 리」 · 사유 — 막아 냈으면 적 전멸 · 적 King 격퇴, 물러갔으면 「도적떼가 물러갔다」, 졌으면 약탈당한 군량)
+ * → 받은 것이 있으면 **「보상」**(받은 장수가 있으면 먼저 장수 모집 결과와 같은 무대, 닫으면 보상이 한꺼번에 찍힌다).
  * 막아 낸 판의 카드는 C~D 한 장이다(2026-11-26 기획자 — 두 장씩이라 장수가 너무 빨리 늘었다).
  * 전과 장은 없다 — 방어전은 전적에 안 들어간다. 나가는 길은 [농지로] 하나다(기획자 지정).
  */
@@ -150,7 +150,7 @@ export function RaidResultScreen({ profile, banditsLeft, outcomeKind = null, err
   const won = status === 'won';
   const given = won ? raid?.rewards ?? null : null;
   const cards = given?.cards ?? [];
-  const pages: readonly RaidPage[] = cards.length > 0 ? ['title', 'reward'] : ['title'];
+  const pages: readonly RaidPage[] = hasRewards(given) ? ['title', 'reward'] : ['title'];
 
   const render = (page: RaidPage): ResultSheet => {
     if (page === 'reward') return rewardSheet(given!);
@@ -161,7 +161,6 @@ export function RaidResultScreen({ profile, banditsLeft, outcomeKind = null, err
       beats: [
         <BigLine key="big" text={t(BIG[status])} field="verdict" />,
         ...(why ? [<p key="why" className="brs-lede" data-field="bandits" data-n={banditsLeft} data-outcome={won ? outcomeKind ?? undefined : status}>{why}</p>] : []),
-        ...(won ? gainBeats(given) : []),
         ...(status === 'lost' || status === 'surrendered'
           ? [<p key="loot" className="brs-gain brs-loot" data-field="lootPage">
               <img src="market/grain.png" alt="" />
