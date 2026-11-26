@@ -3899,7 +3899,6 @@ button.mkt-pack.mkt-good[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3
 .mkt-done-art { width: 7.5rem; height: 7.5rem; object-fit: contain; filter: drop-shadow(0 4px 10px #0009); }
 .mkt-who { display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; }
 .mkt-done .mkt-who .nm { color: #f6ecd2; font-size: .95rem; text-shadow: 0 1px 2px #000c; }
-.mkt-respec-done { display: flex; align-items: center; justify-content: center; gap: .4rem; }
 
 /* 「확정할까」 — 중립 판(panel-settings), 대장간 확인과 같은 값 */
 .modal.mkt-confirm {
@@ -11400,3 +11399,145 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 /* 흰빛을 잠깐 그대로 두었다가(.2초) 걷는다 — 「아주 하얘졌다가」가 보이게 */
 .modal-back.cel-back:has(> .modal.rcr-done) .cel-unwhite { animation: rcr-unwhite 1.1s ease-out both; }
 @keyframes rcr-unwhite { 0%, 18% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ── 초심의 서 — 명상하는 선비 → 기의 구슬 → 어두운 무대 (2026-11-26 기획자, `Design/축하연출_초심의서_기획안.html`) ─────────
+   `Celebrate`의 `respec` 도입부(5초, 「쾅」은 5.0초). 수묵 산수(941:1672)가 화면을 덮고 안쪽 자리는 **그림 안의 비율**이다 —
+   선비는 벼랑 위(가로 36% · 발끝 58.5%), 가슴(빛이 나오는 자리)은 51.5%, 기의 구슬은 머리 위 30%.
+   카메라 — 전경에서 선비에게로 다가가다가 선비에게서 빠져나와 구슬로, 멈추지 않고 한 줄기로(`crs-zoom` · `crs-pan`).
+   구슬(`crs-orb`)은 알갱이를 받으며 조금씩 부풀다 3초부터 점점 빠르게 커져 화면을 덮는다(`.cin-whiteout`이 5초에 마무리). */
+.cin-respec { container-type: size; background: #000; }
+.crs-frame {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  aspect-ratio: 941 / 1672; height: max(100cqh, calc(100cqw * 1672 / 941));
+  container-type: size;
+}
+.crs-window { position: absolute; inset: 0; overflow: hidden; opacity: 0; animation: cir-open .4s ease-out both; }
+.crs-world { position: absolute; inset: 0; transform-origin: 0 0; animation: crs-zoom 5s linear both, crs-light 5s linear both; }
+.crs-pan { position: absolute; inset: 0; animation: crs-pan 5s linear both; }
+/* 카메라는 처음부터 끝까지 멈추지 않고 서서히 움직인다(2026-11-26 기획자 — 「포커스 이동이 너무 급작스럽다」) — 확대(`crs-zoom`)와
+   옮김(`crs-pan`, 화면 가운데에 둘 그림 비율의 점)을 두 층으로 갈라 각자 매끈한 곡선을 5%마다 찍었다:
+   배율 z = 1 + 2.6·t^0.85(처음이 조금 빠르고 끝까지 커진다) · 가로 50 → 36%(앞 절반에 선비 쪽으로) · 세로 50 − 20·t^2.2(처음엔 선비에 머무는 듯 천천히, 점점 빨리 구슬로) */
+@keyframes crs-zoom {
+  0% { transform: translate(50%, 50%) scale(1.000); }
+  5% { transform: translate(50%, 50%) scale(1.204); }
+  10% { transform: translate(50%, 50%) scale(1.367); }
+  15% { transform: translate(50%, 50%) scale(1.518); }
+  20% { transform: translate(50%, 50%) scale(1.662); }
+  25% { transform: translate(50%, 50%) scale(1.800); }
+  30% { transform: translate(50%, 50%) scale(1.934); }
+  35% { transform: translate(50%, 50%) scale(2.065); }
+  40% { transform: translate(50%, 50%) scale(2.193); }
+  45% { transform: translate(50%, 50%) scale(2.319); }
+  50% { transform: translate(50%, 50%) scale(2.442); }
+  55% { transform: translate(50%, 50%) scale(2.564); }
+  60% { transform: translate(50%, 50%) scale(2.684); }
+  65% { transform: translate(50%, 50%) scale(2.803); }
+  70% { transform: translate(50%, 50%) scale(2.920); }
+  75% { transform: translate(50%, 50%) scale(3.036); }
+  80% { transform: translate(50%, 50%) scale(3.151); }
+  85% { transform: translate(50%, 50%) scale(3.265); }
+  90% { transform: translate(50%, 50%) scale(3.377); }
+  95% { transform: translate(50%, 50%) scale(3.489); }
+  100% { transform: translate(50%, 50%) scale(3.600); }
+}
+@keyframes crs-pan {
+  0% { transform: translate(-50.00%, -50.00%); }
+  5% { transform: translate(-47.34%, -49.97%); }
+  10% { transform: translate(-44.96%, -49.87%); }
+  15% { transform: translate(-42.86%, -49.69%); }
+  20% { transform: translate(-41.04%, -49.42%); }
+  25% { transform: translate(-39.50%, -49.05%); }
+  30% { transform: translate(-38.24%, -48.59%); }
+  35% { transform: translate(-37.26%, -48.01%); }
+  40% { transform: translate(-36.56%, -47.34%); }
+  45% { transform: translate(-36.14%, -46.55%); }
+  50% { transform: translate(-36.00%, -45.65%); }
+  55% { transform: translate(-36.00%, -44.63%); }
+  60% { transform: translate(-36.00%, -43.50%); }
+  65% { transform: translate(-36.00%, -42.25%); }
+  70% { transform: translate(-36.00%, -40.87%); }
+  75% { transform: translate(-36.00%, -39.38%); }
+  80% { transform: translate(-36.00%, -37.76%); }
+  85% { transform: translate(-36.00%, -36.01%); }
+  90% { transform: translate(-36.00%, -34.14%); }
+  95% { transform: translate(-36.00%, -32.13%); }
+  100% { transform: translate(-36.00%, -30.00%); }
+}
+/* 명상이 깊어지며 산수가 조금 가라앉고(빛이 종이 위에서 보이게), 구슬이 커지는 끝에 밝아진다 */
+@keyframes crs-light {
+  0%, 12% { filter: brightness(1); } 30%, 62% { filter: brightness(.72) saturate(.9); }
+  86% { filter: brightness(1.05); } 100% { filter: brightness(1.8); }
+}
+.crs-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.crs-scholar {
+  position: absolute; left: 36%; top: 58.5%; width: 24cqw; translate: -50% -96.8%; transform-origin: 50% 96.8%;
+  animation: crs-breathe 2.4s ease-in-out infinite;
+}
+@keyframes crs-breathe { 50% { transform: scale(1.012); } }
+/* 몸의 금빛 테 — 1.6초부터 가슴에 */
+.crs-aura {
+  position: absolute; left: 36%; top: 51.5%; width: 26cqw; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(circle, #fff3c8cc 0%, #ffd87766 35%, #ffd87700 70%); mix-blend-mode: screen; opacity: 0;
+  animation: crs-aura 5s ease-in-out both;
+}
+@keyframes crs-aura { 0%, 30% { opacity: 0; transform: scale(.6); } 60% { opacity: .85; transform: scale(1); } 100% { opacity: 1; transform: scale(1.3); } }
+/* 빛 알갱이 — 가슴 옆(`--sx`)에서 떠올라 구슬(위로 21.5cqh)까지 **곧게 같은 빠르기로** 오른다(2026-11-26 기획자 — 「멈췄다 올라가는 암벽타기 같다」).
+   뒤에 나는 알갱이일수록 길이가 짧아 빨리 오른다. 늦춤 · 길이 · 크기 · 처음 자리는 화면이 준다 */
+.crs-mote {
+  /* 가운데 맞춤은 `translate`가 아니라 자리 셈으로 — `scale`은 `transform`보다 먼저 걸려 반쯤 민 자리를 함께 키운다 */
+  position: absolute; left: calc(36% - var(--s) / 2); top: calc(51.5% - var(--s) / 2); width: var(--s); mix-blend-mode: screen; opacity: 0;
+  animation-name: crs-mote; animation-timing-function: linear; animation-fill-mode: both;
+}
+@keyframes crs-mote {
+  0% { translate: var(--sx, 0) 0; opacity: 0; }
+  10% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { translate: 0 -21.5cqh; opacity: 0; }
+}
+/* 기의 구슬 — 1.2초에 맺혀 알갱이를 받으며 부풀고, 3초부터 점점 빠르게 커져 화면을 덮는다 */
+.crs-orb, .crs-halo {
+  position: absolute; left: calc(36% - 15cqw); top: calc(30% - 15cqw); width: 30cqw; aspect-ratio: 1;
+  mix-blend-mode: screen; scale: 0;
+}
+.crs-orb { animation: crs-orb 5s both; }
+@keyframes crs-orb {
+  0%, 23% { scale: 0; opacity: 0; }
+  25% { scale: .05; opacity: 1; animation-timing-function: linear; }
+  60% { scale: .3; animation-timing-function: cubic-bezier(.7, 0, .95, .4); }
+  100% { scale: 7; opacity: 1; }
+}
+.crs-halo { border-radius: 50%; background: radial-gradient(circle, #fff6d8 0%, #ffe8a088 30%, #ffe8a000 68%); animation: crs-halo 5s both; }
+@keyframes crs-halo {
+  0%, 23% { scale: 0; opacity: 0; }
+  30% { scale: .3; opacity: .6; animation-timing-function: linear; }
+  60% { scale: .8; opacity: .8; animation-timing-function: cubic-bezier(.65, 0, .95, .55); }
+  100% { scale: 8; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crs-world, .crs-pan, .crs-scholar { animation: none; }
+}
+
+/* 무대 — 장수 모집과 같은 바탕(`rcr-done` — 어둠 위 가라앉힌 계정 문장)에 장수 꼬마와 장수 카드 묶음이 나란히 서고(`.rsp-cast`),
+   제목 밑 붓 획 두 줄 — 「(카드 메달) ×26」 · 「[등급][레벨 — 옛 레벨에서 1까지 내려간다][이름]」(2026-11-26 기획자) */
+.modal-back.cel-back .modal.cel.rsp-done { z-index: 6; pointer-events: none; }   /* 단추만 누름 칸(`.cel-hit`, 5) 위로 — 나머지는 눌러도 닫힌다 */
+.rsp-cast { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 1.2rem; }
+.rsp-cast .mkt-portrait { margin: 0; animation: ngo-member .45s ease-out .35s both; }
+.rsp-stack { position: relative; display: block; width: 6.5rem; aspect-ratio: 1; animation: ngo-member .45s ease-out .6s both; }
+.rsp-stack img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 .25rem .5rem #000c); }
+.rsp-stack img[data-n="0"] { rotate: -14deg; translate: -.9rem .3rem; filter: brightness(.6) drop-shadow(0 .25rem .5rem #000c); }
+.rsp-stack img[data-n="1"] { rotate: -5deg; translate: -.35rem .1rem; filter: brightness(.8) drop-shadow(0 .25rem .5rem #000c); }
+.rsp-stack img[data-n="2"] { rotate: 6deg; translate: .3rem -.1rem; }
+.rsp-done .rsp-row { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .45rem; font-size: 1.05rem; animation: cel-rise .45s ease-out .85s both; }
+.rsp-done .rsp-row + .rsp-row { --lvd-stroke: url(ui/era-stroke-b-7.png); animation-delay: 1s; }
+.rsp-done .rsp-row .lvd-medal { width: 2.2rem; height: 2.2rem; }
+.rsp-done .rsp-row .gr { --gr: 1.5rem; }
+.rsp-done .rsp-row .lv-badge { height: 1.9rem; width: auto; }
+.rsp-done .rsp-row [data-final] .lv-badge { animation: rsp-lv-glow 1.2s ease-out both; }
+@keyframes rsp-lv-glow {
+  0% { scale: 1.45; filter: drop-shadow(0 0 .8rem #ffe9a8); }
+  100% { scale: 1; filter: drop-shadow(0 0 .2rem #ffe9a855); }
+}
+.rsp-lvslot { display: inline-flex; }
+.rsp-done .cel-tap { display: none; }
+.rsp-actions { position: relative; z-index: 6; pointer-events: auto; display: flex; gap: .6rem; justify-content: center; margin-top: .8rem; animation: cel-rise .45s ease-out 1.3s both; }
+.rsp-actions .btn { min-width: 8.5rem; }

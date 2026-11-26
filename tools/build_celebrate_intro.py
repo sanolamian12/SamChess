@@ -55,6 +55,12 @@ ITEMS: dict[tuple[str, str], tuple[str, int, str]] = {
     ("recruit", "recruit_flash.png"): ("intro-recruit-flash.jpg", 900, "black"),
     ("recruit", "recruit_dust.png"): ("intro-recruit-dust-1.jpg", 1200, "black"),
     ("recruit", "recruit_dust2.png"): ("intro-recruit-dust-2.jpg", 1200, "black"),
+    # 초심의 서(2026-11-26 기획자, `Design/축하연출_초심의서_기획안.html`) — 수묵 산수(세로, 화면 전체 — 벼랑 위 36% · 58.5%) ·
+    # 명상하는 선비(발끝 그림 높이 96.8%, 가슴 45%) · 기의 구슬 · 빛 알갱이 넷(금 · 보라 · 붉은 · 푸른)
+    ("respec", "respec_bg.png"): ("intro-respec-bg.jpg", 1672, "photo"),
+    ("respec", "respec_scholar.png"): ("intro-respec-scholar.png", 1000, "green"),
+    ("respec", "respec_orb.png"): ("intro-respec-orb.jpg", 1000, "black"),
+    **{("respec", f"respec_mote_{i}.png"): (f"intro-respec-mote-{i}.jpg", 360, "black") for i in range(1, 5)},
 }
 
 # 초록이 이만큼 이하로 섞였으면 불투명, 이만큼 이상이면 투명(바탕 실측 g − max(r,b) ≈ 237)

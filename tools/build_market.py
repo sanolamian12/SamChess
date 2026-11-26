@@ -181,6 +181,44 @@ def fit_resize(im: Image.Image, max_width: int) -> Image.Image:
     return im.resize((max_width, round(im.height * ratio)), Image.LANCZOS)
 
 
+# ── 장수 카드 메달 (2026-11-26 기획자) ─────────────────────────────
+# 초심의 서 완료 무대의 붓 획 줄 「(메달) ×26」의 둥근 배지 — 병기 메달(`build_blacksmith.py`의 `build_medals`)과 같은 금빛 고리 ·
+# 밝은 바탕 원에 장수 카드 아이콘을 꽉 채운다(불투명 화소가 가운데에서 가장 먼 거리로 크기를 잡는다).
+MEDAL_BG = (190, 164, 116)
+MEDAL_REACH = .95
+
+
+def build_card_medal(force: bool) -> str | None:
+    from PIL import ImageFilter
+    sys.path.insert(0, str(TOOLS))
+    import build_icons_composed as bic
+    src, dst = OUT / "market_card.png", OUT / "medal-card.png"
+    if not bic.RING_SRC.exists() or not src.exists():
+        return None
+    if dst.exists() and not force and dst.stat().st_mtime >= src.stat().st_mtime:
+        return None
+    bic.RING, bic.INNER, bic.HELMET = bic.load_ring()
+    N, R = bic.N, bic.INNER
+    with Image.open(src) as im:
+        art = bic.trim(im.convert("RGBA"), floor=24)
+    a = np.array(art.getchannel("A")) > 24
+    ys, xs = np.nonzero(a)
+    cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+    k = R * MEDAL_REACH / (float(np.hypot(xs - cx, ys - cy).max()) or 1.0)
+    art = art.resize((max(1, round(art.width * k)), max(1, round(art.height * k))), Image.LANCZOS)
+    out = Image.new("RGBA", (N, N))
+    out.alpha_composite(bic.backdrop(MEDAL_BG))
+    pos = (round(N / 2 - cx * k), round(N / 2 - cy * k))
+    sh = Image.new("RGBA", art.size, (0, 0, 0, 0))
+    sh.putalpha(art.getchannel("A").point(lambda v: v * .45))
+    out.alpha_composite(sh.filter(ImageFilter.GaussianBlur(4)), (pos[0] + 2, pos[1] + 4))
+    out.alpha_composite(art, pos)
+    out.putalpha(Image.fromarray(np.minimum(np.array(out.getchannel("A")), np.array(bic.disc_mask()))))
+    out.alpha_composite(bic.RING)
+    out.save(dst, optimize=True)
+    return "medal-card.png (메달)"
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser()
@@ -296,6 +334,10 @@ def main() -> int:
             skipped += 1
     else:
         missing.append("marget-sign.png (market-sign)")
+
+    medal = build_card_medal(args.force)
+    if medal:
+        made_other.append(medal)
 
     print(f"출력 → {OUT}")
     print(f"  아이콘 {len(made_icons)}종 · 그 외 {len(made_other)}종"

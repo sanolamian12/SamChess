@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>초심의 서 연출 기획안</title>
+<style>
+  :root { --ink: #2a1e14; --paper: #f6efe1; --line: #d8c8a8; --accent: #8a2b1a; --jade: #1f6a5a; --gold: #c8932e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Noto Serif KR", "Malgun Gothic", serif; background: #e9dfca; color: var(--ink); line-height: 1.6; }
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2.4rem 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--line); }
+  h3 { font-size: 1.02rem; margin: 1.2rem 0 .4rem; }
+  .lead { color: #5b4a36; margin: 0 0 1rem; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .warn { border-left: 4px solid var(--accent); }
+  .tip { border-left: 4px solid var(--jade); }
+  ol, ul { margin: .3rem 0; padding-left: 1.4rem; }
+  li { margin: .2rem 0; }
+  code { background: #efe4cc; padding: 0 .3rem; border-radius: .2rem; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--line); padding: .35rem .5rem; text-align: left; vertical-align: top; }
+  th { background: #efe4cc; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .cards { display: grid; gap: .9rem; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: .5rem; overflow: hidden; }
+  .card header { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .5rem .8rem; background: #efe4cc; flex-wrap: wrap; }
+  .card header b { font-size: 1rem; }
+  .card .why { padding: .5rem .8rem 0; font-size: .9rem; color: #4a3a28; }
+  .card pre { margin: 0; padding: .8rem; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "D2Coding", monospace; font-size: .82rem; line-height: 1.5; }
+  .card .ko { margin: 0; padding: .7rem .8rem .8rem; border-top: 1px dashed var(--line); font-size: .86rem; line-height: 1.6; color: #3e3022; background: #fbf7ee; }
+  .card .ko .ko-h { display: inline-block; font-size: .78rem; padding: 0 .45rem; margin-right: .4rem; border-radius: 1rem; background: #6d5a45; color: #fff; }
+  .copy { font: inherit; font-size: .85rem; padding: .25rem .7rem; border: 0; border-radius: .3rem; background: var(--jade); color: #fff; cursor: pointer; white-space: nowrap; }
+  .copy.done { background: #4a7a3a; }
+  .file { font-family: Consolas, monospace; font-size: .82rem; color: #6d5a45; }
+  .tag { display: inline-block; font-size: .78rem; padding: 0 .45rem; border-radius: 1rem; background: var(--gold); color: #fff; margin-left: .3rem; }
+  .tag.opt { background: #8f8068; }
+  .ref { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .ref img { width: 260px; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: .4rem; }
+
+  .tl { position: relative; height: 3.4rem; margin: 1.6rem 0 2.8rem;
+    background: linear-gradient(90deg, #d9d3c4 0%, #cfc8b6 30%, #fff6d8 70%, #fff 78%, #0a0a0f 86%, #120d08 100%); border-radius: .3rem; }
+  .tl .mk { position: absolute; top: -0.2rem; bottom: -0.2rem; width: 2px; background: var(--gold); }
+  .tl .mk span { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-size: .78rem; white-space: nowrap; color: var(--ink); padding-top: .2rem; }
+  .tl .mk.alt span { top: auto; bottom: 100%; padding: 0 0 .2rem; }
+  .tl .mk.big { width: 4px; background: #fff; box-shadow: 0 0 6px #ffd27a; }
+
+  /* 미리 보기 — 1:2 세로 판(게임의 #frame과 같은 비율) */
+  .stage { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1 / 2; margin: 0 auto; background: #000; border-radius: .5rem; overflow: hidden; }
+  .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stage .clock { position: absolute; right: .5rem; top: .4rem; font: .8rem Consolas, monospace; color: #6d6455; z-index: 5; }
+  .stage .white { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fff 0%, #fff8e2 60%, #ffeab0 100%); opacity: 0; pointer-events: none; z-index: 3; }
+  .stage .dark { position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, #2a2013 0%, #0b0906 70%); opacity: 0; pointer-events: none; z-index: 2; }
+  .stage .result { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8rem;
+    color: #f3e6c4; opacity: 0; pointer-events: none; padding: 1rem; text-align: center; }
+  .stage .result h4 { margin: 0; font-size: 1.1rem; letter-spacing: .05em; text-shadow: 0 0 8px #000; }
+  .stage .pair { display: flex; gap: .9rem; align-items: flex-end; justify-content: center; }
+  .stage .who, .stage .cardbox { display: flex; flex-direction: column; align-items: center; gap: .35rem; font-size: .8rem; }
+  .stage .who .fig { width: 92px; height: 132px; border-radius: .4rem; background: linear-gradient(#5a4a36, #2a2218); display: grid; place-items: center; color: #cdb98f; font-size: .8rem; position: relative; }
+  .stage .who .lv { position: absolute; right: -10px; bottom: -10px; width: 42px; height: 42px; }
+  .stage .who .lv img { width: 100%; height: 100%; }
+  .stage .who .lv b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 .8rem serif; color: #fff; text-shadow: 0 0 3px #000; }
+  .stage .cardbox .cd { width: 86px; height: 120px; border-radius: .35rem; background: linear-gradient(#efe1bd, #c9b07a); border: 2px solid #8a6a2e; display: grid; place-items: center; color: #5a4220; font-size: .8rem; position: relative; }
+  .stage .cardbox .cd.back { position: absolute; transform: translate(6px, -6px) rotate(4deg); opacity: .6; }
+  .stage .cardbox .stack { position: relative; width: 86px; height: 120px; }
+  .stage .cardbox .cnt { font: 700 1.3rem serif; color: #ffd27a; text-shadow: 0 0 6px #000; }
+  .stage .row { font-size: .8rem; color: #cbb88e; }
+  .play { display: block; margin: .8rem auto 0; font: inherit; padding: .5rem 1.4rem; border: 0; border-radius: 2rem; background: var(--accent); color: #fff; cursor: pointer; }
+  .names { font-size: .85rem; color: #5b4a36; text-align: center; margin: .4rem 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>초심의 서 — 「잡념이 빠져나간다」 연출 기획안</h1>
+  <p class="lead">용병 시장의 <b>초심의 서</b>(재설계 · 둔갑천서)를 쓰면, 장수가 Lv1로 돌아가고 레벨업에 쓴 장수 카드를 돌려받습니다.
+    지금은 「스탯 초기화 완료」 팝업(그림 + ×N) 하나로 끝나는데, 이것을 다른 축하 연출(태학 연구 · 도시 증축 · 장수 레벨업 · 장수 모집)과 같은 틀의 연출로 바꾸는 기획안입니다.
+    고유기술 <b>명경지수</b> 그림처럼 산속 벼랑 위에서 장수가 가부좌로 명상하면, 가슴에서 빛이 「송 · 송 · 송」 빠져나가 머리 위로 떠오르고,
+    점점 많고 크게 쏟아져 빛이 화면을 덮은 뒤 <b>어두워지고</b>, 그 어둠 속에 <b>Lv1 배지를 단 장수</b>와 <b>돌려받은 장수 카드</b>가 나란히 섭니다.</p>
+
+  <div class="box tip">
+    <b>다른 축하와 다른 점 하나</b> — 다른 연출은 끝에 흰빛에서 <b>밝은</b> 축하 무대(두루마리 · 금빛)로 열립니다. 이번 것은 「비워 낸다」는 장면이라
+    흰빛이 가라앉아 <b>어두운 무대</b>로 내려앉습니다(기획자 요청). 잃는 것이 아니라 「처음으로 돌아가 다시 고른다」는 뜻이라, 무대는 어둡되 차갑지 않게 —
+    따뜻한 먹색 어둠에 장수와 카드만 은은히 빛을 받는 꼴로 잡았습니다.
+  </div>
+
+  <h2>1. 시나리오</h2>
+  <ol>
+    <li><b>다가감</b> — 어둠에서 수묵 산수 전경이 떠오르고(안개 낀 호수 위 벼랑, 굽은 소나무 아래 가부좌로 앉은 장수 — 명경지수 그림의 구도),
+      <b>첫 1초 동안 카메라가 명상하는 장수에게로 클로즈업</b>해 들어간다. 1초에 장수의 상반신이 화면 가운데를 채운다.</li>
+    <li><b>송 · 송 · 송</b> — 가슴 한가운데에서 작은 빛 알갱이가 <b>하나씩</b> 떠올라 흔들리며 머리 위로 올라가 <b>한 점에 모인다</b> — 거기에 작고 동그란 기(氣)의 구슬이 맺힌다.</li>
+    <li><b>기가 모이는 곳으로</b> — 알갱이가 점점 잦고 커지는 동안 카메라가 <b>장수에게서 빠져나와 위로</b> 올라가, 기가 모이는 둥근 구슬을 화면 가운데에 비춘다. 장수는 화면 아래로 빠져나간다.</li>
+    <li><b>원이 커진다</b> — 알갱이를 받을 때마다 구슬이 조금씩 부풀고, 3초부터는 점점 빠르게 커져 화면을 채워 간다. 둘레는 금빛 테, 속은 흰빛.</li>
+    <li><b>백(白)</b> — 5.0초에 커진 원이 <b>화면을 온통 하얗게 덮는다</b>. (다른 축하와 같은 박자 — 축하음의 「쾅」 자리.)</li>
+    <li><b>가라앉음</b> — 흰빛이 천천히 꺼지며 화면이 따뜻한 먹색 어둠으로 내려앉는다. 남은 빛 알갱이 몇 개가 눈처럼 아래로 떨어지며 꺼진다.</li>
+    <li><b>무대</b> — 어둠 속에 왼쪽 <b>장수</b>(그림 + 이름), 오른쪽 <b>돌려받은 장수 카드</b>(그 장수의 카드 묶음 + ×N)가 차례로 떠오른다.
+      장수의 레벨 배지는 <b>옛 레벨에서 1까지 한 칸씩 내려가며</b> 바뀌고(Lv7 → 6 → … → 1, 레벨업 배지 그림 <code>lv-{n}.png</code>) 마지막 1에서 한 번 맑게 빛난다.
+      카드 쪽 숫자는 0에서 N까지 올라간다. 아래에 「Lv1로 돌아갔습니다 · 능력과 책략을 처음부터 다시 고릅니다」 한 줄, 단추는 지금처럼 [궁궐로 이동] · [닫기].</li>
+  </ol>
+
+  <h3>앉는 사람은 선비 한 사람</h3>
+  <p>명상하는 사람은 그 장수 본인의 그림이 아니라 <b>선비 한 사람</b>으로 통일합니다(기획자 결정) — 260명을 다 그릴 수 없고, 장수 본인은 마지막 무대에 서니까요.
+    마음을 비우고 처음으로 돌아가는 장면이라, 명경지수의 선비가 가장 잘 어울립니다.</p>
+
+  <h2>2. 어떤 방식으로 만드나 — 다른 도입부와 같이: 낱장 그림을 받아 제가 움직인다</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>방식</th><th>받는 것</th><th>좋은 점</th><th>걸리는 점</th></tr>
+    <tr><td><b>A. 낱장 층 (추천)</b></td><td>산수 배경 · 명상하는 선비 · (있으면) 빛 알갱이 · 기의 구슬</td>
+      <td><b>빛 알갱이는 제가 띄웁니다</b> — 꼭 가슴 자리에서 나오고, 「드문드문 → 점점 많고 크게」의 박자를 ms 단위로 맞춥니다.
+        카메라(확대 · 위로 옮김)도 제가 움직이므로 「장수에게 다가갔다가 위의 구슬로 올라가는」 길을 ms 단위로 맞춥니다.</td>
+      <td>인물은 움직이지 않는 한 장입니다(명상이라 움직일 일이 없습니다 — 대신 숨 쉬듯 아주 작게 부풀립니다).</td></tr>
+    <tr><td>B. 영상 (이미지→영상)</td><td>5초 클립 하나</td>
+      <td>빛이 몸을 타고 흐르는 질감이 가장 자연스럽습니다.</td>
+      <td>빛이 가슴이 아닌 곳에서 나오거나 박자가 제멋대로이기 쉽습니다. 축하음의 5.0초에 맞추기도 어렵습니다.</td></tr>
+  </table>
+  </div>
+  <div class="box tip">A로 시작하기를 권합니다. 꼭 있어야 하는 그림은 <b>산수 배경 · 선비</b> 둘이고, 빛 알갱이 · 기의 구슬은 없으면 아래 미리 보기처럼 제가 둥근 빛으로 그립니다.
+    마지막 무대는 이미 있는 장수 그림 · 레벨 배지 · 장수 카드로 짜므로 새 그림이 필요 없습니다.</div>
+
+  <h2>3. 박자 — 5초 도입부 + 어둠 무대</h2>
+  <div class="tl">
+    <div class="mk" style="left:0%"><span>0.0 전경</span></div>
+    <div class="mk alt" style="left:13%"><span>0.9 첫 빛 · 1.0 클로즈업 끝</span></div>
+    <div class="mk" style="left:26%"><span>1.8 위로 올라감</span></div>
+    <div class="mk alt" style="left:43%"><span>3.0 구슬 가운데 · 커지기</span></div>
+    <div class="mk big alt" style="left:72%"><span>5.0 흰빛 · 쾅</span></div>
+    <div class="mk" style="left:84%"><span>5.9 어둠</span></div>
+    <div class="mk alt" style="left:94%"><span>6.4 장수 · 카드</span></div>
+  </div>
+  <div class="scroll">
+  <table>
+    <tr><th>시각</th><th>화면</th></tr>
+    <tr><td>0.0 – 1.0</td><td>어둠에서 산수 전경이 떠오르며(0.4초) 곧바로 <b>명상하는 장수에게로 클로즈업</b>(전경 1배 → 장수 상반신 약 2.2배, 부드럽게 감속).</td></tr>
+    <tr><td>0.9 – 1.8</td><td>가슴에서 작은 빛이 하나씩(약 0.3초 간격) 떠올라 흔들리며 머리 위 한 머리 반쯤 높이의 한 점으로 모인다. 그 자리에 작은 기의 구슬이 맺힌다. 카메라는 장수 위에 머문다.</td></tr>
+    <tr><td>1.8 – 3.0</td><td>알갱이 간격이 0.3 → 0.08초로 좁아지고 커진다. 몸에 금빛 테. 카메라가 <b>장수에게서 빠져나와 위로</b> 올라가 구슬을 화면 가운데에 둔다(장수는 화면 아래로 빠져나감). 구슬은 알갱이를 받을 때마다 조금씩 부푼다.</td></tr>
+    <tr><td>3.0 – 5.0</td><td>구슬이 점점 빠르게 커진다(처음엔 천천히, 끝에 확). 아래에서 알갱이가 계속 빨려 들어간다. <b>5.0초에 원이 화면을 온통 하얗게 덮는다</b>(축하음 「쾅」).</td></tr>
+    <tr><td>5.0 – 5.9</td><td>흰빛이 꺼지며 따뜻한 먹색 어둠으로. 남은 빛 알갱이 몇 개가 아래로 떨어지며 꺼진다.</td></tr>
+    <tr><td>5.9 – 7.0</td><td>장수가 왼쪽에서(0.0초), 카드 묶음이 오른쪽에서(0.25초 뒤) 떠오른다. 레벨 배지가 옛 레벨에서 1까지 내려가고(칸마다 약 0.08초), 카드 수가 N까지 올라간다. 그 뒤 글 한 줄과 단추.</td></tr>
+  </table>
+  </div>
+  <p>소리: 지금 축하음(<code>celebrate.mp3</code>)은 「쾅」이 승리 같은 느낌이라, 이 장면에는 <b>차분한 소리</b>가 더 맞습니다 —
+    예) 0.6초 첫 빛에 맑은 <b>싱잉볼(명상 종) 한 번</b>, 빛이 쏟아지는 동안 <b>바람 · 숨소리처럼 차오르는 소리</b>, 5.0초 흰빛에 <b>낮고 긴 종</b>.
+    소리 파일을 주시면 그 박자에 얹고(도시 증축 공사 소리처럼), 없으면 축하음으로 갑니다.</p>
+
+  <h3>박자 미리 보기 (그림 없이 흉내)</h3>
+  <p class="file">벼랑 · 사람 자리는 먹색 그림자로만 둡니다 — 클로즈업 → 위로 올라가 구슬을 비추는 카메라, 빛이 송송 모이는 빠르기, 원이 커져 화면을 덮는 박자, 흰빛 → 어둠 → 무대를 보세요. 옛 레벨은 Lv7, 돌려받는 카드는 32장으로 흉내 냅니다.</p>
+  <div class="stage" id="stage">
+    <svg viewBox="0 0 100 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#e9e4d6"/><stop offset=".6" stop-color="#ddd6c4"/><stop offset="1" stop-color="#cfc6b0"/>
+        </linearGradient>
+        <radialGradient id="mote"><stop offset="0" stop-color="#fff"/><stop offset=".3" stop-color="#fff6d6"/><stop offset=".65" stop-color="#ffd877" stop-opacity=".5"/><stop offset="1" stop-color="#ffd877" stop-opacity="0"/></radialGradient>
+        <radialGradient id="orb"><stop offset="0" stop-color="#fff"/><stop offset=".62" stop-color="#fffaea"/><stop offset=".8" stop-color="#ffe7a2"/><stop offset=".9" stop-color="#ffd36a" stop-opacity=".75"/><stop offset="1" stop-color="#ffd36a" stop-opacity="0"/></radialGradient>
+        <radialGradient id="halo"><stop offset="0" stop-color="#fff3c8" stop-opacity=".55"/><stop offset="1" stop-color="#fff3c8" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="world">
+      <g id="bgLayer">
+        <rect x="-20" y="-20" width="140" height="240" fill="url(#paper)"/>
+        <path d="M-10 92 L12 70 L26 80 L44 58 L62 78 L78 66 L110 90 L110 100 L-10 100 Z" fill="#b9b3a3" opacity=".7"/>
+        <path d="M-10 104 L20 92 L40 100 L70 88 L110 102 L110 110 L-10 110 Z" fill="#a7a090" opacity=".6"/>
+        <rect x="-20" y="110" width="140" height="40" fill="#d6d0c0"/>
+        <path d="M-10 150 L60 142 L72 150 L74 220 L-10 220 Z" fill="#6b6658"/>
+        <path d="M30 145 Q34 120 46 112 Q58 104 70 108" stroke="#3d3a33" stroke-width="2" fill="none"/>
+        <g fill="#4b4840"><ellipse cx="58" cy="106" rx="12" ry="3"/><ellipse cx="70" cy="110" rx="9" ry="2.5"/><ellipse cx="48" cy="110" rx="8" ry="2.4"/></g>
+      </g>
+      <g id="figLayer">
+        <g fill="#3a3630">
+          <ellipse cx="38" cy="124" rx="3.6" ry="4"/>
+          <path d="M33 130 Q38 127 43 130 L46 141 L30 141 Z"/>
+          <path d="M26 145 Q38 137 50 145 Q38 149 26 145 Z"/>
+        </g>
+        <circle id="aura" cx="38" cy="134" r="0" fill="url(#mote)" opacity="0"/>
+      </g>
+      <g id="motes"></g>
+      <circle id="haloEl" cx="38" cy="100" r="0" fill="url(#halo)"/>
+      <circle id="orbEl" cx="38" cy="100" r="0" fill="url(#orb)"/>
+      </g>
+    </svg>
+    <div class="dark" id="dark"></div>
+    <div class="white" id="white"></div>
+    <div class="result" id="result">
+      <h4>스탯 초기화 완료</h4>
+      <div class="pair">
+        <div class="who" id="who">
+          <div class="fig">장수 그림<span class="lv"><img src="../packages/client/public/icons/level/lv-7.png" alt="" id="lvImg"><b id="lvTxt"></b></span></div>
+          <span>조운</span>
+        </div>
+        <div class="cardbox" id="cardbox">
+          <div class="stack"><div class="cd back"></div><div class="cd">장수 카드</div></div>
+          <span class="cnt" id="cnt">×0</span>
+        </div>
+      </div>
+      <p class="row">Lv1로 돌아갔습니다 · 능력과 책략을 처음부터 다시 고릅니다</p>
+    </div>
+    <div class="clock" id="clock">0.00s</div>
+  </div>
+  <button class="play" id="play">▶ 재생</button>
+  <p class="names">미리 보기의 레벨 배지는 게임의 <code>lv-{n}.png</code>를 그대로 씁니다 — 그림이 안 뜨면 숫자만 보입니다.</p>
+
+  <h2>4. 참조 그림 — 프롬프트에 함께 넣는다</h2>
+  <div class="ref">
+    <img src="../assets/icons/skills/actionbook/명경지수/명경지수_1.png" alt="">
+    <div>
+      <p class="file">assets/icons/skills/actionbook/명경지수/명경지수_1.png</p>
+      <p>명경지수 고유기술 연출 그림입니다. <b>모든 프롬프트에 이 그림을 첨부해</b> 화풍(옅은 수묵 · 한지 결 · 회갈색 톤)을 맞춥니다.
+        구도(벼랑 · 굽은 소나무 · 안개 호수 · 먼 산)도 배경 P1이 그대로 이어받습니다. 다만 이 그림은 가로라서 <b>세로로 다시</b> 그려 달라고 적었습니다.</p>
+    </div>
+  </div>
+  <div class="box warn">
+    <b>바탕색 두 가지를 지켜 주세요 — 다른 도입부와 같습니다.</b>
+    <ul>
+      <li><b>명상하는 선비</b>는 <b>순수 초록(#00FF00)</b> 바탕 — 제가 오려 냅니다. 도포에 초록 물이 들거나 앉은 바위 · 풀이 함께 그려져 나오면 다시 뽑아 주세요.</li>
+      <li><b>빛 알갱이 · 기의 구슬</b>은 <b>순수 검정(#000000)</b> 바탕 — 「빛 더하기」로 겹칩니다. 회색 기가 돌면 화면 전체가 뿌옇게 됩니다.</li>
+      <li><b>산수 배경</b>은 그 자체가 바탕이라 오리지 않습니다 — 대신 <b>사람을 그리지 말아 달라</b>고 적었습니다(벼랑 위 자리는 비워 둡니다).</li>
+      <li>글자(명경지수 그림의 큰 한자 · 문장) · 낙관 · 테두리가 들어간 것도 다시 뽑아 주세요.</li>
+    </ul>
+  </div>
+
+  <h2>5. 프롬프트</h2>
+  <p>받은 그림은 <code>assets/icons/ui/celebrate_intro/respec/</code>에 아래 파일 이름으로 넣어 주세요(태학은 옆의 <code>academy/</code>). 여러 장 뽑았으면 마음에 드는 것만 넣으면 됩니다.<br>각 프롬프트 밑의 <b>「한글 뜻」</b>은 읽고 고치기 위한 번역입니다 — 생성 도구에는 [복사] 단추로 영어 원문을 넣어 주세요(영어가 지시를 더 정확히 따릅니다).</p>
+  <div class="cards">
+    <div class="card">
+      <header><b>P1. 산수 배경 — 벼랑 · 소나무 · 안개 호수 (사람 없이)<span class="tag">필수</span></b><span class="file">respec_bg.png</span><button class="copy">복사</button></header>
+      <p class="why">명경지수 그림을 첨부해 주세요. 같은 구도를 <b>세로로</b> 다시 그리고 벼랑 위를 비워 둡니다. 화면 아래 3분의 1에 벼랑 끝, 그 위는 안개 호수와 먼 산이 넉넉히.</p>
+      <pre>Use the attached image as the exact reference for the art style: soft traditional Chinese ink-wash painting (shuimo) on aged rice paper, muted warm grey and sepia tones, gentle washes, fine brush lines, lots of misty empty space.
+Repaint the SAME landscape as a TALL PORTRAIT composition: in the lower-left third, a flat rocky cliff ledge jutting out over a still misty lake, with a gnarled old pine tree growing from the cliff and leaning over the ledge to the right; the middle of the image is a calm mirror-like lake fading into mist; in the upper half, layers of distant mountains fading into pale fog, and a wide empty pale sky above them.
+The flat top of the cliff ledge is EMPTY and clear (a person will sit there later), at about 68% of the image height, centered slightly left of the middle.
+Calm, silent, meditative atmosphere; low contrast; no harsh shadows.
+NO people, NO animals, NO boats, NO text, NO calligraphy, NO seal stamps, NO border, NO watermark.
+Portrait 9:16, 1152 x 2048 (taller is better if your tool allows, e.g. 1:2).</pre>
+      <div class="ko"><span class="ko-h">한글 뜻</span>첨부한 그림을 화풍의 정확한 기준으로 삼는다 — 낡은 화선지 위의 부드러운 전통 수묵화, 차분한 회색 · 세피아 톤, 은은한 번짐, 가는 붓선, 안개 낀 빈 공간이 넉넉하게.<br>
+        같은 풍경을 <b>세로로 긴 구도</b>로 다시 그린다 — 왼쪽 아래 3분의 1에 잔잔한 안개 호수 위로 튀어나온 평평한 바위 벼랑, 벼랑에서 자라 오른쪽으로 기울어 벼랑 위를 덮는 굽은 늙은 소나무. 가운데는 거울처럼 잔잔한 호수가 안개로 흐려지고, 위쪽 절반은 옅은 안개로 사라지는 먼 산들의 겹과 그 위의 넓고 빈 옅은 하늘.<br>
+        벼랑 위 평평한 자리는 <b>비워 둔다</b>(나중에 사람이 앉는다) — 그림 높이의 약 68%, 가운데에서 조금 왼쪽.<br>
+        고요하고 명상적인 분위기, 낮은 대비, 강한 그림자 없음.<br>
+        사람 · 동물 · 배 · 글자 · 서예 · 낙관 · 테두리 · 워터마크 없음.<br>
+        세로 9:16, 1152 × 2048 (도구가 허락하면 1:2처럼 더 길수록 좋다).</div>
+    </div>
+    <div class="card">
+      <header><b>P2. 명상하는 선비 (도포 · 가부좌 · 눈 감음)<span class="tag">필수</span></b><span class="file">respec_scholar.png</span><button class="copy">복사</button></header>
+      <p class="why">어느 장수가 초심의 서를 쓰든 이 선비 한 사람이 앉습니다. 명경지수 그림의 선비와 가장 가까운 모습입니다.
+        <b>가슴 한가운데가 또렷이 보여야</b> 거기서 빛이 나옵니다(손은 배 앞에 모읍니다).</p>
+      <pre>Use the attached image as the exact reference for the art style AND for this figure: soft traditional Chinese ink-wash painting (shuimo), muted warm grey and sepia tones, fine brush lines, painterly.
+A Three Kingdoms era SCHOLAR sitting in full lotus meditation, seen from the front, slightly turned three-quarters to the right: wide flowing pale cream robes with dark borders, a small black scholar's cap on a topknot, a long thin beard, eyes CLOSED, face serene.
+His hands rest together in his lap in a meditation mudra, in front of his belly, so that the CENTER OF HIS CHEST is clearly visible and unobstructed.
+Soft even light; a very faint warm glow on his chest (barely visible).
+The whole seated figure fully visible and centered, from the top of the cap to the folded legs, filling about 75% of the image height, with clear margin on every side.
+Background: perfectly flat solid pure green (#00FF00) chroma key, no gradient, no ground, no rock, no cast shadow, no green tint on the robes.
+No text, no seal, no watermark, no props, no other people.
+Square 1:1, 2048 x 2048.</pre>
+      <div class="ko"><span class="ko-h">한글 뜻</span>첨부한 그림을 화풍과 <b>이 인물</b>의 정확한 기준으로 삼는다 — 부드러운 전통 수묵화, 차분한 회색 · 세피아 톤, 가는 붓선.<br>
+        가부좌로 명상하는 삼국시대 <b>선비</b>, 앞에서 보되 오른쪽으로 살짝 돌아앉은 모습 — 짙은 깃 단이 있는 넓게 흐르는 옅은 미색 도포, 상투 위의 작은 검은 관, 길고 가는 수염, 눈을 <b>감고</b> 고요한 얼굴.<br>
+        두 손은 배 앞 무릎 위에 모아 명상 수인을 짓고, <b>가슴 한가운데</b>가 가리는 것 없이 또렷이 보인다.<br>
+        부드럽고 고른 빛, 가슴에 아주 옅은 따뜻한 빛(거의 안 보일 만큼).<br>
+        관 꼭대기부터 접은 다리까지 앉은 몸 전체가 가운데에 다 보이고, 그림 높이의 약 75%를 채우며 사방에 여백.<br>
+        바탕은 완전히 평평한 순수 초록(#00FF00) 크로마키 — 그라데이션 · 땅 · 바위 · 그림자 없음, 도포에 초록 물 없음.<br>
+        글자 · 낙관 · 워터마크 없음, 소품 없음, 다른 사람 없음.<br>
+        정사각 1:1, 2048 × 2048.</div>
+    </div>
+    <div class="card">
+      <header><b>P3. 빛 알갱이 (2장, 조금 다르게)<span class="tag opt">있으면 좋음</span></b><span class="file">respec_mote_1.png · respec_mote_2.png</span><button class="copy">복사</button></header>
+      <p class="why">가슴에서 송송 빠져나가는 빛 하나하나입니다. 두 장을 섞어 쓰면 단조롭지 않습니다. 없으면 제가 둥근 빛으로 그립니다(위 미리 보기처럼).</p>
+      <pre>A single small soft glowing orb of light, like a floating spirit light or a firefly of pure energy, seen head-on, painterly game effect art.
+A bright pure-white core with a warm pale-gold glow around it, softly fading outward, with a delicate faint wispy tail trailing slightly downward (as if it is rising upward), and two or three tiny sparkles near it.
+Pure black background (#000000). Nothing else in the image.
+The orb is centered, and all the glow fades smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 1024 x 1024.</pre>
+      <div class="ko"><span class="ko-h">한글 뜻</span>작고 부드럽게 빛나는 빛 구슬 하나 — 떠다니는 영혼의 빛, 순수한 기운의 반딧불 같은 것. 정면에서 본 회화풍 게임 효과 그림.<br>
+        밝은 순백의 핵, 그 둘레로 따뜻한 옅은 금빛이 부드럽게 번지며 흐려지고, 아래로 살짝 끌리는 가늘고 희미한 꼬리(위로 떠오르는 듯), 곁에 아주 작은 반짝임 두세 개.<br>
+        바탕은 순수 검정(#000000). 그 밖에는 아무것도 없음.<br>
+        구슬은 가운데, 빛은 모두 그림 가장자리에 닿기 한참 전에 순수 검정으로 부드럽게 사라진다.<br>
+        글자 · 워터마크 없음.<br>
+        정사각 1:1, 1024 × 1024.</div>
+    </div>
+    <div class="card">
+      <header><b>P4. 기의 구슬 (모여서 커지는 원)<span class="tag opt">있으면 좋음</span></b><span class="file">respec_orb.png</span><button class="copy">복사</button></header>
+      <p class="why">머리 위에 맺혀 점점 커지다 화면을 덮는 둥근 빛입니다. 제가 크기를 키우므로 한 장이면 됩니다. 둘레가 또렷한 <b>동그라미</b>여야 「원이 커진다」가 보입니다. 없으면 제가 둥근 그라데이션으로 그립니다.</p>
+      <pre>A single perfectly round sphere of gathered spiritual energy (qi), seen head-on, painterly semi-realistic game effect art in a soft East Asian style.
+The sphere has a clearly defined circular outline: its inside is a luminous milky pure white with very subtle swirling currents of light, its rim is a thin glowing band of warm gold, and just outside the rim a soft gold halo fades out. A few tiny motes of light are being drawn into the sphere from around it, and faint fine sparkles glitter on its surface.
+Pure black background (#000000). Nothing else: no figure, no ground, no sky, no clouds, no rays reaching the edges.
+The sphere is centered and fills about 60% of the image width; all the glow fades smoothly to pure black well before the edges of the image.
+No text, no watermark.
+Square 1:1, 2048 x 2048.</pre>
+      <div class="ko"><span class="ko-h">한글 뜻</span>모여든 기(氣)가 맺힌 완전히 둥근 구슬 하나, 정면에서 본 부드러운 동양풍의 회화풍 반실사 게임 효과 그림.<br>
+        구슬은 둘레가 또렷한 동그라미다 — 안은 빛나는 젖빛 순백에 아주 은은하게 소용돌이치는 빛의 흐름, 둘레는 따뜻한 금빛으로 빛나는 가는 띠, 띠 바로 바깥으로 부드러운 금빛 무리가 흐려진다. 주변의 작은 빛 알갱이 몇 개가 구슬로 빨려 들어가고, 표면에 가는 반짝임이 희미하게 인다.<br>
+        바탕은 순수 검정(#000000). 인물 · 땅 · 하늘 · 구름 · 가장자리까지 뻗는 빛살 없음.<br>
+        구슬은 가운데, 그림 폭의 약 60%를 채우고, 빛은 모두 그림 가장자리에 닿기 한참 전에 순수 검정으로 부드럽게 사라진다.<br>
+        글자 · 워터마크 없음.<br>
+        정사각 1:1, 2048 × 2048.</div>
+    </div>
+  </div>
+
+  <h2>6. 마지막 무대 — 새 그림 없이 있는 것으로</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>자리</th><th>무엇</th><th>쓰는 것</th></tr>
+    <tr><td>바탕</td><td>따뜻한 먹색 어둠, 가운데가 조금 밝은 둥근 빛 · 위에서 남은 빛 알갱이 몇 개가 떨어짐</td><td>CSS 그라데이션 + 빛 알갱이(P3 또는 둥근 빛)</td></tr>
+    <tr><td>제목</td><td>「스탯 초기화 완료」</td><td>지금 문구 <code>market.respec.done</code>(열 언어 있음)</td></tr>
+    <tr><td>왼쪽 — 장수</td><td>장수 그림 + 이름 + 등급, 그림 오른쪽 아래에 레벨 배지가 옛 레벨에서 1까지 내려감</td><td>장수 그림 · <code>LevelBadge</code>(<code>lv-1.png</code> … <code>lv-10.png</code>)</td></tr>
+    <tr><td>오른쪽 — 돌려받은 카드</td><td>그 장수의 장수 카드 2~3장이 살짝 겹친 묶음 + ×N(0에서 N까지 올라감)</td><td>지금 팝업의 카드(<code>Portrait</code>) + 회수 수 <code>refund</code></td></tr>
+    <tr><td>글 한 줄</td><td>Lv1로 돌아가 능력과 책략을 처음부터 다시 고른다는 안내</td><td>지금 문구 <code>market.respec.refund</code>를 다듬거나 새 키 하나</td></tr>
+    <tr><td>단추</td><td>[궁궐로 이동] · [닫기]</td><td>지금 그대로</td></tr>
+  </table>
+  </div>
+  <p>장수 레벨업 축하처럼 붓 획 줄(<code>.lvd-row</code>)에 「Lv7 → Lv1」을 쓰는 안도 있지만, 기획자 말씀대로 <b>레벨 아이콘으로만</b> 보여 주는 것을 기본으로 잡았습니다 —
+    숫자가 내려가는 배지 하나가 「처음으로 돌아갔다」를 가장 짧게 말합니다.</p>
+
+  <h2>7. 받은 뒤 제가 하는 일 (다른 도입부와 같은 길)</h2>
+  <ol>
+    <li><code>tools/build_celebrate_intro.py</code>의 목록에 이 그림들을 더해 굽기 — 선비는 초록 바탕을 오려 PNG로, 빛 알갱이 · 구슬은 검정 바탕 그대로, 배경은 JPG로.</li>
+    <li><code>Celebrate</code>의 도입부 종류에 <code>respec</code>을 더하고, 흰빛 뒤가 밝은 무대가 아니라 <b>어두운 무대</b>로 열리게 하기. 빛이 나오는 박자 · 카메라 길(클로즈업 → 위로) · 원이 커지는 곡선은 코드의 시각 표 하나에 둡니다.</li>
+    <li>용병 시장 초심의 서의 「스탯 초기화 완료」 팝업(<code>GoodsView</code>의 <code>respecDone</code>)을 이 연출로 바꾸기.</li>
+    <li>완성본 재생 페이지(<code>Design/축하연출_초심의서_도입부_완성본.html</code>)를 만들어 시각마다 멈춰 찍어 확인하고 보여 드리기 · 열 언어에서 무대 글자가 한 줄인지 확인.</li>
+    <li>명상 종 · 차오르는 소리를 주시면 박자에 얹기.</li>
+  </ol>
+</main>
+
+<script>
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.closest('.card').querySelector('pre').innerText;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+      }
+      btn.textContent = '복사됨'; btn.classList.add('done');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('done'); }, 1400);
+    });
+  });
+
+  // 박자 미리 보기 — viewBox 0 0 100 200, 가슴 (38, 134) · 기가 모이는 자리 (38, 100)
+  const NS = 'http://www.w3.org/2000/svg';
+  const CHEST = [38, 134], ORB = [38, 100];
+  const T = { zoom: 1000, first: 900, ramp: 1600, tilt: [1800, 3000], grow: 3000, white: 5000, dark: 5900, stage: 6400, end: 7400 };
+  const OLD_LEVEL = 7, REFUND = 32;
+
+  // 빛 알갱이 일정 — 처음엔 0.3초 간격, 점점 좁아져 0.06초 · 커지는 동안엔 한 번에 여럿 (고정 시드)
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const motes = [];
+  for (let t = T.first; t < T.white - 300; ) {
+    const k = Math.max(0, Math.min(1, (t - T.ramp) / (T.grow - T.ramp)));
+    const burst = t >= T.grow ? 1 + Math.floor(rnd() * 3) : 1;
+    for (let b = 0; b < burst; b += 1) {
+      motes.push({ t: t + rnd() * 40, size: 1.0 + 1.0 * k + rnd() * 0.5 * (1 + k), life: 1100 - 250 * k + rnd() * 200,
+        swing: (rnd() - .5) * (6 + 8 * k), phase: rnd() * 6.28 });
+    }
+    t += 300 - 240 * k;
+  }
+  const motesG = document.getElementById('motes');
+  const moteEls = motes.map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('fill', 'url(#mote)'); motesG.append(c); return c; });
+
+  const $ = (id) => document.getElementById(id);
+  const world = $('world'), bg = $('bgLayer'), fig = $('figLayer'), aura = $('aura'), orb = $('orbEl'), halo = $('haloEl');
+  const white = $('white'), dark = $('dark'), result = $('result'), clock = $('clock');
+  const who = $('who'), cardbox = $('cardbox'), lvImg = $('lvImg'), lvTxt = $('lvTxt'), cnt = $('cnt');
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const ease = (v) => v < .5 ? 2 * v * v : 1 - Math.pow(-2 * v + 2, 2) / 2;
+  const easeOut = (v) => 1 - Math.pow(1 - v, 3);
+  const lerp = (a, b, v) => a + (b - a) * v;
+
+  // 배지 그림이 안 뜰 때만 숫자를 쓴다(그림 위에 글자가 겹치지 않게)
+  let lvBroken = false;
+  function setLevel(n) { if (lvBroken) lvTxt.textContent = `Lv${n}`; else lvImg.src = `../packages/client/public/icons/level/lv-${n}.png`; }
+  lvImg.addEventListener('error', () => { lvBroken = true; lvImg.style.visibility = 'hidden'; lvTxt.textContent = `Lv${lvTxt.dataset.n ?? ''}`; });
+
+  // 카메라 — 화면 가운데에 둘 점(cx, cy)과 배율
+  function camera(ms) {
+    const z1 = easeOut(clamp(ms / T.zoom));                                 // 0 → 1초: 전경 → 장수 클로즈업
+    let cx = lerp(50, 38, z1), cy = lerp(100, 128, z1), zoom = lerp(1, 2.2, z1);
+    const up = ease(clamp((ms - T.tilt[0]) / (T.tilt[1] - T.tilt[0])));     // 1.8 → 3.0초: 장수에게서 빠져나와 위의 구슬로
+    cy = lerp(cy, ORB[1], up); zoom = lerp(zoom, 2.6, up);
+    const inward = ease(clamp((ms - T.grow) / (T.white - T.grow)));         // 3.0 → 5.0초: 구슬 쪽으로 조금 더
+    zoom *= 1 + .2 * inward;
+    return { cx, cy, zoom };
+  }
+  // 구슬 반지름 — 모인 알갱이만큼 조금씩, 3초부터 점점 빠르게 커져 화면을 덮는다
+  function orbRadius(ms) {
+    const gathered = clamp((ms - 1200) / (T.grow - 1200));
+    const grow = clamp((ms - T.grow) / (T.white - T.grow));
+    return (ms < 1150 ? 0 : 1.2 + 4.3 * gathered) + 75 * Math.pow(grow, 2.6);
+  }
+
+  let shownLevel = 0;
+  function draw(ms) {
+    const { cx, cy, zoom } = camera(ms);
+    world.setAttribute('transform', `translate(50 100) scale(${zoom.toFixed(4)}) translate(${-cx} ${-cy})`);
+    world.style.opacity = clamp(ms / 400);
+    const breathe = 1 + .01 * Math.sin(ms / 400);
+    fig.firstElementChild.setAttribute('transform', `translate(38 134) scale(${breathe}) translate(-38 -134)`);
+    // 몸의 금빛 테
+    const glow = clamp((ms - T.ramp) / (T.grow - T.ramp));
+    aura.setAttribute('r', (5 + 7 * glow).toFixed(1));
+    aura.setAttribute('opacity', (glow * .7).toFixed(2));
+    // 기의 구슬 — 맥동하며 커진다
+    const r = orbRadius(ms) * (1 + .05 * Math.sin(ms / 110));
+    orb.setAttribute('r', r.toFixed(2));
+    halo.setAttribute('r', (r * 2.2).toFixed(2));
+    // 빛 알갱이 — 가슴에서 떠올라 흔들리며 구슬로 빨려 든다
+    motes.forEach((m, i) => {
+      const c = moteEls[i]; const p = (ms - m.t) / m.life;
+      if (p < 0 || p > 1 || ms >= T.white) { c.setAttribute('r', 0); return; }
+      const y = lerp(CHEST[1], ORB[1], ease(p));
+      const x = CHEST[0] + m.swing * Math.sin(p * Math.PI) * (1 - p) + 1.2 * Math.sin(p * 7 + m.phase) * (1 - p);
+      c.setAttribute('cx', x.toFixed(2)); c.setAttribute('cy', y.toFixed(2));
+      c.setAttribute('r', (m.size * (1 - .4 * p)).toFixed(2));
+      c.setAttribute('opacity', (p < .12 ? p / .12 : p > .85 ? (1 - p) / .15 : 1).toFixed(2));
+    });
+    // 흰빛 → 어둠 → 무대
+    white.style.opacity = ms < T.white ? clamp((ms - 4700) / 300) : 1 - clamp((ms - T.white) / (T.dark - T.white));
+    dark.style.opacity = clamp((ms - T.white) / 300);
+    const st = clamp((ms - T.stage) / 400);
+    result.style.opacity = st > 0 ? 1 : 0;
+    who.style.opacity = st; who.style.transform = `translateY(${(1 - st) * 12}px)`;
+    const sc = clamp((ms - T.stage - 250) / 400);
+    cardbox.style.opacity = sc; cardbox.style.transform = `translateY(${(1 - sc) * 12}px)`;
+    const steps = Math.floor(clamp((ms - T.stage - 200) / 600) * (OLD_LEVEL - 1));
+    const lv = OLD_LEVEL - steps;
+    if (lv !== shownLevel) { shownLevel = lv; lvTxt.dataset.n = lv; setLevel(lv); }
+    lvImg.style.filter = lv === 1 ? `drop-shadow(0 0 ${4 + 6 * Math.sin(clamp((ms - T.stage - 800) / 500) * Math.PI)}px #ffe9a8)` : 'none';
+    cnt.textContent = '×' + Math.round(REFUND * clamp((ms - T.stage - 300) / 700));
+  }
+
+  let raf = 0, bang = null;
+  function reset() {
+    cancelAnimationFrame(raf);
+    if (bang) { bang.pause(); bang = null; }
+    shownLevel = 0; draw(0); clock.textContent = '0.00s';
+  }
+  reset();
+  $('play').addEventListener('click', () => {
+    reset();
+    bang = new Audio('../assets/Audio/effects/celebrate.mp3'); bang.play().catch(() => {});
+    const t0 = performance.now();
+    const tick = () => {
+      const ms = performance.now() - t0;
+      clock.textContent = (Math.min(ms, T.end) / 1000).toFixed(2) + 's';
+      draw(Math.min(ms, T.end));
+      if (ms < T.end) raf = requestAnimationFrame(tick);
+    };
+    tick();
+  });
+</script>
+</body>
+</html>

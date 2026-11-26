@@ -18,7 +18,8 @@
  * 태학 연구 완료는 별의 번짐(`academy`, 2026-11-22 — 뒷짐 진 선비가 밤하늘을 올려다보고, 시선이 치솟아 칠성의 별이 하나둘 이어지다
  * 급속히 번져 거의 다 이어지며 화면이 확 밝아진다). 먼저 만든 북두칠성(`academyDipper`) · 거미줄(`academyWeb`)은 기획자가 백업으로 남겼다(쓰는 자리 없음).
  * 도시 증축은 용머리 올리기(`city`, 2026-11-22 — 거중기 기어에 바짝 붙어 시작해 궁궐 공사장 전체로 물러나며 짐이 올라가고, 용마루 끝으로 다가가
- * 용머리가 「쿵」 놓이자 곧바로 햇빛에 「쨍」 빛나 화면이 빛으로 찬다).
+ * 용머리가 「쿵」 놓이자 곧바로 햇빛에 「쨍」 빛나 화면이 빛으로 찬다). 초심의 서는 명상하는 선비(`respec`, 2026-11-26 — 가슴에서 빠져나간 빛이
+ * 머리 위에 모여 기의 구슬이 되고, 그 원이 커져 화면을 덮는다 — 무대는 장수 모집과 같은 바탕).
  * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
  *
  * **급은 둘이다** (2026-11-22 기획자 — 「7초가 큰 급, 2초가 작은 급」): 큰 급(`tier="big"`, 기본)은 위의 5초 모음 + 무대(약 2초) — 강화 · 도시 증축 ·
@@ -61,7 +62,7 @@ export const CHARGE_MS_OF: Record<CelebrateTier, number> = { big: CHARGE_MS, sma
 /** 축하음을 어디서부터 트나(초) — 「쾅」이 5.0초에 있으니 작은 급은 4.1초부터 틀어 0.9초에 「쾅」 */
 const SOUND_FROM: Record<CelebrateTier, number> = { big: 0, small: 4.1 };
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
-export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city' | 'recruit';
+export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city' | 'recruit' | 'respec';
 /**
  * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
  * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
@@ -330,6 +331,63 @@ function RecruitIntro({ walkers, skipped, onSkip }: {
   );
 }
 
+/**
+ * 초심의 서 도입부 (2026-11-26 기획자, `Design/축하연출_초심의서_기획안.html`) — 수묵 산수의 벼랑 위에서 명상하는 선비에게로 1초 동안
+ * 다가가고, 가슴에서 빛 알갱이가 「송 · 송」 떠올라 머리 위 한 점에 모여 기의 구슬이 맺힌다. 1.8초부터 카메라가 선비에게서 빠져나와
+ * 구슬로 올라가고, 3초부터 구슬이 점점 빠르게 커져 5초에 화면을 하얗게 덮는다. 카메라는 처음부터 끝까지 멈추지 않고 서서히 움직인다(`crs-zoom` · `crs-pan`).
+ * 자리 · 시각은 CSS(`.crs-*`, 그림 안의 비율)에 있고, 알갱이의 일정만 여기서 낸다(고정 값 — 같은 화면은 언제나 같게 보인다).
+ */
+const RESPEC_MOTES = ((): { at: number; life: number; size: number; sx: number; tint: number }[] => {
+  const out: { at: number; life: number; size: number; sx: number; tint: number }[] = [];
+  let i = 0;
+  // 0.9초부터 0.3초 간격, 1.6 → 3.0초 동안 0.06초까지 좁아진다. 3초부터는 한 번에 둘 · 셋
+  for (let at = 900; at < 4600; i += 1) {
+    const k = Math.max(0, Math.min(1, (at - 1600) / 1400));
+    const n = at >= 3000 ? 1 + (i % 3) : 1;
+    for (let b = 0; b < n; b += 1) {
+      const j = i * 3 + b;
+      out.push({
+        at: at + ((j * 17) % 40),
+        // 곧게 같은 빠르기로 오르고, 뒤에 날수록 빨리 오른다(1.6초 → 0.5초, 2026-11-26 기획자)
+        life: Math.round(1600 - 1100 * ((at - 900) / 3700) + ((j * 53) % 120)),
+        size: +(10 + 5 * k + ((j * 7) % 4)).toFixed(1),
+        sx: +((((j * 37) % 11) - 5) * (0.8 + 0.8 * k)).toFixed(1),
+        tint: (j % 4) + 1,
+      });
+    }
+    at += Math.round(300 - 240 * k);
+  }
+  return out;
+})();
+
+function RespecIntro(): React.JSX.Element {
+  return (
+    <div className="modal-back cel-back" data-phase="charge" data-intro="respec" aria-hidden>
+      <div className="cel-charge cin-respec">
+        {/* 그림 틀(941:1672, 화면을 덮는다) — 안쪽 자리는 그림 안의 비율(`cqw` · `cqh`) */}
+        <div className="crs-frame">
+          <div className="crs-window">
+            <div className="crs-world">
+              <div className="crs-pan">
+              <img className="crs-bg" src="ui/intro-respec-bg.jpg" alt="" />
+              <i className="crs-aura" />
+              <img className="crs-scholar" src="ui/intro-respec-scholar.png" alt="" />
+              {RESPEC_MOTES.map((m, i) => (
+                <img key={i} className="crs-mote" src={`ui/intro-respec-mote-${m.tint}.jpg`} alt=""
+                  style={{ animationDelay: `${m.at}ms`, animationDuration: `${m.life}ms`, '--s': `${m.size}cqw`, '--sx': `${m.sx}cqw` } as React.CSSProperties} />
+              ))}
+              <i className="crs-halo" />
+              <img className="crs-orb" src="ui/intro-respec-orb.jpg" alt="" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <span className="cin-whiteout" />
+      </div>
+    </div>
+  );
+}
+
 /** 흰 · 보라 · 금 — 삼각형 꼭짓점 셋(120°씩) */
 const FLARES = ['white', 'purple', 'gold'] as const;
 
@@ -519,6 +577,8 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   if (charging && (intro === 'academy' || intro === 'academyDipper' || intro === 'academyWeb')) {
     return <StarIntro intro={intro} plan={STAR_PLANS[intro]} />;
   }
+
+  if (charging && intro === 'respec') return <RespecIntro />;
 
   if (charging) return <SwirlCharge tier={tier} />;
 

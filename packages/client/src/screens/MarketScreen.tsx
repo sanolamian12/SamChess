@@ -130,7 +130,9 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy, onLevelUp }
       account={currentSession()?.email ?? null}
     >
       {/* 팝업 층의 닻 — 이 빈 표식의 부모가 곧 화면(`.scr`)이다 */}
-      <i hidden ref={(el) => { const p = el?.parentElement ?? null; if (p !== layer) setLayer(p); }} />
+      {/* 걸이 함수는 다시 그릴 때마다 `null` → 요소로 두 번 불린다 — `null`에 닻을 비우면 팝업 층이 잠깐 사라졌다 돌아와
+          그 안의 팝업이 통째로 다시 만들어진다(초심의 서 도입부가 무대가 열리는 순간 처음부터 다시 돌았다, 2026-11-26). 비우지 않는다 */}
+      <i hidden ref={(el) => { const p = el?.parentElement ?? null; if (p && p !== layer) setLayer(p); }} />
       <LayerContext.Provider value={layer}>
       <div className="place-bar" data-screen="market">
         <button className="btn ghost sm" data-action="back" onClick={onBack}>{stripBackArrow(t('place.back'))}</button>

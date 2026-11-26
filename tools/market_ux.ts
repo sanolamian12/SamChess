@@ -787,7 +787,7 @@ try {
   await page.click('[data-modal="respecAsk"] [data-action="confirmOk"]');
   await page.waitForSelector('[data-modal="respecDone"]', { timeout: 10_000 });
   await shot('respec-done');
-  const refund = await page.textContent('[data-field="refund"]');
+  const refund = await page.getAttribute('[data-field="refund"]', 'data-refund');   // 글자는 ×0에서 세어 오른다(초심의 서 무대, 2026-11-26)
   if (!refund?.includes(String(cardsSpentOn(3)))) fail(`돌려받은 카드가 「${refund}」다 — ×${cardsSpentOn(3)}이라야 한다`);
   if ((await getProfile(uid))!.roster[X!]!.level !== 1) fail('서버에서 Lv1이 안 됐다');
   // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 지정 — 예전엔 전면 레벨/스킬 관리 화면이었고,

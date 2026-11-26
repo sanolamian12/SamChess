@@ -40,10 +40,10 @@ import { t } from '../../i18n/index.ts';
 import { reasonText } from '../../i18n/reason.ts';
 import { pickOfficerName } from '../../i18n/story.ts';
 import { CityBonusMark } from '../CityBonus.tsx';
-import { GradeBadge } from '../GradeBadge.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
 import { Portrait } from './MercView.tsx';
+import { RespecDone } from './RespecDone.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 import { useAllLangLayout } from '../useAllLangLayout.ts';
@@ -59,7 +59,7 @@ type Step =
   | { at: 'respecAsk'; officer: OfficerId }
   | { at: 'done'; good: 'materials' | 'grain'; n: number }
   | { at: 'academyDone' }
-  | { at: 'respecDone'; officer: OfficerId; refund: number };
+  | { at: 'respecDone'; officer: OfficerId; refund: number; fromLevel: number };
 
 /**
  * 확인 창의 [확정 (🪙 × 10)] — 값은 본문이 아니라 **누르는 단추 안에** 둔다(2026-09-25 지정).
@@ -321,7 +321,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
             field="respecAsk"
             okLabel={<OkFor gold={RESPEC_GOLD} />}
             disabled={busy || !can.ok}
-            onConfirm={() => run(() => respecOnServer(officer), () => setStep({ at: 'respecDone', officer, refund }))}
+            onConfirm={() => run(() => respecOnServer(officer), () => setStep({ at: 'respecDone', officer, refund, fromLevel: level }))}
             onClose={() => setStep({ at: 'respecPick' })}
           >
             <p className="mkt-confirm-lead">{t('market.respec.what', { name: nameOf(officer), level })}</p>
@@ -332,28 +332,10 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy, onL
           </ConfirmModal>
         );
       })()}
+      {/* 명상하는 선비 → 기의 구슬 → 어두운 무대의 장수 · 돌려받은 카드 (2026-11-26 기획자, `RespecDone`) */}
       {step?.at === 'respecDone' && (
-        <DoneModal
-          title={t('market.respec.done')}
-          field="respecDone"
-          onClose={() => setStep(null)}
-          actions={(
-            <>
-              <button className="btn wide" data-action="toPalace" onClick={() => onLevelUp(step.officer)}>{t('market.respec.go')}</button>
-              <button className="btn wide" data-action="goodsClose" onClick={() => setStep(null)}>{t('market.close')}</button>
-            </>
-          )}
-        >
-          <span className="mkt-who">
-            <GradeBadge grade={officerById.get(step.officer)?.grade ?? 'B'} />
-            <span className="nm">{nameOf(step.officer)}</span>
-          </span>
-          <span className="mkt-respec-done">
-            <Portrait officer={step.officer} />
-            <span className="mkt-done-big" data-field="refund">×{step.refund}</span>
-          </span>
-          <p className="hint">{t('market.respec.refunded')}</p>
-        </DoneModal>
+        <RespecDone officer={step.officer} fromLevel={step.fromLevel} refund={step.refund}
+          onPalace={() => onLevelUp(step.officer)} onClose={() => setStep(null)} />
       )}
     </>
   );
