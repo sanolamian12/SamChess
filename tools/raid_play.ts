@@ -239,7 +239,7 @@ try {
   const kingLocked = await page.$eval('.ofcard [data-action="cardRelease"]', (b) => (b as HTMLButtonElement).disabled);
   if (!kingLocked) await fail('다른 보초병이 있는데 King을 뺄 수 있다');
   await shot('raid-02b-guard-card');
-  await page.click('.ofcard [data-action="cardBack"]');
+  await page.click('.ofcard [data-action="closeCard"]');
   await page.waitForSelector('.ofcard', { state: 'detached' });
   // Rock은 카드의 [해제하기]로 바로 뺀다 — 그리고 다시 세운다
   await page.click('.frm-grow[data-piece="Rock"][data-officer]');

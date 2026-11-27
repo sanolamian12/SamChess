@@ -528,6 +528,17 @@ SKILL_PANELS: dict[str, str] = {
     "고유스킬_B": "panel-skill-b.jpg",
 }
 
+
+# 장수 상세의 고유기술 배너 테두리 (2026-11-27 기획자) — 고유기술 팝업 판과 같은 등급 셋(`skillPanelGroup` — S·E / A / B).
+# 가운데가 뚫린 RGBA라 PNG, 폭만 줄인다. 배너는 그 구멍에 맞춰 앉는다(`style.css`의 `.ofcard-skillframe` — 구멍 자리를 잰 값)
+SKILL_FRAMES: dict[str, str] = {
+    "고유스킬_S_E_프레임": "skill-frame-se.png",
+    "고유스킬_A_프레임": "skill-frame-a.png",
+    "고유스킬_B_프레임": "skill-frame-b.png",
+}
+SKILL_FRAME_WIDTH = 1100
+
+
 ICONS: dict[str, str] = {
     "button_settings": "settings",
     "button_backarrow": "back",
@@ -1269,6 +1280,19 @@ def main() -> int:
             missing.append(f"new/{stem}.png")
         elif not up_to_date(OUT_UI / name, src):
             Image.open(src).convert("RGB").save(OUT_UI / name, quality=88, optimize=True)
+            made_frames.append(name)
+        else:
+            skipped += 1
+
+    # ── 고유기술 배너 테두리 — 등급 셋 ──
+    for stem, name in SKILL_FRAMES.items():
+        src = TUTORIAL_ICON_SRC / f"{stem}.png"
+        if not src.exists():
+            missing.append(f"new/{stem}.png")
+        elif not up_to_date(OUT_UI / name, src):
+            im = Image.open(src).convert("RGBA")
+            im = im.resize((SKILL_FRAME_WIDTH, round(im.height * SKILL_FRAME_WIDTH / im.width)), Image.LANCZOS)
+            im.save(OUT_UI / name, optimize=True)
             made_frames.append(name)
         else:
             skipped += 1

@@ -3,7 +3,7 @@
  *
  *   node --experimental-strip-types --env-file=.env tools/celebrate_gallery.ts [--out 폴더] [--langs ko,mn]
  *
- * 언어마다 같은 계정을 다시 심고 아홉 장을 찍는다(휴대폰 폭 390 × 844, 2배 해상도):
+ * 언어마다 같은 계정을 다시 심고 아홉 장을 찍는다(최소사양 휴대폰 iPhone 15 — `minSpec.ts`, 2배 해상도):
  * 레벨업 고르기(지원) · 고르기(환술 + MP) · 강화 완료 · 도시 증축 완료 · 건설 완료(대장간) · 증축 완료(장터) · 제작 완료 · 연구 완료 · 금화 구매 완료.
  * 끝에 `index.html`(언어 탭 · ←/→로 넘김 · 눌러 크게)을 만든다.
  * 금화 구매는 결제 전이라 개발용 지급이 꺼진 서버에서는 안 눌린다 — 브라우저에서 `/dev/status` · `/dev/grant`만 흉내 낸다(금화 +10).
@@ -13,6 +13,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { MIN_SPEC, MIN_SPEC_PORTRAIT } from './minSpec.ts';
 import type { Page } from 'playwright';
 import { OFFICERS } from '@samchess/data';
 import { ACADEMY_RESEARCH_MS, SORTIE_TUTORIALS, createProfile } from '@samchess/meta';
@@ -56,7 +57,7 @@ const seed = (): PlayerProfile => {
 
 const u = await makeUser('gallery', 'u');
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const page = await browser.newPage({ viewport: MIN_SPEC_PORTRAIT, deviceScaleFactor: 2 });
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 
@@ -185,7 +186,7 @@ const html = `<!doctype html>
   .zoom { position: fixed; inset: 0; z-index: 5; background: #000d; display: none; align-items: center; justify-content: center; cursor: zoom-out; }
   .zoom.on { display: flex; }
   .zoom img { max-height: 96vh; max-width: 96vw; }
-  .missing { aspect-ratio: 390 / 844; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: .85rem; border: 1px dashed #4a3a28; border-radius: 6px; }
+  .missing { aspect-ratio: ${MIN_SPEC.width} / ${MIN_SPEC.height}; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: .85rem; border: 1px dashed #4a3a28; border-radius: 6px; }
 </style></head>
 <body>
 <header><h1>레벨업 고르기 · 축하 화면 <small>열 언어 · ←/→ 키로 언어 넘김 · 사진을 누르면 크게</small></h1><nav id="tabs"></nav></header>

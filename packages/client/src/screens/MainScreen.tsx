@@ -410,12 +410,12 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
                 className="city-lbl city-lbl-sub"
                 x={spot.label.x}
                 y={spot.label.y + 30}
-                fontSize={22}
+                fontSize={23}
                 textAnchor="middle"
                 pointerEvents="none"
               >
                 {wrapLabel(spot.sub, labelWrapWidth(currentLang())).map((line, i) => (
-                  <tspan key={i} x={spot.label.x} dy={i === 0 ? 0 : 26}>{line}</tspan>
+                  <tspan key={i} x={spot.label.x} dy={i === 0 ? 0 : 27}>{line}</tspan>
                 ))}
               </text>
             </g>

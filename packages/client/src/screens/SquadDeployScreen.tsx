@@ -583,7 +583,7 @@ export function SquadDeployScreen({ profile, onProfile, mission = false, squad, 
         </section>
 
         {/* 조작 판 — [기본 배치로] 위 · [배치 완료] 아래 (2026-11-18 기획자 — [뒤로 가기]를 걷고 [배치 완료]가 저장하고 돌아간다) */}
-        <section className="place-panel sqd-acts sqb-acts">
+        <section className="place-panel cmd-panel sqd-acts sqb-acts">
           <button className="btn wide" data-action="deployReset" onClick={resetSide}>
             {t('deploy.reset')}
           </button>

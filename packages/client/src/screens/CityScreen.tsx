@@ -203,7 +203,7 @@ export function CityScreen({ profile, onBack, onChange }: {
           ))}
         </section>
 
-        <section className="place-panel cty-acts" ref={actsRef}>
+        <section className="place-panel cmd-panel cty-acts" ref={actsRef}>
           {/* [증축] — 누르면 올릴 건물 셋을 고르고 한 번에 오른다(2026-11-23 기획자). 그 밑에 [뒤로 가기](장수 일람의 명령 판과 같은 틀) */}
           <CityUpgrade profile={profile} onChange={onChange} cue={cue === 'upgrade'} onModal={setUpgradeOpen} />
           <button className="btn wide" data-action="backBottom" onClick={onBack}>

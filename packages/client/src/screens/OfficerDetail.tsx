@@ -114,7 +114,7 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
   const itemsLook: ItemsLook = {
     held: heldId,
     badge: heldId ? <HeldArt id={heldId} /> : <GameIcon name="equip-revoke" label="" />,
-    label: heldId ? heldButtonName(heldId) : t('officer.held.give'),
+    label: heldId ? heldButtonName(heldId) : t('squad.cmd.items'),   // 빈손이면 「아이템」(2026-11-27 기획자 — 옛 「아이템 지급」)
   };
   // [강화] 오른쪽 「{보유} / {필요} (카드)」 — `cardsToLevelUp()`이 단일 출처
   const need = cardsToLevelUp(row.level);
@@ -133,7 +133,6 @@ export function OfficerDetailModal({ profile, officer, onChange, onClose, action
         onItems={() => setPicking(true)}
         itemsLook={itemsLook}
         onLevels={() => setManaging(true)}
-        levelsCards={{ have, need }}
         levelsEligible={eligible}
         levelsNote={managing ? null : levelsNote}
         {...(injury ? { injury } : {})}

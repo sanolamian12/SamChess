@@ -44,6 +44,7 @@ import { pickEquipName, pickMarketItemName, pickMarketItemText, pickOfficerNameB
 import { formatMade } from '../ForgeScreen.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
+import { PageArrow } from '../PageArrow.tsx';
 import { useSteadyPage } from '../useSteadyPage.ts';
 import { useAllLangLayout } from '../useAllLangLayout.ts';
 import { ConfirmModal, GoldCost, Layer } from './parts.tsx';
@@ -142,22 +143,6 @@ function ItemCard({ item, locked, busy, onClick, measure }: {
   );
 }
 
-/** 쪽 넘김 화살 하나 — 위(이전) · 아래(다음) */
-function PageArrow({ dir, show, disabled, onClick }: {
-  dir: 'prev' | 'next'; show: boolean; disabled: boolean; onClick: () => void;
-}): React.JSX.Element {
-  return (
-    <div className="mkt-item-arrow-row" data-dir={dir}>
-      {show && (
-        <button type="button" className="mkt-item-arrow" data-dir={dir} data-action={dir === 'prev' ? 'prevPage' : 'nextPage'}
-          aria-label={t(dir === 'prev' ? 'officers.pager.prev' : 'officers.pager.next')} disabled={disabled} onClick={onClick}>
-          <img src="ui/turn/chevron.png" alt="" />
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   profile: PlayerProfile;
   busy: boolean;
@@ -247,7 +232,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
       </div>
       <Say text={why?.text ?? null} level={profile.cityLevel} name="itemsWhy" code={why?.code} repeat />
 
-      <section className="place-panel mkt-cmds">
+      <section className="place-panel cmd-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>
@@ -423,7 +408,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
         <Say text={note} level={profile.cityLevel} name="storageNote" repeat />
       </section>
 
-      <section className="place-panel mkt-cmds">
+      <section className="place-panel cmd-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>

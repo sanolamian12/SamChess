@@ -106,7 +106,7 @@ export function SquadListScreen({ profile, onBack, onOpen, onFill }: {
         </div>
 
         {/* 명령 패널 — [뒤로 가기] 하나 (2026-11-17 기획자 — [공격대 편성] · [수비대 편성]은 줄 누르기로 갈음) */}
-        <section className="place-panel sqd-acts">
+        <section className="place-panel cmd-panel sqd-acts">
           <button className="btn wide" data-action="backBottom" onClick={onBack}>
             <span className="lbl">{stripBackArrow(t('match.back'))}</span>
           </button>

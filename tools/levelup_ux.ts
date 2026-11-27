@@ -1,7 +1,7 @@
 /**
  * 레벨업 고르기 눈 확인 (2026-11-20 기획자 개편 — 금테 두 절 · 캡슐 줄 · 책략 토글 + 설명 판 하나 · [확정] 아래 [뒤로 가기]).
  *
- *   [UI_LANG=mn] [VW=390 VH=844] node --experimental-strip-types --env-file=.env tools/levelup_ux.ts
+ *   [UI_LANG=mn] [VW=393 VH=852 — 기본은 최소사양 iPhone 15] node --experimental-strip-types --env-file=.env tools/levelup_ux.ts
  *
  * 시험 계정에 장수 셋을 Lv1 · Lv2 · Lv5로 심고(다음 레벨 2 · 3 · 6 — Lv6 지원은 「화계 + 진화」 한 쌍) 각각 판을 연다.
  * 판마다 기본 · 환술 토글 · MP 줄을 찍고, 설명 판 높이가 토글로 안 출렁이는지 · 판이 넘치는지 · 글자가 .8rem 밑인지를 잰다.
@@ -13,6 +13,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { MIN_SPEC } from './minSpec.ts';
 import { readFileSync } from 'node:fs';
 import { OFFICERS as _O, tacticById } from '@samchess/data';
 import { applyLevelUp, tacticChoices } from '@samchess/meta';
@@ -43,7 +44,7 @@ const uid = (await created.json() as { id: string }).id;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
-  viewport: { width: Number(process.env['VW'] ?? 390), height: Number(process.env['VH'] ?? 844) },
+  viewport: { width: Number(process.env['VW'] ?? MIN_SPEC.width), height: Number(process.env['VH'] ?? MIN_SPEC.height) },
 });
 if (UI_LANG) await page.addInitScript((l) => { try { localStorage.setItem('samchess.lang', l); } catch { /* 없다 */ } }, UI_LANG);
 const errors: string[] = [];
@@ -147,7 +148,7 @@ try {
     else if (res.over.length) fail(`설명 판 넘침 ${res.over.length}건: ${res.over.slice(0, 6).join(' · ')}`);
     else ok(`후보 ${res.n}개 전부 고정 높이(${res.fixedRem.toFixed(2)}rem) 안`);
     await page.click('[data-action="stepBack"]');
-    await page.click('[data-action="cardBack"]');
+    await page.click('[data-action="closeCard"]');
     await page.waitForTimeout(300);
   }
 
@@ -227,7 +228,7 @@ try {
     await page.click('[data-action="stepBack"]');
     await page.waitForSelector('[data-screen="levelup-panel"]', { state: 'detached', timeout: 5_000 });
     ok('[뒤로 가기] → 카드');
-    await page.click('[data-action="cardBack"]');
+    await page.click('[data-action="closeCard"]');
     await page.waitForTimeout(300);
   }
   // ── 실제로 올려 축하 판(`Celebrate`)을 본다 — 첫 장수(Lv1 → Lv2) ──

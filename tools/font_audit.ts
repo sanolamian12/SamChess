@@ -12,6 +12,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { MIN_SPEC_PORTRAIT } from './minSpec.ts';
+import { FONT_FLOOR_REM } from '../packages/client/src/screens/fontFloor.ts';
 import type { Browser, Page } from 'playwright';
 import { OFFICERS } from '@samchess/data';
 import { defaultSquadCells, newInstance } from '@samchess/meta';
@@ -25,13 +27,15 @@ const SUPABASE_URL = process.env['SUPABASE_URL']!;
 const SUPABASE_SECRET_KEY = process.env['SUPABASE_SECRET_KEY']!;
 const OUT = process.env['OUT'] ?? shotDir('font_audit');   // 안 주면 OS 임시 폴더(저장소 맨 위에 쌓이지 않게)
 const ORIENT = process.env['ORIENT'] ?? 'portrait';
-// VIEW=635x1160 — 세로 화면 크기를 바꿔 찍는다(짧은 창에서 판이 넘치는지 볼 때)
-const [VIEW_W, VIEW_H] = (process.env['VIEW'] ?? '').split('x').map(Number).filter((n) => n > 0) as [number?, number?];
+// VIEW=635x1160 — 세로 화면 크기를 바꿔 찍는다(짧은 창에서 판이 넘치는지 볼 때). VIEW=phone은 최소사양(`minSpec.ts`, iPhone 15)
+const VIEW_RAW = process.env['VIEW'] === 'phone' ? `${MIN_SPEC_PORTRAIT.width}x${MIN_SPEC_PORTRAIT.height}` : process.env['VIEW'];
+const [VIEW_W, VIEW_H] = (VIEW_RAW ?? '').split('x').map(Number).filter((n) => n > 0) as [number?, number?];
 const ONLY = (process.env['ONLY'] ?? '').split(',').filter(Boolean);
 const LANG = process.env['UI_LANG'] ?? '';
-/** 기준 — 장수 열전의 글자 크기(rem) */
-const REF = 0.8;
+/** 기준 — 글자 하한(rem). 2026-11-27부터 0.9(장수 상세의 능력치 숫자). 단추 글자는 같은 크기 이상 + 굵기 700 이상 */
+const REF = FONT_FLOOR_REM;
 const SHOTS = !!process.env['SHOTS'];
+// DPR=3 — 사진을 기기 화질로(최소사양 iPhone 15는 3배). 재는 값(rem)은 안 바뀐다
 
 interface Size { dir: string; orient: 'portrait' | 'landscape'; w: number; h: number }
 const SIZES: Size[] = [
@@ -45,6 +49,8 @@ export interface Hit { sel: string; rem: number; px: number; scale: number; text
 const results: Record<string, Hit[]> = {};
 /** 잘림 — `px`는 넘친 폭 */
 const clipResults: Record<string, Hit[]> = {};
+/** 단추 글자 — 하한보다 작거나 굵지 않다(`px`는 굵기) */
+const btnResults: Record<string, Hit[]> = {};
 /** 머리 명패 아래 첫 판까지의 간격(rem) */
 const gaps: Record<string, { rem: number; panel: string }> = {};
 let refSeen: number | null = null;
@@ -56,6 +62,7 @@ async function audit(page: Page, key: string): Promise<void> {
     const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const hits: { sel: string; rem: number; px: number; scale: number; text: string }[] = [];
     const clips: typeof hits = [];
+    const btns: typeof hits = [];
     let story: number | null = null;
     const hiddenChain = (el: Element): boolean => {
       for (let e: Element | null = el; e; e = e.parentElement) {
@@ -98,7 +105,12 @@ async function audit(page: Page, key: string): Promise<void> {
       if (el.classList.contains('ofcard-story')) story = rem;
       // 조상의 살짝 줄인 변형(0.95배 이상 — 판 등장 연출의 끝자락 등)은 CSS 크기로 판정한다
       const cssRem = px / rootPx;
-      if ((scale >= 0.95 ? cssRem : rem) < ref - 0.005) hits.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: Math.round(px * 10) / 10, scale: Math.round(scale * 100) / 100, text: text.slice(0, 40) });
+      const shown = scale >= 0.95 ? cssRem : rem;
+      if (el.closest('button, .btn, [role="button"]')) {
+        const w = parseInt(getComputedStyle(el).fontWeight, 10) || 400;
+        if (shown < ref - 0.005 || w < 700) btns.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: w, scale: Math.round(scale * 100) / 100, text: text.slice(0, 40) });
+      }
+      if (shown < ref - 0.005) hits.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: Math.round(px * 10) / 10, scale: Math.round(scale * 100) / 100, text: text.slice(0, 40) });
       // 잘림 — 넘침을 숨기는 상자(자신 또는 두 겹 위까지)에서 글자가 칸보다 넓다(말줄임 포함)
       if (el instanceof HTMLElement) {
         // 자기 자신과 바로 위 한 겹만 본다 — 더 올라가면 화면 틀(`.scr`)까지 닿아, 배경 그림이 넓은 만큼을 모든 글자의 잘림으로 셌다(+77px 오탐)
@@ -109,16 +121,35 @@ async function audit(page: Page, key: string): Promise<void> {
             if (e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0) {
               clips.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: e.scrollWidth - e.clientWidth, scale: 1, text: text.slice(0, 40) });
             }
+            // 세로 — 스크롤이 없는 화면(2026-11-25)이라 넘친 줄은 잘려 안 보인다. 줄 높이 자투리(2px)는 뺀다. `px`가 음수면 세로
+            if (e.scrollHeight > e.clientHeight + 2 && e.clientHeight > 0) {
+              clips.push({ sel: selOf(el), rem: Math.round(rem * 1000) / 1000, px: -(e.scrollHeight - e.clientHeight), scale: 1, text: text.slice(0, 40) });
+            }
             break;
           }
         }
       }
     }
-    return { hits, clips, story, rootPx };
+    return { hits, clips, btns, story, rootPx };
   }, REF);
+  // PROBE=sel1|sel2 — 그 선택자의 보이는 글자 크기(rem) · 굵기를 찍는다(기준값을 잴 때)
+  if (process.env['PROBE']) {
+    const probes = await page.evaluate((sels) => {
+      const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      return sels.map((s) => {
+        const e = [...document.querySelectorAll<HTMLElement>(s)].find((x) => x.getBoundingClientRect().height > 0);
+        if (!e) return `${s}: 없음`;
+        const cs = getComputedStyle(e);
+        const r = e.getBoundingClientRect();
+        return `${s}: ${(parseFloat(cs.fontSize) / rootPx).toFixed(3)}rem · ${cs.fontWeight} · x ${Math.round(r.left)}~${Math.round(r.right)} · h ${(r.height / rootPx).toFixed(2)}rem · 「${(e.textContent ?? '').trim().slice(0, 12)}」`;
+      });
+    }, process.env['PROBE'].split('|'));
+    log(`  [${key}] ${probes.join('\n    ')}`);
+  }
   if (got.story !== null) refSeen = got.story;
   results[key] = got.hits;
   clipResults[key] = got.clips;
+  btnResults[key] = got.btns;
   // 머리 명패 ↔ 바로 아래 판의 간격 (2026-11-25 기획자 — 모든 화면이 용병 시장과 같은 간격). 명패는 `.place-nm`,
   // 판은 명패 밑에서 가장 위에 있는 폭 넓은 판(`.place-panel` 또는 이름에 panel이 든 것)
   const gap = await page.evaluate(() => {
@@ -184,6 +215,8 @@ async function seed(): Promise<void> {
     ...stored, cityLevel: 6, gold: 480, materials: 60, grain: 40,
     buildings: { ...stored.buildings, palace: 5, barracks: 5, market: 5, academy: 3, hospital: 2, forge: 3 },
     roster, squads,
+    // CARDS=1 — 장수 전부에게 카드를 쥐여 레벨업 대상으로(장수 일람의 초록 네온 이름 · 카드 수 · 겹 갈매기를 볼 때)
+    ...(process.env['CARDS'] ? { cards: { ...stored.cards, ...Object.fromEntries(own.map((id) => [id, 10])) } } : {}),
     // ACADEMY_DONE=1 — 태학 Lv3 주제를 끝낸 계정(도시 관리 건물 한 장의 「연구: [엠블럼]」 · 흑백 둘을 보려고)
     ...(process.env['ACADEMY_DONE'] ? { academy: { done: [{ level: 3, tactic: 'ham-jeong-plus', doneAt: now - 3_600_000 }] } } : {}),
   } as Parameters<typeof saveProfileTrusted>[1]);
@@ -205,7 +238,7 @@ async function setLang(page: Page): Promise<void> {
 }
 
 async function metaTour(browser: Browser, size: Size, first: boolean): Promise<void> {
-  const ctx = await browser.newContext({ viewport: { width: size.w, height: size.h } });
+  const ctx = await browser.newContext({ viewport: { width: size.w, height: size.h }, deviceScaleFactor: Number(process.env['DPR'] ?? 1) });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => log(`  ! pageerror ${e.message}`));
   const d = size.dir;
@@ -262,6 +295,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
     ['22b-officer-levels', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="levels"]'); }],
     ['22c-officer-skill', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="skill"]'); }],
     ['22e-officer-noskill', { name: 'officers', officer: 'gyeong-mu' }],
+    ['22f-officer-lore', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="openLore"]'); }],
     ['22d-officer-items', { name: 'officers', officer: firstOfficer }, async (p) => { await click(p, '[data-action="heldOpen"]'); }],
     ['23-city', { name: 'city' }],
     // 건물 한 장 — 줄 오른쪽 [보기] (2026-11-23 기획자)
@@ -368,7 +402,7 @@ async function metaTour(browser: Browser, size: Size, first: boolean): Promise<v
 }
 
 async function battleTour(browser: Browser, size: Size): Promise<void> {
-  const ctx = await browser.newContext({ viewport: { width: size.w, height: size.h } });
+  const ctx = await browser.newContext({ viewport: { width: size.w, height: size.h }, deviceScaleFactor: Number(process.env['DPR'] ?? 1) });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => log(`  ! pageerror ${e.message}`));
   await page.goto(`${BASE}/?orient=${size.orient}`, { waitUntil: 'networkidle' });
@@ -404,13 +438,13 @@ try {
     first = false;
     await battleTour(browser, size);
   }
-  writeFileSync(`${OUT}/font-audit.json`, JSON.stringify({ ref: REF, refSeen, results, clips: clipResults }, null, 1));
+  writeFileSync(`${OUT}/font-audit.json`, JSON.stringify({ ref: REF, refSeen, results, clips: clipResults, buttons: btnResults }, null, 1));
   const clipBy = new Map<string, { px: number; scenes: Set<string>; text: string }>();
   for (const [scene, hits] of Object.entries(clipResults)) {
     for (const h of hits) {
       const leaf = h.sel.split(' > ').slice(-2).join(' > ');
       const cur = clipBy.get(leaf) ?? { px: 0, scenes: new Set<string>(), text: h.text };
-      cur.px = Math.max(cur.px, h.px); cur.scenes.add(scene.split('/').pop()!);
+      cur.px = Math.abs(h.px) > Math.abs(cur.px) ? h.px : cur.px; cur.scenes.add(scene.split('/').pop()!);
       clipBy.set(leaf, cur);
     }
   }
@@ -418,7 +452,7 @@ try {
   for (const [k, v] of Object.entries(gaps)) log(`${v.rem.toFixed(2)}rem  ${k}  ${v.panel}`);
   log(`\n잘림 묶음 ${clipBy.size}개`);
   for (const [leaf, v] of [...clipBy.entries()].sort((a, b) => b[1].px - a[1].px)) {
-    log(`+${v.px}px  ${leaf}  「${v.text}」  [${[...v.scenes].join(', ')}]`);
+    log(`${v.px < 0 ? `세로 ${-v.px}` : `+${v.px}`}px  ${leaf}  「${v.text}」  [${[...v.scenes].join(', ')}]`);
   }
   // 선택자별 요약 — 마지막 요소(글자를 든 요소)의 이름으로 묶는다
   const by = new Map<string, { min: number; scenes: Set<string>; text: string; sel: string }>();
@@ -430,7 +464,20 @@ try {
       by.set(leaf, cur);
     }
   }
-  log(`\n기준 .ofcard-story 실측 = ${refSeen ?? '(못 봄)'} rem · 작은 글자 묶음 ${by.size}개`);
+  const bb = new Map<string, { min: number; w: number; scenes: Set<string>; text: string }>();
+  for (const [scene, hits] of Object.entries(btnResults)) {
+    for (const h of hits) {
+      const leaf = h.sel.split(' > ').slice(-2).join(' > ');
+      const cur = bb.get(leaf) ?? { min: 9, w: 999, scenes: new Set<string>(), text: h.text };
+      cur.min = Math.min(cur.min, h.rem); cur.w = Math.min(cur.w, h.px); cur.scenes.add(scene.split('/').pop()!);
+      bb.set(leaf, cur);
+    }
+  }
+  log(`\n단추 글자 묶음 ${bb.size}개 (하한 ${REF}rem · 굵기 700)`);
+  for (const [leaf, v] of [...bb.entries()].sort((a, b) => a[1].min - b[1].min)) {
+    log(`${v.min.toFixed(3)}rem · ${v.w}  ${leaf}  「${v.text}」  [${[...v.scenes].join(', ')}]`);
+  }
+  log(`\n기준 .ofcard-story 실측 =${refSeen ?? '(못 봄)'} rem · 작은 글자 묶음 ${by.size}개`);
   for (const [leaf, v] of [...by.entries()].sort((a, b) => a[1].min - b[1].min)) {
     log(`${v.min.toFixed(3)}rem  ${leaf}  「${v.text}」  [${[...v.scenes].join(', ')}]`);
   }

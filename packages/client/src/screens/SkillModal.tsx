@@ -100,10 +100,13 @@ export function SkillModal({ skill, onClose }: {
           <span className="k">{t('skill.castDelay')}</span> : {pickCastDelay(skill)}
         </p>
         </div>
+        {/* [영상 보기] — 옛 [뒤로] 자리(판 바닥), 금빛 두루마리(`btn-alert.png`). [뒤로]는 걷었다 — 닫기는 그 밑 두 용 사이의 붉은 체크 (2026-11-27 기획자) */}
         <button className="btn wide" data-action="preview" onClick={() => preview.play(name, text)}>
-          {t('skill.preview')}
+          <span className="lbl">{t('skill.preview')}</span>
         </button>
-        <button className="btn wide" data-action="close" onClick={onClose}>{t('skill.close')}</button>
+        <button type="button" className="skl-ok" data-action="close" onClick={onClose} aria-label={t('skill.close')}>
+          <img src="icons/confirm.png" alt="" draggable={false} />
+        </button>
       </div>
     </div>
   );

@@ -325,7 +325,7 @@ export function MercView({ profile, run, busy, onBack }: {
         </ConfirmModal>
       )}
 
-      <section className="place-panel mkt-cmds">
+      <section className="place-panel cmd-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>

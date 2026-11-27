@@ -298,7 +298,7 @@ export function MatchScreen({ profile, mode, squad, seed, onBack, onChange, onRe
         )}
 
         {/* 명령 판 — 화면 바닥. 출정하기와 같은 자리·같은 목판 */}
-        <section className="place-panel mtc-acts">
+        <section className="place-panel cmd-panel mtc-acts">
           {!waiting && (
             <>
               <button

@@ -74,8 +74,15 @@ export class SkillPanel {
       field('castDelay', t('skill.castDelay'), pickCastDelay(skill)),
     );
 
-    const back = text('button', 'btn wide', t('skill.close'));
+    // 닫기 — 판 바닥 두 용 사이의 붉은 체크(메타의 `SkillModal`과 같은 자리 · 같은 움직임, 2026-11-27 기획자 — 옛 [뒤로])
+    const back = el('button', 'skl-ok');
     back.dataset.action = 'close';
+    back.setAttribute('aria-label', t('skill.close'));
+    const okImg = document.createElement('img');
+    okImg.src = 'icons/confirm.png';
+    okImg.alt = '';
+    okImg.draggable = false;
+    back.append(okImg);
 
     // 글은 그림 안쪽 판 안에서만 내린다 — 단추는 판 바닥에 선다(`.ofc-skill-body`, `SkillModal`과 같다)
     const body = el('div', 'ofc-skill-body');

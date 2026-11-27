@@ -12,11 +12,12 @@
  *
  *   ORIENT=portrait|landscape|both   (기본 both)
  *   ONLY=main,palace                 이름에 이 글자가 든 장면만
- *   PHONE=1                          가로를 휴대폰 크기(844×390)로도 한 벌 더
+ *   PHONE=1                          가로를 최소사양 휴대폰 크기(iPhone 15 가로, `minSpec.ts`)로도 한 벌 더
  */
 import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { MIN_SPEC_LANDSCAPE } from './minSpec.ts';
 import type { Browser, Page } from 'playwright';
 import { OFFICERS } from '@samchess/data';
 import { defaultSquadCells, newInstance } from '@samchess/meta';
@@ -35,7 +36,7 @@ interface Size { dir: string; orient: 'portrait' | 'landscape'; w: number; h: nu
 const SIZES: Size[] = [
   ...(ORIENT !== 'landscape' ? [{ dir: 'portrait', orient: 'portrait' as const, w: 700, h: 1400 }] : []),
   ...(ORIENT !== 'portrait' ? [{ dir: 'landscape', orient: 'landscape' as const, w: 1920, h: 1080 }] : []),
-  ...(process.env['PHONE'] ? [{ dir: 'landscape-phone', orient: 'landscape' as const, w: 844, h: 390 }] : []),
+  ...(process.env['PHONE'] ? [{ dir: 'landscape-phone', orient: 'landscape' as const, w: MIN_SPEC_LANDSCAPE.width, h: MIN_SPEC_LANDSCAPE.height }] : []),
 ];
 
 const want = (name: string): boolean => ONLY.length === 0 || ONLY.some((o) => name.includes(o));

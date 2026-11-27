@@ -83,7 +83,7 @@ export function BoardScreen({ profile, onBack, onRanking, onCollection }: {
           {RANK_BOARDS.map((b) => <BoardSummary key={b} profile={profile} board={b} ranks={ranks} />)}
         </section>
 
-        <section className="place-panel rk-menu">
+        <section className="place-panel cmd-panel rk-menu">
           <button className="btn wide" data-action="collection" onClick={onCollection}>
             <span className="lbl">{t('board.view.collection')}</span>
           </button>

@@ -374,7 +374,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
 
         {/* 명령 — 한 줄씩(2026-11-17 기획자): 부대 배치 · AI 수비 방침(수성군만) · 변경내용 저장. 아이템은 장수 카드의 [아이템]으로 옮겼다 —
             칸이 넓어져 이름을 다 쓴다 */}
-        <section className="place-panel sqd-acts sqe-acts">
+        <section className="place-panel cmd-panel sqd-acts sqe-acts">
           {/* 왜 배치가 안 되는지 — 다 채운 뒤에만 말한다. 채우는 중에 「3명이 필요하다」를 띄우면 방해만 된다 */}
           {/* 다 채운 뒤에만 무관이 말한다(2026-11-19 기획자 — 판 안의 줄을 걷었다) */}
           <Say text={picks.length === size && !check.ok ? reasonText(check) : null} who="army" level={profile.cityLevel} name="why" />

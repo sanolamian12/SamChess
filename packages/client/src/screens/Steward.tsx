@@ -215,7 +215,10 @@ export function Steward({ id, tier, honor, lines, delayMs = 500, onRead, onDone,
     if (sayMode) {
       const markSay = (): void => {
         const modals = frame.querySelectorAll('.modal-back .modal, .ofcard');
-        setBubbleBottom(dodgeSay(frame, bubbleRef.current, modals[modals.length - 1] ?? null));
+        // 팝업이 없으면 화면 바닥 명령 판(`.cmd-panel`)을 비킨다 — 병영의 [튜토리얼 시나리오]를 「튜토리얼을 먼저」 말풍선이 덮어 못 눌렀다
+        // (2026-11-27 — 단추의 소개 글을 걷어 판이 낮아지자 말풍선 자리까지 내려왔다. `smoke:meta`가 잡았다)
+        const target = modals[modals.length - 1] ?? [...frame.querySelectorAll('.cmd-panel')].find((e) => e.getBoundingClientRect().height > 0) ?? null;
+        setBubbleBottom(dodgeSay(frame, bubbleRef.current, target));
       };
       markSay();
       const t = window.setInterval(markSay, 400);

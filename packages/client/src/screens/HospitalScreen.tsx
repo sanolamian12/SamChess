@@ -187,7 +187,7 @@ export function HospitalScreen({ profile, onBack, onChange }: {
 
       {/* 명령 판 — 화면 바닥(`.place-body`의 `margin-top: auto`) */}
       <div className="place-body">
-        <section className="place-panel hsp-home">
+        <section className="place-panel cmd-panel hsp-home">
           <div className="frg-buttons">
             {/* 입원할 수 있을 때만 옥색 목판(`assets/icons/ui/button_primary.png` → `ui/btn-primary.png`) */}
             <button

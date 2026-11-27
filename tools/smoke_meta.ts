@@ -1657,13 +1657,13 @@ const listRows = () => page.evaluate(() =>
 let rows = await listRows();
 // 초기 지급은 S·A·B·C·D 각 1명 (GDD §8) — **여기에 패배 카드가 데려온 새 장수가 더해질 수 있다**(위 참조)
 const poolAfterLoss = rosterBeforeBattle.length + (lossCard?.isNew ? 1 : 0);
-// 일람은 한 쪽에 여덟 줄이다(2026-11-19 — 전엔 열) — 출정 필수 튜토리얼이 다섯이 되며(2026-11-14) 보상 장수로 넘을 수 있다. 첫 쪽은 여덟까지,
+// 일람은 한 쪽에 여섯 줄이다(2026-11-27 — 전엔 여덟, 그 전엔 열) — 출정 필수 튜토리얼이 다섯이 되며(2026-11-14) 보상 장수로 넘을 수 있다. 첫 쪽은 여섯까지,
 // 나머지는 아래 등급 요약(`data-tally`)이 센다
-const firstPage = Math.min(poolAfterLoss, 8);
+const firstPage = Math.min(poolAfterLoss, 6);
 if (rows.length !== firstPage) {
   fail(`일람 첫 쪽에 ${firstPage}줄이 있어야 한다(판 전 ${rosterBeforeBattle.length} + 패배 카드의 새 장수 ${lossCard?.isNew ? 1 : 0}) — 지금 ${rows.length}줄`);
 }
-if (lossCard?.isNew && poolAfterLoss <= 8 && !rows.some((r) => r.officer === lossCard!.officer)) {
+if (lossCard?.isNew && poolAfterLoss <= 6 && !rows.some((r) => r.officer === lossCard!.officer)) {
   fail(`패배 카드로 들어온 ${lossCard.officer}가 일람에 없다`);
 }
 const tally = await page.getAttribute('.ofc-tally', 'data-tally');
@@ -1759,15 +1759,17 @@ const detail = await page.evaluate(() => {
     levels: !!card.querySelector('[data-action="levels"]'),
     records: !!card.querySelector('[data-action="records"]'),
     items: !!card.querySelector('[data-action="heldOpen"]'),
-    back: !!card.querySelector('[data-action="cardBack"]'),
-    story: !!card.querySelector('.ofcard-story'),
+    // 닫기는 오른쪽 위 붉은 체크 하나 — 아래 [뒤로 가기]는 걷었다(2026-11-27 기획자)
+    back: !!card.querySelector('[data-action="closeCard"] img[src*="confirm"]') && !card.querySelector('[data-action="cardBack"]'),
+    // 열전은 접힌 판(첫머리 + (더보기)) — 누르면 펼친 판(2026-11-27 기획자)
+    story: !!card.querySelector('.ofcard-lore'),
   };
 });
 if (detail.name !== target.name) fail(`다른 장수의 카드가 떴다: "${detail.name}" (기대 「${target.name}」)`);
 // 「HP, MP, 공격력(최소-최대)」 — AT는 매 타격 내림이라 범위여야 한다 (GDD §4.2).
 // 2026-10-26부터 HP · MP · AT 이름은 아이콘이라 글자가 없다 — 줄이 「최소-최대」로 끝나는지만 본다(AT가 마지막 칸)
 if (!/\d+-\d+$/.test(detail.lv)) fail(`AT가 범위 표기가 아니다: "${detail.lv}"`);
-if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [강화] · [뒤로 가기]가 다 있지 않다: ${JSON.stringify(detail)}`);
+if (!detail.levels || !detail.items || !detail.back) fail(`내 장수 카드인데 [아이템] · [강화] · 체크 닫기가 다 있지 않다(또는 [뒤로 가기]가 남았다): ${JSON.stringify(detail)}`);
 if (detail.records) fail('[전적 보기]가 아직 있다(2026-11-19에 걷었다)');
 if (detail.rec) fail('장수 카드에 전적 줄이 남아 있다(2026-11-19에 걷었다)');
 if (detail.six !== 6) fail(`장수 카드의 여섯 값이 다 있지 않다 — ${detail.six}칸`);
@@ -1956,10 +1958,12 @@ await devAtMarket(`[data-dev="cards"][data-officer="${who}"]`, 2);
   console.log('✓ 장수 레벨 상한 — 도시 Lv1에서는 카드가 있어도 [강화]가 꺼지고 이유를 말한다 (도시 Lv3으로 올려 잇는다)');
 }
 {
-  const cards = await page.evaluate(() => [...document.querySelectorAll('.ofcard-modal [data-field="enhanceCards"]')].map((e) => ({
-    text: e.textContent?.replace(/\s+/g, ' ').trim() ?? '', icon: !!e.querySelector('img'),
-  })));
-  if (cards.length !== 1 || !/^\d+ \/ 3$/.test(cards[0]!.text) || !cards[0]!.icon) fail(`[강화] 오른쪽이 「보유 / 3 (카드)」가 아니다: ${JSON.stringify(cards)}`);
+  // [강화]는 왼쪽 카드 배지 + 이름뿐 — 「보유 / 필요」 숫자는 걷었다(2026-11-27 기획자)
+  const enh = await page.evaluate(() => ({
+    badge: !!document.querySelector('.ofcard-modal [data-action="levels"] [data-field="enhanceBadge"] img'),
+    count: !!document.querySelector('.ofcard-modal [data-field="enhanceCards"]'),
+  }));
+  if (!enh.badge || enh.count) fail(`[강화]가 「카드 배지 + 이름」이 아니다: ${JSON.stringify(enh)}`);
 }
 
 const start = await lvState();

@@ -453,28 +453,19 @@ try {
   if (await page.$('[data-action="officers"]')) await page.click('[data-action="officers"]');
   await page.waitForSelector('.ofc-row', { timeout: 10_000 });
   /*
-   * 궁궐 **전면** 장수 일람의 쪽 줄도 대장간과 같은 모양인가 (2026-09-14).
-   * 쪽 줄은 이제 한 컴포넌트(`Pager`)라 대장간 쪽을 봤으면 같겠지만, 이 화면만
-   * 따로 덮는 CSS가 남아 있으면 **여기서만** 다르게 보인다 — 예전 먹색 `1 / 2 쪽`이
-   * 바로 그 경우였다. 장수가 늘어나는 목록이라 [처음]·[끝]이 있어야 한다.
+   * 궁궐 **전면** 장수 일람의 쪽 넘김은 판 위아래 꺾쇠다 (2026-11-27 기획자 — 옛 `Pager`의 [처음]·[끝]·쪽 번호를 걷었다).
+   * 첫 쪽에서는 위(이전) 꺾쇠가 꺼져 있고, 옛 쪽 줄은 없어야 한다.
    */
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${SHOTS}/ux-05a-palace-list.png` });
-  const palacePager = await page.evaluate(() => {
-    const box = document.querySelector('.scr-officers > .place-body .pager, .scr-officers .ofc-table .pager') as HTMLElement | null;
-    if (!box) return null;
-    const btns = [...box.querySelectorAll('.btn')] as HTMLElement[];
-    const label = box.querySelector('.pager-label') as HTMLElement | null;
-    return {
-      label: label?.textContent ?? null,
-      color: label ? getComputedStyle(label).color : null,
-      ends: !!box.querySelector('[data-action="firstPage"]') && !!box.querySelector('[data-action="lastPage"]'),
-      lines: btns[0] ? Math.round(box.getBoundingClientRect().height / btns[0].getBoundingClientRect().height) : null,
-    };
-  });
-  console.log(palacePager && /^\d+ \/ \d+$/.test(palacePager.label ?? '') && palacePager.ends && palacePager.lines === 1
-    ? `  ✓ 궁궐 장수 일람 쪽 줄 — 「${palacePager.label}」 · [처음]·[끝] 있음 · 한 줄 · ${palacePager.color}`
-    : `  ✗ 궁궐 장수 일람 쪽 줄이 대장간과 다르다 — ${JSON.stringify(palacePager)}`);
+  const palacePager = await page.evaluate(() => ({
+    oldPager: !!document.querySelector('.scr-officers .ofc-table .pager'),
+    prev: (document.querySelector('.scr-officers .page-arrow[data-dir="prev"]') as HTMLButtonElement | null)?.disabled ?? null,
+    next: !!document.querySelector('.scr-officers .page-arrow[data-dir="next"]'),
+  }));
+  console.log(!palacePager.oldPager && palacePager.prev === true && palacePager.next
+    ? '  ✓ 궁궐 장수 일람 쪽 넘김 — 위아래 꺾쇠(첫 쪽은 위가 꺼짐) · 옛 쪽 줄 없음'
+    : `  ✗ 궁궐 장수 일람 쪽 넘김이 꺾쇠가 아니다 — ${JSON.stringify(palacePager)}`);
   await page.fill('.scr-officers input', '');
   for (let i = 0; i < 20; i += 1) {
     if (await page.$(`.ofc-row[data-officer="${worn}"]`)) break;
@@ -509,7 +500,7 @@ try {
       const el = document.querySelector(sel) as HTMLElement | null;
       return el ? Math.round(el.getBoundingClientRect().left) : null;
     };
-    return { equip: x('[data-field="equip"] .frg-thumb'), story: x('.ofcard-story'), skill: x('.ofcard-skill, .ofcard-skill-art') };
+    return { equip: x('[data-field="equip"] .frg-thumb'), story: x('.ofcard-lore'), skill: x('.ofcard-skill, .ofcard-skill-art') };
   });
   const same = lefts.equip !== null && [lefts.story, lefts.skill]
     .filter((v): v is number => v !== null)

@@ -109,13 +109,13 @@ import { stripBackArrow } from './RankingCommon.tsx';
 import type { CardAction } from './RankingCommon.tsx';
 import { OfficerDetailModal } from './OfficerDetail.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
-import { HealthIcon } from './GameIcon.tsx';
+import { GameIcon, HealthIcon } from './GameIcon.tsx';
+import { PageArrow } from './PageArrow.tsx';
 import { playSfx } from '../audio/sfx.ts';
 import { t } from '../i18n/index.ts';
 import { useLang } from '../i18n/useLang.ts';
 import { pickEquipName, pickOfficerNameById } from '../i18n/story.ts';
 import { GlowGrade } from './GlowGrade.tsx';
-import { BlinkGlow } from './BlinkGlow.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import { useFitText } from './useFitText.ts';
 
@@ -155,7 +155,7 @@ function searchOfficers(rows: readonly ListRow[], query: string): ListRow[] {
 
 /** 한 쪽에 열 명 (요청 지정). 대장간 지급 팝업은 판이 좁아 **여덟**이다
     (2026-09-11 지정) — 값을 화면마다 다시 적지 않고 여기서 갈라 둔다. */
-const PAGE_SIZE = 8;   // 2026-11-19 기획자 — 열에서 여덟로(짧은 화면에서 바닥 명령 판이 스크롤 밖으로 밀렸다)
+const PAGE_SIZE = 6;   // 2026-11-27 기획자 — 여덟에서 여섯으로(상단 판 · 중단 판으로 나누며 사이 여백을 둔다. 그 전 11-19에 열에서 여덟)
 const PICK_PAGE_SIZE = 8;
 
 /**
@@ -346,29 +346,37 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
       <div className="place-body">
         {/* 판 높이는 내용만큼 — 쪽 넘김 밑에 빈 양피지가 남지 않게(2026-11-19 기획자 — `grow`를 뗐다). 쪽 사이 높이는 `useSteadyPage`가 고정한다.
             남는 높이는 아래 명령 판과의 사이로 간다 */}
-        <section className={`place-panel block ofc-table${fill ? ' ofc-fill' : ''}`}>
-          {/* 요약 줄 — **장부 판 맨 위, 검색 위**(2026-11-19 기획자 — 바닥 → 제목 밑 작은 판 → 장부 판 안으로). 표의 등급 배지(`.gr`)와 같은 그림.
-              황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다.
-              **팝업 모드에선 안 그린다**(2026-09-11 지정) — 병기를 줄 장수를
-              고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
-          {!chrome && (
-          <div className="ofc-tally" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
-            <span className="ofc-count">{t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}</span>
-            <span className="ofc-grades">
-              <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
-                <GlowGrade grade="E" />
-              </span>
-              {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
-                <span key={g} className="ofc-grade-item">
-                  <GlowGrade grade={g} />
-                  <b>{tally[g]}</b>
+        {/* 상단 판 — 장수 아이콘(궁궐 현황판과 같은 그림 · 크기) + 현원, 등급별 인원, 장수 검색 (2026-11-27 기획자 — 표 판에서 떼어 냈다).
+            황제는 수가 아니라 있고 없음이라 배지를 흐리게/또렷하게로만 나타낸다. 등급 배지는 표의 것과 같은 크기.
+            **팝업 모드에선 안 그린다**(2026-09-11 지정) — 고르는 자리에서 「S급 몇 명」은 고를 때 안 쓰는 값이다. */}
+        {!chrome && (
+          <section className="place-panel ofc-top" data-field="officerTop">
+            {/* 두 단 — 왼쪽 현원 · 검색, 오른쪽 등급 배지 두 줄 × 세 칸 (2026-11-27 기획자 두 번째) */}
+            <div className="ofc-tally ofc-top-grid" data-tally={`${tally.hasEmperor ? 'Y' : 'N'}/${tally.S}/${tally.A}/${tally.B}/${tally.C}/${tally.D}`}>
+              <div className="ofc-top-left">
+                <span className="ofc-count" title={t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })}>
+                  <GameIcon name="tab-officer" label={t('officers.count', { cur: poolUsed(profile), max: poolCap(profile) })} />
+                  <b data-field="poolUsed">{poolUsed(profile)} / {poolCap(profile)}</b>
                 </span>
-              ))}
-            </span>
-          </div>
-          )}
-          {/* 검색은 장부 판 맨 위에(2026-11-19 기획자 — 판 밖에 있던 것을 들였다). 정렬은 열 머리가 한다 */}
-          {!chrome && <div className="ofc-searchrow">{search}</div>}
+                <div className="ofc-searchrow">{search}</div>
+              </div>
+              <span className="ofc-grades">
+                <span className="ofc-grade-item" data-have={tally.hasEmperor ? '1' : '0'} title={t('officers.col.grade')}>
+                  <GlowGrade grade="E" />
+                </span>
+                {(['S', 'A', 'B', 'C', 'D'] as const).map((g) => (
+                  <span key={g} className="ofc-grade-item">
+                    <GlowGrade grade={g} />
+                    <b>{tally[g]}</b>
+                  </span>
+                ))}
+              </span>
+            </div>
+          </section>
+        )}
+        {/* 중단 판 — 표. 전면 화면은 한 쪽 여섯 줄 · 판 가운데 위아래 꺾쇠로 넘긴다(`PageArrow`, 2026-11-27 기획자 — 옛 `Pager`를 걷었다) */}
+        <section className={`place-panel block ofc-table${fill ? ' ofc-fill' : ''}`}>
+          {fill && <PageArrow dir="prev" show={pageCount > 1} disabled={shown <= 0} onClick={() => setPage(shown - 1)} />}
           {chrome && (
             <>
               {/* 첫 줄 — 왼쪽 벽에 제목, 오른쪽 벽 맨 위에 [X](지정 그대로) */}
@@ -465,14 +473,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
                     {r.canLevelUp && <img className="ofc-lv-chev" src="ui/turn/chevron.png" alt="" draggable={false} />}
                   </span>
                   <span className="c-nm-text">{pickOfficerNameById(r.officer, r.name)}</span>
-                  {/* 레벨업 요건이 되면 이름 오른쪽에 깃발(차례 표지 묶음의 넷째 `ui/turn/banner.png`) + 뒤에 황금 섬광
-                      (2026-11-20 기획자 — 레벨 배지 위 겹 갈매기와 함께, 둘 다 위아래로) */}
-                  {r.canLevelUp && (
-                    <span className="ofc-lv-up" role="img" aria-label={t('officers.flag')}>
-                      <BlinkGlow tone="gold" className="ofc-lv-up-halo" />
-                      <img src="ui/turn/banner.png" alt="" draggable={false} />
-                    </span>
-                  )}
+                  {/* 레벨업 대상 — 이름이 초록 네온으로 부드럽게 깜빡인다(`.ofc-row[data-levelup="1"] .c-nm-text`, 2026-11-27 기획자).
+                      옛 깃발 + 황금 섬광은 걷었다 — 긴 이름(몽골어)이 깃발에 밀려 「…」로 잘렸다. 레벨 배지 위 겹 갈매기는 그대로 */}
                 </span>
                 {/* 이 장수의 여분 카드 수 — `officerRows()`가 `profile.cards`에서 이미 계산해 낸다(화면은 다시 세지 않는다) */}
                 <span className="c-cd">{r.cards}</span>
@@ -537,7 +539,8 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
               (`Pager`, 2026-09-14). 장수는 계속 늘어나는 목록이라 [처음]·[끝]을
               켠다 — [이전]·[다음] **바깥쪽**이다(안쪽에 두면 「한 칸」과
               「끝까지」가 섞여 잘못 누른다). */}
-          {pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends />}
+          {!fill && pageCount > 1 && <Pager page={page} pageCount={pageCount} onPage={setPage} ends />}
+          {fill && <PageArrow dir="next" show={pageCount > 1} disabled={shown >= pageCount - 1} onClick={() => setPage(shown + 1)} />}
 
           {/* [선택하기] — **목록 맨 아래 한 곳**(2026-09-11 다섯 번째 지정).
               레벨업의 [확정]과 같은 옥색 목판(`.lv-acts .btn.primary`와 같은
@@ -567,7 +570,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
 
         {/* 명령 판 — 화면 바닥, [뒤로 가기] 하나(2026-11-19 기획자 — 도시 관리의 명령 판과 같은 틀). 고르기 팝업에는 없다 */}
         {!chrome && onBack && (
-          <section className="place-panel cty-acts ofc-acts">
+          <section className="place-panel cmd-panel cty-acts ofc-acts">
             <button className="btn wide" data-action="backBottom" onClick={onBack}>
               {stripBackArrow(t('match.back'))}
             </button>
@@ -692,7 +695,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
             갖게 되면서, 이 팝업만 [X]뿐이면 「여기서는 어떻게 나가지」가 남는다.
             판때기·단추 그림은 대장간의 것(`.frg-back`)을 그대로 빌린다. */}
         {!growth && (
-        <section className="place-panel frg-back">
+        <section className="place-panel cmd-panel frg-back">
           <div className="frg-buttons">
             <button className="btn wide" data-action="closeOfficerPickBottom" onClick={onClose}>
               <span className="lbl">{stripBackArrow(t('match.back'))}</span>

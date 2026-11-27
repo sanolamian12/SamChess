@@ -95,7 +95,7 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
           <SquadRoster profile={profile} squad={squad} />
         </section>
 
-        <section className="place-panel sqd-acts">
+        <section className="place-panel cmd-panel sqd-acts">
           {/* 수비대(= 수비군)면 [수비군 설정] — 공격대에는 방침이 없다(2026-11-14). 「수비군」 표지와 설명은 뺐다
               (2026-11-13 기획자 — 무관의 말 `squadView.garrison`과 겹친다) */}
           {garrison && (

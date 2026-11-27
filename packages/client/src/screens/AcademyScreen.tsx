@@ -241,7 +241,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
 
       {/* 명령 판 — 화면 바닥 */}
       <div className="place-body">
-        <section className="place-panel acd-home">
+        <section className="place-panel cmd-panel acd-home">
           <div className="frg-buttons">
             {/* 연구 중이면 [연구하기] 자리에 **붉은 [연구 취소]**(`button_forcedcancel.png`) — 대장간 [제작 취소]와
                 같은 그림이다. 현황판에 붙어 있던 작은 [취소]는 이리로 옮겨 왔다(2026-09-22 기획자 지정) */}
@@ -326,7 +326,7 @@ export function AcademyScreen({ profile, onBack, onChange }: {
                 {!instant && <CityBonusMark profile={profile} keys={['research']} atMs={now} />}
               </div>
             </section>
-            <section className="place-panel frg-back">
+            <section className="place-panel cmd-panel frg-back">
               <div className="frg-buttons">
                 <button className="btn wide" data-action="closePick" onClick={() => setModal(null)}>
                   <span className="lbl">{t('academy.close')}</span>

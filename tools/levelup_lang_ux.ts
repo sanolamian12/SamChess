@@ -10,6 +10,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { MIN_SPEC_PORTRAIT } from './minSpec.ts';
 import type { Page } from 'playwright';
 import type { PlayerProfile } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
@@ -34,7 +35,7 @@ const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
 const uid = (await created.json() as { id: string }).id;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const page = await browser.newPage({ viewport: MIN_SPEC_PORTRAIT });
 
 /** 칸마다 높이(px) · 글을 줄인 배율 — 이름은 언어와 상관없는 열쇠 */
 async function measure(p: Page, root: string, sels: Record<string, string>): Promise<Record<string, string>> {

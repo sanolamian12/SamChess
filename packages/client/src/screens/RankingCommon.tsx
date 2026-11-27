@@ -17,7 +17,7 @@ import { Say } from './Steward.tsx';
 import { fetchRanking } from '../meta/ranking.ts';
 import type { BoardRows } from '../meta/ranking.ts';
 import { OfficerActionArt } from './OfficerArt.tsx';
-import { SkillModal } from './SkillModal.tsx';
+import { SkillModal, skillPanelGroup } from './SkillModal.tsx';
 import { TacticModal } from './TacticModal.tsx';
 import { skillArtUrl } from '../ui/art.ts';
 import { ItemThumb } from './EquipThumb.tsx';
@@ -33,6 +33,8 @@ import { TacticIcon } from './TacticIcon.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
+import { loreTeaser } from './loreTeaser.ts';
+import { playSfx } from '../audio/sfx.ts';
 
 /**
  * 장수 카드의 부상 (GDD §8.2 · §5.7, 트랙 11g). **caller가 넘긴다** — 카드는 프로필도
@@ -74,7 +76,7 @@ export const stripBackArrow = (label: string): string => label.replace(/^[←\s]
  */
 export function RankingBackPanel({ onBack }: { onBack: () => void }): React.JSX.Element {
   return (
-    <section className="place-panel rk-back">
+    <section className="place-panel cmd-panel rk-back">
       <button className="btn wide" data-action="backRanking" onClick={onBack}>
         <span className="lbl">{stripBackArrow(t('match.back'))}</span>
       </button>
@@ -399,7 +401,7 @@ export interface ItemsLook {
  */
 const HELD_BADGE: 'square' | 'round' = 'round';
 
-export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, levelsCards, levelsEligible, levelsNote, equip, injury, action }: {
+export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, levelsEligible, levelsNote, equip, injury, action }: {
   row: OfficerRankRow; onClose: () => void;
   /** 있으면 카드 맨 아래, [뒤로 가기] 밑에 그 자리의 한 수 (2026-11-16 기획자, 농지 보초병) —
       고르는 팝업에서는 옥색 [선택하기], 세운 보초병 · 부대원에서는 붉은 [해제하기] */
@@ -411,9 +413,6 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
   onItems?: () => void;
   /** [아이템] 단추의 배지 · 글 — 없으면 「아이템」 글자만 */
   itemsLook?: ItemsLook;
-  /** [강화] 오른쪽 끝의 「{have} / {need} (카드 그림)」 — `need`가 `null`이면 최대 레벨. caller(`OfficerDetailModal`)가 넘긴다 —
-      카드 수는 `profile.cards`에서 나오는데, 이 카드는 `OfficerRankRow`만 받아 프로필을 모른다. */
-  levelsCards?: { have: number; need: number | null };
   /** 카드는 넉넉한데 못 올리는 까닭(도시 레벨 상한) — 그 자리의 사람이 말한다. 카드가 모자란 것은 빤해서 말하지 않는다 */
   levelsNote?: string | null;
   /** 지금 레벨업이 가능하면(`canLevelUp`) `true` — 장수 일람 표의 레벨업
@@ -438,6 +437,9 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
   // 열린 책략은 **id로** 들고 정의는 매번 찾는다 — 카드 자체가 id만 실어 온다.
   const [tacticOpen, setTacticOpen] = useState<string | null>(null);
   const tactic = tacticOpen ? tacticById.get(tacticOpen) : undefined;
+  // 장수 열전 펼침 — 접힌 판을 누르면 뜬다(2026-11-27 기획자). 위 둘과 같은 이유로 카드 밖에서 연다
+  const [loreOpen, setLoreOpen] = useState(false);
+  const story = pickStory(row.story);
   return (
     <div className="modal-back ofcard-back" onClick={onClose}>
       <div className="ofcard-modal" data-officer={row.officer} onClick={(e) => e.stopPropagation()}>
@@ -446,7 +448,6 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
           {...(onLevels ? { onLevels } : {})}
           {...(onItems ? { onItems } : {})}
           {...(itemsLook ? { itemsLook } : {})}
-          {...(levelsCards ? { levelsCards } : {})}
           {...(levelsNote ? { levelsNote } : {})}
           {...(equip ? { equip } : {})}
           {...(injury ? { injury } : {})}
@@ -454,10 +455,14 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
           levelsEligible={levelsEligible ?? false}
           onOpenSkill={() => setSkillOpen(true)}
           onOpenTactic={setTacticOpen}
+          onOpenLore={() => { playSfx('paper'); setLoreOpen(true); }}
         />
       </div>
       {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
       {tactic && <TacticModal tactic={tactic} onClose={() => setTacticOpen(null)} />}
+      {loreOpen && story && (
+        <LoreModal story={story} name={pickOfficerNameById(row.officer, row.name)} courtesy={pickStory(row.courtesyName)} onClose={() => setLoreOpen(false)} />
+      )}
     </div>
   );
 }
@@ -508,11 +513,11 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
  * "Lv 9 | HP 40 | ..."처럼 보여도, 이후 항목마다 다른 자리·꾸밈을 넣으려면
  * (아이콘, 강조색 등) 미리 나눠 둔 쪽이 CSS만으로 끝난다.
  */
-function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, levelsEligible, levelsNote, equip, injury, action, onOpenSkill, onOpenTactic }: {
+function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsEligible, levelsNote, equip, injury, action, onOpenSkill, onOpenTactic, onOpenLore }: {
   row: OfficerRankRow; onClose: () => void;
   /** `OfficerCardModal`의 같은 이름 */
   action?: CardAction;
-  onLevels?: () => void; onItems?: () => void; itemsLook?: ItemsLook; levelsCards?: { have: number; need: number | null }; levelsEligible?: boolean; levelsNote?: string | null;
+  onLevels?: () => void; onItems?: () => void; itemsLook?: ItemsLook; levelsEligible?: boolean; levelsNote?: string | null;
   /** 이 장수가 낀 병기 — **caller가 넘긴다**(`levelsCards`와 같은 이유). 카드는
       `OfficerRankRow`만 받아 프로필을 모르고, 랭킹의 다른 계정 장수는 애초에
       알 수 없는 값이라 그쪽은 안 넘긴다 — 그러면 이 줄째로 사라진다. */
@@ -523,6 +528,8 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
   onOpenSkill: () => void;
   /** 책략 칩을 눌렀을 때 — `TacticModal`도 위와 **같은 이유로** 카드 밖에서 연다 */
   onOpenTactic: (id: string) => void;
+  /** 접힌 열전 판을 눌렀을 때 — `LoreModal`도 카드 밖에서 연다 */
+  onOpenLore: () => void;
 }): React.JSX.Element {
   const skill = row.uniqueSkillId ? skillById.get(row.uniqueSkillId) : undefined;
   // `courtesyName`/`story`가 언어별 맵이라(2026-08-27 열 언어 배선) 지금 UI
@@ -536,10 +543,10 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
 
   return (
     <section className="place-panel ofcard">
-      {/* 다른 목판 프레임 없이 X 아이콘만(2026-08-27 열세 번째 피드백 —
-          "닫기 박스를 다른 프레임을 씌우지 말고 X자 아이콘만"). */}
-      <button className="ofcard-close" data-action="closeCard" onClick={onClose} aria-label={t('ranking.card.close')}>
-        <img className="ofcard-close-icon" src="icons/close.png" alt="" />
+      {/* 닫기 — 붉은 체크(`icons/confirm.png` ← `button_confirm`)가 위아래로 살짝 둥실 (2026-11-27 기획자 — 옛 X 아이콘의 1.2배).
+          아래 [뒤로 가기]는 걷었다 — 닫는 길은 이것 하나(와 가리개) */}
+      <button className="ofcard-close ofcard-close-check" data-action="closeCard" onClick={onClose} aria-label={t('ranking.card.close')}>
+        <img className="ofcard-close-icon" src="icons/confirm.png" alt="" />
       </button>
 
       {/* 이름 줄 — 「내 장수」 표의 등급 배지(`.gr`)·이름(`.rk-nm`)과 같은
@@ -669,7 +676,8 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
       {/* 고유기술 연출 배너 — 패널 폭 전체. 눌러서 설명 팝업(SkillModal, `OfficerCardModal`이 연다). 없으면 명패 */}
       <h3 className="ofcard-head" data-field="headSkill">{t('ranking.card.head.skill')}</h3>
       {row.uniqueSkillId && skill ? (
-        <button type="button" className="ofcard-skillbanner" data-action="skill" onClick={onOpenSkill}>
+        /* 등급 테두리(`ui/skill-frame-{se,a,b}.png`, 고유기술 팝업 판과 같은 셋 — `skillPanelGroup`)를 배너 위에 씌운다 (2026-11-27 기획자) */
+        <button type="button" className="ofcard-skillbanner ofcard-skillframe" data-action="skill" data-tier-group={skillPanelGroup(skill)} onClick={onOpenSkill}>
           <img src={skillArtUrl(row.uniqueSkillId)} alt={skill.name} />
         </button>
       ) : (
@@ -678,10 +686,20 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
         <div className="ofcard-noskill" data-field="noSkill">{t('ranking.card.noSkill')}</div>
       )}
 
-      {/* 인물 소개 — 대나무 테두리(`btn-ghost.png`, 2026-08-27 열세 번째 지정).
-          G1이 218/260명만 채웠다. 없으면 이 줄째로 사라진다(§data 머리말) */}
+      {/* 장수 열전 — 예전의 가죽 판(`ui/panel-battle-officer.png`)을 [아이템] · [강화] 단추 높이로 접어 첫머리 한 문장 + 「(더보기)」 (2026-11-27 기획자).
+          누르면 같은 판이 커져 열전 전부를 보여 준다(`LoreModal`). 없으면 이 줄째로 사라진다(§data 머리말) */}
       {story && <h3 className="ofcard-head" data-field="headStory">{t('ranking.card.head.story')}</h3>}
-      {story && <p className="ofcard-story">{story}</p>}
+      {story && (
+        <button type="button" className="ofcard-lore" data-action="openLore" onClick={onOpenLore}>
+          {/* 첫머리와 (더보기)는 한 문장처럼 이어 흐른다(안쪽 span 하나) — 따로 잡으면 (더보기)가 늘 새 줄로 밀렸다 */}
+          <span className="ofcard-lore-t">
+            <span className="ofcard-lore-in">
+              <span className="ofcard-lore-first">{loreTeaser(story)}</span>{' '}
+              <span className="ofcard-lore-more">{t('ranking.card.story.more')}</span>
+            </span>
+          </span>
+        </button>
+      )}
 
       {/* 아래 단추 — [아이템] · [레벨/스킬 관리] · [뒤로 가기], 그 밑에 그 자리의 한 수(옥색 [선택하기] · 붉은 [해제하기]) (2026-11-19 기획자).
           [아이템] · [레벨/스킬 관리]는 내 장수일 때만 — 랭킹의 다른 계정 장수는 [X]만(그 계정을 관리할 수 없다).
@@ -698,29 +716,45 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
       )}
       {action?.inLevelsSlot && <ActionButton action={action} />}
       {onLevels && !action?.inLevelsSlot && (
-        /* [강화](옛 [레벨/스킬 관리], 2026-11-20 기획자) — 이름은 가운데, 오른쪽 끝에 「보유 / 필요 (카드 그림)」.
+        /* [강화](옛 [레벨/스킬 관리], 2026-11-20 기획자) — 왼쪽에 [아이템]과 같은 둥근 금테 배지(장수 카드 그림), 이름은 가운데.
+           「보유 / 필요」 숫자는 걷었다(2026-11-27 기획자 — 몽골어에서 이름과 겹쳤고, 올릴 수 있을 때만 켜지니 숫자가 없어도 된다).
            올릴 수 없으면(`levelsEligible` 거짓 — 카드 모자람 · 도시 상한 · 최대 레벨) 꺼진다. 누르면 곧장 레벨업 고르기 */
         <>
-          <button className="btn wide ofcard-mid ofcard-enhance" data-action="levels" disabled={!levelsEligible} onClick={onLevels}>
+          <button className="btn wide ofcard-mid ofcard-enhance ofcard-held" data-action="levels" disabled={!levelsEligible} onClick={onLevels}>
+            <span className="ofcard-held-badge" data-field="enhanceBadge" data-shape="round">
+              <span className="ofcard-held-in"><img src="market/market_card.png" alt={t('officers.col.cards')} /></span>
+            </span>
             <span className="lbl">{t('officer.levels')}</span>
-            {levelsCards && (
-              <span className={`sub ofcard-enhance-cards${levelsEligible ? ' levelup-ready' : ''}`} data-field="enhanceCards">
-                {levelsCards.need === null ? t('officer.cards.max') : (
-                  <>{levelsCards.have} / {levelsCards.need}<img src="market/market_card.png" alt={t('officers.col.cards')} /></>
-                )}
-              </span>
-            )}
           </button>
           <Say text={levelsNote} name="levelCap" />
         </>
       )}
-      {(onItems || onLevels || action) && (
-        <button className="btn wide ofcard-mid" data-action="cardBack" onClick={onClose}>
-          <span className="lbl">{stripBackArrow(t('match.back'))}</span>
-        </button>
-      )}
       {action && !action.inLevelsSlot && <ActionButton action={action} />}
     </section>
+  );
+}
+
+/**
+ * 장수 열전 — 펼친 판 (2026-11-27 기획자). 접힌 판과 같은 가죽 판(`ui/panel-battle-officer.png`)이 화면 가로 · 세로 80%로 커져 한가운데에 뜨고
+ * 뒤는 어두워진다. 첫 줄은 제목(이름 + 자), 그 밑에 열전 전부를 시원한 글자로(`--lore-fs` — 열 언어 × 260명 가운데 가장 긴 열전이 드는 크기,
+ * `tools/lore_popup_fit.ts`가 잰다). 글이 끝난 다음 줄 오른쪽에 붉은 체크(장수 상세와 같은 크기 · 같은 움직임) — 누르면 닫힌다(가리개를 눌러도)
+ */
+function LoreModal({ story, name, courtesy, onClose }: { story: string; name: string; courtesy?: string | undefined; onClose: () => void }): React.JSX.Element {
+  return (
+    <div className="modal-back lore-back" data-modal="lore" onClick={(e) => { e.stopPropagation(); onClose(); }}>
+      <div className="lore-modal" onClick={(e) => e.stopPropagation()}>
+        <h3 className="lore-title" data-field="loreTitle">
+          <span className="lore-name">{name}</span>
+          {courtesy && <span className="lore-courtesy">{courtesy}</span>}
+        </h3>
+        <p className="lore-text" data-field="loreText">{story}</p>
+        <div className="lore-okrow">
+          <button type="button" className="lore-ok" data-action="closeLore" onClick={onClose} aria-label={t('ranking.card.close')}>
+            <img src="icons/confirm.png" alt="" draggable={false} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

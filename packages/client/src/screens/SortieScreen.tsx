@@ -218,7 +218,7 @@ export function SortieScreen({ profile, onBack, onNewSquad, onSeek }: {
             (`sortie.items*`)는 열 언어에 남겨 둔다(되살릴 때 번역을 다시 받지 않는다) */}
 
         {/* 명령 판 — 화면 바닥. 병영·부대 목록·도시와 같은 자리·같은 결 */}
-        <section className="place-panel srt-acts">
+        <section className="place-panel cmd-panel srt-acts">
           <button
             className="btn primary wide"
             data-action="seek"

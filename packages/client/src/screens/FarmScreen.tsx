@@ -346,7 +346,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
         {/* 바닥 명령 판 — [마을로 가기](2026-11-16 기획자 — 보초병은 위 판에서 바로 고친다).
             싸워야 할 때만 그 위에 같은 크기의 [도적단 퇴치](금빛 두루마리 + 노란 네온, 2026-11-20 기획자 — 옛 제 판에서 옮겼다).
             끊긴 판(`fighting`)도 같은 자리에 [전투 재개] — 앱이 상태를 보고 재개로 가른다 (2026-10-15) */}
-        <section className="place-panel frm-cmd">
+        <section className="place-panel cmd-panel frm-cmd">
           <div className="frg-buttons">
             {level > 0 && (raid?.status === 'pending' || raid?.status === 'fighting') && (
               <button className="btn wide frm-alert-btn" data-field="raidAlertPanel" data-action={raid.status === 'pending' ? 'raidFight' : 'raidResume'}

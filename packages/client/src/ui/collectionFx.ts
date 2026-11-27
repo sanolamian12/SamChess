@@ -467,7 +467,7 @@ function fitLine(el: HTMLElement): void {
   range.selectNodeContents(el);
   const room = el.clientWidth * 0.98;
   let size = base;
-  const floor = Math.min(base, Math.max(base * 0.7, fontFloorPx()));   // 하한 0.8rem(2026-11-18)
+  const floor = Math.min(base, Math.max(base * 0.7, fontFloorPx()));   // 하한(`FONT_FLOOR_REM`)
   while (range.getBoundingClientRect().width > room && size - base * 0.04 >= floor) {
     size -= base * 0.04;
     el.style.fontSize = `${size}px`;

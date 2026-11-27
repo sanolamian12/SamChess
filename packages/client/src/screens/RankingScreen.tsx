@@ -124,7 +124,7 @@ export function RankingScreen({ profile, from, onBack, onBoard }: {
           {boards.map((b) => <BoardSummary key={b} profile={profile} board={b} ranks={ranks} />)}
         </section>
 
-        <section className="place-panel rk-menu">
+        <section className="place-panel cmd-panel rk-menu">
           {boards.map((b) => (
             <button key={b} className="btn wide" data-action={BOARD_ACTION[b]} onClick={() => onBoard(b)}>
               <img className="rk-tab-icon" src={GAME_ICONS[BOARD_ICON[b]]} alt="" />

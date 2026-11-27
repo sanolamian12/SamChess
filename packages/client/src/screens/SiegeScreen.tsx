@@ -190,7 +190,7 @@ export function SiegeScreen({ profile, mode, squad, onBack, onAuto, onReady, onW
           <Pager page={current} pageCount={pageCount} onPage={setPage} ends />
         </section>
 
-        <section className="place-panel srt-acts">
+        <section className="place-panel cmd-panel srt-acts">
           <button className="btn wide" data-action="autoMatch" onClick={auto}>
             <span className="lbl"><GameIcon name="opp-ai" label={t('siege.auto')} text /></span>
           </button>

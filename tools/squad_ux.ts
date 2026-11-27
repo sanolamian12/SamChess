@@ -327,9 +327,9 @@ try {
   await page.waitForSelector('.ofcard [data-action="heldOpen"]');
   // 병기 줄(그림 아래 · 책략 위)은 없다 — 지닌 것은 [아이템] 단추 오른쪽에만 (2026-11-17 기획자)
   if (await page.$('.ofcard [data-field="equip"]')) fail('장수 카드에 병기 줄이 남아 있다');
-  // 카드 단추 차례 — [아이템] · [뒤로 가기] · [해제하기](맨 아래) (2026-11-17 기획자)
+  // 카드 단추 차례 — [아이템] · [강화] · [해제하기](맨 아래) (2026-11-17 기획자 — [뒤로 가기]는 2026-11-27에 걷었다, 닫기는 오른쪽 위 체크)
   const cardActs = await page.$$eval('.ofcard .btn[data-action]', (els) => els.map((e) => (e as HTMLElement).dataset.action).join(','));
-  if (!cardActs.endsWith('heldOpen,levels,cardBack,cardRelease')) fail(`카드 단추 차례가 [${cardActs}]다 — [아이템] · [레벨/스킬 관리] · [뒤로 가기] · [해제하기] (2026-11-19 공용 장수 상세)`);
+  if (!cardActs.endsWith('heldOpen,levels,cardRelease')) fail(`카드 단추 차례가 [${cardActs}]다 — [아이템] · [강화] · [해제하기] (2026-11-27 공용 장수 상세)`);
   // [아이템] 단추에는 그림이 없다 — 이름만 (2026-11-17 기획자)
   if (await page.$('.ofcard [data-action="heldOpen"] img, .ofcard [data-action="heldOpen"] .ofcard-lead-icon')) fail('[아이템] 단추에 그림이 남아 있다');
   await page.waitForTimeout(500);
@@ -443,7 +443,7 @@ try {
   await page.click('[data-action="heldClose"]');
   await page.waitForSelector('[data-modal="heldPick"]', { state: 'detached' });
   if (await page.$('[data-modal="heldSaved"]')) fail('안 바꿨는데 저장 알림이 떴다');
-  await page.click('.ofcard [data-action="cardBack"]');
+  await page.click('.ofcard [data-action="closeCard"]');
   await page.waitForTimeout(150);
   if (await page.getAttribute('.sqe-row[data-piece="King"] [data-field="held"] .sqe-item', 'data-item') !== 'tang-yak') fail('King 줄 병기구 칸에 탕약이 안 보인다');
   // 줄의 병기구 칸 — 병기도 아이템도 정사각 칸 + 후광, 대장간의 3:1 목록 그림(.frg-thumb)은 없다

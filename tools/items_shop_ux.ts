@@ -8,6 +8,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
+import { MIN_SPEC } from './minSpec.ts';
 import { MARKET_ITEMS } from '@samchess/data';
 import { GUIDE_IDS } from '@samchess/meta';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -33,7 +34,7 @@ const uid = (await created.json() as { id: string }).id;
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
-  viewport: { width: Number(process.env['VW'] ?? 390), height: Number(process.env['VH'] ?? 844) },
+  viewport: { width: Number(process.env['VW'] ?? MIN_SPEC.width), height: Number(process.env['VH'] ?? MIN_SPEC.height) },
   deviceScaleFactor: 2,
 });
 const errors: string[] = [];
@@ -88,7 +89,7 @@ try {
         rowH: panel.style.getPropertyValue('--row-h'),
         overflow: cards.filter((c) => c.scrollHeight > c.clientHeight + 1 || c.scrollWidth > c.clientWidth + 1).map((c) => c.getAttribute('data-item')),
         scroll: scr.scrollHeight - scr.clientHeight,
-        next: !(document.querySelector('.mkt-item-arrow[data-dir="next"]') as HTMLButtonElement | null)?.disabled,
+        next: !(document.querySelector('.page-arrow[data-dir="next"]') as HTMLButtonElement | null)?.disabled,
         store: Math.round((document.querySelector('.mkt-to-storage') as HTMLElement).getBoundingClientRect().width),
         rowW: (document.querySelector('.mkt-to-storage-row') as HTMLElement).style.getPropertyValue('--row-w'),
       };
@@ -96,13 +97,13 @@ try {
     heights.push(`p${p + 1} 판 ${m.panel} · 카드 ${m.cards.join('/')} (row-h ${m.rowH}) · [보관함으로] ${m.store} (row-w ${m.rowW})`);
     if (m.overflow.length) fail(`카드가 넘쳤다 — ${m.overflow.join(', ')}`);
     if (!m.next) break;
-    await page.click('.mkt-item-arrow[data-dir="next"]');
+    await page.click('.page-arrow[data-dir="next"]');
     await page.waitForTimeout(150);
     if (p === 0) {
       await shot('2-page2');
       // 위 화살 — 가장 높이 오른 순간에도 머리 판 · 몸통에 안 가린다(오르내림을 맨 위에 세우고 그 윗점을 짚는다)
       const top = await page.evaluate(() => {
-        const img = document.querySelector('.mkt-item-arrow[data-dir="prev"] img') as HTMLElement;
+        const img = document.querySelector('.page-arrow[data-dir="prev"] img') as HTMLElement;
         img.style.animation = 'none'; img.style.translate = '0 -.25rem';
         const r = img.getBoundingClientRect();
         const hits = [0.2, 0.35].map((f) => document.elementFromPoint(r.left + r.width / 2, r.top + r.height * f));
@@ -110,13 +111,13 @@ try {
       });
       if (top) fail(`위 화살 윗부분이 가려진다 — ${top}`);
       ok('위 화살 — 가장 높이 올라도 안 가린다');
-      await page.evaluate(() => { const img = document.querySelector('.mkt-item-arrow[data-dir="prev"] img') as HTMLElement; img.style.animation = ''; img.style.translate = ''; });
+      await page.evaluate(() => { const img = document.querySelector('.page-arrow[data-dir="prev"] img') as HTMLElement; img.style.animation = ''; img.style.translate = ''; });
     }
   }
   console.log(heights.join('\n'));
   await shot('3-lastpage');
-  while (!(await page.$eval('.mkt-item-arrow[data-dir="prev"]', (b) => (b as HTMLButtonElement).disabled))) {
-    await page.click('.mkt-item-arrow[data-dir="prev"]');
+  while (!(await page.$eval('.page-arrow[data-dir="prev"]', (b) => (b as HTMLButtonElement).disabled))) {
+    await page.click('.page-arrow[data-dir="prev"]');
   }
 
   // 한 칸 남음 — 2냥짜리를 누르면 확인 판 → 구매 → 가득(붉은 글자)

@@ -223,7 +223,7 @@ export function GoodsView({ profile, onChange, busy, run, onBack, onAcademy }: {
       </section>
       <Say text={why?.text ?? null} level={profile.cityLevel} name="goodsWhy" code={why?.code} repeat />
 
-      <section className="place-panel mkt-cmds">
+      <section className="place-panel cmd-panel mkt-cmds">
         <div className="frg-buttons">
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>

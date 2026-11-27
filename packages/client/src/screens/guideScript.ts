@@ -62,7 +62,8 @@ export const SPOT_SELECTOR = {
   squadNew: '[data-slot="atk-3v3"]',
   pickMode: '[data-field="pickMode"]',
   rewards: '[data-field="rewards"]',
-  levelSeal: '.ofc-lv-up',
+  // 레벨업 대상 — 이름이 초록 네온으로 깜빡인다(2026-11-27 기획자 — 깃발 · 섬광을 걷었다)
+  levelSeal: '.ofc-row[data-levelup="1"] .c-nm-text',
   // 둘러보기(2026-10-23) — 메인의 자리 네모 · 장터 홈 · 대자보
   marketHot: '.city-hot[data-place="market"]',
   boardHot: '.city-hot[data-place="ranking"]',

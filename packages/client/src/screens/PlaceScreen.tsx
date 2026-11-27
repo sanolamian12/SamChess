@@ -119,7 +119,7 @@ export function PlaceScreen({ profile, place, onBack, onChange, sortieBlocked, o
              「아직 열리지 않았다」를 달아 둔 것이 「눌리는데 아무 일도 없으면
              「고장인가」가 남는다」에 대한 처리였다. */
           /* 단추는 이름만, 가운데 (2026-11-19 기획자 — 소개 글을 걷었다) */
-          <section className="place-panel plc-cmds">
+          <section className="place-panel cmd-panel plc-cmds">
             {/* 장수 일람으로 이끈다 — 상세를 한 번 열어 볼 때까지(`officer.card`), 증축 표지가 없을 때만 (2026-11-14 기획자) */}
             <button className="btn wide" data-action="officers" onClick={onOfficers}
               data-guide-cue={growthOn && !growthCue(profile) && !guideSeen(profile, 'officer.card') ? '' : undefined}>
@@ -174,9 +174,14 @@ function PalaceStatus({ profile }: {
             <GameIcon name="tab-city" label={t('city.summary.level', { level: profile.cityLevel })} />
             <CityLevelBadge level={profile.cityLevel} />
           </span>
+          <span className="plc-lv-name">{t('main.cityLevel')}</span>
         </span>
         <span className="plc-cell" data-field="pool"><GameIcon name="tab-officer" label={t('palace.pool', { have: poolUsed(profile), max: poolCap(profile) })} text /></span>
-        <span className="plc-cell" data-field="palaceLevel"><BuildingLevel id="palace" name={buildingNameText('palace')} level={buildingLevel(profile, 'palace')} /></span>
+        <span className="plc-cell" data-field="palaceLevel">
+          <BuildingLevel id="palace" name={buildingNameText('palace')} level={buildingLevel(profile, 'palace')} />
+          {/* 배지 오른쪽에 이름 — 「도시」 · 「궁궐」 (2026-11-27 기획자) */}
+          <span className="plc-lv-name">{buildingNameText('palace')}</span>
+        </span>
         <span className="plc-cell" data-field="emperor" data-emperor={emperor ? '1' : '0'}>
           {/* 황제 — E급 표지 + 「황제」(2026-11-19 기획자): 없으면 회색조 · 회색 글자, 있으면 제 색 + 금빛 후광 · 검은 글자. 옹립 여부는 올리면 */}
           <span className="plc-emperor" title={t('palace.emperor', { state: emperor ? t('city.emperor.yes') : t('city.emperor.no') })}>
@@ -393,21 +398,18 @@ function BarracksDoors({ onSortie, onSquads, onTutorial, blocked, level }: {
   // 수비군이 없어 막힌 것은 단추 밑에 안 적는다 — 내관이 병영 안내에서 말한다(2026-11-12 기획자). 단추는 그대로 잠긴다
   const said = why !== null && code !== 'sortie.noGarrison';
   return (
-    <section className="place-panel bar-doors">
+    <section className="place-panel cmd-panel bar-doors">
       {/* 튜토리얼이 열렸다 (G3, 2026-10-22) — 기본 셋을 끝내야 [출정하기]가 열린다(`sortieGate`) */}
       <button className="btn wide" data-action="tutorial" onClick={onTutorial}>
         <span className="lbl">{t('barracks.tutorial')}</span>
-        <span className="sub">{t('barracks.tutorial.sub')}</span>
       </button>
 
       <button className="btn wide" data-action="squads" onClick={onSquads}>
         <span className="lbl">{t('barracks.squads')}</span>
-        <span className="sub">{t('barracks.squads.sub')}</span>
       </button>
 
       <button className="btn wide primary" data-action="sortie" disabled={why !== null} data-blocked={code || undefined} onClick={onSortie}>
         <span className="lbl">{t('barracks.sortie')}</span>
-        <span className="sub">{t('barracks.sortie.sub')}</span>
       </button>
       {/* 안 되는 이유는 제 단추 바로 밑에 — 기본 튜토리얼을 안 끝냈거나 도적떼가 농지를 노리는 동안이다 */}
       {/* `data-code` — 막은 쪽(튜토리얼 · 도적떼). 스모크가 글자가 아니라 이것으로 누가 막았는지 본다 */}

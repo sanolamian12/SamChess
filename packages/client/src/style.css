@@ -188,7 +188,7 @@ img.no-art { visibility: hidden; }
   display: flex; flex-direction: column;
   border-radius: .45rem;
   background: #0e1319e6; border: 1px solid #3f4a58;
-  font-size: .8rem;
+  font-size: .9rem;
 }
 
 /* ── 순서 판 — 위 칸 왼쪽 (전투 UI 개편 3단계, pptx 90·92쪽 · `ui/orderPanel.ts`) ──
@@ -226,7 +226,7 @@ img.no-art { visibility: hidden; }
 .ord-row {
   position: relative; isolation: isolate; height: var(--sw-h);
   display: grid; align-items: center; cursor: pointer;
-  font-size: .8rem; line-height: 1.2; white-space: nowrap; color: #1d1a16;
+  font-size: .9rem; line-height: 1.2; white-space: nowrap; color: #1d1a16;
 }
 .ord-row::before {
   content: ''; position: absolute; inset: 0; z-index: -2;
@@ -282,14 +282,14 @@ img.no-art { visibility: hidden; }
   background: linear-gradient(90deg, #d8d23a calc(var(--wt) * 130% - 30%), #47a862 calc(var(--wt) * 130%));
 }
 .ord-wt-n {
-  position: relative; font-size: .8rem; font-weight: 800; line-height: 1;
+  position: relative; font-size: .9rem; font-weight: 800; line-height: 1;
   font-variant-numeric: tabular-nums; color: #15130f; text-shadow: 0 0 2px #fff, 0 0 3px #ffffffb0;
 }
 
 /* 기물 아이콘 (100쪽 3, `ui/pieceIcon.ts`) — 그림이 오기 전엔 체스 글리프를 진영 색으로 */
 .pc-icon {
   display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem;
-  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif; font-size: .8rem; line-height: 1;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "DejaVu Sans", sans-serif; font-size: .9rem; line-height: 1;
   color: #e8914a; text-shadow: 0 1px 1px #000a;
 }
 .pc-icon[data-side="mine"] { color: #6fb0f0; }
@@ -319,9 +319,9 @@ img.no-art { visibility: hidden; }
    옛 상단 HUD(pptx 27쪽)를 갈음한다. SP는 정수, 남은 시간은 AI 대전이면 「-」. */
 #gameinfo {
   padding: .45rem .55rem .45rem; gap: .35rem;
-  font-size: .8rem; line-height: 1.35; color: #e8e8e8;
+  font-size: .9rem; line-height: 1.35; color: #e8e8e8;
 }
-#gameinfo i { font-style: normal; font-size: .8rem; color: #8b929c; }
+#gameinfo i { font-style: normal; font-size: .9rem; color: #8b929c; }
 #gameinfo .num { font-variant-numeric: tabular-nums; }
 .gi-day { flex: none; font-size: 1rem; font-weight: 700; letter-spacing: .02em; text-align: center; }
 #gameinfo.over .gi-day { color: #f0c674; }
@@ -330,7 +330,7 @@ img.no-art { visibility: hidden; }
   display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; column-gap: .55rem;
   padding: .12rem .35rem; border-radius: .25rem; background: #191c22; border: 1px solid #2a2d34;
 }
-.gi-army { font-size: .8rem; color: #8b929c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gi-army { font-size: .9rem; color: #8b929c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gi-side.mine .gi-army { color: #e8e8e8; }
 .gi-sp, .gi-skip, .gi-left { display: flex; align-items: baseline; gap: .25rem; white-space: nowrap; }
 .gi-sp .num { font-size: .9rem; display: inline-block; }
@@ -396,7 +396,7 @@ img.no-art { visibility: hidden; }
 #gameinfo .gi-left { justify-content: flex-end; gap: .35rem; }   /* 옛 `.gi-left`(space-between, 파일 뒤쪽)를 이긴다 */
 /* 제한 글자는 해시계 왼쪽의 남는 폭 한가운데 (2026-10-10 기획자 지정) */
 .gi-left .num { white-space: nowrap; flex: 1; min-width: 0; text-align: center; }
-.gi-left .num[data-left="-"] { font-size: .8rem; color: #e9dfca; }
+.gi-left .num[data-left="-"] { font-size: .9rem; color: #e9dfca; }
 .gi-left { padding-block: 0; }
 .gi-day .num { font-size: 1.15rem; }
 /* 줄 높이는 깃발이 정한다 — 칸 사이를 한 단계 좁혀 아래 [항복]이 안 잘리게 (넘침은 scrollHeight로 잰다) */
@@ -409,7 +409,7 @@ img.no-art { visibility: hidden; }
   flex: none; justify-content: space-between; padding: .12rem .35rem; border-radius: .25rem;
   background: #191c22; border: 1px solid #2a2d34;
 }
-#gameinfo .gi-left i { font-size: .8rem; color: #c3c8cf; }
+#gameinfo .gi-left i { font-size: .9rem; color: #c3c8cf; }
 .gi-left .num { font-size: .9rem; color: #f0c674; }
 /* 5초 이하 — 붉게 맥박친다 (2026-10-10 기획자 확정, `HURRY_SEC`). 칸의 빛과 숫자가 함께 */
 .gi-left.gi-hurry { animation: gi-hurry .8s ease-in-out infinite; }
@@ -455,13 +455,13 @@ img.no-art { visibility: hidden; }
   margin: -.15rem -.15rem 0; padding: .3rem .2rem;
   border-style: solid; border-color: transparent; border-width: 1rem 1.6rem; border-radius: 0;
   border-image: url(ui/plate-settings.png) 20% 7% fill; background: transparent;
-  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem; text-align: center;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .9rem; text-align: center;
 }
-.gi-ask-q { font-size: .82rem; line-height: 1.55; text-align: center; word-break: keep-all; white-space: pre-line; color: #f3e8c8; }
+.gi-ask-q { font-size: .9rem; line-height: 1.55; text-align: center; word-break: keep-all; white-space: pre-line; color: #f3e8c8; }
 .gi-ask-acts { --cx-btn-h: 2rem; display: flex; flex-direction: column; gap: .3rem; }
 .gi-ask-acts button {
   box-sizing: border-box; height: var(--cx-btn-h); padding: 0 .2rem; cursor: pointer; white-space: nowrap;
-  font: inherit; font-size: .86rem; font-weight: 700;
+  font: inherit; font-size: .9rem; font-weight: 700;
   background: transparent; border-radius: 0; border-style: solid; border-color: transparent;
   border-width: 0 calc(var(--cx-btn-h) * 105.6 / 270);
   border-image: url(ui/btn-alert.png) 0 11% fill;
@@ -499,7 +499,7 @@ img.no-art { visibility: hidden; }
   filter: drop-shadow(0 .1rem .2rem #0009);
   /* 종이 위에 먹으로 「...」 (2026-10-09) */
   display: flex; align-items: center; justify-content: center;
-  font: inherit; font-size: .8rem; font-weight: 700; line-height: 1; color: #000; letter-spacing: .05em;
+  font: inherit; font-size: .9rem; font-weight: 700; line-height: 1; color: #000; letter-spacing: .05em;
 }
 .log-more:hover { filter: drop-shadow(0 .1rem .2rem #0009) brightness(1.12); }
 .log-more.hidden { display: none; }
@@ -508,7 +508,7 @@ img.no-art { visibility: hidden; }
 #log .log-line {
   max-width: 100%;
   padding: 0 .1rem;
-  font-size: .8rem; line-height: 1.35; text-align: left; font-weight: 700;
+  font-size: .9rem; line-height: 1.35; text-align: left; font-weight: 700;
   color: #2b1d10;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   animation: log-in .22s ease-out;
@@ -547,7 +547,7 @@ img.no-art { visibility: hidden; }
   mask-image: linear-gradient(to bottom, transparent, #000 .6rem, #000 calc(100% - .6rem), transparent);
   padding-bottom: .4rem;
 }
-.hist-line { font-size: .8rem; line-height: 1.4; color: #3a2a18; }
+.hist-line { font-size: .9rem; line-height: 1.4; color: #3a2a18; }
 .hist-line.good { color: #1f5c39; }
 .hist-line.bad { color: #9a2a1e; }
 .hist-line.skill { color: #7a4a0c; font-weight: 700; }
@@ -815,8 +815,8 @@ img.no-art { visibility: hidden; }
 }
 .cfx-pop-row img { grid-area: art; width: 100%; aspect-ratio: 1200 / 509; object-fit: cover; }
 .cfx-pop-name { grid-area: name; min-width: 0; white-space: nowrap; overflow: hidden; font: 700 .82rem var(--serif); color: #3a2210; }
-.cfx-pop-fx { grid-area: fx; font-size: .8rem; line-height: 1.3; color: #4a3520; }
-.cfx-pop-none { font-size: .8rem; color: #7a6040; padding: .4rem 0; text-align: center; }
+.cfx-pop-fx { grid-area: fx; font-size: .9rem; line-height: 1.3; color: #4a3520; }
+.cfx-pop-none { font-size: .9rem; color: #7a6040; padding: .4rem 0; text-align: center; }
 
 /* 스프라이트 한 칸 — 원본 1024×614를 480×288로 구웠다(5:3) */
 .dice-sprite {
@@ -838,7 +838,7 @@ img.no-art { visibility: hidden; }
   transition: opacity .35s ease-out, transform .35s ease-out;
 }
 #dice.landed .dice-result { opacity: 1; transform: none; }
-.dice-title { font-size: .8rem; color: #7a3f14; letter-spacing: .08em; margin-bottom: .15rem; }
+.dice-title { font-size: .9rem; color: #7a3f14; letter-spacing: .08em; margin-bottom: .15rem; }
 /* 이름 사이에서만 접힌다 — 5v5에서 동점이 길어도 좁은 폰에서 쪽지가 판을 넘지 않게 */
 .dice-line {
   display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
@@ -856,7 +856,7 @@ img.no-art { visibility: hidden; }
 /* 칩 그림 두 장(pptx 104쪽, 2026-10-09) — 켜짐(자동)은 옥색 칩 + 노란 글자, 꺼짐(수동)은 나무 칩 + 흰 글자.
    글자는 「지금 상태」다(`ui/focusToggle.ts`). 9분할 값은 장수 일람의 정렬 칩(`.ofc-sort-current`)과 같은 13% 11% */
 .focus-toggle {
-  font: inherit; font-size: .8rem; line-height: 1; cursor: pointer; white-space: nowrap;
+  font: inherit; font-size: .9rem; font-weight: 700; line-height: 1; cursor: pointer; white-space: nowrap;
   padding: .12rem .55rem; border-radius: 0; background: transparent;
   border-style: solid; border-color: transparent; border-width: .32rem .45rem;
   border-image: url(ui/chip-selected.png) 13% 11% fill;
@@ -885,7 +885,7 @@ img.no-art { visibility: hidden; }
 
 /* 적 책략 팝업(`#intel`)의 책략 칩 */
 .intel-tactics .chip {
-  font: inherit; font-size: .8rem; cursor: pointer;
+  font: inherit; font-size: .9rem; cursor: pointer;
   padding: .12rem .4rem .16rem; border-radius: .3rem;
   background: #232730; border: 1px solid #3a3f47; color: #b6bcc6;
 }
@@ -902,20 +902,20 @@ img.no-art { visibility: hidden; }
 }
 #tip.hidden { display: none; }
 .tip-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.tip-name { font-size: .81rem; font-weight: 700; }
+.tip-name { font-size: .9rem; font-weight: 700; }
 .tip-name.buff { color: #9ccdf0; }
 .tip-name.debuff { color: #f0a8a6; }
 /* 고유기술·책략도 같은 창을 쓴다 (pptx 28쪽 「클릭을 하면 설명 보여줌」) */
 .tip-name.skill { color: #f0c674; }
 .tip-name.tactic { color: #cbb0e0; }
 .tip-close {
-  width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .8rem;
+  width: 1.3rem; height: 1.3rem; line-height: 1; cursor: pointer; font-size: .9rem;
   border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
 }
-.tip-body { margin-top: .25rem; font-size: .8rem; line-height: 1.55; color: #cfd4dc; }
+.tip-body { margin-top: .25rem; font-size: .9rem; line-height: 1.55; color: #cfd4dc; }
 /* 여러 줄 설명(컬렉션 배지 — `StatusPopup.showLines`) */
 .tip-line + .tip-line { margin-top: .2rem; }
-.tip-tail { margin-top: .3rem; font-size: .8rem; color: #8b929c; }
+.tip-tail { margin-top: .3rem; font-size: .9rem; color: #8b929c; }
 /* 전투 화면의 설명 창 — 두루마리 종이(`field-frame.png`, 2026-10-09 기획자 지정). 양끝 축이 늘어나지 않게 9분할이고,
    글자는 종이 위라 먹 색으로 바꾼다. 갈래 색(버프 · 디버프 · 고유기술 · 책략)은 뜻이라 짙게 남긴다 */
 #frame.battle #tip {
@@ -941,7 +941,7 @@ img.no-art { visibility: hidden; }
 #cmd { padding: .4rem .45rem .45rem; gap: .35rem; }
 /* 배치 · 정찰 중에는 고유기술 목록(5단계) — 아래 `.sk-*` */
 .cmd-title {
-  flex: none; font-size: .8rem; font-weight: 700; color: #d9dde3; letter-spacing: .04em;
+  flex: none; font-size: .9rem; font-weight: 700; color: #d9dde3; letter-spacing: .04em;
 }
 .cmd-grid {
   flex: 1; min-height: 0; display: grid;
@@ -967,20 +967,20 @@ img.no-art { visibility: hidden; }
 다」처럼 끝 음절이 혼자 떨어진다(700px 눈 확인) */
 #ctx-flow { word-break: keep-all; overflow-wrap: anywhere; }
 .cx-q { font-size: .9rem; font-weight: 700; color: #e8e8e8; line-height: 1.4; }
-.cx-cap { font-size: .8rem; color: #8b929c; letter-spacing: .08em; }
-.cx-label { font-size: .82rem; font-weight: 700; color: #cbb0e0; }
-.cx-sub { font-size: .8rem; color: #8f86a0; }
-.cx-text { font-size: .8rem; line-height: 1.5; color: #c0bacb; }
+.cx-cap { font-size: .9rem; color: #8b929c; letter-spacing: .08em; }
+.cx-label { font-size: .9rem; font-weight: 700; color: #cbb0e0; }
+.cx-sub { font-size: .9rem; color: #8f86a0; }
+.cx-text { font-size: .9rem; line-height: 1.5; color: #c0bacb; }
 /* 「쓰면 사라진다」 — 아이템 확인창의 경고. 본문보다 작게(2026-09-23에 커져서 잡혔던 자리) */
-.cx-spend { font-size: .8rem; color: #d9a441; }
-.cx-delay { font-size: .8rem; color: #9a917c; }
+.cx-spend { font-size: .9rem; color: #d9a441; }
+.cx-delay { font-size: .9rem; color: #9a917c; }
 /* 시전 지연이 있을 때만 도드라진다 — 「즉시」까지 금색이면 색이 아무 말도 안 한다 */
 .cx-delay[data-delayed="1"] { color: #f0c674; font-weight: 700; }
 .cx-rate {
   display: flex; align-items: baseline; justify-content: space-between;
   padding: .3rem .5rem; border-radius: .35rem; background: #0b0d10; border: 1px solid #3a3f47;
 }
-.cx-rate .k { font-size: .8rem; color: #8b929c; }
+.cx-rate .k { font-size: .9rem; color: #8b929c; }
 .cx-rate .v { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #e8e8e8; }
 .cx-rate[data-kind="damage"] .v, .cx-rate[data-kind="execute"] .v { color: #f0a8a6; }
 .cx-rate[data-level="high"] .v { color: #8fd7a8; }
@@ -1011,19 +1011,19 @@ img.no-art { visibility: hidden; }
 .cx-list { flex: 1 1 0; display: flex; flex-direction: column; gap: .25rem; overflow: hidden; min-height: 0; }
 .cx-row {
   flex: none; display: flex; align-items: center; gap: .4rem; text-align: left;
-  font: inherit; font-size: .8rem; padding: .35rem .5rem; border-radius: .35rem; cursor: pointer;
+  font: inherit; font-size: .9rem; padding: .35rem .5rem; border-radius: .35rem; cursor: pointer;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
 }
 .cx-row:hover:not(:disabled) { background: #2e3440; border-color: #9b6bd0; }
 .cx-row:disabled { opacity: .34; cursor: default; }
 .cx-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cx-row .cost { flex: none; font-size: .8rem; color: #7fb3e8; }
-.cx-row .desc { flex: 2; min-width: 0; font-size: .8rem; color: #9aa1ab; }
-.cx-empty { font-size: .8rem; color: #79808b; }
+.cx-row .cost { flex: none; font-size: .9rem; color: #7fb3e8; }
+.cx-row .desc { flex: 2; min-width: 0; font-size: .9rem; color: #9aa1ab; }
+.cx-empty { font-size: .9rem; color: #79808b; }
 /* 아이템 한 줄 — 왼쪽 그림 · 오른쪽 이름(밝게) 위 효과(회색), 글자 크기는 같다 (2026-10-09) */
 .cx-row.cx-item { align-items: center; gap: .55rem; padding: .35rem .5rem; }
 .cx-item-art { flex: none; width: 2.6rem; height: 2.6rem; object-fit: contain; filter: drop-shadow(0 1px 2px #000a); }
-.cx-item-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; line-height: 1.35; }
+.cx-item-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .15rem; font-size: .9rem; line-height: 1.35; }
 .cx-row.cx-item .nm { flex: none; font-size: inherit; font-weight: 700; color: #f4ecd8; white-space: normal; }
 .cx-row.cx-item .desc { flex: none; font-size: inherit; color: #a9a093; }
 /* 책략은 두 열 — 8종이 4줄에 든다. 이름이 짧고(두세 글자) 비용이 붙어 한 칸이 반 폭이면 넉넉하다 */
@@ -1076,7 +1076,7 @@ img.no-art { visibility: hidden; }
 }
 .cd-note {
   margin-top: .5rem; max-width: 82%; padding: .2rem .7rem; border-radius: .3rem;
-  font-size: .8rem; line-height: 1.45; color: #2a3550; background: #f6f0e2d0;
+  font-size: .9rem; line-height: 1.45; color: #2a3550; background: #f6f0e2d0;
   word-break: keep-all; overflow-wrap: anywhere;
 }
 
@@ -1107,7 +1107,7 @@ img.no-art { visibility: hidden; }
 }
 .sk-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .sk-art:hover { background: #ffffff26; }
-.sk-art-name { font-size: .8rem; color: #d9dde3; }
+.sk-art-name { font-size: .9rem; color: #d9dde3; }
 /* 라벨 — 누르면 고유기술 팝업. 그림이 없으면 「기술명」 SP 글자 */
 .sk-banner {
   min-width: 0; min-height: 0; padding: 0; overflow: hidden; cursor: pointer; font: inherit;
@@ -1121,10 +1121,10 @@ img.no-art { visibility: hidden; }
 .sk-banner[data-noart] .sk-label { display: flex; align-items: baseline; gap: .35rem; min-width: 0; padding: 0 .45rem; }
 .sk-banner:disabled { cursor: default; opacity: .4; background: #0e1319; border-style: dashed; }
 .sk-skill {
-  min-width: 0; font-size: .8rem; font-weight: 700; color: #f0c674;
+  min-width: 0; font-size: .9rem; font-weight: 700; color: #f0c674;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sk-sp { flex: none; font-size: .8rem; color: #f0c674; font-variant-numeric: tabular-nums; }
+.sk-sp { flex: none; font-size: .9rem; color: #f0c674; font-variant-numeric: tabular-nums; }
 
 /* 고유기술 팝업 (`#skillpop`, `ui/skillPanel.ts`) — 껍데기는 메타 화면의 `.modal-back` · `.ofc-skill-modal` 그대로 */
 #skillpop.hidden { display: none; }
@@ -1170,7 +1170,7 @@ img.no-art { visibility: hidden; }
   width: min(48%, 7.4rem); aspect-ratio: 762 / 228; padding-top: .14rem; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
-  font-size: .82rem; font-weight: 400; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
+  font-size: .9rem; font-weight: 400; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
 }
 /* 명령 아이콘 — 단추에 아이콘 하나만(2026-10-09, 글자 없음). 꺼진 단추는 단추의 잿빛 필터를 함께 받는다 */
@@ -1212,7 +1212,7 @@ img.no-art { visibility: hidden; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button,
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-buttons button:not(.go) {
   background: transparent; border-radius: 0; border-style: solid; border-color: transparent;
-  box-sizing: border-box; height: var(--cx-btn-h); padding: 0 .2rem; font-size: .82rem; font-weight: 700;
+  box-sizing: border-box; height: var(--cx-btn-h); padding: 0 .2rem; font-size: .9rem; font-weight: 700;
   border-width: 0 calc(var(--cx-btn-h) * 105.6 / 270);
   border-image: url(ui/btn-alert.png) 0 11% fill;
   color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
@@ -1235,7 +1235,7 @@ img.no-art { visibility: hidden; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate[data-kind="rate"] {
   background: transparent; border-color: transparent; padding: .1rem .15rem; text-shadow: 0 1px 2px #000;
 }
-#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate[data-kind="rate"] .k { font-size: .8rem; color: #e6dcc4; }
+#frame.battle:not([data-stage="prep"]) #ctx-flow .cx-rate[data-kind="rate"] .k { font-size: .9rem; color: #e6dcc4; }
 /* 「MP 3」은 한 덩어리 — 중국어 설명은 띄어쓰기가 없어 어절 접기(keep-all)가 MP와 숫자 사이에서 끊었다 */
 .cx-text .cx-mp { white-space: nowrap; margin-right: .35rem; font-weight: 700; color: #9cc6f0; }
 #frame.battle:not([data-stage="prep"]) #ctx-flow .cx-row:hover:not(:disabled) { background: #332215e6; border-color: #c9a25a; }
@@ -1311,7 +1311,7 @@ img.no-art { visibility: hidden; }
   width: min(44%, 7rem); aspect-ratio: 762 / 228;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
-  font-family: var(--serif); font-size: .82rem; letter-spacing: .35em; text-indent: .35em;
+  font-family: var(--serif); font-size: .9rem; letter-spacing: .35em; text-indent: .35em;
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
@@ -1328,7 +1328,7 @@ img.no-art { visibility: hidden; }
   width: min(30%, 7.4rem); aspect-ratio: 762 / 228;
   display: flex; align-items: center; justify-content: center;
   background: url(ui/plate-settings.png) center / 100% 100% no-repeat;
-  font-size: .82rem; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
+  font-size: .9rem; letter-spacing: .35em; text-indent: .35em; white-space: nowrap;
   color: #f4ecd8; text-shadow: 0 1px 2px #000;
   pointer-events: none;
 }
@@ -1350,7 +1350,7 @@ img.no-art { visibility: hidden; }
   flex: none; display: flex; align-items: center; justify-content: space-between;
   padding: .45rem .6rem; border-bottom: 1px solid #232730;
 }
-.intel-title { font-size: .85rem; font-weight: 700; color: #f0c674; }
+.intel-title { font-size: .9rem; font-weight: 700; color: #f0c674; }
 .intel-close {
   width: 1.5rem; height: 1.5rem; line-height: 1; cursor: pointer; font-size: 1rem;
   border-radius: .3rem; color: #b6bcc6; background: #232730; border: 1px solid #3a3f47;
@@ -1360,13 +1360,13 @@ img.no-art { visibility: hidden; }
   display: grid; grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 2fr);
   column-gap: .6rem; row-gap: .4rem; align-items: center;
 }
-.intel-th { font-size: .8rem; color: #79808b; letter-spacing: .08em; }
+.intel-th { font-size: .9rem; color: #79808b; letter-spacing: .08em; }
 .intel-who { display: flex; align-items: baseline; gap: .35rem; min-width: 0; }
-.intel-pc { flex: none; font-size: .8rem; color: #e8914a; }
-.intel-name { min-width: 0; font-size: .82rem; color: #e8e8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.intel-int { font-size: .85rem; font-weight: 700; color: #cfd4dc; font-variant-numeric: tabular-nums; text-align: right; }
+.intel-pc { flex: none; font-size: .9rem; color: #e8914a; }
+.intel-name { min-width: 0; font-size: .9rem; color: #e8e8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel-int { font-size: .9rem; font-weight: 700; color: #cfd4dc; font-variant-numeric: tabular-nums; text-align: right; }
 .intel-tactics { display: flex; flex-wrap: wrap; gap: .2rem; }
-.intel-none { font-size: .8rem; color: #79808b; }
+.intel-none { font-size: .9rem; color: #79808b; }
 
 /* ── 장수 카드 (pptx 97·98쪽, `ui/officerCard.ts`) — 명령 판 · 맥락 판 · (6단계) 팝업이 함께 쓴다 ── */
 /* ── 장수 카드 (pptx 105쪽, 2026-10-09 기획자 확정 — `ui/officerCard.ts`) ─────────────────────
@@ -1470,7 +1470,7 @@ img.no-art { visibility: hidden; }
 .oc-stat.mp .oc-bar { background: #7b7b7b; box-shadow: 0 0 0 .5cqw #0c2433; }
 .oc-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #4daf31; border-radius: inherit; }
 .oc-stat.mp .oc-fill { background: #1b6b93; }
-.oc-bar b { position: relative; z-index: 1; padding-right: 2.5cqw; font-size: 6.4cqw; color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
+.oc-bar b { position: relative; z-index: 1; padding-right: 2.5cqw; font-size: max(.9rem, 6.4cqw); color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
 /* 입체 (2026-10-09 기획자 지정 — 「밋밋하다」) — 홈은 파이고(안쪽 그림자), 채움은 볼록하다(위 밝게 · 아래 어둡게 + 위쪽 광택 띠).
    색은 그대로 두고 그 위에 빛만 얹는다 — 빈 쪽 색(HP 빨강 · MP 회색)이 깎인 양이라는 뜻은 남는다 */
 .oc-bar {
@@ -1522,7 +1522,7 @@ img.no-art { visibility: hidden; }
 .oc-skill[data-state="ready"][data-tier="E"] .oc-label img { filter: drop-shadow(0 0 .1rem #fff68a) drop-shadow(0 0 .3rem #e8dc3a); }
 .oc-skill[data-state="used"] .oc-label img, .oc-skill[data-state="sealed"] .oc-label img { filter: grayscale(.6) brightness(.75); }
 /* SP — 아직 못 씀(SP 부족) 어두운 노랑 · 쓸 수 있음 밝은 노랑 · 썼거나 봉인(조조) 회색 (105쪽) */
-.oc-sp { flex: none; font-size: 7.5cqw; line-height: 1; white-space: nowrap; color: #a8862c; text-shadow: 0 1px 2px #000; }
+.oc-sp { flex: none; font-size: max(.9rem, 7.5cqw); line-height: 1; white-space: nowrap; color: #a8862c; text-shadow: 0 1px 2px #000; }
 /* ── 컬렉션 인장 (2026-10-14, `ui/collectionBadge.ts`) ──
    상태 엠블럼(위 테의 둥근 메달)과 자리 · 모양을 나눈다: 초상 왼쪽 아래의 인장 하나가 컬렉션 효과 전부를 맡는다.
    그림은 그 장수 진영의 덱(북군 붉은 함 · 남군 푸른 함, 2026-10-16) — 없으면 `.cb-css`가 같은 꼴을 CSS로 그린다 */
@@ -1557,7 +1557,7 @@ img.no-art { visibility: hidden; }
 .ofc-pickacts > .cbm { position: absolute; right: .5rem; top: -.5rem; z-index: 1; margin: 0; width: 1.5rem; height: 1.5rem; }
 .modal.cbm-pop { max-width: 20rem; }
 .cbm-list { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
-.cbm-list li { display: flex; flex-direction: column; gap: .1rem; font-size: .85rem; line-height: 1.35; }
+.cbm-list li { display: flex; flex-direction: column; gap: .1rem; font-size: .9rem; line-height: 1.35; }
 .cbm-list b { color: #f0c674; }
 
 /* 태학 개량 책략 표지 — 책략 이름 앞의 옥색 마름모 (`ui/upgradeMark.ts`). 글자 높이에 맞춘다 */
@@ -1577,7 +1577,7 @@ img.no-art { visibility: hidden; }
 .oc-sp-was { color: #a8862c; opacity: .75; text-decoration-thickness: .5cqw; }
 .oc-skill[data-state="ready"] .oc-sp { color: #ffe14a; }
 .oc-skill[data-state="used"] .oc-sp, .oc-skill[data-state="sealed"] .oc-sp { color: #8d8a84; }
-.oc-noskill { justify-content: center; font-size: 7cqw; color: #8d8a84; }
+.oc-noskill { justify-content: center; font-size: max(.9rem, 7cqw); color: #8d8a84; }
 
 /* 카드를 담는 칸 — 엠블럼이 위 테로 나가도록 넘침을 연다. 테 가운데까지의 거리(`--oc-lift`)는 칸마다 */
 #frame.battle #ctx-flow:is([data-view="self"], [data-view="target"]), #frame.battle #cmd[data-view="card"] {
@@ -1599,11 +1599,11 @@ img.no-art { visibility: hidden; }
   padding: .9rem .8rem 1rem; overflow: hidden;
 }
 .scr .title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.01em; }
-.scr .lede { font-size: .85rem; line-height: 1.6; color: #b6bcc6; }
-.scr .cap { font-size: .8rem; font-weight: 600; color: #79808b; letter-spacing: .04em; }
-.scr .hint { font-size: .8rem; line-height: 1.5; color: #6f7680; }
+.scr .lede { font-size: .9rem; line-height: 1.6; color: #b6bcc6; }
+.scr .cap { font-size: .9rem; font-weight: 600; color: #79808b; letter-spacing: .04em; }
+.scr .hint { font-size: .9rem; line-height: 1.5; color: #6f7680; }
 .scr .dim { color: #79808b; }
-.scr .note { font-size: .8rem; color: #b6bcc6; min-height: 1rem; }
+.scr .note { font-size: .9rem; color: #b6bcc6; min-height: 1rem; }
 .scr .block { display: flex; flex-direction: column; gap: .4rem; }
 .scr .block.grow { flex: 1; min-height: 0; }
 .scr .foot { margin-top: auto; display: flex; flex-direction: column; gap: .4rem; }
@@ -1611,11 +1611,11 @@ img.no-art { visibility: hidden; }
 /* 상단 바 — 뒤로 · 제목 · 오른쪽 정보 */
 .scr .bar { display: flex; align-items: center; gap: .5rem; }
 .scr .bar .ttl { font-size: 1rem; font-weight: 700; }
-.scr .bar .tail { margin-left: auto; font-size: .8rem; color: #8b929c; }
+.scr .bar .tail { margin-left: auto; font-size: .9rem; color: #8b929c; }
 
 /* 버튼 */
 .btn {
-  font: inherit; font-size: .9rem; cursor: pointer;
+  font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer;
   padding: .6rem .8rem; border-radius: .45rem;
   color: #e8e8e8; background: #232730; border: 1px solid #3a3f47;
   display: flex; align-items: center; gap: .5rem;
@@ -1625,11 +1625,11 @@ img.no-art { visibility: hidden; }
 .btn.wide { width: 100%; }
 .btn.primary { background: #1e3a2f; border-color: #4ea36b; color: #c8f0d8; font-weight: 700; justify-content: center; }
 .btn.ghost { background: transparent; border-color: #3a3f47; color: #b6bcc6; }
-.btn.sm { font-size: .8rem; padding: .3rem .55rem; }
+.btn.sm { font-size: .9rem; padding: .3rem .55rem; }
 /* **이름은 안 쪼갠다** — 사연이 길면 「튜토리얼 시나리 / 오」처럼 이름이 두 줄로
    깨진다. 접히는 쪽은 언제나 사연이어야 한다. */
 .btn .lbl { font-weight: 700; white-space: nowrap; }
-.btn .sub { margin-left: auto; font-size: .8rem; color: #8b929c; text-align: right; }
+.btn .sub { margin-left: auto; font-size: .9rem; color: #8b929c; text-align: right; }
 /* 레벨업 가능한 장수의 카드 수 글자 — 회색 대신 파란색으로 도드라진다
    (2026-09-02, `OfficerCard`의 [레벨/스킬 관리] 단추). 장수 일람 표의 금색
    액자·인장과는 다른 색을 일부러 고른다 — 「같은 신호」가 아니라 「그
@@ -1665,12 +1665,12 @@ img.no-art { visibility: hidden; }
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
 }
 .card .thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: .3rem; background: #12151a; }
-.card .nm { font-size: .8rem; font-weight: 600; }
+.card .nm { font-size: .9rem; font-weight: 600; }
 .card .gr { --gr: 1.3rem; }
-.card .ab { font-size: .8rem; color: #79808b; text-align: center; }
+.card .ab { font-size: .9rem; color: #79808b; text-align: center; }
 .card .tag {
   position: absolute; top: .25rem; right: .25rem;
-  font-size: .8rem; padding: 0 .25rem; border-radius: .2rem;
+  font-size: .9rem; padding: 0 .25rem; border-radius: .2rem;
   background: #0b0d10cc; color: #b6bcc6;
 }
 .card.here { border-color: #4ea36b; }
@@ -1699,7 +1699,7 @@ img.no-art { visibility: hidden; }
   /* 이름(등급 · 레벨 · 이름) · 카드 · 무력 · 지력 · 통솔 (2026-11-19 기획자 — 등급 열을 이름 칸에 합쳤다) */
   display: grid; grid-template-columns: minmax(0, 1fr) 2.3rem 2.3rem 2.3rem 2.3rem;
   align-items: center; gap: .3rem; width: 100%;
-  font: inherit; font-size: .8rem; text-align: left;
+  font: inherit; font-size: .9rem; text-align: left;
   padding: .35rem .45rem; border-radius: .35rem;
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34; cursor: pointer;
 }
@@ -1722,15 +1722,18 @@ img.no-art { visibility: hidden; }
   0%, 100% { transform: translateY(.1em) rotate(180deg); }
   50% { transform: translateY(-.15em) rotate(180deg); }
 }
-/* 깃발은 레벨 배지의 1.3배(2026-11-20 기획자 — 1.885em → 2.45em). 줄 높이는 그대로 — 커진 만큼 위아래 여백을 음수로 */
-.ofc-lv-up { position: relative; display: inline-flex; flex: none; width: 2.45em; height: 2.45em; margin-block: -.5em; }
-.ofc-lv-up img {
-  position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 1px 1px #0008);
-  animation: ofc-lv-up-bob 1.8s ease-in-out infinite;
+/* 레벨업 대상 — 이름이 초록 네온으로 부드럽게 깜빡인다 (2026-11-27 기획자 — 깃발 · 황금 섬광을 걷었다. 긴 이름이 깃발에 밀려 잘렸다).
+   글자색은 그대로, 빛만 2.4초에 한 번 차오르고 빠진다 */
+/* 카드 수에도 같은 빛(같은 날 기획자) */
+.ofc-row[data-levelup="1"] :is(.c-nm-text, .c-cd) { animation: ofc-name-neon 2.4s ease-in-out infinite; }
+@keyframes ofc-name-neon {
+  0%, 100% { text-shadow: 0 0 .05rem #3fe07a00, 0 0 .1rem #3fe07a00; }
+  50% { text-shadow: 0 0 .25rem #3fe07a, 0 0 .6rem #3fe07ab3, 0 0 1rem #3fe07a59; }
 }
-@keyframes ofc-lv-up-bob { 0%, 100% { transform: translateY(.06em); } 50% { transform: translateY(-.08em); } }
-.ofc-lv-up-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: 2.6; z-index: 0; }
-@media (prefers-reduced-motion: reduce) { .ofc-lv-chev { animation: none; transform: rotate(180deg); } .ofc-lv-up img { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ofc-lv-chev { animation: none; transform: rotate(180deg); }
+  .ofc-row[data-levelup="1"] :is(.c-nm-text, .c-cd) { animation: none; text-shadow: 0 0 .25rem #3fe07a, 0 0 .5rem #3fe07a99; }
+}
 /* 레벨 · 카드는 **둘 다 왼쪽 정렬**로 붙여 놓는다 — 오른쪽 정렬로 두면 각자
    제 칸의 반대쪽 끝에 붙어 오히려 멀어 보인다(스크린샷으로 확인, 2026-09-02).
    등급 배지 → Lv1 → 카드 수가 한 방향으로 나란히 붙는 모양이다. */
@@ -1755,7 +1758,7 @@ img.no-art { visibility: hidden; }
 .ofc-searchrow .rk-search { flex: 1; min-width: 0; width: 100%; }
 .ofc-thead {
   background: none; border-color: transparent; cursor: default;
-  font-size: .8rem; color: #79808b; padding-bottom: 0;
+  font-size: .9rem; color: #79808b; padding-bottom: 0;
 }
 .ofc-thead:hover { background: none; border-color: transparent; }
 .ofc-rows { display: flex; flex-direction: column; gap: .2rem; overflow: hidden; }
@@ -1773,7 +1776,7 @@ img.no-art { visibility: hidden; }
    **`.scr .foot`보다 선택자가 세야 한다** — 한 클래스로는 `flex-direction: column`을
    못 이겨 세 줄로 쌓인다. CSS는 이래도 오류가 없어 화면을 봐야만 안다(실제로 그랬다). */
 /* 총원 · 등급별 인원 — 장부 판 맨 위 줄(2026-11-19 기획자). 양피지 위라 먹색 */
-.ofc-tally { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .8rem; flex: none; color: #221407; margin-bottom: .2rem; }
+.ofc-tally { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: .2rem .6rem; font-size: .9rem; flex: none; color: #221407; margin-bottom: .2rem; }
 /* 바닥 명령 판 — 도시 관리의 `.scr-city .place-panel.cty-acts`와 같은 자리(남는 높이를 위에 두고 바닥에 붙는다) */
 .scr-officers .place-panel.ofc-acts { margin-top: auto; }
 /* 전면 장수 일람 — 장부 판이 남는 높이를 채우고 줄 여덟이 그 높이를 똑같이 나눈다(2026-11-19 기획자). 덜 찬 쪽도 줄 높이가 같다 */
@@ -1783,6 +1786,28 @@ img.no-art { visibility: hidden; }
   display: grid; grid-template-rows: repeat(var(--ofc-page), minmax(1.8rem, 1fr)); gap: .2rem;
 }
 .ofc-fill .pager { flex: none; }
+/* 장수 일람 — 상단 판(현원 · 등급별 인원 · 검색) / 중단 판(표, 한 쪽 여섯 줄)으로 나눈다 (2026-11-27 기획자).
+   중단 판은 남는 높이를 채우지 않고 줄 높이를 박는다 — 남는 높이는 판 사이 여백과 바닥 명령 판 위로 간다.
+   쪽 넘김은 판 가운데 위아래 테 위의 꺾쇠(`PageArrow`) — 판이 기준 상자라 `position: relative` */
+.scr-officers .place-panel.ofc-table.ofc-fill { flex: none; position: relative; margin-top: .6rem; }
+.ofc-fill .ofc-rows { flex: none; grid-template-rows: repeat(var(--ofc-page), 2.5rem); }
+.scr-officers .place-panel.ofc-top { flex: none; }
+/* 두 단 (2026-11-27 기획자 두 번째) — 왼쪽: 장수 아이콘 + 현원 / 그 밑 검색(판 폭의 절반), 오른쪽: 등급 배지 여섯을 두 줄 × 세 칸으로 고르게, 숫자는 오른쪽 맞춤 */
+.ofc-top .ofc-tally.ofc-top-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: .9rem; align-items: center; margin-bottom: 0;
+}
+.ofc-top-left { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; min-width: 0; }
+.ofc-top-left .ofc-searchrow { margin-bottom: 0; }
+/* 장수 아이콘은 궁궐 현황판과 같은 그림 · 크기(2.22rem), 옆에 현원만 */
+.ofc-top .ofc-count { display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; }
+.ofc-top .ofc-count .gic img { height: 2.22rem; width: auto; }
+.ofc-top .ofc-count b { font-size: .9rem; font-variant-numeric: tabular-nums; }
+/* 등급 배지는 표 줄과 같은 크기(`.ofc-row .gr` 1.69rem), 숫자는 굵게 */
+.ofc-top .ofc-grade-item .gr { --gr: 1.69rem; }
+.ofc-top .ofc-tally .ofc-grades { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem .5rem; margin-left: 0; }
+.ofc-top .ofc-grade-item { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .15rem; }
+.ofc-top .ofc-grade-item b { text-align: right; }
+.ofc-top .ofc-grade-item b { font-weight: 700; }
 .ofc-tally .ofc-count { font-weight: 600; }
 .ofc-tally .ofc-grades { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-left: auto; }
 /* 배지 자체는 표 줄의 `.ofc-row .gr`과 값 그대로 같다 — 등급 색은 단일
@@ -1801,7 +1826,7 @@ img.no-art { visibility: hidden; }
 /* 크기는 색과 상관없이 하나(2026-11-25 기획자 — 섬광 그림의 꼴을 다 같은 정사각으로 맞춘 뒤 A급 붉은 빛(3.2)의 .8배, 그래도 커서 다시 .8배) */
 .glow-gr-halo { left: 0; top: 0; width: 100%; height: 100%; --blink-w: calc(3.2 * .8 * .8); z-index: 0; }
 /* 밝은 양피지 위라 꼬마 뒤(.6)보다 진하게 — .6이면 흰 별빛이 종이에 묻혀 안 보였다 */
-.glow-gr-halo .blink-halo, .ofc-lv-up-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
+.glow-gr-halo .blink-halo { animation: glow-gr-in .5s ease-out forwards, blink-turn 14s linear infinite; }
 @keyframes glow-gr-in { to { opacity: 1; } }
 .glow-gr .gr { position: relative; z-index: 1; }
 .glow-gr .gr::after {
@@ -1838,15 +1863,15 @@ img.no-art { visibility: hidden; }
 .ofc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
 .ofc-who .nm { font-size: 1.05rem; font-weight: 700; }
 .ofc-who .nm .gr { --gr: 1.5rem; }
-.ofc-who .nm .lv { font-size: .82rem; color: #b6bcc6; }
-.ofc-who .row { font-size: .8rem; color: #cfd4dc; }
+.ofc-who .nm .lv { font-size: .9rem; color: #b6bcc6; }
+.ofc-who .row { font-size: .9rem; color: #cfd4dc; }
 .ofc-who .row .k { white-space: pre; color: #8b929c; }
 .ofc-skill { background: #1c1a12; border-color: #4a3a12; }
 .ofc-skill .lbl { color: #f0c674; }
-.ofc-story { font-size: .8rem; line-height: 1.6; color: #a8a08c; }
+.ofc-story { font-size: .9rem; line-height: 1.6; color: #a8a08c; }
 .ofc-story .k, .ofc-cards .k { color: #79808b; }
-.ofc-stats { font-size: .8rem; font-variant-numeric: tabular-nums; color: #cfd4dc; }
-.ofc-tactics { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .8rem; }
+.ofc-stats { font-size: .9rem; font-variant-numeric: tabular-nums; color: #cfd4dc; }
+.ofc-tactics { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .9rem; }
 .ofc-tactics .k { color: #79808b; }
 .ofc-school { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem; }
 .ofc-school .cap { margin-right: .1rem; }
@@ -1856,7 +1881,7 @@ img.no-art { visibility: hidden; }
 /* 낀 병기 줄 (2026-09-10) — 바로 위 책략 줄(`.ofc-tactics`)과 같은 결로 맞춘다.
    접두사는 이미 쓰던 `.ofc-`를 그대로 쓰되 **`.ofc-equip`은 이 화면에만 있다**
    (지급 표의 칸은 `.c-eq`다 — 이름이 안 겹친다). */
-.ofc-equip { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .8rem; }
+.ofc-equip { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; font-size: .9rem; }
 .ofc-equip .k { color: #79808b; }
 .ofc-equip .dim { opacity: .6; }
 .ofc-equip-item { display: flex; align-items: center; gap: .3rem; min-width: 0; }
@@ -1864,16 +1889,16 @@ img.no-art { visibility: hidden; }
 .ofc-equip-item img { height: 1.4rem; width: auto; object-fit: contain; }
 .ofc-equip-item b { color: #d8b45a; }
 .scr-officer .ofc-equip-item b { color: #8a5a12; }
-.scr .foot.ofc-cards { flex-direction: row; align-items: center; gap: .4rem; font-size: .8rem; }
+.scr .foot.ofc-cards { flex-direction: row; align-items: center; gap: .4rem; font-size: .9rem; }
 .ofc-cards .v { font-variant-numeric: tabular-nums; }
 .ofc-cards .btn { margin-left: auto; }
 
 /* 고유기술 팝업 — 환경설정과 같은 껍데기 위에 배너만 얹는다 (38쪽 아래) */
-.ofc-skill-modal .row { font-size: .8rem; line-height: 1.6; }
+.ofc-skill-modal .row { font-size: .9rem; line-height: 1.6; }
 .ofc-skill-modal .row .k { color: #79808b; white-space: pre; }
 .ofc-skill-modal .row .row-body { display: block; }   /* 유래의 이야기 · 효과의 내용은 제목 줄 다음 줄부터 */
 .ofc-skill-modal .row b { color: #f0c674; }
-.ofc-skill-modal .reading { margin-left: .35rem; font-size: .8rem; color: #8b929c; }
+.ofc-skill-modal .reading { margin-left: .35rem; font-size: .9rem; color: #8b929c; }
 .ofc-banner { width: 100%; border-radius: .35rem; margin-bottom: .2rem; }
 .ofc-banner.no-art { display: none; }
 
@@ -1904,12 +1929,24 @@ img.no-art { visibility: hidden; }
 .ofc-skill-modal .row .k { color: #b8a97c; }
 .ofc-skill-modal .row b { color: #f4d98a; text-shadow: 0 1px 2px #0009; }
 .ofc-skill-modal .reading { color: #cbb98f; }
-.ofc-skill-modal .btn.wide {
-  background: transparent; background-size: 100% 100%;
+/* [영상 보기] — 금빛 두루마리(`btn-alert.png`, 장수 상세 [아이템]과 같은 틀 · 같은 글자 — 바닥 명령 판의 1.17rem 굵게, 2026-11-27 기획자) */
+/* 화면마다 있는 미색 목판 규칙(`.scr-officers .btn:not(.ghost):not(.primary)` 등, 0,4,0)을 이겨야 해서 0,6,0 */
+.modal.ofc-skill-modal .btn.wide:not(.ghost):not(.primary) {
+  background: transparent; background-size: 100% 100%; justify-content: center;
   border-style: solid; border-color: transparent; border-width: .35rem 1.05rem;
-  border-image: url(ui/btn-primary.png) 12% 11% fill;
-  border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
+  border-image: url(ui/btn-alert.png) 12% 11% fill;
+  border-radius: 0; color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+  font-size: 1.17rem; font-weight: 700;
 }
+.ofc-skill-modal .btn.wide .lbl { font-size: 1.17rem; font-weight: 700; }
+.modal.ofc-skill-modal .btn.wide:not(.ghost):not(.primary):hover:not(:disabled) { filter: brightness(1.08) drop-shadow(0 0 .2rem #f0d48a88); }
+/* 닫기 — 판 바닥 두 용 사이(가로 가운데 · 그림 높이의 아래 7.5%)에 붉은 체크. 크기 · 움직임은 장수 상세의 체크와 같다 */
+.ofc-skill-modal { position: relative; }
+.skl-ok {
+  position: absolute; left: 50%; bottom: calc(var(--skh) * .075); translate: -50% 0; z-index: 1;
+  width: 2.3rem; height: 2.3rem; padding: 0; border: 0; background: none; cursor: pointer;
+}
+.skl-ok img { width: 100%; height: 100%; display: block; }
 
 /* [발동 영상 보기]와 [뒤로] — 두 단추가 붙지 않게 */
 .ofc-skill-modal .btn.wide + .btn.wide { margin-top: .35rem; }
@@ -1926,7 +1963,7 @@ img.no-art { visibility: hidden; }
    `.levelup .pick`을 쓰고 있었는데, 자손 선택자는 부모가 바뀌면 조용히 풀린다. */
 
 /* 스탯 찍은 횟수 — 「값, 스탯 찍은 횟수」(39쪽). 재설계의 판단 근거가 이 줄이다 */
-.lv-taps { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .5rem; font-size: .8rem; }
+.lv-taps { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem .5rem; font-size: .9rem; }
 .lv-taps .k { color: #79808b; }
 .lv-tap { padding: .1rem .4rem .15rem; border-radius: .3rem; background: #1a1d23; border: 1px solid #2a2d34; }
 .lv-tap b { color: #f0c674; font-variant-numeric: tabular-nums; }
@@ -1982,7 +2019,7 @@ button.lv-stat-row.on, button.lv-tactic-row.on { background: none; }
   flex: 0 0 80%; min-width: 0;
   display: grid; grid-template-columns: 2.65rem 1fr 3.1rem .95rem 1fr;
   align-items: center; gap: .3rem;
-  font-size: .89rem; font-variant-numeric: tabular-nums;
+  font-size: .9rem; font-variant-numeric: tabular-nums;
 }
 .lv-stat .c-k { font-weight: 600; }
 .lv-stat .c-now, .lv-stat .c-next { text-align: right; }
@@ -2009,31 +2046,31 @@ button.lv-tactic-row {
 }
 .lv-tactic-row:disabled { cursor: default; }
 .lv-tactic-head { display: flex; align-items: center; gap: .4rem; width: 100%; }
-.lv-tactic-label { flex: 1 1 auto; min-width: 0; font-size: .82rem; font-weight: 700; }
+.lv-tactic-label { flex: 1 1 auto; min-width: 0; font-size: .9rem; font-weight: 700; }
 /* 소모 MP — 이름 바로 오른쪽에 파란색으로(2026-09-03 일곱 번째 지정). 이름보다
    한 단계 작게 해서 「제목에 딸린 값」으로 읽히게 한다. 어두운 화면(전면
    `LevelUpScreen`)과 양피지 판이 서로 다른 파랑을 써야 해서 두 벌이다 —
    양피지 쪽은 남색(`#2b5578`)이다. */
 /* 책략 이름 앞의 엠블럼(`TacticIcon`, 2026-10-23) */
 .lv-tactic-icon.tac-icon { width: 1.35rem; height: 1.35rem; margin-right: .3rem; vertical-align: -.3rem; }
-.lv-tactic-mp { font-size: .8rem; font-weight: 700; color: #7ea6d8; white-space: nowrap; }
+.lv-tactic-mp { font-size: .9rem; font-weight: 700; color: #7ea6d8; white-space: nowrap; }
 /* 제목 바로 밑에 붙인다 — 줄 간격도 좁게(2026-09-03 다섯 번째 지정). 두루마리
    안이 「이름 / 설명 / 발동 조건」 석 줄이라, 성글면 두루마리가 쓸데없이 길어진다. */
-.lv-tactic-text { font-size: .8rem; line-height: 1.35; color: #b6bcc6; white-space: normal; }
+.lv-tactic-text { font-size: .9rem; line-height: 1.35; color: #b6bcc6; white-space: normal; }
 /* 발동 조건 — **학파마다 하나**다(책략마다가 아니다). 문구의 출처는
    `@samchess/rules`의 `FORMULA.supportRate`(`자신 + 아군`)와
    `FORMULA.illusionRate`(`20 + 자신 − 상대`)이고, 여기 있는 것은 그 공식을
    **말로 옮긴 것**이라 공식이 바뀌면 열 언어를 같이 고쳐야 한다
    (`levelup.trigger.*`). 숫자를 내는 자리가 아니다 — 실제 확률은 전투에서
    `illusionChance()`가 대상까지 보고 낸다. */
-.lv-tactic-cond { font-size: .8rem; line-height: 1.35; color: #8b929c; white-space: normal; }
+.lv-tactic-cond { font-size: .9rem; line-height: 1.35; color: #8b929c; white-space: normal; }
 
 /* 단추 줄. **`.scr .foot`(선택자 둘)에 걸리지 않도록 `.foot`을 쓰지 않는다** —
    요약 줄이 `flex-direction: column`에 져서 세 줄로 쌓였던 자리와 같은 함정이다. */
 .lv-acts { display: flex; flex-direction: column; gap: .3rem; }
 
 .opt {
-  font: inherit; font-size: .8rem; cursor: pointer; text-align: left;
+  font: inherit; font-size: .9rem; cursor: pointer; text-align: left;
   padding: .3rem .5rem; border-radius: .35rem;
   color: #b6bcc6; background: #1a1d23; border: 1px solid #2a2d34;
 }
@@ -2044,7 +2081,7 @@ button.lv-tactic-row {
 .devtools {
   display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
   padding: .4rem .5rem; border-radius: .4rem;
-  border: 1px dashed #4a4132; background: #17150f; font-size: .8rem;
+  border: 1px dashed #4a4132; background: #17150f; font-size: .9rem;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2463,7 +2500,7 @@ button.lv-tactic-row {
 .ngo-member-art { width: calc(17cqw * var(--s, 1)); height: calc(17cqw * var(--s, 1)); background-repeat: no-repeat; }
 .ngo-member-name {
   display: inline-flex; align-items: center; gap: .2rem; margin-top: -.2rem;
-  font-size: max(.8rem, calc(2.6cqw * var(--s, 1))); white-space: nowrap;
+  font-size: max(.9rem, calc(2.6cqw * var(--s, 1))); white-space: nowrap;
   color: #fff4dc; text-shadow: 0 1px 2px #000, 0 0 6px #000c;
 }
 .ngo-member-name .gr { --gr: 1.35em; }
@@ -2627,7 +2664,7 @@ button.lv-tactic-row {
 .place-bar .btn.ghost { background: #0b0d10a6; border-color: #ffffff2e; color: #ece7dc; }
 .place-nm { font-size: 1.15rem; font-weight: 700; letter-spacing: .1em; text-shadow: 0 .1rem .35rem #000d; }
 /* 제목 바 오른쪽 끝에 붙는 덤 정보 — 장수 일람의 「N명」(2026-09-02) */
-.place-tail { margin-left: auto; font-size: .8rem; color: #ece7dc; text-shadow: 0 .1rem .35rem #000d; }
+.place-tail { margin-left: auto; font-size: .9rem; color: #ece7dc; text-shadow: 0 .1rem .35rem #000d; }
 .place-body { margin-top: auto; padding: .7rem .8rem 1rem; }
 
 /* `data-screen`처럼 스모크가 부분 트리로 좁혀 찾는 속성을 `place-bar`·`place-body`
@@ -2697,7 +2734,7 @@ button.lv-tactic-row {
 .scr-place-palace .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-place-palace .place-bar .btn[data-action="back"]::before {
@@ -2764,7 +2801,7 @@ button.lv-tactic-row {
 .scr-place-barracks .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-place-barracks .place-bar .btn[data-action="back"]::before {
@@ -2808,9 +2845,9 @@ button.lv-tactic-row {
 .bar-stat { display: flex; align-items: center; gap: .3rem; font-variant-numeric: tabular-nums; }
 .bar-icon { width: 1.35rem; height: 1.35rem; object-fit: contain; flex: none; }
 .bar-stat .v { font-size: 1rem; font-weight: 700; color: #221407; }
-.bar-stat .cap { font-size: .8rem; color: #5a4128; }
+.bar-stat .cap { font-size: .9rem; color: #5a4128; }
 /* 「병영 Lv1」 — 숫자(`.v`)보다 한 단 작게, 같은 짙은 먹색. 아이콘이 없는 칸이다 */
-.bar-stat.bar-level { font-size: .85rem; font-weight: 700; color: #221407; white-space: nowrap; }
+.bar-stat.bar-level { font-size: .9rem; font-weight: 700; color: #221407; white-space: nowrap; }
 /* 참가비도 못 낼 때 — 숫자 자체를 붉게. 아래 `.note` 한 줄이 왜인지를 말하고,
    이 색은 **어느 숫자를 보라는 것인지**를 말한다(둘이 같은 말을 하는 게 아니다). */
 .bar-stat[data-low="1"] .v { color: #8a2f17; }
@@ -2822,12 +2859,12 @@ button.lv-tactic-row {
    (`.bar-stat.bar-level`)과 같다(기획자 지정). */
 .place-panel.plc-status { margin: 0 .75rem; padding: .35rem .6rem .45rem; }
 .plc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem .9rem; justify-items: start; padding: 0 .3rem; }
-.plc-cell { font-size: .85rem; font-weight: 700; color: #221407; text-align: left; overflow-wrap: anywhere; }
+.plc-cell { font-size: .9rem; font-weight: 700; color: #221407; text-align: left; overflow-wrap: anywhere; }
 .plc-cell[data-emperor="0"] { color: #7a6a58; }
 /* 거절 사유(이름이 겹친다·서버에 못 닿았다) — 양피지 위라 기본 `.note`의 밝은 글씨는 안 읽혔다
    (2026-09-19). 도시 관리의 「왜 안 되는지」(`.cty-why`)와 같은 짙은 붉은 먹색 */
 .scr-place-palace .plc-status .note {
-  text-align: center; margin: .2rem 0 0; font-size: .8rem; font-weight: 700; color: #8a2f17;
+  text-align: center; margin: .2rem 0 0; font-size: .9rem; font-weight: 700; color: #8a2f17;
 }
 /* [이름 변경] 팝업의 [변경]은 이 화면의 **한 수**라 옥색 목판 — 병영 [출정하기]와 같은 값 */
 /* 장수 일람의 레벨/스킬 관리 판 [레벨 업]도 같은 옥색 목판 (2026-10-23) */
@@ -2875,7 +2912,7 @@ button.lv-tactic-row {
 .scr-collection .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-officers .place-bar .btn[data-action="back"]::before,
@@ -2909,7 +2946,7 @@ button.lv-tactic-row {
    하면 된다 — 글자 길이에 맞춰 다시 줄어들 걱정은 없다. */
 .ofc-sort-current {
   display: flex; align-items: center; justify-content: center;
-  width: 7.7rem; height: 2.2rem; cursor: default; font-size: .8rem;
+  width: 7.7rem; height: 2.2rem; cursor: default; font-size: .9rem;
 }
 .scr-officers .ofc-sort-current {
   background: transparent; background-size: 100% 100%;
@@ -2980,7 +3017,7 @@ button.lv-tactic-row {
    예전엔 판에서 물려받아, 판이 다른 화면에서는 다른 색이 됐다(장수 일람은
    먹색으로 따로 덮고 있었다). */
 .pager-label {
-  font-size: .8rem; font-weight: 700; min-width: 3rem; text-align: center;
+  font-size: .9rem; font-weight: 700; min-width: 3rem; text-align: center;
   white-space: nowrap; font-variant-numeric: tabular-nums; color: #e9dfca;
 }
 
@@ -3018,7 +3055,7 @@ button.lv-tactic-row {
 /* 글자는 판 위에, 화살표 **꼭짓점 쪽을 피해** 반대편으로 살짝 민다 — 판이
    한쪽으로 뾰족해 가운데에 두면 좁은 쪽에 걸린다. */
 .pg-lbl {
-  position: relative; font-size: .8rem; font-weight: 700; white-space: nowrap;
+  position: relative; font-size: .9rem; font-weight: 700; white-space: nowrap;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
 .pg-btn[data-dir="next"] .pg-lbl, .pg-btn[data-dir="last"] .pg-lbl { margin-right: .22rem; }
@@ -3050,7 +3087,7 @@ button.lv-tactic-row {
 /* 도시 이름 + [이름 변경] — 이름 옆에 바로 붙여 눈이 안 옮겨 가게 한다 */
 .cty-row {
   display: flex; align-items: baseline; gap: .5rem;
-  font-size: .8rem; font-variant-numeric: tabular-nums;
+  font-size: .9rem; font-variant-numeric: tabular-nums;
 }
 .cty-row .k { min-width: 6.2rem; color: #8b929c; }
 .cty-row .v { color: #ece7dc; font-weight: 600; }
@@ -3072,7 +3109,7 @@ button.lv-tactic-row {
   margin: 0 0 .15rem; gap: .5rem;
 }
 .cty-blds-head .cap { font-size: 1rem; letter-spacing: .06em; }
-.cty-blds-head .v { color: #d8b968; font-weight: 600; font-size: .82rem; }
+.cty-blds-head .v { color: #d8b968; font-weight: 600; font-size: .9rem; }
 .cty-bld {
   display: grid; grid-template-columns: subgrid;
   align-items: center; padding: .12rem 0;
@@ -3088,12 +3125,12 @@ button.lv-tactic-row {
    레벨 · 현황 칸을 덮었다 (2026-11-12) */
 .cty-bld .nm .gic { white-space: normal; max-width: 100%; }
 .cty-bld .nm .gic-t { min-width: 0; overflow-wrap: anywhere; }
-.cty-bld .lv { color: #d8b968; font-size: .82rem; }
+.cty-bld .lv { color: #d8b968; font-size: .9rem; }
 /* 아직 안 지은 건물은 「없음」이 흐리게 — 있고 없음이 한눈에 갈려야 한다
    (궁궐 현황 판의 `[data-emperor="0"]`과 같은 수법) */
 .cty-bld[data-level="0"] .nm { color: #9aa1ab; font-weight: 400; }
 .cty-bld[data-level="0"] .lv { color: #6f7783; }
-.cty-bld .fx { color: #8b929c; font-size: .8rem; display: flex; align-items: center; min-width: 0; white-space: nowrap; }
+.cty-bld .fx { color: #8b929c; font-size: .9rem; display: flex; align-items: center; min-width: 0; white-space: nowrap; }
 .cty-bld .fx-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 아이콘 현황(도시 관리, 2026-11-12) — [그림] 숫자. 장터는 그림 셋 + 「구매」 */
 .cty-bld .fx-ic { display: inline-flex; align-items: center; gap: .25em; font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -3139,14 +3176,14 @@ button.lv-tactic-row {
 .cty-peek-line .cty-peek-off > img { filter: grayscale(1); opacity: .6; }
 .cty-peek-line .tac-icon.cty-peek-tac { width: 2rem; height: 2rem; }
 /* 「+」 표지는 글자 하한(.8rem)까지 — 작은 엠블럼에서 .55rem으로 줄었다 */
-.cty-peek-line .cty-peek-tac .tac-icon-plus { font-size: .8rem; }
+.cty-peek-line .cty-peek-tac .tac-icon-plus { font-size: .9rem; }
 /* 병기구 그림은 여백이 넓어 같은 칸에서 작아 보인다 — 원 안에서 조금 더 크게 */
 .cty-peek-badge[data-kind="equip"] .cty-peek-badge-in img { width: 125%; height: 125%; max-width: none; }
 .cty-blds-st .cty-bld .ic { display: inline-flex; line-height: 0; }
 .cty-blds-st .cty-bld .ic .gic-bld img { height: 1.9rem; }
 .cty-blds-st .cty-bld .nm { min-width: 0; max-width: none; font-size: .9rem; white-space: nowrap; overflow: hidden; }
 .cty-blds-st .cty-bld .nm .gic-t { display: block; font-size: calc(1em * var(--nm-scale, 1)); line-height: 1.2; white-space: nowrap; }
-.cty-blds-st .cty-bld .lv { white-space: nowrap; font-size: .8rem; }
+.cty-blds-st .cty-bld .lv { white-space: nowrap; font-size: .9rem; }
 .cty-blds-st .cty-bld .lv .bld-badge { height: 1.9rem; }
 .cty-blds-st .cty-bld[data-level="0"] .lv .bld-badge { filter: grayscale(1); opacity: .45; }
 .cty-blds-st .cty-bld[data-level="0"] .lv .bld-glow { display: none; }
@@ -3181,7 +3218,7 @@ button.lv-tactic-row {
   background: no-repeat center / 100% 100%;
   border: none; border-radius: 0;
   color: #2c2013; text-shadow: 0 1px 1px #ffffff59;
-  font-size: .8rem; font-weight: 700; justify-content: center;
+  font-size: .9rem; font-weight: 700; justify-content: center;
 }
 /*
  * ★ **글자를 조금 내린다** — 판자가 그림의 세로 한가운데보다 **아래**에 있어서다.
@@ -3201,7 +3238,7 @@ button.lv-tactic-row {
 .scr-city .cty-bld .btn[data-action="build"]:disabled { opacity: .5; }
 /* 판자 위 글자 칸은 폭의 60%뿐이다 — 일곱 글자를 넘는 번역(「Өргөтгөх」 · 「Costruisci」)만 글자를 줄인다.
    단추를 넓히면 그림이 가로로 늘어난다(위 주석) */
-.scr-city .cty-bld .btn[data-action="build"][data-long="1"] { font-size: .8rem; letter-spacing: -.01em; }
+.scr-city .cty-bld .btn[data-action="build"][data-long="1"] { font-size: .9rem; letter-spacing: -.01em; }
 
 .cty-acts { display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
 .cty-acts .btn { justify-content: center; }
@@ -3286,7 +3323,7 @@ button.lv-tactic-row {
   border: 0 solid transparent; padding: .14rem .95em .16rem .7em;
   border-image: url(ui/era-stroke-b-2.png) 0 34% 0 12% fill / 0 1.2em 0 .8em stretch;
   background: #8a4a2a content-box;
-  color: #f6ecd2; text-shadow: 0 1px 1px #000a; font-size: .8rem; font-style: normal; font-weight: 800; white-space: nowrap;
+  color: #f6ecd2; text-shadow: 0 1px 1px #000a; font-size: .9rem; font-style: normal; font-weight: 800; white-space: nowrap;
 }
 /* 안 고른 줄 — 흑백 · 회색 글 · 별빛 없음 */
 .cty-up-row:not(.on) .ic img, .cty-up-row:not(.on) .lv .bld-badge > img { filter: grayscale(1) brightness(.85); }
@@ -3362,7 +3399,7 @@ button.lv-tactic-row {
 .scr-city .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-city .place-bar .btn[data-action="back"]::before {
@@ -3448,7 +3485,7 @@ button.lv-tactic-row {
 .scr-market .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-market .place-bar .btn[data-action="back"]::before {
@@ -3501,7 +3538,7 @@ button.lv-tactic-row {
 /* 전투 아이템 — 위 쪽 넘김 화살이 판 테 위로 올라와 몸통 위 끝을 넘는다. 몸통이 자르면 오르내릴 때 윗부분이 잘려 머리 판에 가려진 듯 보였다
    (2026-11-27 기획자). 이 판만 자르지 않는다 — 화면 뿌리(`.scr`)가 넘침을 막으므로 스크롤은 안 생기고, 몸통이 머리 판보다 뒤라 위에 그려진다 */
 .mkt-body-flow[data-view="items"] { overflow: visible; }
-.mkt-body-flow[data-view="items"] .mkt-item-arrow-row { z-index: 10; }
+.mkt-body-flow[data-view="items"] .page-arrow-row { z-index: 10; }
 /* [금화 충전] — 아이콘은 단추 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자). 그림을 흐름에서 빼 글자만 가운데 선다 */
 .scr-market .btn.mkt-ctr-btn { position: relative; justify-content: center; }
 .mkt-ctr-btn .gic img { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); }
@@ -3529,7 +3566,7 @@ button.lv-tactic-row {
 .place-panel.mkt-merc-status { grid-template-columns: repeat(3, auto); justify-content: space-evenly; }
 .mkt-merc-status .mkt-cur { justify-self: center; }
 .mkt-merc-status .gic img { width: 1.45rem; height: 1.45rem; object-fit: contain; }
-.mkt-merc-cards { font-size: .8rem; white-space: nowrap; color: #5a4128; }
+.mkt-merc-cards { font-size: .9rem; white-space: nowrap; color: #5a4128; }
 
 /* ── 명령 판 — 단추 세로로 ── */
 .mkt-cmds .frg-buttons { margin-top: 0; gap: .45rem; }
@@ -3610,7 +3647,7 @@ button.lv-tactic-row {
   border-image-width: 0 1.2em 0 .8em;
   border-image-repeat: stretch;
   background: var(--pack-ink) content-box;
-  font-size: .8rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums;
+  font-size: .9rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap; font-variant-numeric: tabular-nums;
   color: #f6d77a; text-shadow: 0 1px 1px #000a, 0 0 4px #00000059;
 }
 .mkt-pack-price[data-stroke="5"] { --pack-ink: #2f7f6e; --pack-stroke: url(ui/era-stroke-b-5.png); }   /* 옥색 */
@@ -3626,7 +3663,7 @@ button.lv-tactic-row {
   border: 0 solid transparent; padding: .25rem 1.3em .25rem .8em;
   border-image: url(ui/era-stroke-b-8.png) 0 34% 0 12% fill / 0 1.5em 0 .95em stretch;
   background: #c99a24 content-box;
-  font-size: .85rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums;
+  font-size: .9rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums;
   color: #3a2a00; text-shadow: 0 1px 0 #fff4c060;
 }
 .mkt-charge-have .gic img { width: 1.15rem; height: 1.15rem; }
@@ -3640,7 +3677,7 @@ button.lv-tactic-row {
 .mkt-merc-head { text-align: left; margin: .1rem 0 .35rem .2rem; }
 .mkt-packs + .mkt-merc-head { margin-top: .7rem; }
 .mkt-merc-head h3 { margin: 0; font-size: 1.15rem; font-weight: 800; color: #3a2210; letter-spacing: .04em; }
-.mkt-merc-head p { margin: .1rem 0 0; font-size: .85rem; color: #5a3d22; }
+.mkt-merc-head p { margin: .1rem 0 0; font-size: .9rem; color: #5a3d22; }
 /* 그림 칸 — 1명은 하나, 3명은 V자, 5명은 W자. 뒷줄(`data-top`)은 조금 위 · 조금 작게, 앞줄이 위에 겹친다.
    서로 엉겨 붙을 만큼 촘촘하고 크게 (2026-11-25 기획자) */
 .mkt-recruit-art { position: relative; display: block; align-self: stretch; height: 4.3rem; --rs: 3.5rem; }
@@ -3698,7 +3735,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 }
 .mkt-pack-lock .gic img { width: 2.4rem; height: 2.4rem; object-fit: contain; filter: drop-shadow(0 2px 3px #000); }
 .mkt-pack-lock > span:last-child {
-  font-size: .85rem; font-weight: 800; white-space: nowrap; color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+  font-size: .9rem; font-weight: 800; white-space: nowrap; color: #f3e8c8; text-shadow: 0 1px 3px #000, 0 0 6px #000;
 }
 /* ── 도시 물자 (2026-11-25 기획자 — 용병 시장의 꼴) — 첫 줄 건축 자재 · 군량 두 칸, 그 밑 연구 초기화 · 초심의 서가 한 줄씩.
    종이 카드 · 가격 띠는 용병 시장 그대로(`.mkt-pack` · `.mkt-pack-price`), 보유량은 머리 판(`GoodsStatus`)이 말한다 ── */
@@ -3708,7 +3745,7 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 .mkt-good-art > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 2px #3a240f55); }
 .mkt-good-body { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
 .mkt-good-nm { font-size: 1.05rem; font-weight: 800; color: #3a2210; letter-spacing: .03em; white-space: nowrap; }
-.mkt-good-fx { font-size: .85rem; color: #5a3d22; line-height: 1.3; word-break: keep-all; }
+.mkt-good-fx { font-size: .9rem; color: #5a3d22; line-height: 1.3; word-break: keep-all; }
 /* 중국어는 띄어 쓰지 않아 `keep-all`이면 한 덩어리로 가격 띠를 침범한다 — 글자마다 끊는다 (2026-11-25) */
 :root:is([data-lang="zh_Hans"], [data-lang="zh_Hant"]) .mkt-good-fx { word-break: normal; }
 /* 두 칸의 받는 양 — 가격 띠 바로 위, 붓 획 오른쪽 끝에 오른쪽을 맞춘다(글꼴은 「x1」 표와 같다) */
@@ -3777,7 +3814,7 @@ button.mkt-pack.mkt-item-card {
   background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
 }
 .mkt-item-nm { font-size: 1.05rem; font-weight: 800; color: #3a2210; letter-spacing: .03em; overflow-wrap: anywhere; line-height: 1.2; }
-.mkt-item-fx { font-size: .85rem; color: #5a3d22; line-height: 1.28; word-break: keep-all; overflow-wrap: anywhere; }
+.mkt-item-fx { font-size: .9rem; color: #5a3d22; line-height: 1.28; word-break: keep-all; overflow-wrap: anywhere; }
 :root:is([data-lang="zh_Hans"], [data-lang="zh_Hant"]) .mkt-item-fx { word-break: normal; }
 /* 못 사는 카드 — 잿빛이지만 눌린다(누르면 내관이 까닭).
    `:hover`까지 함께 적는다 — 파일 아래의 `button.mkt-pack:not(:disabled):hover`가 `filter`를 덮어, 누른 뒤(휴대폰은 hover가 남는다) 잿빛이 풀렸다 */
@@ -3785,28 +3822,28 @@ button.mkt-pack.mkt-item-card[data-locked],
 button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
 
 /* 쪽 넘김 화살 — 판의 위 · 아래 나무 테 위, 가운데에 얹는다(2026-11-27 기획자 — 화살 자리를 따로 두지 않고 판 크기는 그대로).
-   판 테가 위아래 1.5rem(`.scr-market .place-panel`)이라 줄을 흐름에서 빼 테 한가운데에 놓는다. 겹 갈매기(아래를 향한 그림)를 위 것만 뒤집는다 */
-.mkt-item-arrow-row { position: absolute; left: 0; right: 0; z-index: 4; display: flex; justify-content: center; height: 1.7rem; pointer-events: none; }
-.mkt-item-arrow-row[data-dir="prev"] { top: calc(-1.5rem / 2 - 1.7rem / 2); }
-.mkt-item-arrow-row[data-dir="next"] { bottom: calc(-1.5rem / 2 - 1.7rem / 2); }
-.mkt-item-arrow-row > .mkt-item-arrow { pointer-events: auto; }
-.mkt-item-arrow {
+   판 테 두께(`--page-arrow-bar`, 기본 1.5rem = `.scr-market .place-panel`)만큼 줄을 흐름에서 빼 테 한가운데에 놓는다. 공용 부품 `PageArrow.tsx`. 겹 갈매기(아래를 향한 그림)를 위 것만 뒤집는다 */
+.page-arrow-row { position: absolute; left: 0; right: 0; z-index: 4; display: flex; justify-content: center; height: 1.7rem; pointer-events: none; }
+.page-arrow-row[data-dir="prev"] { top: calc(var(--page-arrow-bar, 1.5rem) / -2 - 1.7rem / 2); }
+.page-arrow-row[data-dir="next"] { bottom: calc(var(--page-arrow-bar, 1.5rem) / -2 - 1.7rem / 2); }
+.page-arrow-row > .page-arrow { pointer-events: auto; }
+.page-arrow {
   width: 3.6rem; height: 1.7rem; padding: 0; border: none; background: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; overflow: visible;
 }
-.mkt-item-arrow img {
+.page-arrow img {
   width: 3rem; height: 3rem; max-width: none; flex: none; object-fit: contain; filter: drop-shadow(0 2px 3px #000a);
-  animation: mkt-arrow-bob .75s ease-in-out infinite alternate;
+  animation: page-arrow-bob .75s ease-in-out infinite alternate;
 }
-.mkt-item-arrow[data-dir="prev"] img { --flip: 180deg; }
-.mkt-item-arrow img { rotate: var(--flip, 0deg); }
+.page-arrow[data-dir="prev"] img { --flip: 180deg; }
+.page-arrow img { rotate: var(--flip, 0deg); }
 /* 오르내림 — ±0.25rem · 0.75초(2026-11-27 기획자 — 조금 더 길게 · 빠르게). `rotate`와 따로 노는 `translate`라 뒤집힘과 안 부딪힌다 */
-@keyframes mkt-arrow-bob { from { translate: 0 -.25rem; } to { translate: 0 .25rem; } }
-.mkt-item-arrow:not(:disabled):hover img { filter: drop-shadow(0 2px 3px #000a) brightness(1.15); }
-.mkt-item-arrow:not(:disabled):active img { scale: .9; }
-.mkt-item-arrow:disabled { cursor: default; }
-.mkt-item-arrow:disabled img { animation: none; filter: grayscale(1) brightness(.75); opacity: .3; }
-@media (prefers-reduced-motion: reduce) { .mkt-item-arrow img { animation: none; } }
+@keyframes page-arrow-bob { from { translate: 0 -.25rem; } to { translate: 0 .25rem; } }
+.page-arrow:not(:disabled):hover img { filter: drop-shadow(0 2px 3px #000a) brightness(1.15); }
+.page-arrow:not(:disabled):active img { scale: .9; }
+.page-arrow:disabled { cursor: default; }
+.page-arrow:disabled img { animation: none; filter: grayscale(1) brightness(.75); opacity: .3; }
+@media (prefers-reduced-motion: reduce) { .page-arrow img { animation: none; } }
 
 /* [보관함으로] — 목록 판 바로 밑 왼쪽(판 테의 안쪽 선에 맞춘다). 쪽빛 붓 획(`ui/era-stroke-b-7.png` ← `era-stroke-쪽빛`) 위에
    보관함 그림 + 금빛 글자. 폭은 열 언어 가운데 가장 긴 글(`--row-w`, `useAllLangLayout`) — 그림이 없으면 같은 색 바탕 */
@@ -3844,7 +3881,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-item-ask-art .mkt-item-glow { --blink-w: 2.2; }
 
 /* 결과 칸의 표 — 새 장수(옥색) · 잉여 카드(잿빛 붉은) */
-.mkt-fate { display: inline-block; margin-top: .1rem; padding: .05rem .45rem; border-radius: .6rem; font-size: .8rem; font-weight: 800; white-space: nowrap; }
+.mkt-fate { display: inline-block; margin-top: .1rem; padding: .05rem .45rem; border-radius: .6rem; font-size: .9rem; font-weight: 800; white-space: nowrap; }
 .mkt-fate[data-fate="new"] { background: #2f7f6e; color: #f4ecd8; }
 .mkt-fate[data-fate="surplus"] { background: #7a3a2a; color: #f4ecd8; }
 .mkt-reveal-grid[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
@@ -3881,17 +3918,17 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
 }
-.mkt-irow > .c-nm { grid-area: nm; font-size: .8rem; font-weight: 700; color: #221407; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mkt-irow > .c-nm { grid-area: nm; font-size: .9rem; font-weight: 700; color: #221407; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mkt-irow > .c-kd { grid-area: kd; text-align: center; }
 .mkt-irow > .c-n1 { grid-area: n1; }
 .mkt-irow > .c-n2 { grid-area: n2; }
-.mkt-irow > .c-n { font-size: .8rem; font-weight: 700; color: #221407; text-align: center; font-variant-numeric: tabular-nums; }
+.mkt-irow > .c-n { font-size: .9rem; font-weight: 700; color: #221407; text-align: center; font-variant-numeric: tabular-nums; }
 .mkt-irow > .c-q { grid-area: q; justify-self: end; }
-.mkt-irow > .c-fx { grid-area: fx; font-size: .8rem; line-height: 1.3; color: #5a4128; }
-.mkt-irow > .c-price { grid-area: gd; font-size: .8rem; font-weight: 700; color: #6a4210; }
+.mkt-irow > .c-fx { grid-area: fx; font-size: .9rem; line-height: 1.3; color: #5a4128; }
+.mkt-irow > .c-price { grid-area: gd; font-size: .9rem; font-weight: 700; color: #6a4210; }
 /* 머리 줄 — 그림 칸은 비우고(「이미지는 필요 없어」 2026-09-24 지정) 글자만 */
 .mkt-ihead { grid-template-areas: "nm nm kd n1 n2 q"; padding: 0 0 .15rem; border-bottom: 2px solid #3a2c1e59; }
-.mkt-ihead > span { font-size: .8rem; font-weight: 700; color: #5a4128; text-align: center; white-space: nowrap; }
+.mkt-ihead > span { font-size: .9rem; font-weight: 700; color: #5a4128; text-align: center; white-space: nowrap; }
 .mkt-ihead > .c-nm { grid-area: nm; text-align: left; padding-left: .2rem; }
 /* 쪽을 넘겨도 판 높이가 안 들썩이게 — 한 쪽 네 줄 높이를 미리 잡는다 */
 .mkt-irows { min-height: calc(4 * 3.55rem); }
@@ -3904,7 +3941,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
    (2026-09-24 지정). 색은 예전 칩 바탕색을 **글자색으로** 옮겼다 — 「사용」 붉은빛, 「지속」 푸른빛.
    9분할이라 글자가 길어져도(번역) 양끝 두루마리 축이 안 눌린다 */
 .mkt-item-kind {
-  display: inline-block; font-size: .8rem; font-weight: 800; line-height: 1.2; white-space: nowrap;
+  display: inline-block; font-size: .9rem; font-weight: 800; line-height: 1.2; white-space: nowrap;
   border-style: solid; border-color: transparent; border-width: .2rem .6rem; border-radius: 0; padding: 0 .12rem;
   border-image: url(ui/btn-alert.png) 12% 11% fill;
   color: #4a5566; text-shadow: 0 1px 0 #fff3c080;
@@ -3944,11 +3981,11 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-irow > .c-made { grid-area: made; }
 .mkt-irow > .c-hold { grid-area: hold; }
 .mkt-srow > .c-made {
-  font-size: .8rem; text-align: center; color: #5a4128;
+  font-size: .9rem; text-align: center; color: #5a4128;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .mkt-srow:not(.mkt-ihead) > .c-hold {
-  font-size: .8rem; text-align: center; line-height: 1.1; min-width: 0;
+  font-size: .9rem; text-align: center; line-height: 1.1; min-width: 0;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   overflow: hidden; overflow-wrap: anywhere;
 }
@@ -3962,7 +3999,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .scr-market .mkt-srow .btn.primary,
 .scr-market .mkt-srow .btn.mkt-revoke {
   min-width: 0; width: 100%; height: 1.9rem; padding: 0 .1rem;
-  font-size: .8rem; font-weight: 400; white-space: nowrap; justify-content: center;
+  font-size: .9rem; font-weight: 400; white-space: nowrap; justify-content: center;
   border-style: solid; border-color: transparent; border-width: .3rem .45rem; border-radius: 0;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a;
 }
@@ -4029,14 +4066,14 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   border-style: solid; border-color: transparent; border-width: 1rem 1.6rem;
   border-image: url(ui/plate-settings.png) 20% 7% fill;
   border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
-  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem; text-align: center;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .9rem; text-align: center;
 }
 .mkt-confirm-body {
   display: flex; flex-direction: column; align-items: center; gap: .35rem;
-  font-size: .8rem; line-height: 1.5; text-align: center; margin-bottom: .6rem; word-break: keep-all;
+  font-size: .9rem; line-height: 1.5; text-align: center; margin-bottom: .6rem; word-break: keep-all;
 }
 .mkt-confirm-body p { margin: 0; }
-.mkt-confirm-lead { font-weight: 700; font-size: .84rem; color: #f3e8c8; }
+.mkt-confirm-lead { font-weight: 700; font-size: .9rem; color: #f3e8c8; }
 .mkt-confirm-cost { font-weight: 700; color: #f0c674; }
 .mkt-confirm-ask { margin-top: .2rem !important; font-weight: 700; color: #f3e8c8; }
 .mkt-confirm-body .note { color: #ffb49a; }
@@ -4054,7 +4091,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-order-lines {
   --line: 1.5em;
   list-style: none; margin: 0; padding: .3rem .5rem; width: 100%;
-  font-size: .8rem; line-height: var(--line);
+  font-size: .9rem; line-height: var(--line);
   height: calc(8 * var(--line) + .6rem); overflow: hidden;
   display: grid; grid-template-rows: repeat(8, var(--line)); grid-template-columns: 1fr 1fr;
   grid-auto-flow: column; column-gap: .8rem; align-content: start;
@@ -4079,7 +4116,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-bought-cell img { position: relative; width: 82%; height: 82%; object-fit: contain; filter: drop-shadow(0 3px 6px #0009); }
 .mkt-bought-glow { inset: 0; --blink-w: 1.6; }
 .mkt-bought-n {
-  position: absolute; right: 4%; bottom: 4%; font-size: .8rem; color: #fff3c8;
+  position: absolute; right: 4%; bottom: 4%; font-size: .9rem; color: #fff3c8;
   text-shadow: 0 1px 2px #000, 0 0 4px #000;
 }
 
@@ -4103,7 +4140,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-reveal-cell:nth-child(6) { animation-delay: .25s; } .mkt-reveal-cell:nth-child(7) { animation-delay: .3s; }
 .mkt-reveal-cell:nth-child(8) { animation-delay: .35s; }
 .mkt-reveal-cell .mkt-who { flex-direction: column; gap: .05rem; max-width: 100%; }
-.mkt-reveal-cell .mkt-who .nm { font-size: .8rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mkt-reveal-cell .mkt-who .nm { font-size: .9rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes mkt-rise { from { transform: translateY(.6rem) scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mkt-reveal-one .mkt-portrait, .mkt-reveal-cell { animation: none; } }
 
@@ -4121,12 +4158,12 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 받은 카드 공개는 스크롤할 것이 없다(한두 장, 크기 고정) — 돌아가는 후광의 상자가 판보다 커서 `.modal`의 세로 스크롤이 떴다
    (실측 209px 넘침, 2026-11-12 기획자). 후광은 둥글어 판 밖으로 잘려도 보이는 것은 그대로다 */
 .modal.mkt-done.mkt-reward { overflow: hidden; }
-.mkt-reward .modal-ttl { font-size: .8rem; }
-.mkt-reward .modal-ttl .mkt-who .nm { font-size: .8rem; }
+.mkt-reward .modal-ttl { font-size: .9rem; }
+.mkt-reward .modal-ttl .mkt-who .nm { font-size: .9rem; }
 .mkt-reward .mkt-portrait.lg { width: 6.3rem; height: 6.3rem; }
 .mkt-reward .mkt-portrait.sm { width: 2.8rem; height: 2.8rem; }
 .mkt-reward .mkt-reveal-grid { display: flex; justify-content: center; gap: .5rem; }
-.mkt-reward .mkt-reveal-cell .mkt-who .nm { font-size: .8rem; }
+.mkt-reward .mkt-reveal-cell .mkt-who .nm { font-size: .9rem; }
 
 /* ── 섬광 (`BurstStage`) — 시트 6×4칸(`tools/build_burst.py`) ── */
 /* 어둠은 「서버를 기다리는 중」에서 **그대로 이어진다**(2026-09-25 지정) — 그때 화면은 뽑기 방식 판의
@@ -4160,7 +4197,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   position: absolute; left: 15%; right: 15%; top: 13%; height: 52%;
   width: 70%; object-fit: cover; border-radius: 2px;
 }
-.mkt-card-name { font-size: .8rem; font-weight: 700; text-align: center; }
+.mkt-card-name { font-size: .9rem; font-weight: 700; text-align: center; }
 
 /* 배경 화면의 아래 단추(계정 초기화 등)는 한 줄로, 폭만큼 늘어나지 않게 */
 .scr-bg .foot { flex: none; flex-direction: row; padding: .2rem .8rem .8rem; }
@@ -4245,7 +4282,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .scr-building-forge .frg-row .btn[data-action="revoke"],
 .scr-building-forge .frg-row .btn.primary {
   min-width: 0; width: var(--frg-act-w); height: var(--frg-act-h);
-  padding: 0 .1rem; font-size: .8rem; justify-content: center; white-space: nowrap;
+  padding: 0 .1rem; font-size: .9rem; justify-content: center; white-space: nowrap;
 }
 /* 두 단추의 목판 **크기를 [장비 회수]에 맞춘다**(2026-09-11 열두 번째 지정 —
    "아이콘 크기가 서로 달라"). 상자(`--frg-act-w/h`)는 이미 같았지만 9분할
@@ -4291,7 +4328,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .scr-building-academy .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-building-forge .place-bar .btn[data-action="back"]::before,
@@ -4363,7 +4400,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
      안의 `<span>` 넷이 인라인으로 다닥다닥 붙는다(간격 없이 「Lv1총 0개…」로
      붙어 보인 것이 그 증거 — 2026-09-09 스크린샷으로 확인). */
   display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
-  gap: .3rem 1rem; font-size: .8rem; font-weight: 700;
+  gap: .3rem 1rem; font-size: .9rem; font-weight: 700;
 }
 .frg-buttons { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
 
@@ -4540,7 +4577,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   white-space: normal; overflow-wrap: anywhere; text-align: center;
   line-height: 1.15;
-  font-size: .85rem; font-weight: 700; color: #f8d76a;
+  font-size: .9rem; font-weight: 700; color: #f8d76a;
   text-shadow: 0 1px 2px #000c;
 }
 
@@ -4601,7 +4638,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   min-height: var(--frg-thumb-h);
 }
 /* 표 머리 — 양피지 위에서 안 묻게 먹색으로(장수 일람 `.ofc-thead`와 같은 값) */
-.frg-thead { font-size: .8rem; color: #5a4128; font-weight: 400; min-height: 0; }
+.frg-thead { font-size: .9rem; color: #5a4128; font-weight: 400; min-height: 0; }
 .frg-thead .c-art, .frg-thead .c-made, .frg-thead .c-hold, .frg-thead .c-act { text-align: center; }
 /* 줄 사이 붓선 — 머리줄 다음부터, 마지막 줄 빼고 */
 .frg-row:not(.frg-thead):not(:last-child)::after {
@@ -4614,7 +4651,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .frg-row .c-art .frg-thumb { --thumb-h: var(--frg-thumb-h); }
 /* 제작일 — `YYYY.MM.DD` 한 줄. 숫자라 자릿수가 고정이고, 그래서 칸 폭도 고정이다. */
 .frg-row .c-made {
-  font-size: .8rem; text-align: center; color: #5a4128;
+  font-size: .9rem; text-align: center; color: #5a4128;
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 /* 이미지 · 레벨 · 장비 명 **셋 사이만** 간격을 두 배로(2026-09-11 네 번째
@@ -4632,7 +4669,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
      "Cota Máscara-Fera"·몽골어 "Араатан нүүрт хуяг"가 세 줄로 접혀 잘렸다
      (2026-09-11, 스모크의 `namesFit`이 잡는다). 한국어로만 보면 절대
      안 나는 갈래라 언어를 바꿔 봐야 드러난다. */
-  font-size: .8rem; font-weight: 700; color: #221407; line-height: 1.15;
+  font-size: .9rem; font-weight: 700; color: #221407; line-height: 1.15;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   overflow: hidden; overflow-wrap: anywhere;
 }
@@ -4643,7 +4680,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
    찍혔다, 2026-09-11 스크린샷으로 잡았다). */
 .frg-row .c-hold {
   /* 줄 높이 1.25 — 1.1에서는 몽골어 「Олгоогүй」의 키릴 글자가 위아래로 2px 넘쳤다(2026-11-20). 언어마다 따로 두지 않고 모두 같은 값 */
-  font-size: .8rem; text-align: center; line-height: 1.25; min-width: 0;
+  font-size: .9rem; text-align: center; line-height: 1.25; min-width: 0;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   overflow: hidden; overflow-wrap: anywhere;
 }
@@ -4737,13 +4774,13 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   border-style: solid; border-color: transparent; border-width: 1rem 1.6rem;
   border-image: url(ui/plate-settings.png) 20% 7% fill;
   border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
-  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .9rem;
 }
-.frg-confirm-body { margin: 0 0 .6rem; font-size: .8rem; line-height: 1.5; text-align: center; color: #e9dfca; word-break: keep-all; }
+.frg-confirm-body { margin: 0 0 .6rem; font-size: .9rem; line-height: 1.5; text-align: center; color: #e9dfca; word-break: keep-all; }
 /* 「취소·환불되지 않는다」 (2026-09-25) — 본문보다 **작거나 같게**, 색으로만 띄운다.
    `.ask-delay`를 빌렸다가 경고가 본문보다 커졌던 일(CLAUDE.md)이 있어 제 규칙을 둔다 */
 .frg-confirm-warn {
-  margin: -.3rem 0 .6rem; font-size: .8rem; line-height: 1.45; text-align: center;
+  margin: -.3rem 0 .6rem; font-size: .9rem; line-height: 1.45; text-align: center;
   color: #f0a08a; font-weight: 700; word-break: keep-all;
 }
 .frg-confirm-acts { display: flex; flex-direction: column; gap: .35rem; }
@@ -5033,13 +5070,13 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   border-style: solid; border-color: transparent; border-width: .5rem .8rem;
   border-image: url(ui/field-frame.png) 14% 10% fill;
 }
-.frg-item-lore { margin: 0; font-size: .8rem; color: #5a4128; line-height: 1.6; text-align: left; }
+.frg-item-lore { margin: 0; font-size: .9rem; color: #5a4128; line-height: 1.6; text-align: left; }
 /* 효과 줄 — 어두운 화면(`.modal`)의 금색(`#f0c674`)은 이 종이 위에서는
    안 읽힌다(`.scr-city`가 같은 그림에 이미 짙은 색으로 바꿨다) — 짙은
    적갈색으로 대신한다. */
 .frg-item-effect {
   display: flex; align-items: center; justify-content: center; gap: .3rem;
-  margin: 0; font-size: .8rem; font-weight: 700; color: #6b2e22;
+  margin: 0; font-size: .9rem; font-weight: 700; color: #6b2e22;
 }
 /* [제작] — 도시 관리의 [증축](`.scr-city .btn.primary`)과 같은 옥색 목판·
    같은 슬라이스·같은 글자색이다(위 파일 머리말 참조). 대장간 전체를 감싼
@@ -5102,7 +5139,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   grid-template-columns: minmax(0, 1fr) 3.8rem minmax(0, 1fr) 2.4rem;
 }
 .ofc-row-health .c-hs {
-  font-size: .8rem; font-weight: 700; text-align: center; white-space: nowrap;
+  font-size: .9rem; font-weight: 700; text-align: center; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; min-width: 0; color: #3f6b2a;
 }
 .ofc-row-health .c-hs[data-injured="1"] { color: #a23a1c; }
@@ -5114,7 +5151,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
    놓으면 통솔 쪽과 단추 쪽 **양쪽에 같은 간격**이 저절로 생긴다(칸을
    2.4 → 3rem으로 넓혀 가운데에 여유를 줬다). 긴 이름은 여전히 말줄임이다. */
 .ofc-row-equip .c-eq {
-  font-size: .8rem; color: #d7d2c6; text-align: center;
+  font-size: .9rem; color: #d7d2c6; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 /* 「없음」은 물러나고, 이미 낀 병기 이름은 앞으로 나온다 — 고르면 그것이 벗겨진다 */
@@ -5239,7 +5276,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   display: flex; align-items: flex-start; min-height: 1.6rem;
   padding-right: 1.8rem;
 }
-.ofcpick-title { font-size: .82rem; font-weight: 700; color: #221407; line-height: 1.2; }
+.ofcpick-title { font-size: .9rem; font-weight: 700; color: #221407; line-height: 1.2; }
 .ofcpick-titlerow .ofcard-close { right: 0; top: 0; width: 1.4rem; height: 1.4rem; }
 
 /* 알맹이는 궁궐에서와 똑같은 `.place-body`다 — `.scr-officers .place-body`가
@@ -5282,7 +5319,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   border-image: url(ui/panel-busy.png) 11% 9% fill;
   border-radius: 0; color: #f3e8c8;
 }
-.busy-lbl { font-size: .8rem; font-weight: 700; text-align: center; text-shadow: 0 1px 2px #000a; }
+.busy-lbl { font-size: .9rem; font-weight: 700; text-align: center; text-shadow: 0 1px 2px #000a; }
 
 /* 도는 그림 — **금빛 원반 한 장을 돌린다** (2026-09-11 지정).
    예전엔 6프레임 스프라이트를 되감았는데(`loading_spin.png` + `steps(6)`),
@@ -5494,9 +5531,9 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 @media (prefers-reduced-motion: reduce) {
   .sky-enter[data-phase] .sky-track, .sky-plate { transition-duration: .01s; }
 }
-.modal .hint { color: #6f7680; font-size: .8rem; text-align: right; }
+.modal .hint { color: #6f7680; font-size: .9rem; text-align: right; }
 .opt-row { display: flex; align-items: center; gap: .5rem; min-height: 1.7rem; }
-.opt-row .k { flex: none; width: 5.2rem; font-size: .8rem; color: #8b929c; }
+.opt-row .k { flex: none; width: 5.2rem; font-size: .9rem; color: #8b929c; }
 .opt-row .v { margin-left: auto; }
 .modal .btn.wide { margin-top: .4rem; justify-content: center; }
 
@@ -5536,7 +5573,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .modal.mod-plank .opt-row .k { color: #b8a97c; }
 /* 문장 한 줄(크레딧의 「준비 중이다」) — 목판 위에서 읽히는 밝은 먹색.
    환경설정에는 `.row`가 없어 이 규칙은 2026-09-11에 새로 생겼다. */
-.modal.mod-plank .row { font-size: .8rem; line-height: 1.6; text-align: center; color: #e9dfca; }
+.modal.mod-plank .row { font-size: .9rem; line-height: 1.6; text-align: center; color: #e9dfca; }
 
 /* 한 줄로 있어야 할 글자가 번역에 따라 두 줄로 접히던 자리(2026-08-25 여섯
    번째 피드백 — 포르투갈어 명패, 몽골어 명패, 스페인어 언어 이름). 줄바꿈
@@ -5587,8 +5624,8 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 음성 더빙 — Language 바로 아래, 조금 들여 보여 주기만(2026-10-23). 고르는 단추가 없어 한 단계 작게 */
 /* 들여 쓰지 않고 왼쪽에 붙인다 — 들이면 이름 칸이 좁아져 스페인어(「Doblaje de voz」)에서 두 줄이 됐다. 대신 글자를 한 단계 작게, 한 줄로 */
 .opt-row.opt-sub { min-height: 1.2rem; margin-top: -.25rem; }
-.opt-row.opt-sub .k { width: auto; font-size: .8rem; white-space: nowrap; }
-.opt-row.opt-sub .v { font-size: .8em; }
+.opt-row.opt-sub .k { width: auto; font-size: .9rem; white-space: nowrap; }
+.opt-row.opt-sub .v { font-size: .9rem; }
 
 /* ── 환경설정만 (2026-11-17 기획자 — 언어를 바꿔도 판의 크기 · 줄이 그대로) ──
  * 폭은 화면(가리개 `.modal-back`)의 90% — 가리개 안쪽은 좌우 여백 1rem씩을 뺀 폭이라 `(100% + 2rem)`이 화면 폭이다.
@@ -5631,10 +5668,13 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .set-sides { display: flex; flex: none; gap: .15rem; }
 /* 효과음 과녁 줄과 붙어 보여 조금 띄운다(2026-11-17 기획자) */
 .set-modal .opt-row[data-field="orientation"] { margin-top: .45rem; }
+/* 글자 하한 .9rem(2026-11-27)에서 이름 칸 + 목판 둘이 판보다 넓어져 [세로]가 판 밖으로 나갔다 — 이름 칸이 양보하고 목판은 오른쪽 끝에 */
+.set-modal .opt-row[data-field="orientation"] .k { flex: 1 1 auto; min-width: 0; }
+.set-modal .opt-row[data-field="orientation"] .set-sides { margin-left: auto; }
 .set-side {
   position: relative; flex: none; height: 2.1rem; padding: 0 .83rem 0 .56rem; margin: 0; cursor: default;
   border: 0; background: transparent; display: flex; align-items: center; justify-content: center;
-  font: inherit; font-size: .8rem; color: #b9a988; text-shadow: 0 1px 2px #000c;
+  font: inherit; font-size: .9rem; color: #b9a988; text-shadow: 0 1px 2px #000c;
 }
 .set-side[data-orientation="landscape"] { padding: 0 .56rem 0 .83rem; }
 .set-side::before {
@@ -5656,7 +5696,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
  */
 /* 이름 줄 — 칸 숫자(`.vr-pct`)가 이 줄로 올라와 제 과녁 바로 위에 선다(2026-10-23 기획자). 숫자 자리를 이 높이만큼 비운다 */
 .vr { --vr-head: 1.15rem; display: flex; flex-direction: column; }
-.vr-k { align-self: flex-start; height: var(--vr-head); line-height: var(--vr-head); font-size: .8rem; color: #b8a97c; white-space: nowrap; }
+.vr-k { align-self: flex-start; height: var(--vr-head); line-height: var(--vr-head); font-size: .9rem; color: #b8a97c; white-space: nowrap; }
 /* 과녁은 **화살 촉이 출발하는 자리(`--vr-x0`)에서 같은 간격**으로 선다 — i번째 과녁까지의 거리가 i × 간격이라 비행 시간도 i × 0.1초다 */
 .vr-range { --vr-x0: 2rem; --vr-slot: 1.8rem; --vr-squash: 1; position: relative; height: 2.7rem; }
 /* 활 = 음소거 단추(2026-10-23). 금지 표시는 활 오른쪽 아래에 작게 */
@@ -5763,7 +5803,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 계정 생성의 안내 팝업(확인 메일 · 이미 가입함 · 오류, 2026-10-19) — 계정 생성 팝업 위에 하나 더 뜬다. 문장은 `
 `에서 줄을 바꾼다 */
 .login-notice { gap: .55rem; max-width: 17rem; }
-.login-notice .row { white-space: pre-line; word-break: keep-all; font-size: .84rem; margin: .2rem 0 .3rem; }
+.login-notice .row { white-space: pre-line; word-break: keep-all; font-size: .9rem; margin: .2rem 0 .3rem; }
 /* [계정 생성] — 금빛 두루마리(`btn-alert.png`, [턴 가져오기] · 농지 [도적단 퇴치]와 같은 그림 · 같은 자르기 값, 2026-10-19 기획자 지정) */
 .modal.mod-plank .btn[data-action="signup"] {
   background: transparent; border-style: solid; border-color: transparent; border-width: .35rem 1.05rem; border-radius: 0;
@@ -5836,7 +5876,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .scr-ranking-menu .place-panel.rk-summary {
   display: grid; align-items: center; column-gap: .55rem; row-gap: .5rem;
   grid-template-columns: auto auto minmax(0, 1fr) minmax(0, calc(100% * 2 / 7));
-  font-size: .81rem; font-weight: 700; line-height: 1.35; color: #221407;
+  font-size: .9rem; font-weight: 700; line-height: 1.35; color: #221407;
 }
 .rk-sum-line { display: contents; }
 .rk-sum-ttl { color: #6b2e22; font-weight: 700; white-space: nowrap; }
@@ -5856,7 +5896,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .rk-sum-head { grid-column: 1 / -1; justify-self: center; color: #6b2e22; font-size: .95rem; letter-spacing: .08em; }
 
 .sqd-top { gap: .3rem; }
-.sqd-count { font-size: .8rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
+.sqd-count { font-size: .9rem; color: #b6bcc6; font-variant-numeric: tabular-nums; }
 
 /* 모드 묶음 — 3v3과 5v5를 **섞지 않는다.** 계수가 달라 값 범위가 겹치는데
    나란히 놓으면 견주게 되고 그 비교는 뜻이 없다 (GDD §7.1). */
@@ -5867,7 +5907,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
    비우지 않으면 「전투력」이 실제 숫자 칸에서 한 칸 밀린다(화면을 봐야 안다). */
 .sqd-thead {
   display: grid; grid-template-columns: 3.2rem 1fr 3.4rem 1fr;
-  gap: .3rem; font-size: .8rem; color: #79808b;
+  gap: .3rem; font-size: .9rem; color: #79808b;
   padding: 0 .45rem; margin-right: 3.6rem;
 }
 .sqd-row { display: flex; align-items: stretch; gap: .25rem; }
@@ -5875,11 +5915,11 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   flex: 1; min-width: 0; font: inherit; cursor: pointer; text-align: left;
   display: grid; grid-template-columns: 3.2rem 1fr 3.4rem 1fr;
   align-items: center; gap: .3rem;
-  font-size: .8rem; padding: .34rem .45rem; border-radius: .3rem;
+  font-size: .9rem; padding: .34rem .45rem; border-radius: .3rem;
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
 }
 .sqd-open:hover { border-color: #4a5260; }
-.sqd-size { color: #8b929c; font-size: .8rem; }
+.sqd-size { color: #8b929c; font-size: .9rem; }
 .sqd-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 수비군 표지 (2026-10-27, GDD §8.8) — 목록의 이름 옆 · 부대 현황의 명령 판. 그 모드에서 성을 지키는 부대 하나 */
 .sqd-garrison {
@@ -5888,7 +5928,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
   color: #fff6d8; background: #7a2a17; border: 1px solid #c9a24a; border-radius: .3em;
 }
 .sqd-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
-.sqd-who { color: #9aa2ad; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqd-who { color: #9aa2ad; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* ★ 여기 있던 `.sqd-del { width: 3.3rem }`은 **2026-09-16에 지웠다** — 목록 줄
    끝에 붙던 작은 [삭제] 단추의 폭이었는데, 그 단추가 편성 화면의 폭 전체
    단추로 옮겨 갔다(`.scr-squad-edit .btn.sqd-del`). 남겨 뒀으면 **같은 이름이
@@ -5896,7 +5936,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
    `.ofc-head`에서 겪은 「같은 이름이 다른 부모 아래서 다른 뜻이 된다」가
    이번엔 **한 이름이 자리를 옮긴** 꼴이다. */
 .sqd-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .3rem; }
-.sqd-modal .row { font-size: .8rem; }
+.sqd-modal .row { font-size: .9rem; }
 
 /* ── 부대 목록 — 병영과 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ────────
  *
@@ -5932,7 +5972,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .scr-squads .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-squads .place-bar .btn[data-action="back"]::before {
@@ -5977,7 +6017,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 보유 수 · 정렬 한 줄 (2026-11-14 기획자) — [분류] · 검색칸을 걷고 그만큼 판이 낮아졌다. 왼쪽은 부대 아이콘 + 「2 / 10」,
    오른쪽은 [정렬] 리스트 박스(펼친 목록이 단추 폭을 따르므로 너무 좁히지 않는다) */
 .sqd-headrow { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
-.sqd-headrow .sqd-count { display: flex; align-items: center; gap: .3rem; margin: 0; font-size: .86rem; }
+.sqd-headrow .sqd-count { display: flex; align-items: center; gap: .3rem; margin: 0; font-size: .9rem; }
 .sqd-count-ic { width: 1.7rem; height: 1.7rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
 .sqd-headrow .rk-dropdown { display: flex; flex: 0 0 46%; }
 .sqd-headrow .rk-select { justify-content: center; }
@@ -6064,7 +6104,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 후광 — 가입 오프닝의 장수 섬광(`BlinkGlow`), 꼬마 뒤 한가운데 */
 .sqd-who .sqd-stand-glow { left: 0; top: 0; width: var(--sqd-stand); height: var(--sqd-stand); --blink-w: 2.7; }   /* 1.7이면 꼬마 몸에 가려 거의 안 보였다 */
 /* 이름 — 가장 긴 이름(12자)이 600px 판에서 안 잘리는 크기(.76rem이면 6px 넘쳤다) */
-.scr-squads .sqd-open > .sqd-nm { font-size: .8rem; }
+.scr-squads .sqd-open > .sqd-nm { font-size: .9rem; }
 
 /*
  * ── 부대 관리 — 편성판 (2026-11-14 기획자 · 2026-11-16 병영 현황판과 맞바꿈) ───────────────────
@@ -6081,11 +6121,11 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 /* 단 머리 — 줄(`.sql-row`)과 같은 격자: 제목이 앞 두 칸, 「준비」가 표지 칸 (2026-11-17) */
 .sql-head { display: grid; grid-template-columns: 2.6rem minmax(0, 5fr) minmax(0, 1fr); align-items: center; }
 .sql-head-ttl { grid-column: 1 / 3; display: flex; align-items: center; gap: .3rem; min-width: 0; }
-.sql-head .sql-ready { justify-self: center; white-space: nowrap; font-size: .8rem; }
+.sql-head .sql-ready { justify-self: center; white-space: nowrap; font-size: .9rem; }
 .sql-role { flex: none; width: 1.4rem; height: 1.4rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0005); }
-.sql-head .bar-ttl { font-size: .86rem; }
+.sql-head .bar-ttl { font-size: .9rem; }
 /* 판 맨 윗줄 안내 — 단 머리(`.sql-head .bar-ttl`)와 같은 글꼴 · 크기, 왼쪽 정렬 */
-.sql-hint { margin: 0 0 .3rem; font-size: .86rem; text-align: left; }
+.sql-hint { margin: 0 0 .3rem; font-size: .9rem; text-align: left; }
 /* [모드][꼬마 다섯 자리 = 5fr][표지 = 1fr] — 표지 칸이 꼬마 한 자리만큼이라 꼬마는 조금 촘촘해진다 (2026-11-17 기획자) */
 .sql-row {
   position: relative; display: grid; grid-template-columns: 2.6rem minmax(0, 5fr) minmax(0, 1fr); align-items: center;
@@ -6113,7 +6153,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 /* 오른쪽 벽의 표지 — 완성(파란 도장) · 덜 참(경고) */
 .sql-mark { justify-self: center; display: flex; align-items: center; }
 .sql-mark .gic img { height: 1.52rem; filter: drop-shadow(0 1px 1px #0006); }   /* 0.8배 (2026-11-17 기획자, 1.9 → 1.52rem) */
-.sql-fill .sql-unformed { min-width: 80%; font-size: .86rem; }
+.sql-fill .sql-unformed { min-width: 80%; font-size: .9rem; }
 
 
 /* 부대 한 줄 — 남색 상자를 걷어내고 장부의 양피지가 비치게, 줄 사이는 가짜 붓선
@@ -6183,7 +6223,7 @@ button.sql-row:hover { background: #3a2c1e14; }
   border-style: solid; border-color: transparent; border-width: 1rem 1.6rem;
   border-image: url(ui/plate-settings.png) 20% 7% fill;
   border-radius: 0; padding: .3rem .2rem; margin: -.15rem -.15rem .5rem;
-  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .85rem;
+  color: #f3e8c8; text-shadow: 0 1px 2px #000c; letter-spacing: .1em; font-size: .9rem;
 }
 .modal.sqd-modal .row { text-align: center; line-height: 1.5; margin: 0 0 .6rem; }
 /* 팝업 안의 단추 둘 — [삭제한다]는 붉은 판(되돌릴 수 없다), [그만둔다]는 참나무.
@@ -6245,7 +6285,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-squad-new .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-squad-new .place-bar .btn[data-action="back"]::before {
@@ -6310,10 +6350,10 @@ button.sql-row:hover { background: #3a2c1e14; }
 
 /* 새 편성 만들기 (43쪽) */
 .sqd-form { gap: .45rem; }
-.sqd-label { font-size: .8rem; color: #b6bcc6; }
+.sqd-label { font-size: .9rem; color: #b6bcc6; }
 .sqd-modes { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
 
-.sqd-acts .note { font-size: .8rem; color: #d7a3a3; }
+.sqd-acts .note { font-size: .9rem; color: #d7a3a3; }
 
 /* ── 편성 — 새 편성 만들기와 같은 화풍으로 리스킨 (2026-09-16, 트랙 10d) ─────
  *
@@ -6363,7 +6403,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-squad-edit .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-squad-edit .place-bar .btn[data-action="back"]::before {
@@ -6425,8 +6465,8 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-squad-edit .sqe-top { padding-top: .35rem; padding-bottom: .5rem; }
 .scr-squad-edit .sqe-top .sql-row { min-height: 3.1rem; }
 /* 제목 「구성원 변경 (n/m 명)」 — 왼쪽 벽, 농지 「보초병 배치 (n/m 명)」와 같은 글꼴 */
-.scr-squad-edit .sqe-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
-.scr-squad-edit .sqe-hint { margin: 0 0 .3rem .2rem; font-size: .8rem; text-align: left; }
+.scr-squad-edit .sqe-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .9rem; font-weight: 700; color: #5a4128; }
+.scr-squad-edit .sqe-hint { margin: 0 0 .3rem .2rem; font-size: .9rem; text-align: left; }
 /* 기물 바꾸기 단추 — 금빛 밧줄 액자(`ui/frame-gold-1.png`)를 투명 바탕에 깔고, 기물 아이콘은 크기 그대로 그 위에 (2026-11-17 기획자).
    농지의 옅은 금빛 테(`.frm-pc-btn`)는 이 화면에서만 걷는다 */
 /* 9분할로 밧줄 굵기를 못 박고 가운데는 비운다(투명). 굵은 밧줄(`frame-gold-2`, .28rem)은 기물 옆에서 너무 굵어 보여(기획자)
@@ -6513,7 +6553,7 @@ button.sql-row:hover { background: #3a2c1e14; }
    금테는 그림이 없어 CSS로 — 바깥 금빛 고리(그라데이션) 안에 검은 원, 그 안에 고르기 팝업과 같은 그림 · 후광.
    글은 배지 몫(`--hb`)을 양옆에 똑같이 비워 단추 한가운데에 선다 — 접히지 않는다(긴 이름은 `heldName.ts`의 짧은 말) */
 /* --hb 배지 지름 · --hr 금테 두께 — 단추의 금빛 테 안에 들게 (2026-11-23: 2.35 · .17 → 2.15 · .1) */
-.ofcard .btn.ofcard-lead.ofcard-held { --hb: 2.15rem; --hr: .1rem; justify-content: center; }
+.ofcard .btn.ofcard-lead.ofcard-held, .ofcard .btn.ofcard-enhance.ofcard-held { --hb: 2.15rem; --hr: .1rem; justify-content: center; }
 .ofcard-held .ofcard-held-badge[data-shape="round"] {
   position: absolute; left: .2rem; top: 50%; transform: translateY(-50%);
   width: var(--hb); height: var(--hb); border-radius: 50%; box-sizing: border-box;
@@ -6577,7 +6617,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqh-now-head { display: flex; justify-content: space-between; padding: 0 .4rem; margin-bottom: -.25rem; }
 .sqh-now-head > span {
   width: 3rem; display: flex; justify-content: center; white-space: nowrap;
-  font-size: .8rem; font-weight: 700; letter-spacing: .04em; color: #e6d5a8; text-shadow: 0 1px 2px #000c;
+  font-size: .9rem; font-weight: 700; letter-spacing: .04em; color: #e6d5a8; text-shadow: 0 1px 2px #000c;
 }
 .sqh-now { display: flex; align-items: center; gap: .6rem; padding: .3rem .4rem; background: #00000033; border-radius: .25rem; }
 .sqh-now-btn { padding: 0; border: 0; background: none; cursor: pointer; line-height: 0; }
@@ -6588,10 +6628,10 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqh-now > .sqh-empty .gic img { height: 2.2rem; opacity: .85; filter: none; }
 .sqh-now-btn .sqh-tile .gic img { height: 2.3rem; }
 .sqh-now-txt { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; color: #f3e8c8; }
-.sqh-now-txt b { font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqh-now-txt b { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 효과 설명 — 언제나 두 줄 자리를 잡는다(넘치면 두 줄에서 자른다). 그래야 이름 줄이 설명 길이와 상관없이 같은 높이에 선다 (2026-11-17 기획자) */
 .sqh-now-txt small {
-  font-size: .8rem; line-height: 1.3; height: 2.6em; color: #cbb98f;
+  font-size: .9rem; line-height: 1.3; height: 2.6em; color: #cbb98f;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
 }
 /* 병기 | 아이템 — 동전 둘이 패널 폭을 1:1로(2026-11-17 기획자). 고른 쪽은 동전에 금빛 네온 · 글자가 빛나고, 안 고른 쪽은 잿빛으로 가라앉는다 */
@@ -6618,7 +6658,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqh-tab:hover:not(.on) .gic img { filter: grayscale(.4) brightness(.8); }
 .sqh-tab-lbl {
   flex: 1 1 auto; min-width: 0; text-align: center;
-  font-size: .86rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+  font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
   color: #8f8573; text-shadow: 0 1px 2px #000c; transition: color .15s;
 }
 .sqh-tab.on .sqh-tab-lbl { color: #f6dc9a; text-shadow: 0 0 .35rem #f0c674aa, 0 1px 2px #000c; }
@@ -6628,13 +6668,13 @@ button.sql-row:hover { background: #3a2c1e14; }
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, auto); gap: .4rem .3rem; align-content: start;
   min-height: 9.4rem; padding: .15rem;
 }
-.sqh-none { grid-column: 1 / -1; margin: auto 0; text-align: center; font-size: .8rem; color: #cbb98f; }
+.sqh-none { grid-column: 1 / -1; margin: auto 0; text-align: center; font-size: .9rem; color: #cbb98f; }
 .sqh-cell { display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .2rem 0; cursor: pointer; font: inherit; background: none; border: 0; min-width: 0; }
 .sqh-cell .sqh-tile { width: 3rem; height: 3rem; }
 .sqh-cell:not(:disabled):hover .sqh-tile { filter: brightness(1.15); }
 .sqh-cell[data-on="1"] .sqh-tile { box-shadow: 0 0 .45rem #f0d48acc, inset 0 0 .35rem #f0d48a66; }
 .sqh-cell:disabled { opacity: .4; cursor: not-allowed; }
-.sqh-cap { max-width: 100%; font-size: .8rem; color: #e6d5a8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqh-cap { max-width: 100%; font-size: .9rem; color: #e6d5a8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 남은 글자 머리(등급·이름·레벨)도 **겹치기 전에 잘린다** — 아이콘으로 바꾼 셋
    말고는 칸이 넉넉하지만, 열 언어 중 무엇이 길지는 다 세어 보기 전에는 모른다 */
 .sqd-thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -6657,11 +6697,11 @@ button.sql-row:hover { background: #3a2c1e14; }
 .bar-row { margin: .12rem 0; }
 .bar-line { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 .bar-vals { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; min-width: 0; }
-.bar-ttl { font-size: .8rem; font-weight: 700; color: #5a4128; white-space: nowrap; }
+.bar-ttl { font-size: .9rem; font-weight: 700; color: #5a4128; white-space: nowrap; }
 .bar-rec { display: flex; align-items: center; gap: .15rem; font-variant-numeric: tabular-nums; }
 .bar-rec .gic img { height: 1.3rem; width: 1.3rem; object-fit: contain; }
 .bar-rec .v { font-size: 1rem; font-weight: 700; color: #221407; }
-.bar-tut-v { gap: .3rem; font-size: .8rem; color: #4a3826; text-align: right; }
+.bar-tut-v { gap: .3rem; font-size: .9rem; color: #4a3826; text-align: right; }
 .bar-tut-v .gic img { height: 1.2rem; width: 1.2rem; object-fit: contain; }
 /* 「전적」 제목 줄 · 모드 줄(3vs3 · 5vs5) — 모드 아이콘은 왼쪽 벽에 1.3배, 칸 아이콘은 옛 총합 줄 크기(`.bar-rec`) (2026-11-16 기획자).
    줄마다 승 · 무 · 패 · 적격파 · 막은 판 다섯 칸 */
@@ -6681,7 +6721,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .bar-sub .bar-hd { margin-top: calc((1.3rem - 2.08rem) / 2); }
 .bar-sub .bar-rec[data-k="held"] { flex: 0 0 100%; justify-content: flex-end; }
 /* 숫자 칸은 네 자리(9999)까지 미리 잡는다 — 전적이 늘어도 아이콘 줄이 밀리지 않게 (2026-11-16 기획자) */
-.bar-sub .bar-rec .v { font-size: .8rem; text-align: right; white-space: nowrap; }   /* 돌격대 · 수성군 이름(`.bar-ttl`)과 같은 크기 */
+.bar-sub .bar-rec .v { font-size: .9rem; text-align: right; white-space: nowrap; }   /* 돌격대 · 수성군 이름(`.bar-ttl`)과 같은 크기 */
 .bar-sub .bar-rec .v .pad { color: #3a2c1e40; }   /* 안 찬 앞자리 0 — 옅은 회색 */
 /*
  * 부대 현황 — 간략하게 (2026-11-16 기획자). 왼쪽 단 돌격대 · 오른쪽 단 수성군, 단마다 머리 → 3vs3 · 붓 획 → 5vs5 · 붓 획.
@@ -6695,11 +6735,11 @@ button.sql-row:hover { background: #3a2c1e14; }
 .bar-sq { display: flex; align-items: center; gap: .35rem; min-width: 0; }
 .bar-sq .gic img { height: 2.08rem; }   /* 1.3배, 단의 왼쪽 벽에 (2026-11-16 기획자) */
 /* 획은 단의 남은 폭을 채운다 — 「편성 완료」 · 「미편성」이 섞여도 길이가 같다 */
-.bar-sq .bar-sq-mark { flex: 1; min-width: 0; font-size: .8rem; cursor: default; }
+.bar-sq .bar-sq-mark { flex: 1; min-width: 0; font-size: .9rem; cursor: default; }
 .bar-sq .frm-stroke-open:hover { filter: none; }
 
 /* 부대 현황·편집의 다섯 줄 — **판 높이를 다섯 줄로 고정**(3v3도 같은 크기, 67쪽) */
-.sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .86rem; }
+.sqv-head { text-align: center; margin: 0 0 .25rem; font-size: .9rem; }
 .sqv-rows { display: flex; flex-direction: column; }
 /*
  * 부대 현황 한 줄 — **기물 · 이름(사진 포함) · 등급 · 레벨 · 상태 · 병기구** (2026-09-17 지정).
@@ -6710,7 +6750,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqv-row {
   display: grid; align-items: center; gap: .3rem; height: 2.45rem; position: relative;
   grid-template-columns: 3rem minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.4fr);
-  color: #221407; font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #221407; font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .sqv-row > * { min-width: 0; text-align: center; justify-self: center; }
 .sqv-row > .pc { justify-self: start; text-align: left; }
@@ -6722,11 +6762,11 @@ button.sql-row:hover { background: #3a2c1e14; }
   height: 2px; pointer-events: none;
   background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
 }
-.sqv-thead { height: 1.5rem; font-size: .8rem; font-weight: 400; color: #5a4128; }
+.sqv-thead { height: 1.5rem; font-size: .9rem; font-weight: 400; color: #5a4128; }
 /* 머리줄은 값 칸의 색(상태 초록 등)을 물려받지 않는다 — 세기를 한 칸 올려 덮는다 */
-.sqv-panel .sqv-row.sqv-thead > * { color: #5a4128; font-size: .8rem; }
+.sqv-panel .sqv-row.sqv-thead > * { color: #5a4128; font-size: .9rem; }
 .sqv-thead > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.sqv-row .pc { color: #5a4128; font-size: .8rem; }
+.sqv-row .pc { color: #5a4128; font-size: .9rem; }
 .sqv-row .sqv-piece { display: block; width: 1.55rem; height: 1.55rem; object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
 .sqv-row[data-empty="1"] .sqv-piece { opacity: .45; }
 .sqv-row .thumb { width: 1.7rem; height: 1.7rem; object-fit: cover; border-radius: .2rem; flex: none; }
@@ -6735,7 +6775,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqv-row .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 등급 배지 — 장수 일람 표(`.ofc-row .gr`)와 같은 값(67쪽 「마크 통일」) */
 .sqv-row .gr { --gr: 1.3rem; }
-.sqv-row .st { font-size: .8rem; color: #1f5c39; white-space: nowrap; }
+.sqv-row .st { font-size: .9rem; color: #1f5c39; white-space: nowrap; }
 .sqv-row .st[data-injured="1"] { color: #8a2f17; }
 /* 병기구 — 대장간 지급 목록의 줄 그림(`.frg-thumb`)을 줄 높이에 맞춰 줄인다 */
 .sqv-row .eq { display: flex; align-items: center; justify-content: center; }
@@ -6754,7 +6794,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqm-row .who.empty { grid-column: 2 / 6; color: #7b6549; }
 .sqm-row[data-off="1"] { background: #3a2c1e10; }
 .sqm-row .rk-dropdown { min-width: 0; }
-.sqm-row .rk-select { padding-inline: .2rem; font-size: .8rem; min-height: 1.7rem; }
+.sqm-row .rk-select { padding-inline: .2rem; font-size: .9rem; min-height: 1.7rem; }
 /* King — 다른 기물과 **같은 참나무 목판**을 흐리게(`btn-secondary.png`는
    `.scr-squad-edit .btn:not(...)`가 이미 입힌다). 기본 `:disabled`보다 조금 또렷하게 */
 .scr-squad-edit .sqm-row .btn.sqm-pos:disabled { opacity: .5; cursor: default; }
@@ -6767,7 +6807,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 /* [선택]·[교체] — 옥색 칩(`chip-selected.png`). 칩은 테두리가 곧 그림이라 `.btn`을
    안 붙인다 — 붙이면 참나무 목판 규칙(세기 0,4,0)이 덮는다 */
 .sqm-pick {
-  font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; justify-self: stretch;
+  font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; justify-self: stretch;
   background: transparent; border-style: solid; border-color: transparent; border-width: .35rem .4rem;
   border-image: url(ui/chip-selected.png) 13% 11% fill; border-radius: 0;
   color: #eafff0; text-shadow: 0 1px 2px #0007; padding: 0; min-height: 1.9rem;
@@ -6775,22 +6815,22 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqm-pick:hover { filter: brightness(1.1); }
 
 /* 변경 전/후 · 부대 요약 */
-.sqm-sum .cap { text-align: center; margin: 0 0 .2rem; font-size: .8rem; }
+.sqm-sum .cap { text-align: center; margin: 0 0 .2rem; font-size: .9rem; }
 .sqm-line {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .4rem; align-items: baseline;
-  margin: 0; font-size: .8rem; color: #221407;
+  margin: 0; font-size: .9rem; color: #221407;
 }
 .sqm-line .k { color: #5a4128; font-weight: 700; }
 .sqm-line .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sqm-line .pw { color: #7a3f14; white-space: nowrap; }
 /* 전투력 산식 설명 — 값이 아니라 **읽을거리**라 옅은 먹(2026-09-17 지정) */
-.sqm-formula { margin: .25rem 0 0; font-size: .8rem; line-height: 1.4; color: #7b6549; font-weight: 400; }
+.sqm-formula { margin: .25rem 0 0; font-size: .9rem; line-height: 1.4; color: #7b6549; font-weight: 400; }
 
 /* 배치 편집 — 판 전체 (69·72쪽) */
 .sqb-panel { gap: .35rem; }
 /* 장수 밑 [배치] — 옥색 칩(`chip-selected.png`), 흰 글자. 켜진 쪽은 금빛으로 빛난다 (2026-11-18 기획자 — 장수마다 하나) */
 .sqb-chip {
-  font: inherit; font-size: .8rem; cursor: pointer; padding: .1rem .4rem; border-radius: 0; white-space: nowrap;
+  font: inherit; font-size: .9rem; cursor: pointer; padding: .1rem .4rem; border-radius: 0; white-space: nowrap;
   border-style: solid; border-color: transparent; border-width: .3rem .55rem;
   border-image: url(ui/chip-selected.png) 13% 11% fill; background: transparent; color: #fff; text-shadow: 0 1px 2px #000a;
   display: flex; justify-content: center;
@@ -6896,7 +6936,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqb-card-at {
   position: absolute; left: .35rem; right: .35rem; bottom: calc(var(--band) * .2); height: calc(var(--band) * .6);
   display: flex; align-items: center; justify-content: center; min-width: 0;
-  font-size: .8rem; font-weight: 800; line-height: 1; color: #2b1d0e; font-variant-numeric: tabular-nums; white-space: nowrap;
+  font-size: .9rem; font-weight: 800; line-height: 1; color: #2b1d0e; font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 /* 고른 카드 — 금빛 네온이 판의 기물(`.sqb-cell[data-turn]`)과 같은 박자로 깜빡인다. 테두리 선(옛 1px 노란 줄)은 없다 (2026-11-18 기획자) */
 .sqb-card[data-turn] { animation: sqb-card-neon .9s ease-in-out infinite; }
@@ -6909,7 +6949,10 @@ button.sql-row:hover { background: #3a2c1e14; }
 /* 자리 없음 — 3인팀의 남는 칸 */
 .sqb-card[data-locked] { cursor: default; opacity: .78; }
 .sqb-card-lock { width: 1.9rem; height: 1.9rem; object-fit: contain; align-self: center; margin: auto; filter: drop-shadow(0 1px 1px #0006); }
-.sqb-card[data-locked] .sqb-card-at { font-size: .8rem; font-weight: 700; color: #5a4128; }
+.sqb-card[data-locked] .sqb-card-at { font-size: .9rem; font-weight: 700; color: #5a4128; }
+/* 「자리 없음」이 .9rem(2026-11-27)에서 좁은 카드 띠에 안 든다 — 낱말 사이에서 두 줄로 접고 위로 자란다(빈 카드라 그림 자리가 비어 있다) */
+.sqb-card[data-locked] .sqb-card-at { height: auto; min-height: calc(var(--band) * .6); white-space: normal; text-align: center; line-height: 1.1; word-break: keep-all; }
+.sqb-card[data-locked] .sqb-card-at .sqb-chip-in { white-space: normal; }
 .sqb-card[data-locked] .sqb-chip-in { width: 100%; }
 /*
  * 안내 — 두루마리 종이(`ui/field-frame.png` ← `assets/icons/ui/textfield.png`, 902 × 195) 한 장을 **그림 비율 그대로** 깐다(2026-11-18 기획자 —
@@ -6921,7 +6964,7 @@ button.sql-row:hover { background: #3a2c1e14; }
   position: relative; box-sizing: border-box; width: 90%; aspect-ratio: 902 / 195; margin: 0 auto; overflow: hidden;   /* 비율을 굳힌다 — 넘치는 글이 상자를 키우지 않는다(가로 화면의 좁은 단에서 두 줄이 틀을 늘렸다). 글은 `useSteadyMsg`가 줄인다 */   /* 판 폭 그대로면 높이가 커서 조작 판이 화면 밖으로 밀렸다 */
   padding: 4.3% 8.5% 3.7% 8.5%;
   background: url(ui/field-frame.png) center / 100% 100% no-repeat;
-  font-size: calc(.8rem * var(--msg-scale, 1)); line-height: 1.3; text-align: left; color: #5a4128; word-break: keep-all; overflow-wrap: anywhere;
+  font-size: calc(.9rem * var(--msg-scale, 1)); line-height: 1.3; text-align: left; color: #5a4128; word-break: keep-all; overflow-wrap: anywhere;
 }
 .sqb-msg-in { --msg-ico: 1.7rem; position: relative; display: flex; align-items: center; gap: .35rem; width: 100%; height: 100%; min-height: 0; }
 .sqb-msg-ico { flex: none; width: var(--msg-ico); height: var(--msg-ico); object-fit: contain; filter: drop-shadow(0 1px 1px #0006); }
@@ -6986,7 +7029,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqb-cell[data-team="ours"] { z-index: 1; }
 /* 좌표 — 창의 맨 위 줄엔 열 글자, 맨 왼쪽 줄엔 행 숫자. 칸 귀퉁이에 작게 */
 .sqb-cell > .sqb-coord {
-  inset: auto; z-index: 2; pointer-events: none; font-size: .8rem; font-weight: 700; line-height: 1; color: #3a2a18;
+  inset: auto; z-index: 2; pointer-events: none; font-size: .9rem; font-weight: 700; line-height: 1; color: #3a2a18;
   text-shadow: 0 0 2px #f3e8c8, 0 0 2px #f3e8c8;
 }
 .sqb-cell > .sqb-coord.col { top: 2px; left: 50%; transform: translateX(-50%); }
@@ -6996,7 +7039,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .sqb-board[data-placing] .sqb-cell[data-zone="ours"]:hover { background: #3c8dbcaa; }
 .sqb-letter {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; font-weight: 700; border-radius: 15%; background: #1b3a55; color: #f3e8c8;
+  font-size: .9rem; font-weight: 700; border-radius: 15%; background: #1b3a55; color: #f3e8c8;
 }
 .sqb-letter.enemy { background: #7a1f14; }
 /* 군량고 (GDD §3.9) — 장수 그림 · 글자보다 **먼저** 그려 아래에 깔린다(같은 절대 배치 층, 문서 순서).
@@ -7061,22 +7104,22 @@ button.sql-row:hover { background: #3a2c1e14; }
 .srt-open {
   display: grid; grid-template-columns: 5.2rem 1fr 3.6rem; gap: .3rem; align-items: center;
 }
-.srt-thead { font-size: .8rem; color: #79808b; padding: 0 .45rem; }
+.srt-thead { font-size: .9rem; color: #79808b; padding: 0 .45rem; }
 .srt-row { display: flex; flex-direction: column; gap: .15rem; }
 .srt-open {
   width: 100%; font: inherit; cursor: pointer; text-align: left;
-  font-size: .8rem; padding: .34rem .45rem; border-radius: .3rem;
+  font-size: .9rem; padding: .34rem .45rem; border-radius: .3rem;
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
 }
 .srt-open:hover { border-color: #4a5260; }
 .srt-open:disabled { opacity: .45; cursor: default; }
 /* 고른 줄은 **테두리로** 말한다 — 색만 바꾸면 전투력 숫자와 섞여 읽힌다 */
 .srt-row[data-on="1"] .srt-open { border-color: #f0c674; }
-.srt-nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.srt-who { color: #9aa2ad; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srt-nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srt-who { color: #9aa2ad; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .srt-pw { text-align: right; color: #f0c674; font-variant-numeric: tabular-nums; }
 .srt-acts { gap: .3rem; }
-.srt-modal .row { font-size: .8rem; line-height: 1.5; }
+.srt-modal .row { font-size: .9rem; line-height: 1.5; }
 .srt-modal-acts { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
 
 /* ── 출정하기 — 부대 목록과 같은 화풍으로 리스킨 (2026-09-18, 트랙 10d 이어서) ──
@@ -7120,7 +7163,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .scr-match .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-sortie .place-bar .btn[data-action="back"]::before,
@@ -7151,7 +7194,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 
 /* 판 안 첫 줄의 안내 — 「구성을 선택해주세요.」·「부대를 선택해주세요.」.
    제목 바에서 내려온 말이라 판 안에서는 **머리글**처럼 선다(2026-09-18 지정). */
-.srt-guide { font-size: .8rem; font-weight: 700; text-align: center; margin: 0 0 .1rem; }
+.srt-guide { font-size: .9rem; font-weight: 700; text-align: center; margin: 0 0 .1rem; }
 
 /*
  * 3v3 · 5v5 — **고르는 것은 칩**(새 편성 만들기의 어휘 그대로). 화면이 하나가
@@ -7311,7 +7354,7 @@ button.sql-row:hover { background: #3a2c1e14; }
  */
 .scr-siege .srt-thead,
 .scr-siege .srt-open { grid-template-columns: 1.6fr 2.3fr 1fr 1fr; }
-.scr-siege .srt-nm small { font-size: .8rem; font-weight: 600; color: #5a4128; }
+.scr-siege .srt-nm small { font-size: .9rem; font-weight: 600; color: #5a4128; }
 .scr-siege .srt-pw { display: inline-flex; align-items: center; justify-content: center; gap: .15rem; }
 .scr-siege .srt-row[data-tier="weak"] .srt-pw { color: #6a6058; }
 .sge-score { color: #4a3826; font-variant-numeric: tabular-nums; }
@@ -7328,10 +7371,10 @@ button.sql-row:hover { background: #3a2c1e14; }
 .war-squads { display: flex; flex-wrap: wrap; gap: .3rem; margin: .3rem 0; }
 .war-squads .btn { flex: 1 1 45%; }
 .war-squads .btn[data-on='1'] { outline: 2px solid #f3d27a; outline-offset: -2px; }
-.sge-mine { font-size: .8rem; text-align: center; margin: .15rem 0 0; }
-.sge-auto-hint { font-size: .8rem; text-align: center; margin: -.1rem 0 .1rem; }
+.sge-mine { font-size: .9rem; text-align: center; margin: .15rem 0 0; }
+.sge-auto-hint { font-size: .9rem; text-align: center; margin: -.1rem 0 .1rem; }
 .sge-target .sge-target-head { text-align: center; }
-.sge-members { margin: .2rem 0; padding: 0 0 0 1.1rem; font-size: .8rem; line-height: 1.5; }
+.sge-members { margin: .2rem 0; padding: 0 0 0 1.1rem; font-size: .9rem; line-height: 1.5; }
 
 /* ── 매칭 — 출정하기와 같은 화풍 (2026-09-18) ─────────────────────
  *
@@ -7399,7 +7442,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .mtc-wait .busy-spin { grid-column: 2; grid-row: 1 / span 2; width: 2.6rem; height: 2.6rem; margin-top: 0; }
 .mtc-msg { margin: 0; font-size: .92rem; font-weight: 700; text-align: center; text-shadow: 0 1px 2px #000a; }
 /* 남은 시간 — 금빛 숫자. 자리가 흔들리지 않게 숫자 폭을 고정한다 */
-.mtc-left { margin: 0; font-size: .8rem; color: #f0c674; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000a; }
+.mtc-left { margin: 0; font-size: .9rem; color: #f0c674; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000a; }
 
 /*
  * ── 격언 두루마리 (74쪽, `QuoteScroll.tsx`) ─────────────────────────
@@ -7494,7 +7537,7 @@ button.sql-row:hover { background: #3a2c1e14; }
      (문장 길이가 제각각인 격언이라 줄 수는 못 정해도 줄 길이는 맞출 수 있다) */
   text-wrap: balance;
 }
-.srl-src { font-style: normal; font-size: 6.2cqw; color: #4a3826; }
+.srl-src { font-style: normal; font-size: max(.9rem, 6.2cqw); color: #4a3826; }
 
 /* 「움직임 줄이기」 — 펴는 칸을 건너뛰고 다 편 두루마리와 글을 곧바로 보인다 */
 @media (prefers-reduced-motion: reduce) {
@@ -7511,9 +7554,9 @@ button.sql-row:hover { background: #3a2c1e14; }
   display: grid; grid-template-columns: 1.4fr 2.6fr 1fr; gap: .3rem; align-items: center;
   text-align: center;
 }
-.mtc-thead { font-size: .8rem; color: #5a4128; padding: 0 .45rem; }
+.mtc-thead { font-size: .9rem; color: #5a4128; padding: 0 .45rem; }
 .mtc-row {
-  font-size: .8rem; padding: .45rem; min-height: 2.3rem; position: relative;
+  font-size: .9rem; padding: .45rem; min-height: 2.3rem; position: relative;
   color: #221407; font-weight: 700;
 }
 /* 줄 아래 붓선 — 출정하기 부대 줄과 같은 그라디언트 */
@@ -7523,7 +7566,7 @@ button.sql-row:hover { background: #3a2c1e14; }
   background: linear-gradient(to right, transparent, #3a2c1eb3 12%, #3a2c1eb3 88%, transparent);
 }
 .mtc-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mtc-who { color: #4a3826; font-size: .8rem; }
+.mtc-who { color: #4a3826; font-size: .9rem; }
 .mtc-pw { color: #7a3f14; font-variant-numeric: tabular-nums; }
 .mtc-foe [data-field="odds"] { text-align: center; margin-top: .25rem; }
 
@@ -7589,13 +7632,13 @@ button.sql-row:hover { background: #3a2c1e14; }
  */
 .rk-row {
   display: flex; align-items: center; gap: .3rem; width: 100%;
-  font: inherit; font-size: .8rem; text-align: left;
+  font: inherit; font-size: .9rem; text-align: left;
   padding: .3rem .4rem; border-radius: .35rem;
   color: #e8e8e8; background: #1a1d23; border: 1px solid #2a2d34;
 }
 /* 컬럼 제목은 눈에 띄어야 하는 자리라 데이터 줄보다 **작지 않게** 잡는다 —
    전에는 `.rk-row`(뒤에 온 `.rk-thead`가 이겨) 본문보다 작아 잘 안 보였다. */
-.rk-thead { background: none; border-color: transparent; color: #a8afba; font-size: .8rem; font-weight: 700; }
+.rk-thead { background: none; border-color: transparent; color: #a8afba; font-size: .9rem; font-weight: 700; }
 .rk-rk { flex: 0.6 1 0; min-width: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .rk-n { flex: 1 1 0; min-width: 0; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 /* 「승/무/패」 한 열 — 「11승 1무 6패」가 들어가 `.rk-n`보다 넓어야 한다 */
@@ -7609,7 +7652,7 @@ button.sql-row:hover { background: #3a2c1e14; }
 .rk-nm.rk-nm-lv { display: flex; align-items: center; gap: .25rem; }
 .rk-nm-lv .rk-nm-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rk-nm-lv .gr, .rk-nm-lv .lv-badge { flex: none; }
-.rk-btn { flex: 1.3 1 0; min-width: 0; text-align: right; color: #9aa2ad; font-size: .8rem; white-space: nowrap; }
+.rk-btn { flex: 1.3 1 0; min-width: 0; text-align: right; color: #9aa2ad; font-size: .9rem; white-space: nowrap; }
 
 /* 「총점」처럼 계산식이 있는 열 머리 — 평소엔 안 뜨고 누르면 바로 아래 줄에
    펼쳐진다(2026-08-27, 표 밑에 늘 떠 있던 안내문을 대신한다). */
@@ -7636,7 +7679,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   flex: none; gap: .3rem;
   border-top: 2px solid #f0c67480; background: #1a1d23d9;
 }
-.rk-mine .cap { font-size: .8rem; letter-spacing: .05em; color: #f0c674; }
+.rk-mine .cap { font-size: .9rem; letter-spacing: .05em; color: #f0c674; }
 
 /* ── 장수 카드 (pptx 52·53쪽) — 이제 팝업이다(2026-08-27 열세 번째 피드백,
    `.modal-back`으로 감싸는 자리는 `OfficerRankingScreen.tsx` 참조). 이름이
@@ -7660,6 +7703,53 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
   background: none; border: none; cursor: pointer;
 }
 .ofcard-close-icon { width: 100%; height: 100%; display: block; }
+/* 장수 상세의 [아이템] · [강화] — 바닥 명령 판(`.cmd-panel`)과 같은 글자(1.17rem 굵게, 2026-11-27 기획자) */
+.ofcard .btn.ofcard-lead .lbl, .ofcard .btn.ofcard-mid .lbl, .ofcard .btn.ofcard-mid .sub { font-size: 1.17rem; font-weight: 700; }
+/* 장수 상세의 닫기 — 붉은 체크(`icons/confirm.png`), 옛 X(1.6rem)의 1.2배 · 위아래로 살짝 둥실 (2026-11-27 기획자).
+   이름 줄 붓 획의 오른쪽 끝에 살짝 닿아도 된다 */
+/* 같은 날 두 번째 — 1.2배 더(1.92 → 2.3rem), 오르내림 폭 2배(±.12 → ±.24rem) · 더 빠르게(1.6 → 1초) */
+.ofcard-close.ofcard-close-check { width: 2.3rem; height: 2.3rem; right: .1rem; top: .15rem; z-index: 2; }
+.ofcard-close-check .ofcard-close-icon, .lore-ok img, .skl-ok img { filter: drop-shadow(0 2px 2px #0007); animation: check-bob 1s ease-in-out infinite alternate; }
+@keyframes check-bob { from { translate: 0 -.24rem; } to { translate: 0 .24rem; } }
+@media (prefers-reduced-motion: reduce) { .ofcard-close-check .ofcard-close-icon, .lore-ok img, .skl-ok img { animation: none; } }
+
+/* ── 장수 열전 (2026-11-27 기획자) ─────────────────────────────────────────────
+   예전의 가죽 판(`ui/panel-battle-officer.png` — 전투 장수 팝업과 같은 판, 슬라이스 118)을 그대로 쓴다.
+   접힌 판 — [아이템] · [강화] 단추와 같은 높이(3.44rem), 첫머리 한 문장(`loreTeaser`) + 「(더보기)」, 글자는 「습득한 책략이 없음」과 같은 꼴(.9rem 굵게) */
+.ofcard-lore {
+  /* 폭은 카드 안쪽의 98%, 가운데 (2026-11-27 기획자 — [아이템] · [강화] 두루마리의 양쪽 봉 안쪽에 맞춘다) */
+  position: relative; display: flex; align-items: center; justify-content: center; width: 98%; align-self: center; height: 3.44rem; flex: none; margin: 0 auto; cursor: pointer;
+  box-sizing: border-box; padding: 0 .75rem; border-radius: 0; background: #3a2a22; background-clip: padding-box;
+  border-style: solid; border-color: transparent; border-width: .62rem;
+  border-image: url(ui/panel-battle-officer.png) 118 fill / 1.25rem;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000c; text-align: center; line-height: 1.2;
+  font-family: inherit; font-size: .9rem; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere;   /* 단추는 글꼴을 물려받지 않는다 — 본문과 같은 글꼴로 */
+}
+.ofcard-lore:hover { filter: brightness(1.12); }
+.ofcard-lore-more { color: #f0c674; white-space: nowrap; }
+
+/* 펼친 판 — 같은 가죽 판이 화면 가로 · 세로 80%로 한가운데, 뒤는 어둡게. 첫 줄 제목(이름 + 자), 그 밑 열전(`--lore-fs`, `tools/lore_popup_fit.ts`),
+   글이 끝난 다음 줄 오른쪽에 붉은 체크(장수 상세의 체크와 같은 크기 · 움직임) */
+.modal-back.lore-back { z-index: 70; padding: 0; align-items: center; justify-content: center; background: #000000b3; }
+.lore-modal {
+  --lore-fs: 1.3rem;   /* tools/lore_popup_fit.ts — 1.4rem까지 2600개 전부 든다(1.45rem부터 mn 위연이 넘친다), 여유를 두고, 2026-11-27 */
+  position: relative; box-sizing: border-box; width: 80%; height: 80%; flex: none;
+  display: flex; flex-direction: column; align-items: stretch; overflow: hidden;
+  padding: 1.2rem 1.3rem; background: #3a2a22; background-clip: padding-box;
+  border-style: solid; border-color: transparent; border-width: 1rem;
+  border-image: url(ui/panel-battle-officer.png) 118 fill / 2rem;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000c; filter: drop-shadow(0 .4rem 1rem #000c);
+  animation: lore-in .22s ease-out both;
+}
+@keyframes lore-in { from { opacity: 0; scale: .94; } to { opacity: 1; scale: 1; } }
+.lore-title { margin: 0 0 .8rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 .5rem; font-size: 1.5rem; font-weight: 800; color: #f0d48a; letter-spacing: .03em; }
+.lore-courtesy { font-size: 1.17rem; font-weight: 700; color: #d9c9a8; }
+.lore-text { margin: 0; font-size: var(--lore-fs); line-height: 1.65; text-align: left; word-break: keep-all; overflow-wrap: anywhere; }
+:root:is([data-lang="ja"], [data-lang="zh_Hans"], [data-lang="zh_Hant"]) .lore-text { word-break: normal; }
+.lore-okrow { display: flex; justify-content: flex-end; margin-top: .6rem; }
+.lore-ok { width: 2.3rem; height: 2.3rem; padding: 0; border: 0; background: none; cursor: pointer; flex: none; }
+.lore-ok img { width: 100%; height: 100%; display: block; }
+@media (prefers-reduced-motion: reduce) { .lore-modal { animation: none; } }
 
 /* 이름 줄 — 「내 장수」 표의 등급 배지(`.rk-nm .gr`)·이름 칸(`.rk-nm`)과
    **글자 그대로 똑같은 디자인**, 폰트 크기만 키운다(2026-08-27 열네 번째
@@ -7699,7 +7789,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .ofcard-bar {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
   gap: .15rem .6rem; padding: .15rem .2rem;
-  color: #000; font-size: .8rem; font-weight: 700;
+  color: #000; font-size: .9rem; font-weight: 700;
 }
 .ofcard-stat { display: inline-flex; align-items: center; gap: .22rem; white-space: nowrap; }
 .ofcard-stat .k { opacity: .7; }
@@ -7721,7 +7811,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .ofcard-bar-abl[data-injured="1"] .ofcard-stat .v { color: #a3221b; }
 .ofcard-injury {
   display: flex; flex-direction: column; align-items: center; gap: .2rem;
-  color: #000; font-size: .8rem;
+  color: #000; font-size: .9rem;
 }
 .ofcard-injury-tag {
   font: inherit; font-weight: 700; cursor: pointer;
@@ -7735,7 +7825,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 
 /* 「빈 줄」 — 책략이 없으면 줄째로 숨기지 않고 이 문구를 보여준다(2026-08-27,
    처음엔 숨겼었다 — §헤더 주석). 고유기술은 이제 이 규칙 밖이다 — 아래 참조. */
-.ofcard-bar .empty { color: #5a4a38; font-size: .8rem; }
+.ofcard-bar .empty { color: #5a4a38; font-size: .9rem; }
 
 /* 책략 줄 — 칩 색은 기존 지원책·환술 구분과 같다(`.ofc-tactics .chip`과 같은 결).
    막대 바탕(`.ofcard-bar`의 공통 목재 그라디언트)·왼쪽 띠는 그대로 물려받는다 —
@@ -7763,9 +7853,9 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 /* **이 카드는 종이(밝은 바탕)다.** 대장간 화면의 금색(`#d8b45a`)을 그대로 들고
    오면 종이 위에서 글자가 사라진다 — 실제로 첫 판이 그랬다. 색은 이 카드가 이미
    쓰는 것(`.ofcard-bar`의 `#000`, 빈 줄의 `#5a4a38`)에 맞춘다. */
-.ofcard-bar-equip b { color: #6b4a12; font-size: .8rem; flex: none; }
+.ofcard-bar-equip b { color: #6b4a12; font-size: .9rem; flex: none; }
 .ofcard-bar-equip .eff {
-  color: #5a4a38; font-size: .8rem;
+  color: #5a4a38; font-size: .9rem;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 /* 책략 모음 — 인물 열전이 쓰던 두루마리(`field-frame.png`)를 이 줄로 올렸다(2026-10-23 기획자 지정).
@@ -7785,7 +7875,7 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 .ofcard-bar-tactics .tac-icon { width: 100%; height: auto; aspect-ratio: 1; }
 /* 칩이 `<button>`이 됐다(누르면 설명 팝업, 2026-09-03) — 브라우저 기본 글꼴·
    여백만 걷어낸다. 색·테두리는 위 규칙 그대로다. */
-button.chip { font: inherit; font-size: .8rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
+button.chip { font: inherit; font-size: .9rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
 button.chip:hover { filter: brightness(1.25); }
 
 /* 책략 엠블럼 · 학파 표식 (`TacticIcon.tsx`, 2026-10-23) — 전투의 책략 엠블럼 그림 그대로. 개량형은 오른쪽 아래 「+」 */
@@ -7841,6 +7931,18 @@ button.chip:hover { filter: brightness(1.25); }
 }
 .ofcard-skillbanner img { display: block; width: 100%; height: auto; aspect-ratio: 720 / 137; object-fit: cover; }
 .ofcard-skillbanner:hover { filter: brightness(1.15); }
+/* 고유기술 배너의 등급 테두리 (2026-11-27 기획자) — 테두리 그림(`ui/skill-frame-{se,a,b}.png`, 약 3 : 1)이 판 폭 전부, 배너는 그 구멍에 앉는다.
+   구멍 자리는 그림마다 잰 값(왼 · 오 · 위 · 아래 %) — 배너(720 : 137)가 구멍 폭을 채우면 위아래가 남는 만큼 테두리를 살짝(6% 안쪽) 세로로 편다.
+   여백은 판 폭 기준(`cqw`)이라 판 크기와 무관하게 같은 꼴이다 */
+.ofcard-skillframe { container-type: inline-size; position: relative; border: 0; background: none; padding: 0; overflow: visible; }
+.ofcard-skillframe::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: var(--skill-frame) center / 100% 100% no-repeat;
+}
+.ofcard-skillframe img { margin: var(--sf-t) var(--sf-r) var(--sf-b) var(--sf-l); width: calc(100cqw - var(--sf-l) - var(--sf-r)); }
+.ofcard-skillframe[data-tier-group="s-e"] { --skill-frame: url(ui/skill-frame-se.png); --sf-l: 6.5cqw; --sf-r: 6.6cqw; --sf-t: 6.1cqw; --sf-b: 6.3cqw; }
+.ofcard-skillframe[data-tier-group="a"] { --skill-frame: url(ui/skill-frame-a.png); --sf-l: 6.8cqw; --sf-r: 6.7cqw; --sf-t: 5.1cqw; --sf-b: 5.6cqw; }
+.ofcard-skillframe[data-tier-group="b"] { --skill-frame: url(ui/skill-frame-b.png); --sf-l: 7.2cqw; --sf-r: 7.2cqw; --sf-t: 4.7cqw; --sf-b: 6.6cqw; }
 
 /* 인물 열전 — 대나무(`btn-ghost.png`) 대신 두루마리 입력칸 그림(`textfield.png`
    → `ui/field-frame.png`)을 붙인다(2026-08-27 열여섯 번째 지정 — 대나무는
@@ -7855,11 +7957,11 @@ button.chip:hover { filter: brightness(1.25); }
   /* 줄 간격 1.6 → 1.5 · 위아래 여백 .55 → .45rem (2026-11-27) — 가장 긴 열전(6줄: en 저수 · mn 조조 · 관우 · pt 곽가 …)이 단추 셋 카드의 칸(5줄 + α)에 6px 모자랐다. `tools/officer_lore_fit.ts` */
   margin: 0; padding: .45rem .75rem; border-radius: 0; line-height: 1.5; text-align: left;
   background: transparent; background-color: #3a2a22; background-clip: padding-box;
-  color: #f4ecd8; text-shadow: 0 1px 2px #000c; font-size: .8rem;
+  color: #f4ecd8; text-shadow: 0 1px 2px #000c; font-size: .9rem;
   border-style: solid; border-color: transparent; border-width: .62rem;
   border-image: url(ui/panel-battle-officer.png) 118 fill / 1.25rem;
 }
-.mtc-acts .note { font-size: .8rem; color: #d7a3a3; }
+.mtc-acts .note { font-size: .9rem; color: #d7a3a3; }
 
 /* ── 레벨/스킬 관리 판 (`LevelUpPanel.tsx`, 2026-09-02) ──────────────
  *
@@ -7895,7 +7997,7 @@ button.chip:hover { filter: brightness(1.25); }
    제각각인 부분들을 통일하자"). 예전엔 `.row`·`.cap`·`.dim`을 따로 써서
    크기가 들쭉날쭉했다 — 값은 재설계 잠김 사유가 쓰던 `.note`(.72rem, 옅은
    잿빛)를 그대로 옮겼다(그 문구 자체는 지웠지만 크기 기준으로는 남는다). */
-.lvp-line { font-size: .8rem; color: #b6bcc6; }
+.lvp-line { font-size: .9rem; color: #b6bcc6; }
 .scr-officers .lvp-line { color: #5a4128; }
 
 /* 세 이름표(보유 카드 · 스탯 찍은 횟수 · 보유 책략) 앞의 아이콘 (2026-09-03 지정).
@@ -7957,7 +8059,7 @@ button.chip:hover { filter: brightness(1.25); }
    칩 테두리를 겹치면 종이 위에 종이가 된다. */
 .lvp-tactic {
   display: inline-flex; align-items: center; gap: .25rem;
-  font-weight: 700; font-size: .8rem; white-space: nowrap;
+  font-weight: 700; font-size: .9rem; white-space: nowrap;
 }
 /* 2026-10-23 — 이름을 걷고 엠블럼만 남겼다. 누르면 두루마리(`TacticModal`) — 태학 현황판(`.acd-chip-btn`)과 같은 꼴 */
 button.lvp-tactic { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; line-height: 0; }
@@ -8177,10 +8279,10 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .lvu-tab-txt { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; pointer-events: none; }
 /* 이름은 접혀도 된다(긴 언어 · 한 쌍) — 줄이지 않는다(글자 하한 .8rem) */
 .lvu-tab-name {
-  font-size: .86rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word;
+  font-size: .9rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word;
   color: #8f8573; text-shadow: 0 1px 2px #000c; transition: color .15s;
 }
-.lvu-tab-school { font-size: .8rem; line-height: 1.2; color: #8f8573b3; text-shadow: 0 1px 2px #000c; }
+.lvu-tab-school { font-size: .9rem; line-height: 1.2; color: #8f8573b3; text-shadow: 0 1px 2px #000c; }
 .lvu-tab.on .lvu-tab-name { color: #f6dc9a; animation: lvu-gold-text 1.6s ease-in-out infinite; }
 .lvu-tab.on .lvu-tab-school { color: #e9dfca; }
 .lvu-tab:hover:not(.on) .lvu-tab-name { color: #c4b89c; }
@@ -8229,7 +8331,7 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .lvu-desc-item { grid-area: 1 / 1; display: flex; flex-direction: column; gap: .3rem; transition: opacity .18s; }
 .lvu-desc-item[data-on="0"] { visibility: hidden; opacity: 0; }
 .lvu-desc-one { display: flex; flex-direction: column; gap: .1rem; }
-.lvp-modal .lvu-desc .lv-tactic-label { font-size: .86rem; color: #2c2013; }
+.lvp-modal .lvu-desc .lv-tactic-label { font-size: .9rem; color: #2c2013; }
 .lvp-modal .lvu-desc .lv-tactic-text { color: #4a3826; }
 .lvp-modal .lvu-desc .lv-tactic-cond { color: #6b5942; }
 .lvp-modal .lvu-desc .lv-tactic-mp { color: #2b5578; }
@@ -8742,9 +8844,9 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
   background: #ffffff10; box-shadow: inset 0 0 0 1px #f0c67440; animation: cel-rise .45s ease-out .8s both;
 }
 .cel-back .acd-cel .acd-notice-nm { display: flex; align-items: center; justify-content: center; gap: .3rem; margin: 0; font-size: 1.05rem; font-weight: 700; color: #f0c674; }
-.cel-back .acd-cel .acd-cel-mp { font-size: .85rem; color: #9cc2e6; }
+.cel-back .acd-cel .acd-cel-mp { font-size: .9rem; color: #9cc2e6; }
 .cel-back .acd-cel .acd-cel-effect { margin: 0; font-size: .9rem; color: #f6ecd2; line-height: 1.35; }
-.cel-back .acd-cel .acd-notice-apply { margin: 0; font-size: .85rem; color: #e3cfa4; }
+.cel-back .acd-cel .acd-notice-apply { margin: 0; font-size: .9rem; color: #e3cfa4; }
 
 /* 금화 구매 완료(`MarketScreen`의 `GoldCelebrate`) — 보물 상자 위에 금화 주머니, 「[금화] +N」 */
 .cel-badge .gold-cel-bag { width: min(9rem, 42vw); height: auto; filter: drop-shadow(0 0 .9rem #f0c674aa) drop-shadow(0 .4rem .7rem #000c); }
@@ -8787,7 +8889,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .lvd-row b { font-weight: 700; color: #fff4d6; }
 .lvd-row .lvd-next { color: #ffe08a; text-shadow: 0 0 .4rem #f0c674aa; }
 .lvd-arrow { width: 1.6rem; height: 1.6rem; rotate: -90deg; object-fit: contain; }
-.lvd-k { color: #e3cfa4; font-size: .85rem; }
+.lvd-k { color: #e3cfa4; font-size: .9rem; }
 .lvd-tac { display: inline-flex; align-items: center; gap: .2rem; font-weight: 700; color: #ffe08a; }
 .lvd-tac-icon.tac-icon { width: 1.6rem; height: 1.6rem; }
 
@@ -8840,7 +8942,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-ranking .place-bar .btn[data-action="back"] {
   align-self: flex-start; gap: .3rem;
   background: none; border: none; padding: 0;
-  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .8rem;
+  color: #ece7dc; text-shadow: 0 1px 2px #000c; font-weight: 700; font-size: .9rem;
   white-space: nowrap;
 }
 .scr-ranking .place-bar .btn[data-action="back"]::before {
@@ -8865,7 +8967,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
    (`.6rem`)는 그대로 둔다 — 두루마리 마개 모양이 세로로만 눌린 형태라
    가로까지 줄이면 마개가 이상해진다. */
 .rk-search.field {
-  font-size: .8rem; border-width: .2rem .6rem; padding: .33rem .5rem;
+  font-size: .9rem; border-width: .2rem .6rem; padding: .33rem .5rem;
 }
 .rk-search.field::placeholder { color: #3a2c1ea6; }
 .rk-search.field:focus {
@@ -8935,7 +9037,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   border-style: solid; border-color: transparent; border-width: .3rem .5rem;
   border-image: url(ui/btn-primary.png) 12% 11% fill;
   border-radius: 0; color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
-  font-size: .8rem;
+  font-size: .9rem;
 }
 .scr-ranking .rk-searchbar .btn[data-action="search"]::before {
   content: ''; width: 1rem; height: 1rem; flex: none;
@@ -8990,7 +9092,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
    `.rk-row`의 .62rem(0,1,0)을 이겨 판의 글자 크기(1rem)를 물려받고 있었다.
    둘의 가운데 값을 여기 한 자리에 적는다(세기 0,3,0이라 둘 다 이긴다).
    장수 판도 같은 값이다 — 예전엔 표 머리와 같은 .64rem이었다. */
-.scr-ranking .rk-row:not(.rk-thead) { font-size: .81rem; }
+.scr-ranking .rk-row:not(.rk-thead) { font-size: .9rem; }
 /* 내 도시의 줄 — 옅은 금빛 띠 (2026-11-20). 열 줄 안에 없으면 「⋮」 밑에 한 줄 더 선다(`RankingBoardScreen`) */
 .scr-ranking .rk-row[data-mine="1"]:not(.rk-thead) { background: #d6aa3c47; border-radius: .25rem; }
 .scr-ranking .rk-gap { text-align: center; color: #5a4128; line-height: 1; font-weight: 700; }
@@ -9016,7 +9118,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   border-style: solid; border-color: transparent; border-width: .5rem .55rem;
   border-image: url(ui/chip-neutral.png) 13% 11% fill;
   border-radius: 0; color: #3a2c1e; text-shadow: 0 1px 1px #ffffff40;
-  text-align: center; font-size: .8rem;
+  text-align: center; font-size: .9rem;
 }
 .rk-pop .opt.on {
   border-image: url(ui/chip-selected.png) 13% 11% fill;
@@ -9049,14 +9151,14 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-building-hospital .place-panel.hsp-status { padding: .3rem .6rem; margin: 0 .75rem; }
 .hsp-summary {
   display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
-  gap: .3rem 1rem; font-size: .8rem; font-weight: 700; color: #3a2c1e;
+  gap: .3rem 1rem; font-size: .9rem; font-weight: 700; color: #3a2c1e;
 }
 .scr-building-hospital .hsp-status .hint { text-align: center; }
 .hsp-wards { list-style: none; margin: .35rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
 .hsp-ward {
   display: grid; grid-template-columns: 4.6rem 1fr; align-items: center; gap: .5rem;
   padding: .2rem .4rem; border-radius: .2rem; background: #5a41281a;
-  font-size: .8rem; color: #3a2c1e;
+  font-size: .9rem; color: #3a2c1e;
 }
 .hsp-ward-nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hsp-ward-st { min-width: 0; overflow-wrap: anywhere; } /* 말줄임 금지 — 잘리는 쪽이 늘 남은 시간이다(몽골어) */
@@ -9064,7 +9166,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .hsp-ward[data-state="healing"] .hsp-ward-st { color: #9b2c1f; font-weight: 700; }
 .hsp-ward[data-state="cooldown"] .hsp-ward-st { color: #6b5a45; }
 .hsp-ward[data-state="empty"] .hsp-ward-st { color: #2f6b52; font-weight: 700; }
-.hsp-home .frg-buttons .hint { margin: -.1rem 0 .1rem; text-align: center; font-size: .8rem; }
+.hsp-home .frg-buttons .hint { margin: -.1rem 0 .1rem; text-align: center; font-size: .9rem; }
 
 /* 입원 팝업 — 판때기는 대장간 확인 팝업(`.modal.frg-confirm`)을 그대로 빌리고 폭만 넓힌다 */
 .modal.frg-confirm.hsp-pick { max-width: 21rem; width: calc(100% - 2rem); }
@@ -9074,14 +9176,14 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 }
 .hsp-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .45rem;
-  padding: .3rem .4rem; border-radius: .2rem; background: #0000002e; font-size: .8rem;
+  padding: .3rem .4rem; border-radius: .2rem; background: #0000002e; font-size: .9rem;
 }
 .hsp-row-nm { display: flex; flex-direction: column; min-width: 0; }
 .hsp-row-nm b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hsp-row-sub { font-size: .8rem; color: #e39a86; }
-.hsp-row-left { font-size: .8rem; color: #d8ccb2; }
+.hsp-row-sub { font-size: .9rem; color: #e39a86; }
+.hsp-row-left { font-size: .9rem; color: #d8ccb2; }
 .hsp-row[data-healing="true"] .hsp-row-left { color: #e39a86; font-weight: 700; }
-.hsp-row .btn.primary { min-width: 0; padding: .1rem .5rem; font-size: .8rem; white-space: nowrap; border-width: .3rem .6rem; }
+.hsp-row .btn.primary { min-width: 0; padding: .1rem .5rem; font-size: .9rem; white-space: nowrap; border-width: .3rem .6rem; }
 
 /* ── 태학 (GDD §5.12, 2026-09-22) ─────────────────────────
    병원과 같은 틀 — 목판·장부·단추는 대장간 규칙에 `.scr-building-academy`를 나란히 건다.
@@ -9090,12 +9192,12 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-building-academy .acd-status .hint { text-align: center; }
 .acd-summary {
   display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;
-  gap: .3rem 1rem; font-size: .8rem; font-weight: 700; color: #3a2c1e;
+  gap: .3rem 1rem; font-size: .9rem; font-weight: 700; color: #3a2c1e;
 }
 /* 「이름 : 값」 두 줄 — 이름 칸 폭을 함께 쓴다(농지 현황판과 같은 결) */
 .acd-rows {
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .6rem;
-  margin: .35rem 0 0; font-size: .8rem; color: #3a2c1e; align-items: center;
+  margin: .35rem 0 0; font-size: .9rem; color: #3a2c1e; align-items: center;
 }
 .acd-rows dt { font-weight: 700; white-space: nowrap; }
 .acd-rows dd { margin: 0; min-width: 0; }
@@ -9167,7 +9269,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .ofcpick-titlerow.acd-titlerow { justify-content: center; padding-left: 1.8rem; }
 .acd-titlerow .ofcpick-title { font-size: 1.05rem; text-align: center; }
 /* 「택 1」 — 판 왼쪽 정렬(지정) */
-.acd-pick-hint { margin: 0; text-align: left; font-size: .8rem; font-weight: 700; color: #5a4128; }
+.acd-pick-hint { margin: 0; text-align: left; font-size: .9rem; font-weight: 700; color: #5a4128; }
 .acd-pick-panel .lv-tactic-row.on .lv-check-icon { opacity: 1; }
 /* [완료된 연구]의 줄은 고르는 것이 아니라 `<div>`다 — `button.lv-tactic-row`의 세로 배치를 옮겨 온다 */
 .acd-done-row { display: flex; flex-direction: column; align-items: stretch; gap: .1rem; padding: .35rem .4rem; }
@@ -9182,9 +9284,9 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 학파 표식 — 지원책(하트) · 환술(눈) 그림(`SchoolIcon`, 2026-10-23 — 옛 옥색 · 보라 글자 칩을 갈았다). 그 옆에 책략 엠블럼 */
 .acd-school { flex: none; width: 1.35rem; height: 1.35rem; align-self: center; }
 .acd-emblem.tac-icon { width: 1.35rem; height: 1.35rem; align-self: center; }
-.acd-lv { flex: none; font-size: .8rem; font-weight: 700; color: #6b5942; align-self: center; }
+.acd-lv { flex: none; font-size: .9rem; font-weight: 700; color: #6b5942; align-self: center; }
 .acd-name { font-weight: 700; }
-.acd-mp { font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.acd-mp { font-size: .9rem; font-weight: 600; white-space: nowrap; }
 /* 바뀐 곳 — 원본은 취소선으로 물러나고 개량은 빨갛게 (기획자 지정) */
 .acd-diff { overflow-wrap: anywhere; }
 .acd-old { color: #8a7458; text-decoration: line-through; text-decoration-thickness: 1px; margin-right: .2em; }
@@ -9200,10 +9302,10 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   margin: 0 0 .35rem; font-size: 1rem; font-weight: 700; color: #f3e8c8; letter-spacing: .05em;
 }
 /* 레벨 글자 — 태학 목록(양피지)의 `.acd-lv`는 짙은 갈색이라 어두운 판 위에서는 금빛으로 */
-.acd-notice-nm .acd-lv { color: #d8b56a; font-size: .8rem; }
+.acd-notice-nm .acd-lv { color: #d8b56a; font-size: .9rem; }
 .acd-notice-spec {
   display: grid; grid-template-columns: auto 1fr; gap: .15rem .3rem;
-  margin: 0 0 .5rem; font-size: .8rem; line-height: 1.5; color: #e9dfca;
+  margin: 0 0 .5rem; font-size: .9rem; line-height: 1.5; color: #e9dfca;
 }
 .acd-notice-spec dt { color: #b8a97c; font-weight: 700; white-space: nowrap; }
 .acd-notice-spec dt::after { content: " :"; }
@@ -9229,13 +9331,13 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
    그래야 「파수꾼 배치 :」·「도적단 출현 :」의 콜론 뒤가 한 세로선에 맞는다 */
 .frm-top {
   display: grid; grid-template-columns: 1fr 1fr; align-items: center;
-  font-size: .82rem; font-weight: 700; color: #3a2c1e; text-align: center;
+  font-size: .9rem; font-weight: 700; color: #3a2c1e; text-align: center;
 }
 .frm-top > span:first-child { border-right: 1px solid #3a2c1e40; }
 .frm-info {
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .5rem;
   margin: .4rem 0 0; padding-top: .35rem; border-top: 1px solid #3a2c1e33;
-  font-size: .8rem; color: #3a2c1e;
+  font-size: .9rem; color: #3a2c1e;
 }
 .frm-line { display: contents; }
 .frm-line dt { font-weight: 700; white-space: nowrap; }
@@ -9290,7 +9392,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .frm-tile[data-open="0"]::after { opacity: .45; }
 .frm-tile-nm {
   display: flex; align-items: center; justify-content: center; gap: .08rem; min-width: 0;
-  font-size: .8rem; font-weight: 700; color: #f3e8c8; line-height: 1.1; letter-spacing: -.02em;
+  font-size: .9rem; font-weight: 700; color: #f3e8c8; line-height: 1.1; letter-spacing: -.02em;
 }
 .frm-tile .gr { --gr: .75rem; flex: none; }
 .frm-tile-nm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -9301,7 +9403,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .frm-tile-img.no-art { visibility: hidden; }
 /* 기물 명패 — 좁은 칸이라 글자·테두리를 줄 속의 것보다 한 치수 작게 */
 .frm-pc.frm-tile-pc {
-  font-size: .8rem; border-width: .18rem .35rem; line-height: 1.15;
+  font-size: .9rem; border-width: .18rem .35rem; line-height: 1.15;
   white-space: nowrap; overflow: hidden; text-overflow: clip;
 }
 /* 출현 붉음 · 약탈 짙은 회색 · 퇴치 완료 파랑 (2026-09-21 지정) */
@@ -9475,7 +9577,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 이름 아래 통산 승 / 무 / 패 — 이번 판으로 오른 칸만 초록으로 조금 크게 (2026-10-12 기획자 지정) */
 
 /* 「누르면 넘어간다」 — 두루마리 아래. 마지막 장에서는 단추가 그 자리를 갖는다 */
-.brs-tap { margin: 0; font-size: .8rem; color: #e9e2d2; text-shadow: 0 1px 3px #000; animation: brs-tap 1.6s ease-in-out infinite; }
+.brs-tap { margin: 0; font-size: .9rem; color: #e9e2d2; text-shadow: 0 1px 3px #000; animation: brs-tap 1.6s ease-in-out infinite; }
 @keyframes brs-tap { 0%, 100% { opacity: .35; } 50% { opacity: .9; } }
 
 /* 나가는 단추 둘 — 마지막 장에서만 선다. 단추 그림은 궁궐 · 대장간과 같다 */
@@ -9523,7 +9625,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 }
 .scr-building-farm .frm-body-guards > .frm-cmd { margin-top: auto; flex: none; }
 /* 제목 — `.scr-bg .cap`의 밝은 회색은 양피지 위에서 사라진다(두 칸 세게 적는다) */
-.scr-building-farm .frm-guards-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .85rem; font-weight: 700; color: #5a4128; }
+.scr-building-farm .frm-guards-ttl { text-align: left; margin: 0 0 .3rem .2rem; font-size: .9rem; font-weight: 700; color: #5a4128; }
 /* 제목 「보초병 배치 (n/m 명)」 — 현황판에서 옮겨 와 왼쪽 벽에 (2026-11-16 기획자) */
 .scr-building-farm .frm-guards-ttl .frm-gl-count { font-weight: 700; }
 .frm-grows { display: flex; flex-direction: column; }
@@ -9539,7 +9641,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   grid-template-columns: 2.2rem minmax(0, 1fr) 2.3rem 3.3rem;   /* 병기구 칸은 1.3배 그림(약 3.2rem)이 들게 */
   /* 맨 오른쪽 칸이 판 테두리에 먹히지 않게 — 예전엔 [해제] 칸이 그 여백 노릇을 했다 */
   padding: 0 .45rem;
-  color: #221407; font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #221407; font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .frm-grow[data-officer] { cursor: pointer; }
 .frm-grow[data-officer]:hover { background: #5a41281a; }
@@ -9554,19 +9656,19 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   background: linear-gradient(to right, transparent, #3a2c1e8c 12%, #3a2c1e8c 88%, transparent);
 }
 /* 열 제목 — 부대 현황의 머리줄과 같은 결(작고 흐린 먹색) */
-.frm-grow.frm-thead { height: 1.4rem; color: #5a4128; font-size: .8rem; }
+.frm-grow.frm-thead { height: 1.4rem; color: #5a4128; font-size: .9rem; }
 .frm-grow.frm-thead::after { display: none; }
 .frm-grow.frm-thead > .nm { justify-content: center; }
 .frm-grow.frm-thead > .st { color: inherit; }
 .frm-pc {
-  display: block; text-align: center; font-size: .8rem; font-weight: 700; color: #2c2013;
+  display: block; text-align: center; font-size: .9rem; font-weight: 700; color: #2c2013;
   border-style: solid; border-color: transparent; border-width: .24rem .55rem;
   border-image: url(ui/btn-secondary.png) 7% 15% fill;
 }
 /* 등급 배지 — 장수 일람 표(`.ofc-row .gr`)와 같은 값 */
 .frm-grow .gr { --gr: 1.3rem; }
 .frm-grow .nm-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.frm-grow .st { font-size: .8rem; color: #1f5c39; white-space: nowrap; }
+.frm-grow .st { font-size: .9rem; color: #1f5c39; white-space: nowrap; }
 .frm-grow .st[data-injured="1"] { color: #8a2f17; }
 /* 건강 상태 아이콘 1.3배 (2026-11-16 기획자) — 기본 `.gic img` 1.45em × 1.3 */
 .frm-grow .st .gic img { height: 1.885em; }
@@ -9592,7 +9694,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   border: 0 solid transparent; padding: .22rem 1.6em .22rem 1.1em;
   border-image: var(--frm-stroke) 0 34% 0 12% fill / 0 1.6em 0 1.1em stretch;
   background: var(--frm-ink) content-box;
-  font: inherit; font-size: .8rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
+  font: inherit; font-size: .9rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
   color: #f6ecd0; text-shadow: 0 1px 1px #000a, 0 0 4px #00000059;
 }
 .frm-stroke-open { --frm-stroke: url(ui/era-stroke-b-5.png); --frm-ink: #2f7f6e; cursor: pointer; }
@@ -9612,13 +9714,13 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .frm-swap-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem; margin: .3rem 0 .6rem; }
 .frm-swap-pc {
   display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .35rem .1rem; cursor: pointer;
-  font: inherit; font-size: .8rem; font-weight: 700; color: #f3e8c8;
+  font: inherit; font-size: .9rem; font-weight: 700; color: #f3e8c8;
   background: #00000040; border: 1px solid #a97c2f88; border-radius: .3rem;
 }
 .frm-swap-pc .frm-piece { width: 1.9rem; height: 1.9rem; object-fit: contain; }
 .frm-swap-pc[data-on="1"] { border-color: #f0d48a; box-shadow: 0 0 .35rem #f0d48a99; background: #f0d48a33; }
 .frm-swap-pc:hover { background: #f0d48a26; }
-.frm-grow .acts .sqm-pick { min-width: 0; padding: 0 .15rem; font-size: .8rem; min-height: 1.75rem; white-space: nowrap; }
+.frm-grow .acts .sqm-pick { min-width: 0; padding: 0 .15rem; font-size: .9rem; min-height: 1.75rem; white-space: nowrap; }
 .frm-grow .acts .sqm-pick:disabled { opacity: .4; cursor: default; filter: none; }
 
 /* 장수 일람 팝업 — 부대에 든 장수는 **빼지 않고 흐리게**(농지 파수꾼 고르기) */
@@ -9650,7 +9752,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   animation: frm-alert-glow 1.6s ease-in-out infinite;
 }
 .city-raid-btn .lbl { font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
-.city-raid-btn .sub { font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.city-raid-btn .sub { font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .city-raid-btn[data-tone="surrender"] {
   border-image: url(ui/btn-forcedcancel.png) 12% 11% fill; border-width: .4rem 1.1rem;
   color: #f3e8c8; text-shadow: 0 1px 2px #000a; animation: none;
@@ -9669,7 +9771,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   color: #f6ecd2; text-shadow: 0 1px 2px #000a;
 }
 .city-forge-btn .lbl { font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; }
-.city-forge-btn .sub { font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: #ffe08a; }
+.city-forge-btn .sub { font-size: .9rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; color: #ffe08a; }
 .city-forge-btn[data-forge="done"] { animation: frm-alert-glow 1.6s ease-in-out infinite; }
 .city-forge-btn:hover { filter: brightness(1.1); }
 @media (prefers-reduced-motion: reduce) { .city-forge-btn { animation: none; } }
@@ -9711,7 +9813,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
    (pt 「Sem sentinelas」)이 한 줄에 드는 값으로 못 박는다 — 언어마다 획 길이가 출렁이지 않게 */
 .raid-vs-stands.raid-vs-empty { width: auto; display: flex; align-items: center; justify-content: center; }
 .raid-vs-unassigned.frm-stroke { box-sizing: border-box; width: 9.4rem; min-width: 0; max-width: 100%; }
-.raid-vs-cap { margin: 0; font-size: .8rem; line-height: 1.25; text-align: center; color: #d8ccb2; word-break: keep-all; }
+.raid-vs-cap { margin: 0; font-size: .9rem; line-height: 1.25; text-align: center; color: #d8ccb2; word-break: keep-all; }
 .raid-vs-cap .who { font-weight: 800; color: #f4ecd8; }
 .raid-vs-mid { position: relative; width: 3.4rem; height: 3.4rem; display: grid; place-items: center; }
 .raid-vs-hit { position: absolute; inset: -.9rem; width: calc(100% + 1.8rem); height: calc(100% + 1.8rem); object-fit: contain; opacity: .9; pointer-events: none; }
@@ -9720,7 +9822,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 「이름 : 값」 두 줄 — 콜론 뒤가 한 세로선에 맞는다(농지 현황판 `.frm-info`와 같은 짜임) */
 .raid-info {
   display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .6rem; align-items: center;
-  margin: .1rem .4rem .3rem; font-size: .88rem; line-height: 1.35; text-align: left;
+  margin: .1rem .4rem .3rem; font-size: .9rem; line-height: 1.35; text-align: left;
 }
 .raid-info-line { display: contents; }
 .raid-info dt { font-weight: 700; color: #d8ccb2; white-space: nowrap; }
@@ -9795,7 +9897,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .raid-auto-verdict { margin: .2rem 0 .1rem; text-align: center; font-size: 1.35rem; font-weight: 800; letter-spacing: .06em; text-shadow: 0 .08rem .15rem #000a; }
 .raid-auto-verdict.win { color: #8fe07a; }
 .raid-auto-verdict.lose { color: #f0624f; }
-.raid-auto-note { margin: .2rem .4rem .5rem; text-align: center; font-size: .88rem; font-weight: 700; color: #f4ecd8; word-break: keep-all; }
+.raid-auto-note { margin: .2rem .4rem .5rem; text-align: center; font-size: .9rem; font-weight: 700; color: #f4ecd8; word-break: keep-all; }
 .raid-auto-box .raid-loot-big { margin: .3rem 0 0; }
 /* 자동 전투 연출 (2026-11-27 기획자) — [실행] 뒤 같은 대치 판에서 8초 미니 전투(`raidFight.ts`).
    양쪽 줄이 가운데로 걸어 나와(줄 전체 `transform`) 앞뒤로 흔들리며 치고 맞다 쓰러지고, 남은 쪽의 평상 동작 뒤 큰 글씨가 찍힌다 */
@@ -9876,7 +9978,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 }
 
 /* 상단 판 — 약 1/5 */
-.clx-head { flex: none; gap: .3rem; font-size: .8rem; }
+.clx-head { flex: none; gap: .3rem; font-size: .9rem; }
 .clx-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .9rem; }
 /* 오른쪽 벽에 붙는 것 — 첫 줄 [랭킹 보기], 둘째 줄 「완성 n / 117」 (2026-10-13 지정) */
 .clx-rank-btn, .clx-done-count { margin-left: auto; }
@@ -9886,9 +9988,9 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .scr-collection .clx-head .btn.clx-rank-btn {
   border-width: .28rem .5rem; border-image: url(ui/chip-neutral.png) 13% 11% fill;
   color: #fff; text-shadow: 0 1px 1px #00000080;
-  font-size: .8rem; padding: 0 .3rem; line-height: 1.25; min-height: 0; white-space: nowrap;
+  font-size: .9rem; padding: 0 .3rem; line-height: 1.25; min-height: 0; white-space: nowrap;
 }
-.clx-done-count { font-size: .8rem; }
+.clx-done-count { font-size: .9rem; }
 
 /* [랭킹 보기] 팝업 — 서버 1~10등. 판은 목록과 같은 양피지 장부(`.scr-collection .place-panel`) */
 .clx-rank-back { z-index: 55; }
@@ -9898,7 +10000,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .clx-rank-titlerow .ofcard-close { position: static; width: 1.4rem; height: 1.4rem; }
 .clx-rank-row {
   display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) 2.8rem 3.6rem; gap: .3rem; align-items: center;
-  padding: .28rem .3rem; font-size: .8rem; font-weight: 700; position: relative;
+  padding: .28rem .3rem; font-size: .9rem; font-weight: 700; position: relative;
 }
 .clx-rank-row .c-rk, .clx-rank-row .c-done, .clx-rank-row .c-pts { text-align: right; font-variant-numeric: tabular-nums; }
 .clx-rank-row .c-city { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -9906,15 +10008,15 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   content: ''; position: absolute; left: .3rem; right: .3rem; bottom: 0; height: 1px; pointer-events: none;
   background: linear-gradient(to right, transparent, #3a2c1e80 12%, #3a2c1e80 88%, transparent);
 }
-.clx-rank-head { color: #5a4128; font-size: .8rem; border-bottom: 2px solid #3a2c1e99; }
+.clx-rank-head { color: #5a4128; font-size: .9rem; border-bottom: 2px solid #3a2c1e99; }
 .clx-rank-row[data-rank="1"] .c-rk, .clx-rank-row[data-rank="2"] .c-rk, .clx-rank-row[data-rank="3"] .c-rk { color: #8a1c10; }
 .clx-rank-row[data-mine="1"] { background: #b3261a24; border-radius: .2rem; }
 .clx-rank-gap { text-align: center; color: #5a4128; line-height: 1; }
-.clx-rank-note { margin: .8rem 0; text-align: center; font-size: .8rem; color: #5a4128; }
+.clx-rank-note { margin: .8rem 0; text-align: center; font-size: .9rem; color: #5a4128; }
 .clx-head b { color: #5a4128; font-weight: 700; margin-right: .2rem; }
 .clx-stat { font-weight: 700; white-space: nowrap; }
 .clx-points { color: #8a1c10; }
-.clx-invested { font-size: .8rem; font-weight: 600; }
+.clx-invested { font-size: .9rem; font-weight: 600; }
 
 /* 목록 판 — 남은 4/5 */
 /* 검색 · 정렬 한 줄 — 랭킹의 `.rk-searchbar`(7:3)를 반반으로. 단추는 검색창 높이에 맞춘다 */
@@ -9982,12 +10084,12 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .clx-row > :not(.clx-row-art) { position: relative; }
 .clx-era {
   grid-column: 1; grid-row: 1; justify-self: start;
-  font-size: .8rem; padding: .05rem .3rem; border-radius: .2rem;
+  font-size: .9rem; padding: .05rem .3rem; border-radius: .2rem;
   background: #3a2c1e1f; color: #5a4128; white-space: nowrap;
 }
 .clx-row-pts {
   grid-column: 2; grid-row: 1; justify-self: end;
-  display: flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 800; color: #5a4128; white-space: nowrap;
+  display: flex; align-items: center; gap: .3rem; font-size: .9rem; font-weight: 800; color: #5a4128; white-space: nowrap;
 }
 /* 시대 칩 = 굵은 붓 「一」 위의 글자 (2026-10-14 기획자 지정, 의뢰서 ⑥). 획 색은 그 장의 이야기에서 따온 「이야기의 색」(안 A).
    그림(`ui/era-stroke-{a,b}-{n}.png`, `npm run ui`)을 9분할로 깐다 — 왼쪽 둥근 머리 · 오른쪽 갈필 꼬리는 그대로, 가운데만 글자 길이만큼 늘인다.
@@ -10022,7 +10124,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   grid-column: 1; grid-row: 2; min-width: 0; font-size: .9rem; font-weight: 800; line-height: 1.3;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.clx-req { justify-self: end; display: flex; align-items: center; gap: .25rem; font-size: .8rem; font-weight: 700; }
+.clx-req { justify-self: end; display: flex; align-items: center; gap: .25rem; font-size: .9rem; font-weight: 700; }
 .clx-req-cards { grid-column: 2; grid-row: 2; }
 .clx-req-goods { grid-column: 2; grid-row: 3; align-self: start; }
 .clx-req-card { display: inline-flex; align-items: center; gap: .1rem; white-space: nowrap; }
@@ -10030,14 +10132,14 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .clx-req-good { width: 1.25rem; height: 1.25rem; object-fit: contain; }
 .clx-progress { color: #8a5a10; }
 .clx-done-mark {
-  font-family: var(--serif); font-size: .85rem; color: #b3261a;
+  font-family: var(--serif); font-size: .9rem; color: #b3261a;
   border: 2px solid #b3261a; border-radius: .2rem; padding: 0 .1rem; line-height: 1.1; rotate: -8deg;
 }
 /* 설명은 **두 줄 자리를 늘 잡는다** — 한 줄이어도 줄 높이가 같아야 목록이 고르다. 다국어에서 길어지는 문장을
    한 줄 말줄임으로 자르지 않으려는 것이다(2026-10-13 지정). 두 줄도 넘치면 그때만 말줄임 */
 .clx-row-desc {
   grid-column: 1; grid-row: 3; align-self: start;
-  font-size: .8rem; line-height: 1.4; height: 2.8em; color: #4a3622; font-weight: 500;
+  font-size: .9rem; line-height: 1.4; height: 2.8em; color: #4a3622; font-weight: 500;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
   overflow: hidden; word-break: keep-all; overflow-wrap: anywhere;
 }
@@ -10203,7 +10305,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 .clx-ask-back { z-index: 60; }
 .modal.clx-ask { gap: .55rem; text-align: center; }
 .clx-ask-what { margin: 0; font-size: .9rem; }
-.clx-ask-warn { margin: 0; font-size: .8rem; color: #f0a08a; }
+.clx-ask-warn { margin: 0; font-size: .9rem; color: #f0a08a; }
 .clx-ask-btns { display: flex; gap: .5rem; justify-content: center; }
 .clx-ask-btns .btn { min-width: 5rem; }
 
@@ -10242,7 +10344,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   content: ''; position: absolute; left: .25rem; top: .55rem;
   width: .3rem; height: .3rem; border-radius: 50%; background: #b8322a;
 }
-.mail-row-ttl { width: 100%; font-size: .8rem; font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-row-ttl { width: 100%; font-size: .9rem; font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 먹줄 — 읽은 우편의 제목을 가로지른다. 글자 폭만큼(`.mail-row-ink`가 인라인이라 그 폭이다) 왼쪽에서 오른쪽으로 그어진다.
    처음부터 읽은 것은 그어진 채로 뜬다(전환은 처음 그릴 때 안 돈다) */
 .mail-row-ink { position: relative; }
@@ -10252,10 +10354,10 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 }
 .mail-row[data-struck="1"] .mail-row-ttl { color: #7a6448; font-weight: 400; }
 .mail-row[data-struck="1"] .mail-row-ink::after { transform: scaleX(1); }
-.mail-row-at { font-size: .8rem; color: #7a6448; font-variant-numeric: tabular-nums; }
+.mail-row-at { font-size: .9rem; color: #7a6448; font-variant-numeric: tabular-nums; }
 /* 받을 것이 남은 우편 — 날짜 옆의 작은 금빛 표시 */
 .mail-row[data-gift="1"] .mail-row-at::after { content: ' ◆'; color: #c99a24; }
-.mail-body-none { margin: 2.5rem 0; font-size: .8rem; color: #6b5536; text-align: center; }
+.mail-body-none { margin: 2.5rem 0; font-size: .9rem; color: #6b5536; text-align: center; }
 .mail-side .pager .pager-label { color: #3a2210; }
 @media (prefers-reduced-motion: reduce) { .mail-row-ink::after { transition: none; } }
 
@@ -10273,9 +10375,9 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   animation: mkt-rise .3s ease-out both;
 }
 .mail-body-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-.mail-body-ttl { margin: 0; font-size: .86rem; font-weight: 700; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; color: #3a2210; }
-.mail-body-at { margin: .15rem 0 .5rem; padding-bottom: .35rem; border-bottom: 1px solid #c8b08899; font-size: .8rem; color: #6b5536; font-variant-numeric: tabular-nums; }
-.mail-body-txt { margin: 0; font-size: .8rem; line-height: 1.65; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.mail-body-ttl { margin: 0; font-size: .9rem; font-weight: 700; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; color: #3a2210; }
+.mail-body-at { margin: .15rem 0 .5rem; padding-bottom: .35rem; border-bottom: 1px solid #c8b08899; font-size: .9rem; color: #6b5536; font-variant-numeric: tabular-nums; }
+.mail-body-txt { margin: 0; font-size: .9rem; line-height: 1.65; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
 /* [목록으로] — 종이 위라 검은 기본 단추 대신 결과 화면의 보조 단추(`ui/btn-secondary.png`)를 입힌다 */
 .mail-detail .btn.mail-back {
   flex: none; margin-top: .6rem; justify-content: center;
@@ -10289,16 +10391,16 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   border: 1px solid #b89a63; border-radius: .3rem; background: #e6d6b1b3;
 }
 .mail-gift[data-claimed="1"] { filter: saturate(.4); opacity: .8; }
-.mail-gift-head { font-size: .8rem; font-weight: 700; color: #6b5536; letter-spacing: .1em; margin-bottom: .2rem; }
+.mail-gift-head { font-size: .9rem; font-weight: 700; color: #6b5536; letter-spacing: .1em; margin-bottom: .2rem; }
 .mail-gift-list { list-style: none; margin: 0 0 .4rem; padding: 0; display: flex; flex-wrap: wrap; gap: .2rem .35rem; }
 .mail-gift-list li {
-  font-size: .8rem; font-weight: 700; padding: .1rem .35rem; border-radius: .2rem;
+  font-size: .9rem; font-weight: 700; padding: .1rem .35rem; border-radius: .2rem;
   background: #f6eeda; border: 1px solid #c9ad78; white-space: nowrap;
 }
-.mail-gift .btn.primary.mail-claim { display: flex; width: 100%; justify-content: center; font-size: .8rem; padding: .25rem 0; }
-.mail-ask p { margin: 0 0 .35rem; font-size: .8rem; line-height: 1.5; color: #7a2a1a; font-weight: 700; word-break: keep-all; }
+.mail-gift .btn.primary.mail-claim { display: flex; width: 100%; justify-content: center; font-size: .9rem; padding: .25rem 0; }
+.mail-ask p { margin: 0 0 .35rem; font-size: .9rem; line-height: 1.5; color: #7a2a1a; font-weight: 700; word-break: keep-all; }
 .mail-ask-btns { display: flex; gap: .3rem; }
-.mail-ask-btns .btn { flex: 1; font-size: .8rem; padding: .25rem 0; }
+.mail-ask-btns .btn { flex: 1; font-size: .9rem; padding: .25rem 0; }
 
 /* ── 지난 설명 (2026-10-23, `Steward.tsx`의 `GuideReplay`) ─────────────────────
  *
@@ -10311,7 +10413,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 높이 — 왼쪽 칸이 아홉(1단 아홉 · 또는 「처음으로」 + 메인 여덟 갈래)이어도 굴리지 않게(2026-10-23 기획자 — 30rem에서 칸 하나 반만큼 높였다) */
 /* 화면 높이의 80% (2026-11-23 기획자 — 아홉 칸 목록이 스크롤 없이 들게. 90%는 너무 커서 줄였다). `100%`는 가리개의 안쪽(위아래 여백 1rem씩을 뺀 것)이라 여백을 되더한다 */
 .modal.mod-plank.gdr-modal { max-width: 24rem; height: calc((100% + 2rem) * .8); }
-.gdr-none { margin: 2rem 0; font-size: .8rem; text-align: center; color: #e9dfca; }
+.gdr-none { margin: 2rem 0; font-size: .9rem; text-align: center; color: #e9dfca; }
 /* 왼쪽 9 : 오른쪽 11 (2026-11-23 — 2:3에서는 몽골어 「Тариалангийн」 한 단어가 칸보다 길어 두 줄로 접어도 단어 한가운데서 끊겼다) */
 .gdr-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 9fr 11fr; gap: .45rem; }
 .gdr-cols > * { min-width: 0; min-height: 0; }
@@ -10326,7 +10428,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
      안쪽에 겹쳐 그린다. 그래야 안쪽 네온(`box-shadow: inset`, 테두리 안쪽에서 시작한다)이 밧줄에 틈 없이 붙는다 */
   background: #2a1d10b3; border: .16rem solid transparent; border-radius: .3rem;
   border-image: url(ui/frame-gold-1.png) 4% / .32rem round;
-  color: #e9dfca; font: inherit; font-size: .8rem; font-weight: 700;
+  color: #e9dfca; font: inherit; font-size: .9rem; font-weight: 700;
 }
 .gdr-row:hover { background: #3a2a17cc; }
 .gdr-row.on { background: #5a3f1fe6; color: #fff6d8; box-shadow: inset 0 0 .55rem .1rem #f0c674c0, inset 0 0 .15rem #fff3c8; }
@@ -10350,7 +10452,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   width: 100%; min-height: 2.1rem; padding: .3rem 1rem; cursor: pointer; border: 0; font: inherit;
   display: flex; align-items: center; justify-content: center; text-align: center;
   background: transparent center / 100% 100% no-repeat;
-  color: #fff6e0; font-size: .8rem; font-weight: 700; line-height: 1.25; text-shadow: 0 1px 2px #000, 0 0 4px #000c;
+  color: #fff6e0; font-size: .9rem; font-weight: 700; line-height: 1.25; text-shadow: 0 1px 2px #000, 0 0 4px #000c;
 }
 .gdr-item .lbl { word-break: keep-all; }
 .gdr-item:hover { filter: brightness(1.15); }
@@ -10358,7 +10460,7 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
 /* 쪽 넘김 단추는 두 배 (2026-11-23 기획자 — 1.55rem은 손가락에 작았다) */
 .modal.mod-plank.gdr-modal .btn.pg-btn { width: 3.1rem; border: none; border-image: none; padding: 0; background: none; }
 .gdr-body .pg-lbl { display: none; }
-.gdr-body .pager-label { min-width: 0; font-size: .8rem; }
+.gdr-body .pager-label { min-width: 0; font-size: .9rem; }
 
 /* ── 안내 내관 (`screens/Steward.tsx`, 2026-10-22 · pptx 113~116쪽) ─────────────────────────────
  *
@@ -10519,11 +10621,11 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   padding: calc(var(--say-h) * .15) .2rem calc(var(--say-h) * .15) .1rem;
   display: flex; flex-direction: column; justify-content: center; gap: .15rem;
 }
-.tut-say-name { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-shadow: 0 1px 2px #000; }
+.tut-say-name { margin: 0; font-size: .9rem; font-weight: 700; letter-spacing: .08em; text-shadow: 0 1px 2px #000; }
 .tut-say-back[data-side="ally"] .tut-say-name { color: #9fc4ff; }
 .tut-say-back[data-side="foe"] .tut-say-name { color: #ff9e8c; }
 .tut-say-text {
-  margin: 0; font-size: .8rem; line-height: 1.45; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
+  margin: 0; font-size: .9rem; line-height: 1.45; color: #f3e8c8; text-shadow: 0 1px 2px #000c;
   word-break: keep-all; white-space: pre-line;
 }
 /* 띄어쓰기가 없는 말(중 · 일)에서 keep-all은 「구두점에서만 접기」가 된다 — 짧은 문장도 3줄 칸을 넘었다(2026-11-11 튜토리얼 번역).
@@ -10590,9 +10692,9 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 .mail-tile-art img { display: block; width: 100%; height: 100%; object-fit: contain; padding: .25rem; }
 .mail-tile-art::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat; }
-.mail-tile-name { display: block; padding: .2rem; font-size: .8rem; color: #f4ecd8; white-space: normal; }
+.mail-tile-name { display: block; padding: .2rem; font-size: .9rem; color: #f4ecd8; white-space: normal; }
 .mail-tile-n {
-  position: absolute; right: .15rem; bottom: .05rem; font-size: .8rem; color: #fff; font-variant-numeric: tabular-nums;
+  position: absolute; right: .15rem; bottom: .05rem; font-size: .9rem; color: #fff; font-variant-numeric: tabular-nums;
   text-shadow: 0 0 2px #000, 0 1px 2px #000;
 }
 /* [받기] — 결정할 때 누르는 옥색 목판(`btn-primary.png`) */
@@ -10603,15 +10705,15 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 
 /* 튜토리얼 소개 패널 (2026-10-26) — 먹빛 나무판(`mod-plank`) 위라 글은 밝게. 한 줄 이야기 · 클리어 목표(목표 메달) · 패배 조건 · 클리어 여부 · [입장하기] [돌아가기] */
 .tut-intro { display: flex; flex-direction: column; gap: .45rem; max-width: 22rem; }
-.tut-intro-story { margin: 0; font-size: .8rem; line-height: 1.55; color: #e9dfca; word-break: keep-all; }
+.tut-intro-story { margin: 0; font-size: .9rem; line-height: 1.55; color: #e9dfca; word-break: keep-all; }
 .tut-intro-sec { display: flex; flex-direction: column; gap: .2rem; padding: .35rem .45rem; border-radius: .2rem; background: #00000033; }
-.tut-intro-sec .cap { font-size: .8rem; font-weight: 700; letter-spacing: .08em; color: #cbb98f; }
+.tut-intro-sec .cap { font-size: .9rem; font-weight: 700; letter-spacing: .08em; color: #cbb98f; }
 .tut-intro-sec ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
-.tut-intro-sec li { font-size: .8rem; font-weight: 700; color: #f4ecd8; }
+.tut-intro-sec li { font-size: .9rem; font-weight: 700; color: #f4ecd8; }
 .tut-intro-sec li .gic { white-space: normal; }
 .tut-intro-sec li .gic img { height: 2.1em; }
 .tut-intro-sec.lose li { color: #f0a08c; }
-.tut-intro-done { margin: 0; font-size: .8rem; color: #b8a97c; }
+.tut-intro-done { margin: 0; font-size: .9rem; color: #b8a97c; }
 .tut-intro-done[data-done="1"] { color: #8fd6ad; font-weight: 700; }
 .tut-intro-done .gic img { height: 1.7em; }
 .tut-intro-go .gic { gap: .35em; }
@@ -10632,49 +10734,49 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 }
 .scr-garrison-policy .gpl-tabs .btn:disabled { opacity: .45; }
 .gpl-head .cap { margin: 0 0 .3rem; text-align: center; }
-.gpl-head .hint { margin: .2rem 0 0; font-size: .8rem; color: #5a4128; }
+.gpl-head .hint { margin: .2rem 0 0; font-size: .9rem; color: #5a4128; }
 .gpl-body { display: flex; flex-direction: column; gap: .25rem; }
-.gpl-mode { margin: 0; font-size: .8rem; color: #5a4128; }
+.gpl-mode { margin: 0; font-size: .9rem; color: #5a4128; }
 .gpl-mode[data-custom="1"] { color: #2f6b46; font-weight: 700; }
 .gpl-rows { display: flex; flex-direction: column; }
 .gpl-none { text-align: center; margin: .8rem 0; }
 /* 행동 탭 — 기물 · 장수 · 행동(단추 + 설명 한 줄) */
 .gpl-srow { display: grid; grid-template-columns: 3rem minmax(0, 1.4fr) minmax(0, 2fr); align-items: center; gap: .35rem;
-  min-height: 2.6rem; padding: .15rem 0; color: #221407; font-size: .8rem; font-weight: 700; border-bottom: 1px solid #3a2c1e40; }
-.gpl-srow .pc { color: #5a4128; font-size: .8rem; }
+  min-height: 2.6rem; padding: .15rem 0; color: #221407; font-size: .9rem; font-weight: 700; border-bottom: 1px solid #3a2c1e40; }
+.gpl-srow .pc { color: #5a4128; font-size: .9rem; }
 .gpl-srow .who { display: flex; align-items: center; gap: .3rem; min-width: 0; }
 .gpl-srow .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gpl-srow .thumb { width: 1.7rem; height: 1.7rem; object-fit: cover; border-radius: .2rem; flex: none; }
 .gpl-stance { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; min-width: 0; }
 .gpl-stance .btn .lbl { white-space: nowrap; }
-.gpl-desc { margin: 0; font-size: .8rem; font-weight: 400; color: #4a3520; line-height: 1.25; word-break: keep-all; }
+.gpl-desc { margin: 0; font-size: .9rem; font-weight: 400; color: #4a3520; line-height: 1.25; word-break: keep-all; }
 /* 책략 · 고유기술 탭 — 순위 · …. 칸은 rem으로 잡는다(700px 판에서 em은 커진다, CLAUDE.md) */
 .gpl-row { display: grid; align-items: center; gap: .3rem; min-height: 2.1rem; padding: .1rem .2rem; border-radius: .25rem;
-  color: #221407; font-size: .8rem; font-weight: 700; cursor: pointer; border: 2px solid transparent; }
+  color: #221407; font-size: .9rem; font-weight: 700; cursor: pointer; border: 2px solid transparent; }
 /* 순위 칸은 열 제목이 들어갈 만큼 — 몽골어 「Эрэмбэ」가 1.6rem을 넘어 옆 글자와 겹쳤다 */
 .gpl-row.gpl-tactic { grid-template-columns: 2.9rem minmax(0, 1fr) 5.2rem; }
 .gpl-row.gpl-skill { grid-template-columns: 2.9rem minmax(0, 1fr); }
 .gpl-row > * { min-width: 0; }
-.gpl-row .rk { text-align: center; color: #5a4128; font-size: .8rem; }
+.gpl-row .rk { text-align: center; color: #5a4128; font-size: .9rem; }
 .gpl-row .ch { text-align: center; justify-self: center; }
 .gpl-main { display: flex; flex-direction: column; gap: .05rem; min-width: 0; }
 .gpl-l1, .gpl-l2 { display: flex; align-items: baseline; gap: .35rem; margin: 0; min-width: 0; white-space: nowrap; }
-.gpl-l1 .what { font-size: .8rem; }
-.gpl-l1 .tg, .gpl-l1 small { font-weight: 400; color: #5a4128; font-size: .8rem; }
-.gpl-l2 { font-size: .8rem; font-weight: 400; color: #3a2412; white-space: normal; flex-wrap: wrap; row-gap: 0; }
+.gpl-l1 .what { font-size: .9rem; }
+.gpl-l1 .tg, .gpl-l1 small { font-weight: 400; color: #5a4128; font-size: .9rem; }
+.gpl-l2 { font-size: .9rem; font-weight: 400; color: #3a2412; white-space: normal; flex-wrap: wrap; row-gap: 0; }
 .gpl-l2 .sep { opacity: .6; }
 /* 글자 단추 — 조건 · 확률. 두루마리 그림 없이 밑줄과 ▾로 「누르면 고른다」를 말한다 */
 .gpl-link { min-width: 0; padding: 0; border: 0; background: none; color: #6b2a12; font: inherit; font-weight: 700;
   text-decoration: underline dotted; text-underline-offset: .15em; cursor: pointer; text-align: left; }
 /* 조건 글자는 자르지 않고 줄을 바꾼다 — 키릴 문자는 넓어 「…」로 잘렸다 */
 .gpl-l2 .gpl-link { white-space: normal; }
-.gpl-link.ch { font-size: .8rem; white-space: nowrap; }
+.gpl-link.ch { font-size: .9rem; white-space: nowrap; }
 .gpl-row[data-sel="1"] { border-color: #c99a3c; background: rgba(240, 198, 116, .22); }
 .gpl-row[data-usable="0"] { opacity: .6; }
-.gpl-row.gpl-thead { cursor: default; min-height: 1.3rem; color: #5a4128; font-size: .8rem; }
+.gpl-row.gpl-thead { cursor: default; min-height: 1.3rem; color: #5a4128; font-size: .9rem; }
 .gpl-row.gpl-thead .gpl-main { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gpl-row:not(.gpl-thead) + .gpl-row:not(.gpl-thead) { margin-top: .15rem; }
-.gpl-off { margin-left: .3em; padding: 0 .3em; border-radius: .2rem; background: #8a2b1c; color: #fff4d8; font-style: normal; font-size: .8rem; }
+.gpl-off { margin-left: .3em; padding: 0 .3em; border-radius: .2rem; background: #8a2b1c; color: #fff4d8; font-style: normal; font-size: .9rem; }
 .gpl-tools { display: flex; flex-wrap: wrap; gap: .3rem; justify-content: center; }
 .gpl-tools .btn { flex: none; white-space: nowrap; }
 .gpl-acts { flex: none; }
@@ -10685,7 +10787,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .gpl-choice { flex-direction: column; align-items: center; gap: .1rem; }
 .gpl-choice .lbl { white-space: nowrap; }
 .gpl-choice[data-on="1"] { outline: 2px solid #f0c674; }
-.gpl-choice-sub { font-size: .8rem; opacity: .85; white-space: normal; word-break: keep-all; text-align: center; }
+.gpl-choice-sub { font-size: .9rem; opacity: .85; white-space: normal; word-break: keep-all; text-align: center; }
 /* 새 책략 알림 — 제목이 음절 중간에서 끊겼다(「새 책략 / 을」) */
 .gpl-notice .modal-ttl, .gpl-notice .frg-confirm-body { word-break: keep-all; }
 
@@ -10693,12 +10795,12 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
  * 연습 판 전용 — 판 위에는 아무것도 안 그리고 오른쪽 위 구석의 단추 하나로만 연다. */
 .sdp-open {
   position: absolute; top: .4rem; right: .4rem; z-index: 60;
-  padding: .2rem .55rem; font-size: .8rem; border-radius: .3rem;
+  padding: .2rem .55rem; font-size: .9rem; font-weight: 700; border-radius: .3rem;
   background: #2a1d12e6; color: #f3e2c0; border: 1px solid #b08a4a; cursor: pointer;
 }
 .modal-back.sdp-back { z-index: 70; }
-.modal.sdp-modal { max-width: 34rem; gap: .25rem; font-size: .8rem; }
-.sdp-modal h4 { margin: .45rem 0 .1rem; font-size: .8rem; color: #f0c674; }
+.modal.sdp-modal { max-width: 34rem; gap: .25rem; font-size: .9rem; }
+.sdp-modal h4 { margin: .45rem 0 .1rem; font-size: .9rem; color: #f0c674; }
 .sdp-table { width: 100%; border-collapse: collapse; }
 .sdp-table th, .sdp-table td { padding: .15rem .3rem; border-bottom: 1px solid #333a44; text-align: left; vertical-align: top; }
 .sdp-table th { color: #9aa4b2; font-weight: 400; }
@@ -10740,7 +10842,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .dl-offer .dl-side { padding: .3rem .25rem .4rem; }
 .dl-offer .dl-portrait { width: 5rem; height: 6.25rem; }
 .dl-offer .dl-name { font-size: .98rem; }
-.dl-of-line { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .82rem; color: #e6d6b2; text-align: center; }
+.dl-of-line { display: flex; align-items: center; justify-content: center; gap: .3rem; font-size: .9rem; color: #e6d6b2; text-align: center; }
 .dl-of-line .gic img { width: 1.1rem; height: 1.1rem; }
 /* 승 · 패 · 결판 없음 — 어두운 명판 위 세 칸 */
 .dl-odds {
@@ -10749,12 +10851,12 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   border-image: url(ui/plate-wide.png) 20% 15% fill; padding: .05rem .2rem;
 }
 .dl-odd { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
-.dl-odd-k { font-size: .8rem; color: #c9b88f; }
+.dl-odd-k { font-size: .9rem; color: #c9b88f; }
 .dl-odd-v { font-size: 1.15rem; color: #f3e8c8; text-shadow: 0 1px 2px #000c; }
 .dl-odd-win .dl-odd-v { color: #8fe08a; }
 .dl-odd-lose .dl-odd-v { color: #ff8a73; }
 .dl-title { font-size: 1.1rem; font-weight: 700; text-align: center; }
-.dl-note { font-size: .8rem; color: #cbb98f; text-align: center; }
+.dl-note { font-size: .9rem; color: #cbb98f; text-align: center; }
 .dl-refuse-note { color: #ffb19c; }
 .dl-timer { font-size: 1.35rem; font-weight: 700; color: #ffcf6a; text-shadow: 0 0 .4rem #000; }
 /* 건 쪽 — 단추 줄 자리를 같은 높이로 차지하는 「상대방이 결정중입니다.」 (2026-11-07 기획자). 높이 = 단추 최소 높이 + 위아래 테 */
@@ -10824,7 +10926,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   box-shadow: 0 0 .5rem rgba(0, 0, 0, .45); animation: dl-lost-in .32s cubic-bezier(.3, 1.6, .6, 1) both;
 }
 @keyframes dl-lost-in { from { opacity: 0; scale: 1.9; } to { opacity: .95; scale: 1; } }
-.dl-lost[data-long="1"] { font-size: .85rem; letter-spacing: 0; }
+.dl-lost[data-long="1"] { font-size: .9rem; letter-spacing: 0; }
 .dl-side[data-lost="1"] .dl-portrait img { filter: grayscale(.7) brightness(.8); }
 /* 이름 줄 — [북] 이름 [무력|지력] 값 */
 .dl-name-row { display: flex; align-items: center; justify-content: center; gap: .3rem; max-width: 100%; white-space: nowrap; }
@@ -10852,8 +10954,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
   content: ''; position: absolute; left: .5rem; right: .5rem; top: 12%; height: 30%; border-radius: .5rem;
   background: linear-gradient(180deg, #ffffffa0, #fff0);
 }
-.dl-gv { position: relative; z-index: 1; display: block; text-align: center; font-size: .8rem; line-height: .95rem; color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
-.dl-auto { font-size: .8rem; color: #ffd27a; }
+.dl-gv { position: relative; z-index: 1; display: block; text-align: center; font-size: .9rem; line-height: .95rem; color: #fff2e6; text-shadow: 0 0 2px #000, 0 1px 2px #000; }
+.dl-auto { font-size: .9rem; color: #ffd27a; }
 
 .dl-center { position: relative; flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; min-height: 0; }
 /* 연출 그림 (일기토, `ui/duelScene.ts` · 2026-11-06 기획자) — 손 · 숫자 · 말풍선 아래에 깔린다. 아래 = 상대 그림 뒤집은 것,
@@ -10917,7 +11019,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 #duel .dl-bubble[data-tone="lose"] .dl-verdict { color: #2a2420; text-shadow: 0 2px 0 #fff4d0; }
 #duel .dl-bubble[data-tone="draw"] .dl-verdict { color: #4a3a28; }
 /* 정보 하나에 한 줄(화면이 끊는다) — 말풍선의 아래 꼬리 쪽으로 넘치지 않게 글 묶음 전체를 위로 올렸다(위 여백 < 아래 여백, 2026-11-07 기획자) */
-.dl-detail { font-size: .84rem; font-weight: 700; max-width: 22rem; margin-right: 1.2rem; white-space: pre-line; word-break: keep-all; line-height: 1.4; }
+.dl-detail { font-size: .9rem; font-weight: 700; max-width: 22rem; margin-right: 1.2rem; white-space: pre-line; word-break: keep-all; line-height: 1.4; }
 /* 끝 장면에서는 아래 칸이 그대로 서 있되 꺼져 흐리다 — 걷으면 가운데 칸이 길어져 그림이 내려앉는다 */
 .dl-stage[data-ended="1"] > :is(.dl-hint, .dl-picks, button[data-action="flee"]) { opacity: .35; filter: grayscale(.6); transition: opacity .6s, filter .6s; }
 @keyframes dl-end-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
@@ -11030,7 +11132,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .dl-stage > button[data-action="flee"] .gic img { width: 1.3rem; height: 1.3rem; }
 
 /* 맥락 판의 대결 줄 (신청 확인창) */
-#ctx-flow .cx-duel-side { display: flex; align-items: center; gap: .3rem; font-size: .82rem; }
+#ctx-flow .cx-duel-side { display: flex; align-items: center; gap: .3rem; font-size: .9rem; }
 #ctx-flow .cx-duel-side .gic img, .dl-offer .cx-duel-side .gic img, .cx-sub .gic img { width: 1rem; height: 1rem; }
 /* 신청 확인창의 한 줄 — 이름 · [무력|지력] 값 · [전의|정신력] 값 (2026-11-06) */
 #ctx-flow .cx-duel-side .cx-duel-stat { width: 1.1rem; height: 1.1rem; object-fit: contain; }
@@ -11111,8 +11213,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 /* 이름 줄 — S급은 이름 오른쪽에 해 · 곳을 작게(2026-11-13 기획자). 좁으면 해 · 곳이 다음 줄로 접힌다 */
 .tut-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .45rem; }
 .tut-name { font-size: .95rem; font-weight: 700; letter-spacing: .03em; }
-.tut-era { font-size: .8rem; color: #6b4f30; white-space: nowrap; }
-.tut-sub { font-size: .8rem; color: #5a4128; overflow-wrap: anywhere; }
+.tut-era { font-size: .9rem; color: #6b4f30; white-space: nowrap; }
+.tut-sub { font-size: .9rem; color: #5a4128; overflow-wrap: anywhere; }
 /* 오른쪽 표 (2026-11-11 기획자) — 그림 위에 붓글씨(이미 불러 둔 `Nanum Brush Script`)를 겹친다.
    끝냄: 승리 메달 + 파란 「완료」. 다음 목표: 순서 판의 검이 좌우로 둥실 + 노란 「다음」 */
 .tut-stamp { position: relative; display: flex; align-items: center; justify-content: center; width: 3.6rem; height: 2.34rem; }
@@ -11142,8 +11244,8 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 /* 「잠김」은 일본어 · 중국어가 석 자(ロック中 · 未解锁)라 자물쇠 밖으로 넘쳤다 — 한 단 더 작게 */
 :root[data-lang="ja"] .tut-stamp[data-mark="locked"] .tut-stamp-t,
 :root[data-lang="zh_Hans"] .tut-stamp[data-mark="locked"] .tut-stamp-t,
-:root[data-lang="zh_Hant"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .8rem; }
-:root[data-lang="mn"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .8rem; }
+:root[data-lang="zh_Hant"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .9rem; }
+:root[data-lang="mn"] .tut-stamp[data-mark="locked"] .tut-stamp-t { font-size: .9rem; }
 /* 둥실 — 위아래로만 조금. 글자도 함께 뜬다(묶음 전체가 움직인다) */
 .tut-stamp[data-mark="next"] { animation: tut-float 1.8s ease-in-out infinite; }
 @keyframes tut-float {
@@ -11179,7 +11281,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
  * 아이콘은 그림 둘레에 빛(drop-shadow), 글자는 글자 둘레에 빛(text-shadow).
  */
 .sort-head {
-  font: inherit; color: inherit; background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  font: inherit; font-weight: 700; color: inherit; background: none; border: none; padding: 0; margin: 0; cursor: pointer;
   display: flex; align-items: center; min-width: 0;
 }
 .sort-head.c-nm { justify-content: flex-start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -11278,28 +11380,54 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .plc-grid .plc-cell[data-field="pool"] .gic img { height: 1.885em; }
 .plc-grid .plc-emperor-mark { height: 2.21em; }
 .scr-place-palace .place-panel.plc-status { margin-top: .45rem; }   /* 제목 바와의 틈 1.5배 */
+/* 궁궐 현황판 (2026-11-27 기획자) — 도시 · 궁궐 레벨 배지 1.3배(1.9em → 2.47em), 배지 오른쪽에 이름(「도시」 · 「궁궐」).
+   배지 칸 폭도 1.3배라 두 줄의 배지 가운데가 그대로 맞고, 이름도 같은 자리에서 시작한다 */
+.plc-grid .bld-lv .bld-badge { height: var(--top-lv-h); width: calc(var(--top-lv-h) * 2.86 / 2.47); }
+.plc-grid .plc-cell[data-field="cityLevel"], .plc-grid .plc-cell[data-field="palaceLevel"] { display: inline-flex; align-items: center; gap: .45em; }
+/* 이름 글자는 오른쪽 칸(「52 / 110 명」 · 「황제」)과 같은 글꼴 · 크기(.plc-cell — .9rem 굵게), 네 칸 모두 세로 가운데 (같은 날 두 번째) */
+.plc-lv-name { white-space: nowrap; line-height: 1; }
+.plc-grid { align-items: center; }
+.plc-grid .plc-cell[data-field="pool"], .plc-grid .plc-cell[data-field="emperor"] { display: inline-flex; align-items: center; }
+.plc-grid .plc-cell[data-field="pool"] .gic { align-items: center; line-height: 1; }
+/* 아이콘과 배지 사이를 좁힌다(1.235em → .55em) */
+/* ── 상단 판(현황 판)의 레벨 배지 — 도시 레벨 · 건물 레벨 모두 궁궐 현황판의 크기 하나로 (2026-11-27 기획자).
+   높이 2.22rem(궁궐의 .9rem 칸에서 2.47em) · 별빛은 배지 폭의 3.24배(옛 3.6의 0.9배). 상단 판을 새로 만들면 아래 목록에 더한다 */
+:root { --top-lv-h: 2.22rem; --top-lv-glow: 3.24; }
+.place-panel:is(.plc-status, .cty-info, .bar-status, .mkt-status, .acd-status, .frm-status, .hsp-status, .frg-status) .bld-badge { height: var(--top-lv-h); }
+.place-panel:is(.plc-status, .cty-info, .bar-status, .mkt-status, .acd-status, .frm-status, .hsp-status, .frg-status) .bld-glow { --blink-w: var(--top-lv-glow); }
+.plc-grid .bld-lv { gap: .55em; }
+/* 오른쪽 칸 — 장수 아이콘을 도시 아이콘과 같은 높이(2.47em)로, 장수 · 황제 아이콘 자리를 같은 폭(2.6em, 가운데)으로 박아
+   「52 / 110 명」과 「황제」 글자가 같은 세로줄에서 시작한다 (2026-11-27 기획자) */
+.plc-grid .plc-cell[data-field="pool"] .gic { gap: .3em; }
+.plc-grid .plc-cell[data-field="pool"] .gic img { height: 2.47em; width: 2.6em; object-fit: contain; }
+.plc-grid .plc-emperor { gap: .3em; }
+.plc-grid .plc-emperor-mark { width: 2.6em; justify-content: center; }
+
+/* ── 하단 명령 판(`.cmd-panel`) — 단추는 이름만, 글자는 궁궐의 [장수 일람]과 같은 크기 (2026-11-27 기획자: 옛 .9rem의 1.3배) ──
+   화면 바닥에 붙은 명령 판 전부에 붙인 표지다. 새 화면에 바닥 명령 판을 만들면 `cmd-panel`을 함께 단다. 단추 안의 소개 글은 두지 않는다 */
+.place-panel.cmd-panel .btn, .place-panel.cmd-panel .btn .lbl { font-size: 1.17rem; font-weight: 700; }
+.place-panel.cmd-panel .btn { justify-content: center; }
 
 /* ── 장수 상세 (`OfficerDetailModal`, 2026-11-19 기획자) ─────────────────────────
-   화면 폭의 90%, 한가운데. **높이는 고정이다** — 내용(열전 길이 · 고유기술 · 병기 · 부상 줄 · 언어)에 따라 판이 출렁이지 않게
-   260명 × 열 언어 중 가장 긴 카드를 재서(`tools/officer_card_fit.ts`) 그 높이(`--ofcard-h`, rem — 글자가 폭을 따라 크므로 폭 기준 단위)로 박는다.
-   남는 높이는 열전 판이 차지하고(짧은 열전은 판만 크다) 단추는 바닥에 붙는다. 화면이 그보다 낮으면 90%에서 멈추고 열전이 판 안에서 내린다.
+   화면 폭의 90%, 한가운데. 높이는 내용대로다(2026-11-27 — 그 전에는 가장 긴 열전에 맞춘 고정 높이였는데, 열전이 접힌 판이 되며 장수마다 다른 칸이 없어졌다.
+   달라지는 것은 부상 · 병기 줄과 맨 아래 한 수뿐이다).
    가리개의 안쪽 여백을 걷어야 %가 화면 기준이 된다. 랭킹(`.scr-ranking-officer`)의 위 맞춤도 여기서는 가운데로 */
 .modal-back.ofcard-back { padding: 0; align-items: center; justify-content: center; }
 .ofcard-back > .ofcard-modal {
-  --ofcard-h: 51rem;   /* tools/officer_card_fit.ts — 가장 긴 카드 50.56rem(en 저수 · mn 관우 · pt 곽가, 부상 + 병기 + 긴 열전 — 그림 판 2.75 : 1 뒤), 2026-11-19 */
-  width: 90%; max-width: none; height: min(var(--ofcard-h), 90%); min-height: 0; max-height: none; overflow: hidden;
+  /* 2026-11-27 — 열전이 제 비율의 접힌 판이 되어 남는 높이를 채울 칸이 없다. 높이는 내용대로, 화면의 92%까지 */
+  width: 90%; max-width: none; height: auto; min-height: 0; max-height: 92%; overflow: hidden;
   display: flex; flex-direction: column;
 }
 .ofcard-back > .ofcard-modal > .ofcard { flex: 1 1 auto; min-height: 0; }
-.ofcard-back .ofcard-story { flex: 1 1 auto; min-height: 3rem; overflow: hidden; }   /* 스크롤은 막는다 — 다 드는데 몇 px 넘쳐 스크롤이 생기던 장수가 있었다(2026-11-19 기획자) */
+/* 2026-11-27 — 열전이 접힌 판(제 비율)이 되어 남는 높이를 채울 칸이 없다. 남는 높이는 단추 무리 위로 간다(아래 `margin-top: auto`) */
 /* 단추 무리는 바닥에 — 열전이 없는 장수(42명)도 단추 자리가 같다 */
 .ofcard-back .ofcard > :not(.btn) + .btn { margin-top: auto; }
-.ofcard-courtesy { font-size: .85rem; color: #6b5a44; font-weight: 400; }
+.ofcard-courtesy { font-size: .9rem; color: #6b5a44; font-weight: 400; }
 /* 카드 위에 겹쳐 뜨는 레벨/스킬 관리 판도 카드와 같은 폭 */
 .lvp-back { padding-left: 0; padding-right: 0; }
 .lvp-modal { width: 90%; max-width: none; }
 /* 칸 이름 — 책략 · 고유 기술 · 장수 열전, 왼쪽 정렬. 판 위 먹색 */
-.ofcard-head { margin: .25rem 0 -.15rem; font-size: .85rem; font-weight: 700; text-align: left; color: #3a2a18; letter-spacing: .04em; }
+.ofcard-head { margin: .25rem 0 -.15rem; font-size: .9rem; font-weight: 700; text-align: left; color: #3a2a18; letter-spacing: .04em; }
 /* 이름 줄의 레벨 배지 — 등급 구슬과 같은 높이 */
 .ofcard-title .lv-badge { height: 1.9rem; }
 /* 메인 머리의 [이름 변경] — 그 밑 도시 · 장수 · 군량 아이콘(`.stats .gic img` = 1.04rem × 1.45em)과 같은 크기 (2026-11-19 기획자) */
@@ -11339,7 +11467,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
 .ofcard-back .ofcard-title .ofcard-name { color: #241405; }
 .ofcard-back .ofcard-title .ofcard-courtesy { color: #4a3216; }
 /* 능력치 판 — 판 이름 · 아이콘 0.8배 · 칸 사이를 좁혀 AT가 두 자리-두 자리(「10-20」)가 돼도 들어갈 자리를 미리 둔다 */
-.ofcard-stat-head { margin: 0 0 -.1rem; font-size: .85rem; font-weight: 700; color: #3a2a18; text-align: left; letter-spacing: .04em; }
+.ofcard-stat-head { margin: 0 0 -.1rem; font-size: .9rem; font-weight: 700; color: #3a2a18; text-align: left; letter-spacing: .04em; }
 .ofcard-layout .ofcard-stat-icon, .ofcard-layout .ofcard-bar-lv .gic img { width: 1.52rem; height: 1.52rem; }
 /* 셋째 칸(통솔 · AT)이 조금 넓다 — AT가 「10-20」이 돼도 든다(같은 도구가 잰다). 두 줄이 같은 칸이라 위아래는 그대로 맞는다 */
 .ofcard-layout .ofcard-bar-abl, .ofcard-layout .ofcard-bar-lv { gap: 0 .15rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr); }
@@ -11355,7 +11483,7 @@ rect[data-guide-glow] { stroke: #ffd54d; animation: stw-spot-hot 1.1s ease-in-ou
    양끝(그림 폭의 30%씩 — 두루마리 축)은 **제 비율 그대로**, 가운데 40%만 가로로 늘려 판 폭을 채운다 (2026-11-19 기획자 —
    통째로 늘리면 축이 눌려 어색했고, 비율대로 줄이면 판보다 좁았다). 칩은 늘어난 가운데에 선다 */
 .ofcard-back .ofcard-bar-tactics {
-  --tac-h: 3.1rem;
+  --tac-h: 4.03rem;   /* 3.1rem의 1.3배 (2026-11-27 기획자) */
   --tac-end: calc(var(--tac-h) * 902 / 195 * .3);
   align-self: stretch; box-sizing: border-box; height: var(--tac-h); min-height: 0; width: auto; max-width: none;
   margin: 0; padding: 0; background: none;
@@ -11574,7 +11702,7 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
 .rcr-name .mkt-who { gap: .2rem; }
 /* 등급 표 1.5배(2026-11-25 기획자 — 1.2rem → 1.8rem) */
 .rcr-name .mkt-who .gr { --gr: 1.8rem; }
-.rcr-name .mkt-who .nm { font-size: .85rem; white-space: nowrap; color: #f6ecd2; text-shadow: 0 1px 2px #000, 0 0 6px #000c; }
+.rcr-name .mkt-who .nm { font-size: .9rem; white-space: nowrap; color: #f6ecd2; text-shadow: 0 1px 2px #000, 0 0 6px #000c; }
 .rcr-cast[data-count="1"] .rcr-name .mkt-who .nm { font-size: 1.15rem; }
 .rcr-member .mkt-fate { margin-top: 0; }
 /* 무대의 섬광은 장수 뒤의 것 하나만 (2026-11-25 기획자 — 「섬광이 두 개 돈다」): 문장 뒤의 큰 빛줄기(`.cel-rays`)를 걷는다 */
@@ -11591,7 +11719,7 @@ html, body, #root, #frame, .scr { overflow: hidden !important; }
   position: absolute; inset: 0; background: linear-gradient(#fff27a, #ffd21f 70%, #f0b400);
   -webkit-mask: url(duel/bubble-tie.png) center / 100% 100% no-repeat; mask: url(duel/bubble-tie.png) center / 100% 100% no-repeat;
 }
-.rcr-new > b { position: relative; font-size: .85rem; font-weight: 900; line-height: 1; letter-spacing: .04em; color: #000; white-space: nowrap; }
+.rcr-new > b { position: relative; font-size: .9rem; font-weight: 900; line-height: 1; letter-spacing: .04em; color: #000; white-space: nowrap; }
 .rcr-cast[data-count="1"] .rcr-new > b { font-size: 1.1rem; }
 @keyframes rcr-new-pop { 0% { opacity: 0; scale: .2; } 70% { opacity: 1; scale: 1.18; } 100% { opacity: 1; scale: 1; } }
 /* 5명 — 앞줄이 무대 아래로 내려서는 만큼 「화면을 터치해주세요.」를 밀어낸다 */

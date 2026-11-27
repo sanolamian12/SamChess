@@ -409,7 +409,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           `.scr-building-forge .place-panel`의 `border-width`)만큼만 준다. */}
       <div className={`place-body${view === 'home' ? '' : ' frg-body-flow frg-body-pinned'}`}>
         {view === 'home' && (
-          <section className="place-panel frg-home">
+          <section className="place-panel cmd-panel frg-home">
             <div className="frg-buttons">
               <button className="btn wide" data-action="craft" onClick={() => setView('craft')}>
                 <span className="lbl"><GameIcon name="forge-craft" label={t('forge.craft')} text /></span>
@@ -618,7 +618,7 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           * (2026-09-22 지정. 그전엔 목록 판 바로 밑에 매달려 있었다). `.frg-body-pinned` — style.css 참조.
           */}
         {view !== 'home' && (
-          <section className="place-panel frg-back">
+          <section className="place-panel cmd-panel frg-back">
             <div className="frg-buttons">
               <button className="btn wide" data-action="backHome" onClick={() => setView('home')}>
                 <span className="lbl">{stripBackArrow(t('match.back'))}</span>

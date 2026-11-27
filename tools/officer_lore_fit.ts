@@ -8,6 +8,9 @@
  * 맨 아래 한 수([선택하기] · [해제하기])가 붙은 카드(단추 넷). 궁궐에서 연 카드(단추 셋)에 같은 단추 하나를 복제해 넣는다.
  * `--buttons 3`이면 복제하지 않는다(궁궐 · 농지 — 한 수가 [강화] 자리에 서는 카드).
  * 필요한 것: 5173(dev) · 8787(게임 API). 끝나면 시험 계정을 지운다.
+ *
+ * ⚠ 2026-11-27부터 열전은 접힌 판(`.ofcard-lore`, 제 비율)이고 카드 높이는 내용대로라 이 도구가 재던 칸(`.ofcard-story`)은 없다.
+ *   펼친 판에 열전이 드는지는 `tools/lore_popup_fit.ts`가 잰다.
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';

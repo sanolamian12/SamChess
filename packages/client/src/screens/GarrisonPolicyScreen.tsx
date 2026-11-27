@@ -257,7 +257,7 @@ export function GarrisonPolicyScreen({ profile, squad, onBack, onChange }: {
           )}
         </section>
 
-        <section className="place-panel sqd-acts gpl-acts">
+        <section className="place-panel cmd-panel sqd-acts gpl-acts">
           <button className="btn primary wide" data-action="savePolicy" data-guide-cue={mission && anyDirty ? '' : undefined} disabled={!anyDirty} onClick={save}>
             <span className="lbl">{t('gp.save')}</span>
           </button>

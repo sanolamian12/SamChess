@@ -155,7 +155,7 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy }: {
               <Banner id="items" onClick={() => go('items')}
                 lockedUntil={marketLevel(profile) < MARKET_ITEM_MIN_LEVEL ? MARKET_ITEM_MIN_LEVEL : undefined} />
             </div>
-            <section className="place-panel mkt-cmds">
+            <section className="place-panel cmd-panel mkt-cmds">
               <div className="frg-buttons">
                 {/* 아이콘은 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자) */}
                 <button className="btn wide mkt-ctr-btn" data-action="openGold" onClick={() => go('gold')}>
@@ -312,7 +312,7 @@ function GoldCelebrate({ gold, have, onClose }: { gold: number; have: number; on
 /** 한 칸짜리 바닥 판 — [뒤로 가기] */
 function BackPanel({ onBack }: { onBack: () => void }): React.JSX.Element {
   return (
-    <section className="place-panel mkt-cmds">
+    <section className="place-panel cmd-panel mkt-cmds">
       <div className="frg-buttons">
         <button className="btn wide" data-action="backHome" onClick={onBack}>
           <span className="lbl">{t('market.backHome')}</span>
