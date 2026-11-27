@@ -368,6 +368,11 @@ export interface CardAction {
   onPress: () => void;
   /** 지금은 못 하는 이유 — 있으면 단추가 꺼지고 그 밑에 이유가 뜬다 */
   blocked?: string | null;
+  /**
+   * [강화] 자리에 선다 — [강화]는 안 보인다(2026-11-27 기획자, 농지). 단추 수가 궁궐의 장수 상세(셋)와 같아져
+   * 장수 열전 칸이 같은 높이로 남는다 — 단추 넷이면 일곱 언어에서 열전이 690건 잘렸다(`tools/officer_lore_fit.ts`)
+   */
+  inLevelsSlot?: boolean;
 }
 
 /**
@@ -691,7 +696,8 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
           <span className="lbl" data-field="heldLabel">{itemsLook?.label ?? t('squad.cmd.items')}</span>
         </button>
       )}
-      {onLevels && (
+      {action?.inLevelsSlot && <ActionButton action={action} />}
+      {onLevels && !action?.inLevelsSlot && (
         /* [강화](옛 [레벨/스킬 관리], 2026-11-20 기획자) — 이름은 가운데, 오른쪽 끝에 「보유 / 필요 (카드 그림)」.
            올릴 수 없으면(`levelsEligible` 거짓 — 카드 모자람 · 도시 상한 · 최대 레벨) 꺼진다. 누르면 곧장 레벨업 고르기 */
         <>
@@ -713,21 +719,26 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsCards, 
           <span className="lbl">{stripBackArrow(t('match.back'))}</span>
         </button>
       )}
-      {action && (
-        <>
-          <button
-            className={`btn primary wide ofcard-${action.kind}`}
-            data-action={action.kind === 'select' ? 'cardSelect' : 'cardRelease'}
-            disabled={!!action.blocked}
-            title={action.blocked ?? undefined}
-            onClick={action.onPress}
-          >
-            <span className="lbl">{action.label}</span>
-          </button>
-          <Say text={action.blocked} name="cardActionNote" />
-        </>
-      )}
+      {action && !action.inLevelsSlot && <ActionButton action={action} />}
     </section>
+  );
+}
+
+/** 카드의 한 수 — 옥색 [선택하기] · 붉은 [해제하기]. 막혔으면 꺼지고 그 자리 사람이 이유를 말한다 */
+function ActionButton({ action }: { action: CardAction }): React.JSX.Element {
+  return (
+    <>
+      <button
+        className={`btn primary wide ofcard-${action.kind}`}
+        data-action={action.kind === 'select' ? 'cardSelect' : 'cardRelease'}
+        disabled={!!action.blocked}
+        title={action.blocked ?? undefined}
+        onClick={action.onPress}
+      >
+        <span className="lbl">{action.label}</span>
+      </button>
+      <Say text={action.blocked} name="cardActionNote" />
+    </>
   );
 }
 

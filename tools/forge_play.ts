@@ -314,18 +314,18 @@ try {
 
   step('[지급] → 장수 목록');
   await page.click('[data-action="give"]');
-  await page.waitForSelector('[data-action="equipPick"]', { timeout: 10_000 });
+  const ROW = '[data-modal="officerPick"] .ofc-row-equip[data-officer]';
+  await page.waitForSelector(ROW, { timeout: 10_000 });
   await shot('09-officer-pick');
-  const rows = await page.$$('[data-action="equipPick"]');
+  const rows = await page.$$(ROW);
   ok(`장수 ${rows.length}명 목록`);
-  /* 줄의 나무판은 **표시만** 하고, 실제 지급은 목록 맨 아래 [선택하기]다
-     (2026-09-11 — 예전엔 줄 단추를 누르는 순간 나갔다). */
+  /* 줄을 누르면 장수 상세가 뜨고 [강화] 자리의 옥색 [지급하기]가 지급이다 (2026-11-27 기획자 — 체크 칸 · 맨 아래 [선택하기]는 걷었다) */
   await rows[0]!.click();
   // 고른 장수는 **줄에서 읽는다** — 예전엔 `ma-cho`로 못 박아 두어, 시작 명단이나 정렬이
   // 바뀌자(첫 줄이 손견이 됐다) 지급은 멀쩡한데 이 검사만 멈췄다(2026-09-25)
   const pickedOfficer = await rows[0]!.evaluate((el) => el.closest<HTMLElement>('[data-officer]')?.dataset['officer'] ?? null);
   if (!pickedOfficer) fail('고른 줄에서 장수 id를 못 읽었다');
-  await page.click('[data-action="equipConfirm"]');
+  await page.click('.ofcard-modal [data-action="cardSelect"]');
   await page.waitForSelector('.frg-row[data-assigned="1"]', { timeout: 10_000 });
   await shot('10-assigned');
   const assignedRow = await page.textContent('.frg-row[data-assigned="1"]');

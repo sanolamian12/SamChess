@@ -45,7 +45,8 @@ import { buildingBackdrop } from './backdrop.ts';
 import { ItemThumb } from './EquipThumb.tsx';
 import { OfficerPickModal } from './OfficerListScreen.tsx';
 import { raidStateText } from './raidText.ts';
-import { OfficerCardModal, stripBackArrow } from './RankingCommon.tsx';
+import { stripBackArrow } from './RankingCommon.tsx';
+import { OfficerDetailModal } from './OfficerDetail.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { CityBonusMark } from './CityBonus.tsx';
 import { OfficerStand } from './OfficerArt.tsx';
@@ -132,7 +133,6 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
   // 장수 카드 — 장수 일람의 「보기」와 같은 카드·같은 행(3v3·5v5 통산)
   const cardRows = useMemo(() => officerRankRows(profile), [profile]);
   const card = cardOf ? cardRows.find((r) => r.officer === cardOf) ?? null : null;
-  const cardEquip = card ? equippedBy(profile, card.officer) : undefined;
   /** 카드로 연 장수가 세운 보초병이면 그 자리 — 카드에 [해제하기]가 붙는다 */
   const cardGuard = card ? guards.find((g) => g.officer === card.officer) ?? null : null;
 
@@ -370,6 +370,8 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
           blocked={(id) => (officerDuty(profile, id) === 'squad' ? t('farm.pick.inSquad') : null)}
           // 줄을 누르면 카드 — 카드의 [선택하기]가 곧 등록이다. 부대 장수는 줄째로 안 눌린다 (2026-11-16 기획자)
           cardPick
+          // [선택하기]는 [강화] 자리에 — 궁궐의 장수 상세와 단추 수 · 열전 칸이 같다 (2026-11-27 기획자)
+          cardPickInLevels
           // 거부돼도 닫는다 — 이유는 줄 밑에 뜨는데 팝업이 그 자리를 가린다
           onPick={(officer) => { assign(picking, officer); setPicking(null); }}
           onClose={() => { setPicking(null); setError(null); }}
@@ -397,14 +399,19 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
         </div>
       )}
 
+      {/* 보초병 상세 — 궁궐 · 병영 · 대장간과 같은 한 화면(`OfficerDetailModal`): [아이템 지급] · [해제하기]([강화] 자리) · [뒤로 가기]
+          (2026-11-27 기획자 — 고를 때 뜨는 상세와 맨 아래 한 수만 다르게. 예전에는 장수 카드만 띄워 단추 둘이 빠지고 열전 칸이 길게 늘었다) */}
       {card && (
-        <OfficerCardModal
-          row={card}
+        <OfficerDetailModal
+          profile={profile}
+          officer={card.officer as OfficerId}
+          onChange={onChange}
           onClose={() => setCardOf(null)}
-          {...(cardEquip ? { equip: cardEquip } : {})}
           {...(cardGuard ? { action: {
             kind: 'release' as const,
             label: t('farm.guard.remove'),
+            // [강화] 자리에 선다 — [강화]는 안 보인다 (2026-11-27 기획자)
+            inLevelsSlot: true,
             // King은 혼자일 때만 풀 수 있다 — 다른 보초병이 남으면 King 없는 편성이 된다
             blocked: cardGuard.piece === 'King' && guards.length > 1 ? t('reason.raid.needKing') : null,
             onPress: () => { release(cardGuard.piece); setCardOf(null); },

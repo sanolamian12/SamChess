@@ -175,6 +175,9 @@ const STAND_SCALE: Readonly<Record<string, number>> = {
   'jang-po': 0.89,   // 장포 1.26
 };
 
+/** 꼬마 크기 보정 배율 — 없으면 1. 도적떼 자동 전투의 움직이는 꼬마(`RaidAlert`)도 같은 값을 쓴다 */
+export const standScale = (officer: string): number => STAND_SCALE[officer] ?? 1;
+
 export function OfficerStand({ officer, title, className }: {
   officer: string;
   title?: string;

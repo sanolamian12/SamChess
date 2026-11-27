@@ -167,7 +167,7 @@ try {
   }
 
   // 자동 전투 실행 — 보초병 없음(패배 → 약탈) · 보초병 셋 대 도적 하나(승리 → 약탈도 보상도 없음)
-  for (const [tag, g, bn] of [['lose', 0, 3], ['win', 3, 1]] as const) {
+  for (const [tag, g, bn] of [['lose', 0, 3], ['lose', 1, 5], ['win', 3, 1]] as const) {
     await seed(g, bn);
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('[data-modal="raidAlert"][data-kind="first"]', { timeout: 20_000 });
@@ -176,11 +176,27 @@ try {
     const expect = await page.$eval('[data-field="verdict"]', (e) => e.getAttribute('data-win'));
     const shown = Number(await page.$eval('[data-field="loot"]', (e) => e.getAttribute('data-loot')).catch(() => '0'));
     if (expect !== (tag === 'win' ? '1' : '0')) bad(`${tag} 예측이 ${expect}`);
-    await shot(`auto-run-${tag}-before`);
+    await shot(`auto-run-${tag}${g}-before`);
     await page.click('[data-action="raidAutoRun"]');
     await page.waitForSelector('[data-modal="raidAlert"][data-kind="autoDone"]', { timeout: 10_000 });
-    await page.waitForTimeout(800);
-    await shot(`auto-run-${tag}-done`);
+    // 가짜 전투 연출(8초) — 걸어 나옴 · 맞붙음 · 쓰러짐 · 끝을 찍고, 끝나기 전 [확인]이 꺼져 있는지 본다
+    const t0 = Date.now();
+    for (const at of [700, 2600, 4600, 6400]) {
+      await page.waitForTimeout(Math.max(0, at - (Date.now() - t0)));
+      await shot(`auto-run-${tag}${g}-${at}`);
+    }
+    if (!await page.$('[data-action="raidOk"]:disabled')) bad(`${tag} 연출 중인데 [확인]이 켜져 있다`);
+    await page.waitForSelector('.raid-auto-fight[data-done="1"]', { timeout: 12_000 });
+    const fight = await page.evaluate(() => {
+      const box = document.querySelector('.raid-auto-fight')!;
+      const up = [...box.querySelectorAll('.raid-fight-sprite[data-down="0"]')].map((e) => e.closest('.raid-vs-side')!.classList.contains('ally') ? 'ally' : 'foe');
+      return { survivors: Number(box.getAttribute('data-survivors')), up, verdict: box.querySelector('[data-field="fightVerdict"]')?.textContent, ms: 0 };
+    });
+    fight.ms = Date.now() - t0;
+    const winSide = tag === 'win' ? 'ally' : 'foe';
+    if (fight.up.length !== fight.survivors || fight.up.some((s) => s !== winSide)) bad(`${tag} 연출 끝 — 서 있는 ${JSON.stringify(fight.up)} · 계획 ${fight.survivors}`);
+    else ok(`${tag} 연출 — ${fight.ms}ms · 서 있는 ${fight.survivors}명(${winSide}) · 「${fight.verdict}」`);
+    await shot(`auto-run-${tag}${g}-done`);
     const stored = (await getProfile(uid))!;
     const want = tag === 'win' ? 'won' : 'lost';
     if (stored.raid?.status !== want || stored.raid.auto !== true) bad(`${tag} 저장 상태 ${stored.raid?.status} auto=${stored.raid?.auto}`);

@@ -401,6 +401,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
           onChange={onChange}
           title={t('squad.pickTitle', { piece: draft.slots[picking]!.piece })}
           cardPick
+          cardPickInLevels
           onPick={(officer) => { assign(picking, officer); setPicking(null); }}
           onClose={() => setPicking(null)}
         />
@@ -438,7 +439,7 @@ export function SquadMembersScreen({ profile, draft: start, base, onChange, onBa
           onClose={() => setCardOf(null)}
           held={{ profile: work, onPick: (op) => setDraft((d) => ({ ...d, held: [...d.held, op] })) }}
           action={{
-            kind: 'release', label: t('farm.guard.remove'),
+            kind: 'release', label: t('farm.guard.remove'), inLevelsSlot: true,
             onPress: () => { release(card.officer as OfficerId); setCardOf(null); },
           }}
         />

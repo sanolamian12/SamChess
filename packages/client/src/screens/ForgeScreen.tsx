@@ -727,6 +727,9 @@ export function ForgeScreen({ profile, onBack, onChange }: {
           onChange={onChange}
           title={t('forge.assign.pickTitle', { item: pickEquipName(pickingItem) })}
           onPick={pickOfficer}
+          // 줄을 누르면 장수 상세 — [강화] 자리에 옥색 [지급하기] (2026-11-27 기획자 — 목록의 체크 칸 · 맨 아래 [선택하기]는 없다.
+          // 궁궐 · 농지 · 병영과 같은 단추 셋). 이 고르기는 아무도 안 든 자루에만 열리므로(든 자루는 줄의 [장비 회수]) [해제하기] 갈래가 없다
+          cardAction={(officer) => ({ kind: 'select', label: t('forge.assign.cardGive'), inLevelsSlot: true, onPress: () => pickOfficer(officer) })}
           onClose={() => setAssignPicking(null)}
         />
       )}

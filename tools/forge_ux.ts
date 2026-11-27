@@ -279,7 +279,7 @@ try {
 
   step('미지급 병기(수극)를 줄 장수를 고른다 — 장수가 많은 표');
   await page.click('.frg-row[data-item="su-geuk#1"] [data-action="give"]');
-  await page.waitForSelector('[data-action="equipPick"]');
+  await page.waitForSelector('[data-modal="officerPick"] .ofc-row-equip[data-officer]');
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${SHOTS}/ux-02-pick-many.png` });
 
@@ -401,7 +401,6 @@ try {
     return {
       name: row.querySelector('.c-nm-text')?.textContent ?? '',
       equip: row.querySelector('.c-eq')?.textContent ?? '',
-      pick: row.querySelector('[data-action="equipPick"]')?.textContent ?? '',
     };
   }, worn);
   console.log(`  이미 낀 장수 줄 — ${JSON.stringify(wornRow)}`);
@@ -409,14 +408,15 @@ try {
 
   if (wornRow) {
     step('그 장수를 골라 본다 — 교체가 조용히 일어나는가, 알려 주는가');
-    await page.click(`.ofc-row-equip[data-officer="${worn}"] [data-action="equipPick"]`);
+    // 줄을 누르면 장수 상세 — [강화] 자리의 [지급하기]가 지급이다(2026-11-27 기획자 — 체크 칸 · 맨 아래 [선택하기]는 걷었다)
+    await page.click(`.ofc-row-equip[data-officer="${worn}"] .c-nm`);
     /* 이제 줄의 나무판은 **표시만** 한다 — 실제 지급은 맨 아래 [선택하기]다
        (2026-09-11). 체크가 실제로 켜졌는지 먼저 본다: 안 켜져도 [선택하기]는
        눌리므로 「눌렀더니 됐다」만 보면 체크가 죽어도 통과한다. */
-    const checked = await page.$(`.ofc-row-equip[data-officer="${worn}"][data-picked="1"]`);
-    console.log(checked ? '  ✓ 나무판에 체크가 켜졌다' : '  ✗ 눌렀는데 체크가 안 켜진다');
+    const give = await page.waitForSelector('.ofcard-modal [data-action="cardSelect"]', { timeout: 5_000 }).catch(() => null);
+    console.log(give ? `  ✓ 장수 상세의 [강화] 자리에 「${(await give.textContent())?.trim()}」` : '  ✗ 장수 상세에 [지급하기]가 없다');
     await page.screenshot({ path: `${SHOTS}/ux-03b-checked.png` });
-    await page.click('[data-action="equipConfirm"]');
+    await page.click('.ofcard-modal [data-action="cardSelect"]');
     /* 교체 확인은 **화면 안 팝업**이다(2026-09-11) — 예전엔 브라우저
        `confirm()`이라 `page.on('dialog')`가 받아 넘겼고, 그래서 팝업이 죽어도
        통과했다. 이제 실제로 떠 있는 판을 보고 [확인]을 누른다. */

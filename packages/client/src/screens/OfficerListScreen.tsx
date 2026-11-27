@@ -106,6 +106,7 @@ import { placeBackdrop } from './backdrop.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
 import { stripBackArrow } from './RankingCommon.tsx';
+import type { CardAction } from './RankingCommon.tsx';
 import { OfficerDetailModal } from './OfficerDetail.tsx';
 import { ScreenChrome } from './ScreenChrome.tsx';
 import { HealthIcon } from './GameIcon.tsx';
@@ -201,6 +202,13 @@ interface PickMode {
    * 못 고르는 장수(`blocked`)는 줄째로 눌리지 않는다 — 카드도 안 열린다
    */
   cardPick?: boolean;
+  /** 카드의 [선택하기]를 [강화] 자리에 둔다(`CardAction.inLevelsSlot`) — 농지 보초병 고르기 (2026-11-27 기획자) */
+  cardPickInLevels?: boolean;
+  /**
+   * 카드의 한 수를 장수마다 정한다 — 대장간 지급의 옥색 [지급하기](2026-11-27 기획자).
+   * 있으면 `cardPick`처럼 줄을 누르면 카드가 열리고 목록 맨 아래 [선택하기]는 없다. `null`이면 단추 없음
+   */
+  cardAction?: (officer: OfficerId) => CardAction | null;
   /**
    * **성장치를 보고 고른다** (2026-11-25 기획자, 장터 초심의 서) — 열이 카드 수 · HP · MP · AT(전부 정렬)이고 병기 · 선택 칸이 없다.
    * 줄을 누르면 바로 고르고(`direct`처럼 — 확인은 부르는 쪽이 묻는다), 목록 맨 아래 [선택하기] 자리에 [뒤로 가기]가 선다
@@ -263,7 +271,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
   const only = equipPick?.only;
   const health = !!equipPick?.health;
   const direct = !!equipPick?.direct;
-  const cardPick = !!equipPick?.cardPick;
+  const cardPick = !!equipPick?.cardPick || !!equipPick?.cardAction;
   const growth = !!equipPick?.growth;
   const rowMod = `${equipPick ? ' ofc-row-equip' : ''}${health ? ' ofc-row-health' : ''}${growth ? ' ofc-row-growth' : ''}${direct || cardPick || growth ? ' ofc-row-direct' : ''}`;
   // 체크 칸 · 맨 아래 [선택하기] — 두 번 누르는 고르기(대장간 · 장터)만. 바로 고르기 · 카드에서 고르기는 없다
@@ -576,9 +584,12 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
           onChange={onChange}
           onClose={() => setCardOf(null)}
           guide={!chrome && !equipPick}
-          {...(cardPick && !equipPick?.blocked?.(cardOf)
+          {...(equipPick?.cardAction
+            ? (() => { const a = equipPick.cardAction(cardOf); return a ? { action: { ...a, onPress: () => { setCardOf(null); a.onPress(); } } } : {}; })()
+            : cardPick && !equipPick?.blocked?.(cardOf)
             ? { action: {
               kind: 'select' as const, label: t('officers.equip.confirm'),
+              ...(equipPick?.cardPickInLevels ? { inLevelsSlot: true } : {}),
               onPress: () => { const id = cardOf; setCardOf(null); equipPick!.onPick(id); },
             } }
             : {})}
@@ -630,7 +641,7 @@ export function OfficerListScreen({ profile, onBack, onChange, openOfficer }: {
  * 좁혀진 규칙 예순 몇 줄이라(style.css), 값을 대장간 쪽으로 옮겨 적는 대신
  * 팝업 뿌리에 같은 이름을 준다. 두 번째로 같은 값을 눈대중으로 잡지 않는다.
  */
-export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, growth, onClose, pageSize, className }: {
+export function OfficerPickModal({ profile, onChange, title, onPick, blocked, only, health, direct, cardPick, cardPickInLevels, cardAction, growth, onClose, pageSize, className }: {
   profile: PlayerProfile;
   onChange: (p: PlayerProfile) => void;
   /** 판 안 첫 줄의 제목 — 대장간은 「지급할 장수 선택」, 부대는 「{기물} 자리에 넣을 장수」 */
@@ -646,6 +657,10 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
   direct?: boolean;
   /** `PickMode.cardPick` — 카드의 [선택하기]로 고른다 */
   cardPick?: boolean;
+  /** `PickMode.cardPickInLevels` — 그 [선택하기]를 [강화] 자리에 */
+  cardPickInLevels?: boolean;
+  /** `PickMode.cardAction` — 카드의 한 수를 장수마다 */
+  cardAction?: (officer: OfficerId) => CardAction | null;
   /** `PickMode.growth` — 카드 수 · HP · MP · AT 열, 줄을 누르면 고르고 [뒤로 가기]는 판 안에 */
   growth?: boolean;
   onClose: () => void;
@@ -656,7 +671,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
 }): React.JSX.Element {
   useLang();
   return (
-    <div className={`ofcpick-back scr-officers${className ? ` ${className}` : ''}`} data-modal="officerPick" onClick={onClose}>
+    <div className={`ofcpick-back scr-officers${growth ? '' : ' ofcpick-cmd'}${className ? ` ${className}` : ''}`} data-modal="officerPick" onClick={onClose}>
       <div
         className="ofcpick-modal"
         data-screen="officer-pick"
@@ -669,7 +684,7 @@ export function OfficerPickModal({ profile, onChange, title, onPick, blocked, on
         <OfficerListPanel
           profile={profile}
           onChange={onChange}
-          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}), ...(growth ? { growth } : {}) }}
+          equipPick={{ onPick, ...(blocked ? { blocked } : {}), ...(only ? { only } : {}), ...(health ? { health } : {}), ...(direct ? { direct } : {}), ...(cardPick ? { cardPick } : {}), ...(cardPickInLevels ? { cardPickInLevels } : {}), ...(cardAction ? { cardAction } : {}), ...(growth ? { growth } : {}) }}
           chrome={{ title, onClose, ...(pageSize ? { pageSize } : {}) }}
         />
         {/* [뒤로 가기] — 오른쪽 위 [X]와 **같은 일**을 하는 둘째 문이다

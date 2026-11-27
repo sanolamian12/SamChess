@@ -510,16 +510,7 @@ export function App(): React.JSX.Element {
    * 승/무/패(`screen.result`)가 다르면 다른 곡을 틀어야 하는데, `setScreen`은
    * 언제나 새 객체라 참조 비교로도 충분하다.
    */
-  useEffect(() => {
-    // 방어전 결과는 판정이 계정(`raid.status`)에 있다 — 화면으로 넘어올 때 이미 서버가 정산한 계정으로 바꿔 둔다
-    const track = screen.name === 'result'
-      ? trackForResult(screen.result, screen.voided !== null)
-      : screen.name === 'raidResult'
-        ? trackForRaid(profile?.raid?.status)
-        : trackForScreen(screen.name, screen.name === 'place' ? screen.place : undefined);
-    // 도시 이름 짓기는 들어올 때마다 곡 머리부터 — 새 계정의 입장은 위(흰 전환 직전)에서 이미 되감아 틀었다
-    if (track) playBgm(track, { fromStart: screen.name === 'newgame' });
-  }, [screen]);
+  // (곡을 고르는 effect는 도적떼 알림 상태를 함께 봐야 해서 도적떼 블록 뒤로 옮겼다 — 아래 「배경음악」)
 
   /** 버튼 효과음 위임 리스너 — 한 번만 건다 (`audio/buttonSfx.ts` 참조) */
   useEffect(() => { installButtonSfx(); }, []);
@@ -684,6 +675,25 @@ export function App(): React.JSX.Element {
       setRaidAlert('settled');
     }
   }, [raid, raidNow, screen.name, raidAlert]);
+
+  /* ── 배경음악 ── */
+  useEffect(() => {
+    // 방어전 결과는 판정이 계정(`raid.status`)에 있다 — 화면으로 넘어올 때 이미 서버가 정산한 계정으로 바꿔 둔다
+    const track = screen.name === 'result'
+      ? trackForResult(screen.result, screen.voided !== null)
+      : screen.name === 'raidResult'
+        ? trackForRaid(profile?.raid?.status)
+        : trackForScreen(screen.name, screen.name === 'place' ? screen.place : undefined);
+    // 도시 이름 짓기는 들어올 때마다 곡 머리부터 — 새 계정의 입장은 위(흰 전환 직전)에서 이미 되감아 틀었다
+    // 도적떼가 걸려 있는 동안은 배치 · 정탐 곡 (2026-11-27 기획자) — 알림이 뜬 순간부터 그 도적떼가 끝날 때까지:
+    // 토벌 판에 들어서기 직전(판은 제 곡) · 항복 정산의 [확인] · 자동 전투 결말의 [확인]. [닫기]로 알림만 닫아도 출몰 중이면 이어진다.
+    // 결과 화면 · 판(곡이 따로 정해진 화면)은 건드리지 않는다
+    const raidOn = raidAlert !== null
+      || (raid?.status === 'pending' && (raidAck.current.first === raid.spawnedAt || raidAck.current.lastCall === raid.spawnedAt));
+    const raidTrack = raidOn && track && screen.name !== 'result' && screen.name !== 'raidResult' && !NO_ALERT.includes(screen.name);
+    if (raidTrack) playBgm('prep');
+    else if (track) playBgm(track, { fromStart: screen.name === 'newgame' });
+  }, [screen, raidAlert, raid?.status, raid?.spawnedAt]);
 
   const closeRaidAlert = (): void => {
     if (raid) {
