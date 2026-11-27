@@ -8775,10 +8775,6 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frg-done .frg-done-row[data-level="5"] { --lvd-stroke: url(ui/era-stroke-b-8.png); }
 .frg-done-medal { flex: none; width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 .15rem .3rem #000b); }
 
-/* 연구 완료(`AcademyNotice`) — 두루마리 위에 개량된 책략의 엠블럼, 아래에 이름 · MP · 효과 · 「몇 명에게 적용」 */
-.cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
-/* 개량 표지(「+」) — 큰 엠블럼에서는 글자가 원에 비해 작고 원이 밖으로 튀어나가 어색했다. 귀퉁이 안쪽에 엠블럼 크기에 맞춰 */
-.cel-badge .acd-cel-emblem .tac-icon-plus {
 /* ── 전투 아이템 구매 완료 (2026-11-27 기획자) — 금화 분수 도입부(`Celebrate`의 `coins`, 1.8초) → 물자 상자 위에 금테 아이템 메달이 튀어나온다 ──
    도입부: 화면이 어두워지고(`cel-dim`) 바닥에서 금화 스물넷이 물결로 터져 오르다(약한 분수 — 높이 화면의 절반 남짓, 꼭대기에서 살짝 처지며 사라진다)
    바닥의 금빛이 차올라 하얘진다. 길이 1.8초는 `Celebrate.tsx`의 `COINS_MS`와 같다. 자리 · 늦춤 · 높이는 `COIN_DROPS`가 style로 준다 */
@@ -8836,6 +8832,10 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .itm-done .itm-done-row[data-level="5"] { --lvd-stroke: url(ui/era-stroke-b-8.png); }
 .itm-done .itm-done-row .itm-done-n { color: #ffe08a; }
 
+/* 연구 완료(`AcademyNotice`) — 두루마리 위에 개량된 책략의 엠블럼, 아래에 이름 · MP · 효과 · 「몇 명에게 적용」 */
+.cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
+/* 개량 표지(「+」) — 큰 엠블럼에서는 글자가 원에 비해 작고 원이 밖으로 튀어나가 어색했다. 귀퉁이 안쪽에 엠블럼 크기에 맞춰 */
+.cel-badge .acd-cel-emblem .tac-icon-plus {
   right: 0; bottom: 0; min-width: 32%; height: 32%; font-size: min(2rem, 9vw);
   background: radial-gradient(circle at 40% 35%, #c98a3e, #7a3f12); box-shadow: 0 0 0 .14rem #f3e2b0, 0 .2rem .4rem #000a;
 }
