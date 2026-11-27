@@ -46,9 +46,12 @@ const FALL_FRAME_MS = 220;
 // (`ui/systemLog.ts`의 `pace()`).
 /** 이동 — 경로의 **칸마다** 이 시간씩 머문다. 부드럽게 미끄러지지 않고 한 칸씩 뛴다. 300 → 600(2026-11-17) → 300(2026-11-23 기획자, 전투가 끊겨 보인다) */
 const STEP_MS = 300;
-/** 공격 — 사이 칸(`ANIM.windup`, 두 칸을 두 번)을 0.3초씩 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다.
+/** 걷기 그림 한 칸 — 판 한 칸 동안 `ANIM.walk`(이동 1 → 2)를 한 번 다 돈다(2026-11-27 기획자) */
+const WALK_FRAME_MS = STEP_MS / ANIM.walk.length;
+/** 공격 — 사이 칸(`ANIM.windup`)을 0.3초씩 → 2.3초 공격. 마지막 구간에 대상이 피격을 띄운다.
  *  사이 칸은 옛 「점멸 0.3 → 평상 0.3」 자리에 들어왔다가 2026-11-17에 0.6초로 늦췄고 2026-11-23에 0.3초로 되돌렸다(기획자).
- *  2026-11-24에 두 칸을 두 번 돌게 해(기획자) 사이가 1.2초다. 공격 자세의 2.3초는 그대로 */
+ *  2026-11-24에 두 칸을 두 번 돌게 했고, 2026-11-27에 「두 칸 → 공격 자세」 묶음을 두 번으로 바꿔(기획자) 사이가 1.5초다
+ *  (첫 공격 자세도 0.3초). 맞는 것은 둘째 공격 자세부터, 그 2.3초는 그대로 */
 const WINDUP_STEP_MS = 300;
 const ATTACK_HOLD_MS = 2300;
 /** 책략·명상 — 점멸 없이 1.3초. 적에게 건 책략이 성공하면 1.3초 더 */
@@ -166,7 +169,7 @@ function segFrame(seg: Seg, dt: number): number {
   const seq = seg.frames
     ?? (seg.frame === POSE.move ? ANIM.walk : seg.frame === POSE.cast ? ANIM.cast : null);
   if (!seq) return seg.frame;
-  const step = seg.step ?? (seg.frame === POSE.move ? STEP_MS : CAST_FRAME_MS);
+  const step = seg.step ?? (seg.frame === POSE.move ? WALK_FRAME_MS : CAST_FRAME_MS);
   const loop = seg.loop ?? !seg.frames;
   const i = Math.floor(dt / step);
   return seq[loop ? i % seq.length : Math.min(i, seq.length - 1)]!;
@@ -952,7 +955,7 @@ export class PoseDirector {
   /** 지금 보여줄 칸. 덮는 구간이 없으면 평상이다 — 구간 사이의 빈틈도 평상이다. */
   frameOf(unit: UnitId): number {
     if (this.pv?.unit === unit) {
-      return this.previewWalking ? ANIM.walk[Math.floor(this.pv.t / STEP_MS) % ANIM.walk.length]! : POSE.idle;
+      return this.previewWalking ? ANIM.walk[Math.floor(this.pv.t / WALK_FRAME_MS) % ANIM.walk.length]! : POSE.idle;
     }
     const tr = this.tracks.get(unit);
     if (!tr) return POSE.idle;
