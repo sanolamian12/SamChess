@@ -67,7 +67,14 @@ NAME_FIXES = {
     "왕누": "왕루",
     "금선": "김선",
     "포용": "포륭",
+    # 2026-11-28 기획자 — 閔純의 바른 독음은 '민순'이다(閔을 關으로 읽은 것). 다른 아홉 언어(Min Chun · 閔純)와 경무 열전이 이미
+    # 민순이었다. 엑셀 · `sam_people.csv`는 읽기 전용이라 여기서 바꾸고, `assets/`의 원본 그림 파일 이름은 함께 리네임했다.
+    # **id는 `gwan-sun` 그대로다**(`OFFICER_ID_PINS`) — 계정의 보유 장수와 구워 둔 그림 · 목소리가 그 id를 열쇠로 쓴다.
+    "관순": "민순",
 }
+# 이름을 고쳐도 id는 옛것을 지키는 장수 — id는 저장된 계정 · 구운 에셋(`public/*/{id}.*`) · 코드의 id 목록이 쓰는 열쇠다.
+# (8월의 독음 정정들은 출시 전 · 에셋을 굽기 전이라 id도 함께 바뀌었다.)
+OFFICER_ID_PINS = {"민순": "gwan-sun"}
 FACTION_FIXES = {"장노군": "장로군"}
 
 # 스킬 이름 정정 — (바른 이름, 바른 한자 또는 None).
@@ -1432,7 +1439,7 @@ def extract_officers(wb: Workbook) -> list[dict]:
             fail(f"[장수] {name}: 알 수 없는 등급 {grade!r}")
 
         officers.append({
-            "id": romanize(name),
+            "id": OFFICER_ID_PINS.get(name) or romanize(name),
             "name": name,
             "grade": grade,
             "might": might,
@@ -1483,7 +1490,7 @@ def extract_bios() -> dict[str, dict[str, dict[str, str]]]:
         rows = list(csv.DictReader(f))
     out: dict[str, dict[str, dict[str, str]]] = {}
     for row in rows:
-        name = (row.get("name_ko") or "").strip()
+        name = fix_name((row.get("name_ko") or "").strip())
         if not name:
             continue
         name_by_lang: dict[str, str] = {}
@@ -1766,6 +1773,74 @@ SKILL_ORIGIN_TRIMS: dict[str, dict[str, object]] = {
                   "[Romance dos Três Reinos — invenção literária] Infiltrado no campo de Cao Cao, Pang Tong usou como pretexto o enjoo da marinha do norte para lançar um plano — prender todos os barcos com correntes, e ficariam estáveis como terra firme. Quando o fogo de Huang Gai enfim chegou, nenhum daqueles barcos acorrentados conseguiu fugir."),
     },
 }
+
+
+# 한국어 열전 · 고유기술 유래를 쉬운 말로 풀어 쓴 것 (2026-11-28 기획자 — 초등학교 5~6학년 눈높이, 「~했다」 그대로,
+# 어려운 한자어는 쉬운 말로 바꾸거나 처음 한 번 괄호로 푼다). **한국어 칸만** 갈아 끼운다 — 다른 아홉 언어는 원문 그대로다.
+# 원본(`sam_people.csv` · `sam_skills.csv` · 영웅론은 `SKILL_REDESIGNS`)은 읽기 전용이라 여기서 바꾼다. 표에는 원문을 통째로
+# 적어 두고, 원문이 바뀌었으면 갈아 끼우지 않고 알린다 — 그때는 쉬운 글도 새 원문에 맞춰 다시 쓴다.
+PLAIN_KO = TOOLS / "plain_ko.json"
+
+
+# 열전 · 유래의 사실 오류를 바로잡은 것 (2026-11-28 기획자 — 「맞는 쪽으로, 다른 아홉 언어도 같이」). 정사 기준으로 확인했다:
+# 서성(가짜 성벽은 유수가 아니라 조비가 광릉에 왔을 때) · 곽준(가맹관을 한 달이 아니라 한 해 가까이) · 염포(마초 이간과 무관 —
+# 장로의 칭왕을 말리고 파중으로 물러났다 항복하라 권했다) · 엄준(장수가 아니라 군을 사양한 학자) · 마연(관도가 아니라 업에서 항복) ·
+# 주비(성문교위는 오경 — 주비는 독군교위) · 이풍(대장군 기록 없음 — 기양에서 교유 등과 남아 막다 죽었다) ·
+# 가후지책(「다시 쫓으면 이긴다」는 조조가 아니라 장수에게 한 말, 편지는 위조가 아니라 군데군데 지운 것).
+# 한국어는 쉬운 글(`plain_ko.json`)이 이미 고친 내용이라 여기에는 **아홉 언어만** 있다. 원문이 바뀌면 갈아 끼우지 않고 알린다.
+LORE_FIXES = TOOLS / "lore_fixes.json"
+
+
+def apply_lore_fixes(officers: list[dict], skills: list[dict]) -> None:
+    """`story` · `origin`의 아홉 언어를 `tools/lore_fixes.json`으로 바로잡는다. `apply_skill_origin_trims()` **뒤**에 부른다
+    (줄인 유래가 원문이다)."""
+    if not LORE_FIXES.exists():
+        note(f"[사실 정정] {LORE_FIXES} 가 없어 건너뛴다")
+        return
+    table = json.loads(LORE_FIXES.read_text(encoding="utf-8"))
+    hits = 0
+    for items, key, field, section in ((officers, "name", "story", "bios"), (skills, "id", "origin", "origins")):
+        by_key = {it[key]: it for it in items}
+        for k, langs in table.get(section, {}).items():
+            target = by_key.get(k)
+            if target is None:
+                fail(f"[사실 정정] '{k}'에 대응하는 항목이 없다")
+                continue
+            texts = target.get(field) or {}
+            for lang, pair in langs.items():
+                if lang == "ko":
+                    fail(f"[사실 정정] '{k}' 한국어는 plain_ko.json에서 고친다")
+                elif texts.get(lang) != pair["원문"]:
+                    note(f"[사실 정정] '{k}' {lang}의 원문이 바뀌었다 — lore_fixes.json을 새 원문에 맞춰 다시 본다(지금은 원문 그대로)")
+                else:
+                    texts[lang] = pair["고친글"]
+                    hits += 1
+    note(f"[사실 정정] 열전 · 유래 {hits}건(아홉 언어)을 바로잡았다")
+
+
+def apply_plain_ko(officers: list[dict], skills: list[dict]) -> None:
+    """`officers[].story.ko` · `skills[].origin.ko`를 `tools/plain_ko.json`의 쉬운 글로 바꾼다.
+    `attach_bios()` · `attach_skill_lore()` · `attach_skill_redesigns()` **뒤**에 부른다."""
+    if not PLAIN_KO.exists():
+        note(f"[쉬운 말] {PLAIN_KO} 가 없어 건너뛴다")
+        return
+    table = json.loads(PLAIN_KO.read_text(encoding="utf-8"))
+    for kind, items, key, field in (("열전", officers, "name", "story"), ("유래", skills, "id", "origin")):
+        by_key = {it[key]: it for it in items}
+        hits = 0
+        for k, pair in table.get("bios" if field == "story" else "origins", {}).items():
+            target = by_key.get(k)
+            if target is None:
+                fail(f"[쉬운 말] {kind} '{k}'에 대응하는 항목이 없다")
+                continue
+            texts = target.get(field) or {}
+            if texts.get("ko") != pair["원문"]:
+                note(f"[쉬운 말] {kind} '{k}'의 원문이 바뀌었다 — 쉬운 글(plain_ko.json)을 새 원문에 맞춰 다시 쓴다(지금은 원문 그대로)")
+                continue
+            texts["ko"] = pair["쉬운글"]
+            hits += 1
+        have = sum(1 for it in items if (it.get(field) or {}).get("ko"))
+        note(f"[쉬운 말] 한국어 {kind} {hits}/{have}건을 쉬운 글로")
 
 
 def apply_skill_origin_trims(skills: list[dict]) -> None:
@@ -3975,6 +4050,8 @@ def main() -> int:
     apply_skill_text_fixes(skills)
     apply_skill_duration_text(skills)
     apply_skill_origin_trims(skills)
+    apply_lore_fixes(officers, skills)
+    apply_plain_ko(officers, skills)
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)

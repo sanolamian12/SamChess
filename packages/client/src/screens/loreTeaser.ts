@@ -29,8 +29,11 @@ function clip(s: string, max: number): string {
   return out.replace(/[\s,，、·:;]+$/u, '') + '…';
 }
 
+/** 괄호 속 풀이 — 첫머리에서는 뺀다(「조조의 참모(작전을 짜 주는 신하).」 → 「조조의 참모.」 2026-11-28 기획자). 펼친 판에는 그대로 있다 */
+const GLOSS = /\s*[(（][^()（）]*[)）]/gu;
+
 export function loreTeaser(story: string, max = TEASER_MAX): string {
-  const text = story.trim().replace(/\s+/g, ' ');
+  const text = story.trim().replace(GLOSS, '').replace(/\s+/g, ' ');
   if (!text) return '';
   const m = /^.+?[.。．!?！？](?=\s|$|[^\d])/u.exec(text);
   const first = (m ? m[0] : text).trim();

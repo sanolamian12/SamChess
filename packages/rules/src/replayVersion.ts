@@ -38,11 +38,13 @@ export const ENGINE_REVISION = 7;
 // `FORMULA`가 바뀌어 데이터 몫도 함께 바뀌었지만, 판정 · 대결 AI의 셈이 같이 바뀌었으므로 엔진 몫도 올린다
 // 7 (2026-11-25) — 제갈량 「차동풍」이 되살린 고유기술은 SP 0으로 다시 쓴다(`freeUniqueSkill`). 데이터는 그대로라(SP 6 유지 · 설명 글만) 엔진 몫을 올린다.
 // 황금 재생에 차동풍 판(시드 9)을 더했다 — 그 전 판들은 차동풍이 없어 이 규칙을 못 봤다
+// (2026-11-28) 고유기술 유래(`origin`)를 글자 칸(`TEXT_KEYS`)에 더했다 — 그 전에는 유래 글만 고쳐도 데이터 몫이 바뀌었다(쉬운 말 풀어 쓰기에서 드러났다).
+// 해시는 한 번 바뀌었지만 황금 재생의 지문은 그대로다(판은 같다)
 
 /** 판에 영향이 없는 글자 칸 — 해시에서 뺀다(번역 · 설명을 고쳐도 옛 기록을 살린다) */
 const TEXT_KEYS = new Set([
   'name', 'hanja', 'text', 'nameI18n', 'textI18n', 'lore', 'loreI18n', 'imagePrompt', 'story', 'courtesyName', 'portrait', 'art',
-  'faction', 'banditNames', 'title', 'titleI18n', 'desc', 'descI18n', 'detail', 'detailI18n', 'effectText',
+  'faction', 'banditNames', 'origin', 'title', 'titleI18n', 'desc', 'descI18n', 'detail', 'detailI18n', 'effectText',
 ]);
 
 /** 키를 정렬해 적는다 — 같은 값이면 언제나 같은 글자 */

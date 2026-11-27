@@ -16,6 +16,19 @@ test('첫머리 — 첫 문장이 짧으면 그대로', () => {
   assert.equal(loreTeaser('吴国大都督。他读书。'), '吴国大都督。');
 });
 
+test('첫머리 — 괄호 속 풀이는 뺀다(펼친 판에만 있다)', () => {
+  assert.equal(loreTeaser('조조의 참모(작전을 짜 주는 신하). 앞일을 꿰뚫어 보았다.'), '조조의 참모.');
+  assert.equal(loreTeaser('촉한의 승상（나라를 다스리는 신하）。他读书。'), '촉한의 승상。');
+});
+
+test('첫머리 — 한국어 열전은 자르지 않고 첫 문장 그대로 든다(쉬운 말, 2026-11-28)', () => {
+  for (const o of OFFICERS) {
+    const ko = o.story?.ko;
+    if (!ko) continue;
+    assert.ok(!loreTeaser(ko).endsWith('…'), `${o.id}: ${loreTeaser(ko)}`);
+  }
+});
+
 test('첫머리 — 숫자 속 마침표에서 자르지 않는다', () => {
   assert.equal(loreTeaser('Born in 3.5 era. Then left.', 40), 'Born in 3.5 era.');
 });
