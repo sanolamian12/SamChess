@@ -18,17 +18,17 @@
         "flat": 5
       }
     ],
-    "text": "8방향 내 아군 1명(자신 포함)의 HP +5",
+    "text": "8방향 내 아군 1명의 HP +5",
     "textI18n": {
-      "en": "1 adjacent ally (incl. self): HP +5",
-      "ja": "周囲8マスの味方1人（自身含む）のHP +5",
-      "zh_Hant": "周圍8格內友軍1人（含自身）HP +5",
-      "zh_Hans": "周围8格内友军1人（含自身）HP +5",
-      "pt_BR": "1 aliado adjacente, incluindo você: HP +5",
-      "pt_PT": "1 aliado adjacente, incluindo o próprio: HP +5",
-      "it": "1 alleato adiacente, sé incluso: HP +5",
-      "es_419": "1 aliado adyacente, incluido uno mismo: HP +5",
-      "mn": "Хажуугийн 1 холбоотон (өөрөө орно): HP +5"
+      "en": "1 adjacent ally: HP +5",
+      "ja": "周囲8マスの味方1人のHP +5",
+      "zh_Hant": "周圍8格內友軍1人 HP +5",
+      "zh_Hans": "周围8格内友军1人 HP +5",
+      "pt_BR": "1 aliado adjacente: HP +5",
+      "pt_PT": "1 aliado adjacente: HP +5",
+      "it": "1 alleato adiacente: HP +5",
+      "es_419": "1 aliado adyacente: HP +5",
+      "mn": "Хажуугийн 1 холбоотон: HP +5"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A herbal medicine decoction set, tangyao: a squat earthenware medicine pot with a short side spout and a rope-wrapped handle, its lid ajar with a thin curl of steam rising, standing beside a shallow dark-glazed bowl of amber brown broth. Dried root slices, a knot of ginseng and a few dark berries scattered at the base. Humble field medicine, soot-stained clay, chipped glaze.",
     "lore": "약재를 달여 우려낸 물약. 값싸고 빨리 들지만 오래가지 않아, 군중에서 가장 흔히 쓰인 치료였다.",
@@ -63,17 +63,17 @@
         "value": 99
       }
     ],
-    "text": "8방향 내 아군 1명(자신 포함)의 MP 전량 회복",
+    "text": "8방향 내 아군 1명의 MP 전량 회복",
     "textI18n": {
-      "en": "1 adjacent ally (incl. self): MP fully restored",
-      "ja": "周囲8マスの味方1人（自身含む）のMPを全回復",
-      "zh_Hant": "周圍8格內友軍1人（含自身）MP全部恢復",
-      "zh_Hans": "周围8格内友军1人（含自身）MP全部恢复",
-      "pt_BR": "1 aliado adjacente, incluindo você: MP totalmente restaurado",
-      "pt_PT": "1 aliado adjacente, incluindo o próprio: MP totalmente restaurado",
-      "it": "1 alleato adiacente, sé incluso: MP completamente ripristinati",
-      "es_419": "1 aliado adyacente, incluido uno mismo: MP restaurado por completo",
-      "mn": "Хажуугийн 1 холбоотон (өөрөө орно): MP бүрэн сэргэнэ"
+      "en": "1 adjacent ally: MP fully restored",
+      "ja": "周囲8マスの味方1人のMPを全回復",
+      "zh_Hant": "周圍8格內友軍1人 MP全部恢復",
+      "zh_Hans": "周围8格内友军1人 MP全部恢复",
+      "pt_BR": "1 aliado adjacente: MP totalmente restaurado",
+      "pt_PT": "1 aliado adjacente: MP totalmente restaurado",
+      "it": "1 alleato adiacente: MP completamente ripristinati",
+      "es_419": "1 aliado adyacente: MP restaurado por completo",
+      "mn": "Хажуугийн 1 холбоотон: MP бүрэн сэргэнэ"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A tea service for restoring the spirit, cha: a pale celadon bowl of clear green tea with a faint wisp of steam, set on a low lacquered wooden tray beside a dark pressed tea brick with one corner broken off and a small bamboo whisk. Cool jade-green glaze with fine crackle, warm red lacquer, quiet and refined.",
     "lore": "촉과 강남에서 나는 잎을 덖어 끓여 마시는 음료. 술을 못 마시는 위요에게 손호가 몰래 차를 내주었다고 오서는 적는다.",
@@ -109,17 +109,17 @@
         "flat": 5
       }
     ],
-    "text": "8방향 내 아군 전원(자신 포함)의 HP +5",
+    "text": "8방향 내 아군 전원의 HP +5",
     "textI18n": {
-      "en": "All adjacent allies (incl. self): HP +5",
-      "ja": "周囲8マスの味方全員（自身含む）のHP +5",
-      "zh_Hant": "周圍8格內全體友軍（含自身）HP +5",
-      "zh_Hans": "周围8格内全体友军（含自身）HP +5",
-      "pt_BR": "Todos os aliados adjacentes, incluindo você: HP +5",
-      "pt_PT": "Todos os aliados adjacentes, incluindo o próprio: HP +5",
-      "it": "Tutti gli alleati adiacenti, sé incluso: HP +5",
-      "es_419": "Todos los aliados adyacentes, incluido uno mismo: HP +5",
-      "mn": "Хажуугийн бүх холбоотон (өөрөө орно): HP +5"
+      "en": "All adjacent allies: HP +5",
+      "ja": "周囲8マスの味方全員のHP +5",
+      "zh_Hant": "周圍8格內全體友軍 HP +5",
+      "zh_Hans": "周围8格内全体友军 HP +5",
+      "pt_BR": "Todos os aliados adjacentes: HP +5",
+      "pt_PT": "Todos os aliados adjacentes: HP +5",
+      "it": "Tutti gli alleati adiacenti: HP +5",
+      "es_419": "Todos los aliados adyacentes: HP +5",
+      "mn": "Хажуугийн бүх холбоотон: HP +5"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The wooden ox and gliding horse supply cart, muniu liuma: a single-wheeled wooden transport frame carved into the shape of a stylised ox with a blunt carved head and stubby legs, long push shafts at the back, a broad hardwood wheel and lashed panniers of grain sacks and stoppered water gourds on either flank. Visible joinery pegs and wear-polished timber, an ingenious field contraption, no metal ornament.",
     "lore": "제갈량이 험한 촉도로 군량을 옮기려 만든 나무 수송 기구. 소 모양 외바퀴 수레로 보는 견해가 유력하다.",
@@ -345,17 +345,17 @@
     "passive": {
       "wtDelta": -10
     },
-    "text": "WT −10",
+    "text": "착용 장수의 WT −10",
     "textI18n": {
-      "en": "WT −10",
-      "ja": "WT −10",
-      "zh_Hant": "WT −10",
-      "zh_Hans": "WT −10",
-      "pt_BR": "WT −10",
-      "pt_PT": "WT −10",
-      "it": "WT −10",
-      "es_419": "WT −10",
-      "mn": "WT −10"
+      "en": "Bearer's WT −10",
+      "ja": "装備した武将のWT −10",
+      "zh_Hant": "裝備武將的WT −10",
+      "zh_Hans": "装备武将的WT −10",
+      "pt_BR": "WT do portador −10",
+      "pt_PT": "WT do portador −10",
+      "it": "WT del portatore −10",
+      "es_419": "WT del portador −10",
+      "mn": "Эзэмшигчийн WT −10"
     },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Ferghana warhorse, dawan ma, riderless and standing in profile turned slightly toward the viewer: a tall long-legged golden bay with a dark mane, deep chest and dished face, wearing plain military tack of undyed leather, a simple bronze snaffle bit and a low wooden saddle with a coarse felt blanket. A sturdy army mount, dusty coat, no ornament.",
     "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다.",

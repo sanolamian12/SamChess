@@ -1,21 +1,20 @@
 /**
- * 전투 아이템 — 사기 · 보관함 · 지급 (2026-09-24, pptx 82~85쪽).
+ * 전투 아이템 — 사기 · 보관함 · 지급 (2026-09-24, pptx 82~85쪽 · 2026-11-27 용병 시장 꼴로 다시 짬).
  *
  * ```
- * 구매 가능한 아이템  (4개씩 쪽)       이름 · 타입 · 재고 · 보유   [체크]
- *   → [결제하기] (하나라도 체크했을 때)  → 주문 확인(2단 × 8줄 고정, 이름만)  → 구매 완료(그림 격자)
+ * 머리 판   [금화] n                 [보관함 n/최대]   ← `ItemsStatus` — 보관함 칸이 곧 단추(옛 바닥 [보관함])
+ * 목록     종이 카드 다섯 장씩 쪽     그림 | 이름 · 타입 / 효과 | 가격 띠 · 재고 · 보유
+ *   → 카드를 누르면 곧장 「구매할까요?」 [구매 (🪙 × n)] → 구매 완료(그림 격자)
+ * 바닥     [뒤로 가기]
  * 보관함               (6줄씩 쪽)       한 개에 한 줄: 이름 · 타입 · 구매일 · 지급 · 명령
  *   → [장수 선택] → 장수 고르기(대장간 지급과 같은 팝업) → (이미 들고 있으면) 되묻기
  *   → [아이템 회수] → 확인 → 보관함으로
  * ```
  *
- * **장바구니는 쪽을 넘겨도 남는다** — 이 화면의 상태라 쪽 번호와 따로 산다(82쪽 주석).
- * **체크 하나 = 한 개**다(2026-09-24 기획자 지정 — [−] n [+]가 예쁘지 않아 대장간 지급처럼
- * 체크로 바꿨다). 오늘 매물이 없는 품목은 체크가 잠긴다. 금화·보유 총량처럼 여러 품목에 걸친
- * 한도는 규칙(`canBuyMarketBasket`)이 합쳐서 보고, 주문 확인 판이 그 말을 그대로 띄운다.
+ * **체크 · 장바구니 · [결제하기]는 걷었다**(2026-11-27 기획자) — 한 번에 한 개를 산다. 못 사는 카드(매진 · 금화 ·
+ * 보관함 가득)는 잿빛이고, 눌러도 판이 안 뜨고 내관이 까닭을 말한다(도시 물자와 같은 몸짓). 판정은 규칙(`canBuyMarketBasket`)이다.
  *
- * **사는 것은 한 요청이다**(`POST /market/items`) — 한 개짜리를 여러 번 부르면 가운데서
- * 막혔을 때 반만 산 채로 남아 주문서와 결과가 갈린다.
+ * **사는 것은 한 요청이다**(`POST /market/items`) — 장바구니가 한 칸일 뿐 길은 같다.
  *
  * ────────────────────────────────────────────────────────────────
  * 지급은 「병기 또는 아이템 하나」다 — 되묻는 이유
@@ -34,7 +33,7 @@ import type { MarketItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
   canBuyMarketBasket, canCarryItem, carryItem, equippedBy, equippedKey,
-  marketBasketGold, marketHeldCount, marketItemsOf, marketStockLeft, marketUnits, uncarryItem, unequipOfficer,
+  marketCapacity, marketItemsOf, marketOwnedCount, marketUnits, uncarryItem, unequipOfficer,
 } from '@samchess/meta';
 import type { MarketBasket, PlayerProfile } from '@samchess/meta';
 import { Say } from '../Steward.tsx';
@@ -46,36 +45,15 @@ import { formatMade } from '../ForgeScreen.tsx';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
 import { useSteadyPage } from '../useSteadyPage.ts';
-import { ConfirmModal, DoneModal, GoldCost, Layer } from './parts.tsx';
-import { CelebrateCharge } from '../Celebrate.tsx';
+import { useAllLangLayout } from '../useAllLangLayout.ts';
+import { ConfirmModal, GoldCost, Layer } from './parts.tsx';
+import { Celebrate } from '../Celebrate.tsx';
 import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 
-/** 한 쪽에 네 품목 (기획자 지정 2026-09-24) */
-const PAGE = 4;
-
-/**
- * 구매 완료 격자의 열 수 — **종류 수**로 정한다 (기획자 지정 2026-09-24).
- *
- * | 종류 | 1 | 2 | 3 | 4 | 5·6 | 7~9 | 10~12 | 13+ |
- * |---|---|---|---|---|---|---|---|---|
- * | 배열 | 1×1 | 2×1 | 3×1 | 2×2 | 3×2 | 3×3 | 4×3 | 4×4 |
- *
- * 판의 크기는 **4×4일 때**로 늘 같다 — 칸 크기는 판 폭 ÷ 열 수라 적을수록 크게 뜬다.
- */
-export function doneGridCols(kinds: number): number {
-  if (kinds <= 3) return Math.max(1, kinds);
-  if (kinds === 4) return 2;
-  if (kinds <= 9) return 3;
-  return 4;
-}
-
-const itemsOf = (basket: MarketBasket): [MarketItemData, number][] =>
-  Object.entries(basket)
-    .map(([id, n]) => [marketItemById.get(id), n ?? 0] as const)
-    .filter((e): e is [MarketItemData, number] => !!e[0] && e[1] > 0)
-    .map(([item, n]) => [item, n]);
+/** 한 쪽에 세 품목 (2026-11-27 기획자 — 도시 물자의 긴 칸 꼴) */
+const PAGE = 3;
 
 /** 아이템 그림 — 검정 바탕 위에 원래 크기 그대로, 금빛 밧줄 액자(`ui/frame-gold-2.png`)를 씌운다 */
 function ItemArt({ item }: { item: MarketItemData }): React.JSX.Element {
@@ -108,6 +86,78 @@ function KindChip({ item }: { item: MarketItemData }): React.JSX.Element {
   );
 }
 
+/**
+ * 머리 판 — 금화 · 보관함(보유/최대) (2026-11-27 기획자 — 용병 시장 · 도시 물자 머리 판과 같은 자리 · 같은 높이).
+ * 보관함은 그림을 크게, 글자 없이 수만. **가득이면 붉은 글자**(`data-full`). 보관함으로 가는 단추는 목록 판 밑에 따로 있다.
+ * `MarketScreen`이 `.place-body` 밖에 그린다
+ */
+export function ItemsStatus({ profile }: { profile: PlayerProfile }): React.JSX.Element {
+  const owned = marketOwnedCount(profile);
+  const cap = marketCapacity(profile);
+  return (
+    <section className="place-panel mkt-status mkt-merc-status mkt-items-status" data-field="itemsStatus">
+      <span className="mkt-cur" data-currency="gold" data-field="gold" data-gold={profile.gold}>
+        <img src="market/gold.png" alt={t('market.gold')} title={t('market.gold')} data-tip={t('market.gold')} />
+        <b className="v">{profile.gold.toLocaleString('en-US')}</b>
+      </span>
+      <span className="mkt-cur mkt-store-now" data-field="items" data-owned={owned} data-cap={cap} data-full={owned >= cap ? '1' : '0'}>
+        <GameIcon name="mk-storage" label={t('market.items.storage')} />
+        <b className="v">{owned}/{cap}</b>
+      </span>
+    </section>
+  );
+}
+
+/**
+ * 가격 띠의 붓 획 색 — 값의 층마다(2 · 4 · 8 · 16냥 → 옥색 · 쪽빛 · 짙은 자주 · 금). 타입(사용/지속)으로는 가르지 않는다
+ * (2026-11-27 기획자 — 타입 구분을 걷었다). 용병 시장과 같은 그림(`.mkt-pack-price[data-stroke]`)
+ */
+const strokeOf = (gold: number): number => (gold >= 16 ? 8 : gold >= 8 ? 6 : gold >= 4 ? 7 : 5);
+
+/**
+ * 아이템 카드 한 장 — 도시 물자의 긴 칸(연구 초기화 · 초심의 서)과 같은 종이. 그림은 왼쪽 두 줄 높이, 첫 줄은 이름과 가격 띠가
+ * 나란히, 그 밑 효과는 그림 오른쪽 종이 폭 전부를 쓴다 (2026-11-27 기획자 — 가격 띠가 오른쪽 칸을 따로 먹던 것을 걷었다)
+ */
+function ItemCard({ item, locked, busy, onClick, measure }: {
+  item: MarketItemData; locked: boolean; busy: boolean; onClick?: () => void;
+  /** 다국어 높이를 재는 숨은 사본 — 누를 수 없고 검사 · 안내가 고르지 않게 `data-action`을 안 단다 */
+  measure?: boolean;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className="mkt-pack mkt-item-card"
+      data-action={measure ? undefined : 'buyItem'}
+      data-item={measure ? undefined : item.id}
+      data-locked={locked ? true : undefined}
+      disabled={busy || measure}
+      tabIndex={measure ? -1 : undefined}
+      onClick={onClick}
+    >
+      <ItemArt item={item} />
+      <span className="mkt-item-nm">{pickMarketItemName(item)}</span>
+      <span className="mkt-pack-price" data-stroke={strokeOf(item.gold)} data-field="price"><GoldCost gold={item.gold} times /></span>
+      <span className="mkt-item-fx">{pickMarketItemText(item)}</span>
+    </button>
+  );
+}
+
+/** 쪽 넘김 화살 하나 — 위(이전) · 아래(다음) */
+function PageArrow({ dir, show, disabled, onClick }: {
+  dir: 'prev' | 'next'; show: boolean; disabled: boolean; onClick: () => void;
+}): React.JSX.Element {
+  return (
+    <div className="mkt-item-arrow-row" data-dir={dir}>
+      {show && (
+        <button type="button" className="mkt-item-arrow" data-dir={dir} data-action={dir === 'prev' ? 'prevPage' : 'nextPage'}
+          aria-label={t(dir === 'prev' ? 'officers.pager.prev' : 'officers.pager.next')} disabled={disabled} onClick={onClick}>
+          <img src="ui/turn/chevron.png" alt="" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   profile: PlayerProfile;
   busy: boolean;
@@ -116,180 +166,138 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   onBack: () => void;
 }): React.JSX.Element {
   const [page, setPage] = useState(0);
-  const [basket, setBasket] = useState<MarketBasket>({});
-  const [ordering, setOrdering] = useState(false);
-  const [bought, setBought] = useState<MarketBasket | null>(null);
-  /** 구매 직후 작은 급의 모음(0.9초, 2026-11-22 기획자 — 「아이템 구매는 2초」)이 끝났나 — 끝나면 「구매 완료」 판 */
-  const [boughtShown, setBoughtShown] = useState(false);
+  /** 누른 카드 — 곧장 「구매할까요?」 판이 뜬다(2026-11-27 기획자 — 체크 · [결제하기]를 걷었다) */
+  const [asking, setAsking] = useState<MarketItemData | null>(null);
+  /** 막힌 카드를 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다(용병 시장 · 도시 물자와 같은 몸짓) */
+  const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
+  /** 막 산 아이템 — 금화 분수 → 금테 메달 무대(`ItemBoughtDone`, 2026-11-27 기획자) */
+  const [bought, setBought] = useState<MarketItemData | null>(null);
   const now = Date.now();
   const items = marketItemsOf(profile);
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE));
-  // 판 높이는 쪽을 넘겨도 그대로 — 가장 긴 쪽에 맞춘다(`useSteadyPage`, 2026-11-13 기획자)
-  const listRef = useRef<HTMLElement>(null);
   const cur = Math.min(page, pageCount - 1);
-  const shown = useSteadyPage(listRef, cur, pageCount, [items.map((i) => i.id).join()]);
-  const rows = items.slice(shown * PAGE, shown * PAGE + PAGE);
-  const picked = itemsOf(basket);
+  const rows = items.slice(cur * PAGE, cur * PAGE + PAGE);
+  /*
+   * 판 크기는 언어 · 쪽과 무관하게 하나 (2026-11-27 기획자). 판 안에 **팔 수 있는 아이템 전부의 숨은 사본**을 두고, 열 언어로 그려 보며
+   * 그 가운데 가장 높은 카드를 `--row-h`로 건다(`useAllLangLayout`). 보이는 카드 셋은 그 높이로 서고, 카드 자리(`.mkt-item-cards`)는
+   * 늘 세 칸 높이라 마지막 쪽이 덜 차도 판이 안 준다. 사본은 판의 흐름 밖(절대 위치)이라 판 높이에 안 든다
+   */
+  const listRef = useRef<HTMLElement>(null);
+  /** [보관함으로]의 붓 획 폭도 열 언어 가운데 가장 긴 글에 맞춘다(`--row-w`) */
+  const storeRef = useRef<HTMLDivElement>(null);
+  useAllLangLayout([
+    { box: listRef, rows: ':scope .mkt-item-measure > .mkt-item-card', panel: false },
+    { box: storeRef, rows: ':scope > .mkt-to-storage', panel: false, width: true },
+  ], items.map((i) => i.id).join());
+  /** 보관함이 비면 [보관함으로]를 막는다 (2026-11-27 기획자) */
+  const storeEmpty = marketOwnedCount(profile) === 0;
 
-  /** 체크 = 한 개 (기획자 지정 2026-09-24 — 수량 조절은 없다. 더 사려면 다시 산다) */
-  const toggle = (item: string): void => {
-    setBasket((b) => {
-      const next = { ...b };
-      if (next[item]) delete next[item];
-      else if (marketStockLeft(profile, item, now) > 0) next[item] = 1;
-      return next;
-    });
+  /** 한 개짜리 주문 — 사는 길은 그대로 한 요청(`POST /market/items`)이고 장바구니가 한 칸일 뿐이다 */
+  const one = (item: MarketItemData): MarketBasket => ({ [item.id]: 1 });
+
+  const ask = (item: MarketItemData): void => {
+    if (busy) return;
+    const can = canBuyMarketBasket(profile, one(item), now);
+    if (!can.ok) { setWhy({ text: reasonText(can), code: can.code ?? 'refused' }); return; }
+    setWhy(null);
+    setAsking(item);
   };
 
-  const can = canBuyMarketBasket(profile, basket, now);
-  const pay = (): void => {
-    const order = basket;
+  const pay = (item: MarketItemData): void => {
+    const order = one(item);
     run(() => buyMarketItemsOnServer(order), () => {
-      setOrdering(false);
-      setBasket({});
-      setBoughtShown(false);
-      setBought(order);
+      setAsking(null);
+      setBought(item);
     });
   };
+  const askCan = asking ? canBuyMarketBasket(profile, one(asking), now) : null;
 
   return (
     <>
-      <section ref={listRef} className="place-panel mkt-list" data-field="itemShop">
-        <h2 className="cap">{t('market.items.buyable')}</h2>
+      <section ref={listRef} className="place-panel mkt-list mkt-charge mkt-merc-shop mkt-items" data-field="itemShop">
         {items.length === 0 ? (
           <p className="hint" data-field="itemsLocked">{t('market.items.locked')}</p>
         ) : (
           <>
-            <div className="mkt-irow mkt-ihead pick">
-              <span className="c-nm">{t('market.col.name')}</span>
-              <span className="c-kd">{t('market.col.kind')}</span>
-              <span className="c-n c-n1">{t('market.col.stock')}</span>
-              <span className="c-n c-n2">{t('market.col.held')}</span>
-              <span className="c-q">{t('squad.pick')}</span>
+            {/* 쪽 넘김 — 판 가운데 위(이전) · 아래(다음)에 크게, 쪽 번호는 없다 (2026-11-27 기획자). 그림은 내 차례 표의 겹 갈매기
+                (`ui/turn/chevron.png`, 아래를 향한 그림) — 위 것은 뒤집는다. 갈 수 있는 쪽 화살은 위아래로 살짝 오르내리고,
+                끝 쪽에서는 흐려지고 안 눌린다(자리는 남아 판이 안 흔들린다). 쪽이 하나면 둘 다 안 그린다 */}
+            <PageArrow dir="prev" show={pageCount > 1} disabled={cur <= 0} onClick={() => setPage(cur - 1)} />
+            <div className="mkt-item-cards" data-page={cur}>
+              {rows.map((item) => (
+                <ItemCard key={item.id} item={item} busy={busy}
+                  locked={!canBuyMarketBasket(profile, one(item), now).ok} onClick={() => ask(item)} />
+              ))}
             </div>
-            <div className="mkt-irows">
-              {rows.map((item) => {
-                const stock = marketStockLeft(profile, item.id, now);
-                const on = !!basket[item.id];
-                const soldOut = stock <= 0 && !on;
-                return (
-                  <div
-                    className="mkt-irow pick"
-                    key={item.id}
-                    data-item={item.id}
-                    data-kind={item.kind}
-                    data-picked={on ? '1' : '0'}
-                    data-soldout={soldOut ? '1' : '0'}
-                    onClick={() => { if (!soldOut) toggle(item.id); }}
-                  >
-                    <ItemArt item={item} />
-                    <span className="c-nm">{pickMarketItemName(item)}</span>
-                    <span className="c-kd"><KindChip item={item} /></span>
-                    <span className="c-n c-n1" data-field="stock" data-stock={stock}>
-                      {soldOut ? <GameIcon name="mk-soldout" label={String(stock)} /> : stock}
-                    </span>
-                    <span className="c-n c-n2" data-field="held">{marketHeldCount(profile, item.id)}</span>
-                    {/* 이름 · 값 · 효과 세 줄 (2026-09-24 지정 — 도시 물자 줄과 같은 꼴) */}
-                    <span className="c-price" data-field="price"><GoldCost gold={item.gold} times /></span>
-                    <span className="c-q">
-                      <button
-                        className="lv-check mkt-check"
-                        data-action="pickItem"
-                        aria-pressed={on}
-                        disabled={soldOut}
-                        onClick={(e) => { e.stopPropagation(); toggle(item.id); }}
-                      >
-                        <img className="lv-check-icon" src="icons/confirm.png" alt="" />
-                      </button>
-                    </span>
-                    <span className="c-fx">{pickMarketItemText(item)}</span>
-                  </div>
-                );
-              })}
+            <PageArrow dir="next" show={pageCount > 1} disabled={cur >= pageCount - 1} onClick={() => setPage(cur + 1)} />
+            <div className="mkt-item-measure" aria-hidden="true">
+              {items.map((item) => <ItemCard key={item.id} item={item} busy={busy} locked={false} measure />)}
             </div>
-            <Pager page={cur} pageCount={pageCount} onPage={setPage} field="itemPager" />
-            <button
-              className="btn primary wide"
-              data-action="checkout"
-              disabled={picked.length === 0}
-              onClick={() => setOrdering(true)}
-            >
-              <GameIcon name="mk-checkout" label={t('market.items.checkout')} text />
-            </button>
           </>
         )}
       </section>
+      {/* 보관함으로 — 목록 판 바로 밑 왼쪽, 쪽빛 붓 획 위에 보관함 그림(좌우로 까딱) + 「보관함으로」 (2026-11-27 기획자).
+          보관함이 비면 막는다 */}
+      <div ref={storeRef} className="mkt-to-storage-row">
+        <button type="button" className="mkt-to-storage" data-action="openStorage" disabled={storeEmpty}
+          data-empty={storeEmpty ? '1' : undefined} onClick={onStorage}>
+          <GameIcon name="mk-storage" label={t('market.items.storage')} />
+          <span className="mkt-to-storage-t">{t('market.items.toStorage')}</span>
+        </button>
+      </div>
+      <Say text={why?.text ?? null} level={profile.cityLevel} name="itemsWhy" code={why?.code} repeat />
 
       <section className="place-panel mkt-cmds">
         <div className="frg-buttons">
-          <button className="btn wide" data-action="openStorage" onClick={onStorage}>
-            <span className="lbl"><GameIcon name="mk-storage" label={t('market.items.storage')} text /></span>
-            <span className="sub">{t('market.items.storage.sub')}</span>
-          </button>
           <button className="btn wide" data-action="backHome" onClick={onBack}>
             <span className="lbl">{t('market.backHome')}</span>
           </button>
         </div>
       </section>
 
-      {/* 주문 확인 (83쪽 가운데) — 품목이 열여섯이라 **두 단 × 여덟 줄을 미리 잡아 둔다**(판이
-          주문마다 들쭉날쭉하지 않게). 한 품목에 하나씩이라 이름만 적는다 — 값은 [구매] 단추에.
-          규칙이 막으면 그 말을 판 안에 적고 [구매]를 잠근다 */}
-      {ordering && (
+      {/* 「구매할까요?」 — 그림 · 이름 · 효과, 값은 [구매 (🪙 × n)] 단추 안에 (도시 물자의 확인 판과 같은 짜임) */}
+      {asking && (
         <ConfirmModal
-          title={t('market.order.title')}
-          field="order"
-          className="mkt-order"
-          okLabel={<BuyLabel gold={marketBasketGold(basket)} />}
-          disabled={busy || !can.ok}
-          onConfirm={pay}
-          onClose={() => setOrdering(false)}
+          title={pickMarketItemName(asking)}
+          field="itemAsk"
+          className="mkt-item-ask"
+          okLabel={<BuyLabel gold={asking.gold} />}
+          disabled={busy || !askCan?.ok}
+          onConfirm={() => pay(asking)}
+          onClose={() => setAsking(null)}
         >
-          <ul className="mkt-order-lines" data-count={picked.length}>
-            {picked.map(([item]) => (
-              <li key={item.id} data-item={item.id}>{pickMarketItemName(item)}</li>
-            ))}
-          </ul>
-          <Say text={can.ok ? null : reasonText(can)} level={profile.cityLevel} name="orderWhy" />
+          <span className="mkt-item-ask-art"><ItemArt item={asking} /></span>
+          <p className="mkt-confirm-lead" data-field="itemAskWhat">{pickMarketItemText(asking)}</p>
+          <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
+          <Say text={askCan && !askCan.ok ? reasonText(askCan) : null} level={profile.cityLevel} name="itemAskWhy" />
         </ConfirmModal>
       )}
 
-      {bought && !boughtShown && <Layer><CelebrateCharge tier="small" onDone={() => setBoughtShown(true)} /></Layer>}
-      {bought && boughtShown && (
-        <DoneModal
-          title={t('market.bought.title')}
-          field="bought"
-          onClose={() => setBought(null)}
-          actions={(
-            <>
-              <button className="btn wide" data-action="boughtStorage" onClick={() => { setBought(null); onStorage(); }}>
-                {t('market.items.storage')}
-              </button>
-              <button className="btn wide" data-action="boughtClose" onClick={() => setBought(null)}>{t('market.close')}</button>
-            </>
-          )}
-        >
-          <BoughtGrid basket={bought} />
-        </DoneModal>
-      )}
+      {/* 「아이템 구매 완료」 — key: 같은 아이템을 거듭 사도 다시 처음부터 */}
+      {bought && <Layer><ItemBoughtDone key={`${bought.id}-${profile.gold}`} item={bought} onClose={() => setBought(null)} /></Layer>}
     </>
   );
 }
 
-/** 구매 완료 격자 — 그림 오른쪽 아래에 ×n. 판은 4×4 크기로 고정, 열 수는 `doneGridCols` */
-function BoughtGrid({ basket }: { basket: MarketBasket }): React.JSX.Element {
-  const list = itemsOf(basket);
-  const cols = doneGridCols(list.length);
+/**
+ * 아이템 구매 완료 (2026-11-27 기획자) — 공용 축하 화면(`Celebrate`)의 금화 분수 도입부(`coins`, 1.8초): 화면이 어두워지고 바닥에서 금화가
+ * 「짤그랑」 하며 약한 분수처럼 터져 오른다 → 대장간 제작 완료처럼 무대가 열린다. 뒤는 물자 상자(`ui/cel-stock.png` ← 장터 [재고] 아이콘,
+ * 모루와 같은 자리), 앞에 산 아이템의 **금테 메달**(`market-items/medal-{id}.png` ← `build_market_items.py`)이 튀어나오고, 붓 획 한 줄에
+ * 작은 메달 + 이름(획의 색은 해금 레벨). 단추 없이 아무 데나 누르면 닫힌다 — 보관함은 판 밑 [보관함으로]가 맡는다.
+ * 검사가 거는 이름 — `data-modal="bought"` · 줄 `data-field="doneItem"` · 누름 칸 `data-action="boughtClose"`.
+ */
+function ItemBoughtDone({ item, onClose }: { item: MarketItemData; onClose: () => void }): React.JSX.Element {
   return (
-    <div className="mkt-bought" data-count={list.length} data-cols={cols} style={{ '--cols': cols } as React.CSSProperties}>
-      {list.map(([item, n]) => (
-        <span className="mkt-bought-cell" key={item.id} data-item={item.id} title={pickMarketItemName(item)}>
-          <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-bought-glow" burst />
-          <img src={`market-items/${item.id}.png`} alt={pickMarketItemName(item)} />
-          <b className="mkt-bought-n">×{n}</b>
-        </span>
-      ))}
-    </div>
+    <Celebrate modal="bought" intro="coins" tier="small" className="itm-done" title={t('market.bought.title')}
+      art={<img className="cel-art-img" src="ui/cel-stock.png" alt="" />}
+      badge={<img className="itm-cel-medal" src={`market-items/medal-${item.id}.png`} alt="" />}
+      tone={itemBlink(item.unlockLevel)} okAction="boughtClose" onClose={onClose}>
+      <p className="lvd-row itm-done-row" data-field="doneItem" data-item={item.id} data-level={item.unlockLevel}>
+        <img className="frg-done-medal" src={`market-items/medal-${item.id}.png`} alt="" />
+        <b>{pickMarketItemName(item)}</b>
+      </p>
+      <p className="row dim">{t('market.bought.hint')}</p>
+    </Celebrate>
   );
 }
 

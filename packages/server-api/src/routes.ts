@@ -505,8 +505,7 @@ export function registerRoutes(app: FastifyInstance): void {
   /**
    * 시장 아이템 한 개 사기 (2026-09-23, GDD §6.5).
    *
-   * **하루 매물이 서버 시계에 걸려 있다** — 클라이언트가 재면 시계를 되감아
-   * 계속 살 수 있다. 금화·보유 총량도 같은 요청 안에서 본다.
+   * 막는 것은 금화와 보관함 상한뿐이다 — 하루 매물(재고)은 2026-11-27에 걷었다(기획자). 둘 다 같은 요청 안에서 본다.
    */
   app.post('/market/item', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);

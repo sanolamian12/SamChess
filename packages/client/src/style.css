@@ -3498,6 +3498,10 @@ button.lv-tactic-row {
 /* 판마다 목록(홈은 배너 셋)이 위에 붙고 명령 판이 바닥에 — 대장간 `.frg-body-pinned`와 같은 결 */
 .mkt-body-flow { margin-top: 0; padding-top: .5rem; flex: 1; min-height: 0; overflow: hidden; }
 .mkt-body-flow > .mkt-cmds { margin-top: auto; flex: none; }
+/* 전투 아이템 — 위 쪽 넘김 화살이 판 테 위로 올라와 몸통 위 끝을 넘는다. 몸통이 자르면 오르내릴 때 윗부분이 잘려 머리 판에 가려진 듯 보였다
+   (2026-11-27 기획자). 이 판만 자르지 않는다 — 화면 뿌리(`.scr`)가 넘침을 막으므로 스크롤은 안 생기고, 몸통이 머리 판보다 뒤라 위에 그려진다 */
+.mkt-body-flow[data-view="items"] { overflow: visible; }
+.mkt-body-flow[data-view="items"] .mkt-item-arrow-row { z-index: 10; }
 /* [금화 충전] — 아이콘은 단추 왼쪽에 붙고 글자는 단추 가운데 (2026-11-24 기획자). 그림을 흐름에서 빼 글자만 가운데 선다 */
 .scr-market .btn.mkt-ctr-btn { position: relative; justify-content: center; }
 .mkt-ctr-btn .gic img { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); }
@@ -3716,8 +3720,8 @@ button.mkt-pack.mkt-recruit[data-locked] > .mkt-pack-name { visibility: hidden; 
 .mkt-good:not(.mkt-good-wide) > .mkt-good-body { order: -1; align-items: center; }
 /* 한 줄 칸 — 그림 | 이름 · 설명 | 가격 띠. 높이는 열 언어 가운데 가장 큰 것(`--row-h`, `useAllLangLayout`) */
 button.mkt-pack.mkt-good-wide {
-  flex-direction: row; align-items: center; gap: .6rem; text-align: left;
-  min-height: var(--row-h, auto); padding: .6rem .7rem .65rem .75rem;
+  flex-direction: row; align-items: center; gap: .55rem; text-align: left;
+  min-height: var(--row-h, auto); padding: .55rem .6rem .6rem .65rem;
 }
 .mkt-good-wide > .mkt-good-body { flex: 1; }
 .mkt-good-wide > .mkt-pack-price { align-self: center; flex: none; min-width: 5.6rem; text-align: center; }
@@ -3725,6 +3729,119 @@ button.mkt-pack.mkt-good-wide {
 button.mkt-pack.mkt-good[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
 /* 머리 판의 군량 — 창고가 차 한 묶음이 안 들어가면 회색 */
 .mkt-merc-status [data-field="grainNow"][data-full="1"] .v { color: #8a8580; }
+
+/* ── 전투 아이템 (2026-11-27 기획자 — 용병 시장 · 도시 물자의 꼴) ──
+   머리 판: 금화 | 보관함 그림(크게) + 보유/최대(가득이면 붉은 글자). 목록 판: 도시 물자의 긴 칸(그림 | 이름 · 효과 | 가격 띠) 세 장씩,
+   판 왼쪽 · 오른쪽에 큰 쪽 넘김 화살(쪽 번호 없음). 판 밑에 [보관함으로]. 카드를 누르면 곧장 「구매할까요?」 */
+.place-panel.mkt-items-status { grid-template-columns: auto auto; justify-content: space-between; padding-left: 1.2rem; padding-right: 1.2rem; }
+.mkt-items-status .mkt-cur { justify-self: start; }
+/* 보관함 그림은 금화보다 크게 — 줄 높이(2rem)를 넘쳐도 판이 안 커지게 그림은 음수 여백으로 */
+.mkt-store-now .gic img { width: 2.3rem; height: 2.3rem; margin: -.2rem 0; object-fit: contain; }
+.mkt-store-now[data-full="1"] .v { color: #b3261e; }
+
+/* 목록 판 — 위(이전) · 아래(다음) 쪽 넘김 화살이 판 가운데에 선다 (2026-11-27 기획자). 카드 양옆 여백은 판 기본 그대로 */
+.place-panel.mkt-items { position: relative; --items-pad: .85rem; padding-left: var(--items-pad); padding-right: var(--items-pad); }
+/* 카드 자리는 언제나 세 칸 높이(`--row-h`는 열 언어 × 모든 아이템 가운데 가장 높은 카드, `useAllLangLayout`) */
+.mkt-item-cards {
+  display: flex; flex-direction: column; gap: .5rem;
+  min-height: calc(3 * var(--row-h, 6rem) + 2 * .5rem);
+}
+/* 카드 — 그림(두 줄 높이) | 이름 · 가격 띠 / 효과(그림 오른쪽 종이 폭 전부) */
+button.mkt-pack.mkt-item-card {
+  display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+  grid-template-areas: "art nm pr" "art fx fx"; grid-template-rows: auto auto;
+  align-content: center; align-items: center; column-gap: .6rem; row-gap: .2rem; text-align: left;
+  min-height: var(--row-h, auto); padding: .6rem .7rem .65rem .75rem;
+}
+.mkt-item-card > .c-art { grid-area: art; align-self: center; }
+.mkt-item-card > .mkt-item-nm { grid-area: nm; }
+.mkt-item-card > .mkt-pack-price { grid-area: pr; align-self: center; min-width: 3.9rem; text-align: center; }
+/* 설명은 언제나 **두 줄 자리**를 잡는다 — 한 줄로 끝나는 설명은 첫 줄만 쓰고 둘째 줄은 빈다(2026-11-27 기획자 — 카드마다 제목 · 설명의 자리가 같게) */
+.mkt-item-card > .mkt-item-fx { grid-area: fx; align-self: start; min-height: calc(2 * 1.28em); }
+/* 높이를 재는 숨은 사본 — 판의 흐름 밖, 보이는 카드와 같은 폭(판의 안쪽 폭) */
+.mkt-item-measure {
+  position: absolute; left: var(--items-pad); right: var(--items-pad); top: 0;
+  display: flex; flex-direction: column; gap: .5rem;
+  visibility: hidden; pointer-events: none; z-index: -1;
+}
+/* 재는 사본은 제 높이(내용)대로 — 박힌 `--row-h`를 읽으면 다음 재기에 그 값이 바닥이 된다 */
+.mkt-item-measure > button.mkt-pack.mkt-item-card { min-height: 0; }
+/* 아이템 그림 — 검정 바탕 + 금빛 밧줄 액자(목록 줄 `.mkt-irow > .c-art`와 같은 값) */
+.mkt-item-card > .c-art, .mkt-item-ask-art > .c-art {
+  position: relative; display: block; flex: none; width: 3.4rem; height: 3.4rem; overflow: hidden;
+  background: #000; border-radius: .15rem;
+}
+.mkt-item-card > .c-art img, .mkt-item-ask-art > .c-art img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.mkt-item-card > .c-art::after, .mkt-item-ask-art > .c-art::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
+}
+.mkt-item-nm { font-size: 1.05rem; font-weight: 800; color: #3a2210; letter-spacing: .03em; overflow-wrap: anywhere; line-height: 1.2; }
+.mkt-item-fx { font-size: .85rem; color: #5a3d22; line-height: 1.28; word-break: keep-all; overflow-wrap: anywhere; }
+:root:is([data-lang="zh_Hans"], [data-lang="zh_Hant"]) .mkt-item-fx { word-break: normal; }
+/* 못 사는 카드 — 잿빛이지만 눌린다(누르면 내관이 까닭).
+   `:hover`까지 함께 적는다 — 파일 아래의 `button.mkt-pack:not(:disabled):hover`가 `filter`를 덮어, 누른 뒤(휴대폰은 hover가 남는다) 잿빛이 풀렸다 */
+button.mkt-pack.mkt-item-card[data-locked],
+button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: grayscale(1) drop-shadow(0 2px 3px #3a240f66); opacity: .55; cursor: not-allowed; }
+
+/* 쪽 넘김 화살 — 판의 위 · 아래 나무 테 위, 가운데에 얹는다(2026-11-27 기획자 — 화살 자리를 따로 두지 않고 판 크기는 그대로).
+   판 테가 위아래 1.5rem(`.scr-market .place-panel`)이라 줄을 흐름에서 빼 테 한가운데에 놓는다. 겹 갈매기(아래를 향한 그림)를 위 것만 뒤집는다 */
+.mkt-item-arrow-row { position: absolute; left: 0; right: 0; z-index: 4; display: flex; justify-content: center; height: 1.7rem; pointer-events: none; }
+.mkt-item-arrow-row[data-dir="prev"] { top: calc(-1.5rem / 2 - 1.7rem / 2); }
+.mkt-item-arrow-row[data-dir="next"] { bottom: calc(-1.5rem / 2 - 1.7rem / 2); }
+.mkt-item-arrow-row > .mkt-item-arrow { pointer-events: auto; }
+.mkt-item-arrow {
+  width: 3.6rem; height: 1.7rem; padding: 0; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; overflow: visible;
+}
+.mkt-item-arrow img {
+  width: 3rem; height: 3rem; max-width: none; flex: none; object-fit: contain; filter: drop-shadow(0 2px 3px #000a);
+  animation: mkt-arrow-bob .75s ease-in-out infinite alternate;
+}
+.mkt-item-arrow[data-dir="prev"] img { --flip: 180deg; }
+.mkt-item-arrow img { rotate: var(--flip, 0deg); }
+/* 오르내림 — ±0.25rem · 0.75초(2026-11-27 기획자 — 조금 더 길게 · 빠르게). `rotate`와 따로 노는 `translate`라 뒤집힘과 안 부딪힌다 */
+@keyframes mkt-arrow-bob { from { translate: 0 -.25rem; } to { translate: 0 .25rem; } }
+.mkt-item-arrow:not(:disabled):hover img { filter: drop-shadow(0 2px 3px #000a) brightness(1.15); }
+.mkt-item-arrow:not(:disabled):active img { scale: .9; }
+.mkt-item-arrow:disabled { cursor: default; }
+.mkt-item-arrow:disabled img { animation: none; filter: grayscale(1) brightness(.75); opacity: .3; }
+@media (prefers-reduced-motion: reduce) { .mkt-item-arrow img { animation: none; } }
+
+/* [보관함으로] — 목록 판 바로 밑 왼쪽(판 테의 안쪽 선에 맞춘다). 쪽빛 붓 획(`ui/era-stroke-b-7.png` ← `era-stroke-쪽빛`) 위에
+   보관함 그림 + 금빛 글자. 폭은 열 언어 가운데 가장 긴 글(`--row-w`, `useAllLangLayout`) — 그림이 없으면 같은 색 바탕 */
+.mkt-to-storage-row { align-self: flex-start; flex: none; display: flex; margin: .05rem 0 0 1.05rem; }
+.mkt-to-storage {
+  display: inline-flex; align-items: center; justify-content: flex-start; gap: .35rem; min-width: var(--row-w, 0);
+  border: 0 solid transparent; padding: .2rem 1.6em .2rem .7em;
+  border-image: url(ui/era-stroke-b-7.png) 0 34% 0 12% fill / 0 1.6em 0 .9em stretch;
+  background: #2d4a8a content-box; cursor: pointer; font: inherit;
+}
+.mkt-to-storage .gic img {
+  width: 2.5rem; height: 2.5rem; margin: -.45rem 0; object-fit: contain; filter: drop-shadow(0 2px 3px #000a);
+  transform-origin: 50% 85%; animation: mkt-chest-tilt 2.4s ease-in-out infinite;
+}
+/* 상자 까딱 — 시계 · 반시계로 번갈아 기운다(기울기 ±18°, 90°의 20%) */
+@keyframes mkt-chest-tilt {
+  0%, 100% { rotate: 0deg; }
+  25% { rotate: 18deg; }
+  75% { rotate: -18deg; }
+}
+.mkt-to-storage-t {
+  font-size: 1rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap;
+  color: #f6d77a; text-shadow: 0 1px 1px #000a, 0 0 4px #00000059;
+}
+.mkt-to-storage:not(:disabled):hover { filter: brightness(1.12); }
+.mkt-to-storage:not(:disabled):active { scale: .97; }
+/* 보관함이 비면 막는다 — 잿빛, 상자도 멈춘다 */
+.mkt-to-storage:disabled { cursor: default; filter: grayscale(1); opacity: .5; }
+.mkt-to-storage:disabled .gic img { animation: none; }
+@media (prefers-reduced-motion: reduce) { .mkt-to-storage .gic img { animation: none; } }
+
+/* 「구매할까요?」 판의 그림 — 가운데 크게 */
+.mkt-item-ask-art { display: flex; justify-content: center; }
+.mkt-item-ask-art > .c-art { width: 4.4rem; height: 4.4rem; }
+.mkt-item-ask-art .mkt-item-glow { --blink-w: 2.2; }
 
 /* 결과 칸의 표 — 새 장수(옥색) · 잉여 카드(잿빛 붉은) */
 .mkt-fate { display: inline-block; margin-top: .1rem; padding: .05rem .45rem; border-radius: .6rem; font-size: .8rem; font-weight: 800; white-space: nowrap; }
@@ -8556,6 +8673,63 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .cel-badge .acd-cel-emblem.tac-icon { width: min(7.5rem, 34vw); height: min(7.5rem, 34vw); filter: drop-shadow(0 0 .8rem #fff8) drop-shadow(0 .3rem .6rem #000b); }
 /* 개량 표지(「+」) — 큰 엠블럼에서는 글자가 원에 비해 작고 원이 밖으로 튀어나가 어색했다. 귀퉁이 안쪽에 엠블럼 크기에 맞춰 */
 .cel-badge .acd-cel-emblem .tac-icon-plus {
+/* ── 전투 아이템 구매 완료 (2026-11-27 기획자) — 금화 분수 도입부(`Celebrate`의 `coins`, 1.8초) → 물자 상자 위에 금테 아이템 메달이 튀어나온다 ──
+   도입부: 화면이 어두워지고(`cel-dim`) 바닥에서 금화 스물넷이 물결로 터져 오르다(약한 분수 — 높이 화면의 절반 남짓, 꼭대기에서 살짝 처지며 사라진다)
+   바닥의 금빛이 차올라 하얘진다. 길이 1.8초는 `Celebrate.tsx`의 `COINS_MS`와 같다. 자리 · 늦춤 · 높이는 `COIN_DROPS`가 style로 준다 */
+.cin-coins { container-type: size; }
+.cco-coin {
+  position: absolute; bottom: -1.5rem; width: var(--s, 2.4rem); aspect-ratio: 1; opacity: 0;
+  animation-name: cco-rise; animation-timing-function: linear; animation-fill-mode: both;
+}
+.cco-coin img { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 .35rem #ffd76acc);
+  animation-name: cco-flip; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+@keyframes cco-rise {
+  0% { translate: -50% 0; rotate: 0deg; scale: .4; opacity: 0; animation-timing-function: cubic-bezier(.15, .8, .35, 1); }
+  10% { scale: 1; opacity: 1; }
+  72% { translate: calc(-50% + var(--drift)) calc(-1 * var(--rise)); rotate: calc(var(--spin) * .7); opacity: 1; animation-timing-function: ease-in; }
+  100% { translate: calc(-50% + var(--drift) * 1.3) calc(-1 * var(--rise) + 9cqh); rotate: var(--spin); scale: .85; opacity: 0; }
+}
+/* 동전이 도는 듯 — 가로로 얇아졌다 돌아온다 */
+@keyframes cco-flip { 0%, 100% { scale: 1 1; } 50% { scale: .2 1; } }
+/* 「짤그랑」 터지는 자리 — 바닥의 짧은 금빛 섬광 */
+.cco-pop {
+  position: absolute; bottom: -1rem; width: 6rem; height: 3.6rem; translate: -50% 0; border-radius: 50%; opacity: 0;
+  background: radial-gradient(ellipse, #fffbe8 0%, #ffd76acc 30%, #f0a83a55 60%, #f0a83a00 75%); mix-blend-mode: screen;
+  animation: cco-pop .42s ease-out both;
+}
+@keyframes cco-pop { 0% { opacity: 0; scale: .2; } 25% { opacity: 1; scale: 1; } 100% { opacity: 0; scale: 1.6 1.2; } }
+/* 바닥의 금빛 — 분수가 오를수록 차오른다 */
+.cco-glow {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 60cqh; pointer-events: none; mix-blend-mode: screen; opacity: 0;
+  background: radial-gradient(ellipse 75% 100% at 50% 100%, #ffe9a8cc 0%, #f0c67466 40%, #f0c67400 75%);
+  animation: cco-glow 1.8s ease-in both;
+}
+@keyframes cco-glow { 0% { opacity: 0; } 30% { opacity: .35; } 100% { opacity: 1; scale: 1 1.5; transform-origin: 50% 100%; } }
+.cco-white { position: absolute; inset: 0; background: #fff; opacity: 0; animation: cco-white 1.8s ease-in both; }
+@keyframes cco-white { 0%, 78% { opacity: 0; } 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .cco-coin, .cco-coin img, .cco-pop { animation: none; display: none; }
+}
+/* 무대 — 뒤는 물자 상자(대장간의 모루와 같은 자리, 어둡게 가라앉힌다), 앞에 아이템 메달이 「쑥」 튀어나온다(내려찍는 `cel-slam` 대신) */
+.itm-done .cel-stage .cel-art { inset: 12% 4% 4%; }
+.itm-done .cel-stage .cel-art-img { filter: brightness(.42) saturate(.7) drop-shadow(0 .4rem 1rem #000c); }
+.itm-done .cel-badge { animation-name: itm-pop; animation-duration: .6s; animation-timing-function: cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes itm-pop {
+  0% { transform: scale(.1) translateY(2.5rem); opacity: 0; }
+  55% { transform: scale(1.16) translateY(-.4rem); opacity: 1; }
+  78% { transform: scale(.96); }
+  100% { transform: none; opacity: 1; }
+}
+.cel-badge .itm-cel-medal { width: min(9.5rem, 44vw); height: auto; border-radius: 50%;
+  filter: drop-shadow(0 0 .9rem #f0c674aa) drop-shadow(0 .4rem .7rem #000c); }
+/* 아이템 한 줄 — 붓 획 위에 금테 메달 + 이름(병기 줄과 같은 꼴). 획의 색은 아이템의 해금 레벨 */
+.itm-done .itm-done-row { --lvd-stroke: url(ui/era-stroke-b-5.png); gap: .45rem; font-size: 1.05rem; }
+.itm-done .itm-done-row[data-level="2"] { --lvd-stroke: url(ui/era-stroke-b-7.png); }
+.itm-done .itm-done-row[data-level="3"] { --lvd-stroke: url(ui/era-stroke-b-4.png); }
+.itm-done .itm-done-row[data-level="4"] { --lvd-stroke: url(ui/era-stroke-b-6.png); }
+.itm-done .itm-done-row[data-level="5"] { --lvd-stroke: url(ui/era-stroke-b-8.png); }
+.itm-done .itm-done-row .itm-done-n { color: #ffe08a; }
+
   right: 0; bottom: 0; min-width: 32%; height: 32%; font-size: min(2rem, 9vw);
   background: radial-gradient(circle at 40% 35%, #c98a3e, #7a3f12); box-shadow: 0 0 0 .14rem #f3e2b0, 0 .2rem .4rem #000a;
 }

@@ -73,7 +73,7 @@ export const SERVER_OWNED_FIELDS = [
   'academy',
   // 시장 아이템 — 금화로 산다 (GDD §6.5). `marketCarry`(누가 들고 갈지)는
   // 총량을 안 바꾸므로 클라이언트 것이다 — `farmGuards`와 같은 결
-  'marketOwned', 'marketTaken', 'marketInPlay', 'marketBoughtAt',
+  'marketOwned', 'marketInPlay', 'marketBoughtAt',
   // 컬렉션 — 채우는 길은 `POST /collection/register` 하나다 (2026-10-13)
   'collection',
   // AI 대전 — 상대 찾기 · 시작 · 덧붙이기 · 정산이 전부 `POST /battle/ai-*`다 (2026-10-15, `aiBattle.ts`).

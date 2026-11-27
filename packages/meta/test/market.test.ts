@@ -18,7 +18,7 @@ import {
   canBuyMarketBasket, marketBasketGold,
   canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
   fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
-  marketDailyStock, marketHeldCount, marketOwnedCount, marketStockLeft, marketUnits, migrateProfile,
+  marketHeldCount, marketOwnedCount, marketUnits, migrateProfile,
   fitCarry, refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -36,40 +36,7 @@ const someone = (p: PlayerProfile): OfficerId => Object.keys(p.roster)[0] as Off
 // 탕약 Lv2(하루 4개 @Lv5) · 영기 Lv5(하루 1개) · 적토마 Lv5 패시브
 const TANG = 'tang-yak', YEONG = 'yeong-gi', TO = 'jeok-to-ma', NANG = 'cheong-nang-seo';
 
-describe('하루 매물 — 시장 Lv − 해금 Lv + 1', () => {
-  it('해금 레벨이 낮을수록 많이 풀리고, 해금 전이면 0이다', () => {
-    assert.equal(marketDailyStock(5, 2), 4);
-    assert.equal(marketDailyStock(5, 5), 1);
-    assert.equal(marketDailyStock(2, 2), 1);
-    assert.equal(marketDailyStock(2, 5), 0, '아직 해금 전');
-  });
-
-  it('산 만큼 줄고, 다 나가면 오늘은 못 산다', () => {
-    let p = shop();
-    assert.equal(marketStockLeft(p, YEONG, T0), 1);
-    p = applyBuyMarketItem(p, YEONG, T0);
-    assert.equal(marketStockLeft(p, YEONG, T0), 0);
-    const no = canBuyMarketItem(p, YEONG, T0);
-    assert.equal(no.ok, false);
-    assert.equal(no.ok === false && no.code, 'market.soldOut');
-  });
-
-  it('★ 날이 바뀌면 다시 찬다 — 아무도 안 들른 계정도 그래야 한다', () => {
-    let p = shop();
-    p = applyBuyMarketItem(p, YEONG, T0);
-    assert.equal(marketStockLeft(p, YEONG, T0), 0);
-    // 계정을 **한 번도 안 만지고** 하루 뒤에 읽는다
-    assert.equal(marketStockLeft(p, YEONG, T0 + DAY), 1);
-    assert.equal(canBuyMarketItem(p, YEONG, T0 + DAY).ok, true);
-  });
-
-  it('다른 품목의 매물은 안 줄어든다', () => {
-    const p = applyBuyMarketItem(shop(), YEONG, T0);
-    assert.equal(marketStockLeft(p, TANG, T0), 4);
-  });
-});
-
-describe('사기 — 금화 · 매물 · 보유 총량 셋', () => {
+describe('사기 — 금화 · 보유 총량 둘 (하루 매물은 2026-11-27에 걷었다)', () => {
   it('보유 총량은 (시장 Lv − 1) × 20이고 Lv1은 아예 안 판다', () => {
     assert.equal(marketCapacity(shop()), 80);
     const lv2 = shop({ buildings: { ...shop().buildings, market: 2 } });
@@ -99,11 +66,24 @@ describe('사기 — 금화 · 매물 · 보유 총량 셋', () => {
     assert.equal(no.ok === false && no.code, 'market.full');
   });
 
-  it('사면 금화가 나가고 보유와 「오늘 산 수」가 함께 는다', () => {
+  it('사면 금화가 나가고 보유가 는다', () => {
     const p = applyBuyMarketItem(shop(), TANG, T0);
     assert.equal(p.gold, 1000 - marketItemById.get(TANG)!.gold);
     assert.equal(marketHeldCount(p, TANG), 1);
-    assert.equal(p.marketTaken?.day, '2026-09-23');
+  });
+
+  it('★ 하루에 몇 개든 산다 — 재고가 없다, 막는 것은 보관함 상한뿐 (2026-11-27 기획자)', () => {
+    // 영기는 옛 규칙으로 Lv5 시장에서 하루 1개였다
+    let p = shop();
+    for (let i = 0; i < 5; i++) {
+      assert.ok(canBuyMarketItem(p, YEONG, T0).ok, `${i + 1}번째`);
+      p = applyBuyMarketItem(p, YEONG, T0);
+    }
+    assert.equal(marketHeldCount(p, YEONG), 5);
+    const full = shop({ marketOwned: { [YEONG]: marketCapacity(shop()) - 1 } });
+    assert.ok(canBuyMarketItem(full, YEONG, T0).ok, '한 칸 남으면 산다');
+    const no = canBuyMarketItem(applyBuyMarketItem(full, YEONG, T0), YEONG, T0);
+    assert.equal(no.ok === false && no.code, 'market.full');
   });
 });
 
@@ -130,9 +110,11 @@ describe('장바구니 — 전부 사거나 아무것도 안 산다 (2026-09-24,
     assert.equal(no.ok === false && no.code, 'market.notEnoughGold');
   });
 
-  it('하루 매물을 넘기면 거부한다 — 합쳐서 센다', () => {
-    const no = canBuyMarketBasket(shop(), { [YEONG]: 2 }, T0);
-    assert.equal(no.ok === false && no.code, 'market.soldOut');
+  it('보관함 자리를 넘기면 거부한다 — 합쳐서 센다', () => {
+    const p = shop({ marketOwned: { [TANG]: marketCapacity(shop()) - 1 } });
+    assert.ok(canBuyMarketBasket(p, { [YEONG]: 1 }, T0).ok);
+    const no = canBuyMarketBasket(p, { [YEONG]: 2 }, T0);
+    assert.equal(no.ok === false && no.code, 'market.full');
   });
 
   it('빈 장바구니와 이상한 개수는 거부한다', () => {
@@ -270,16 +252,15 @@ describe('되접기', () => {
     assert.deepEqual(p.marketInPlay, [{ officer: who, item: TANG, battle: 'online' }], '판 표시가 없는 옛 줄 — 도는 판이 없으면 온라인으로 본다');
   });
 
-  it('날짜 꼴이 아니면 「오늘 산 수」를 통째로 버린다', () => {
-    const p = migrateProfile({ ...shop(), marketTaken: { day: '어제', counts: { [TANG]: 3 } } })!;
-    assert.equal(p.marketTaken, undefined);
+  it('옛 「오늘 산 수」(marketTaken)는 버린다 — 재고를 걷었다 (2026-11-27)', () => {
+    const p = migrateProfile({ ...shop(), marketTaken: { day: '2026-09-23', counts: { [TANG]: 3 } } })!;
+    assert.equal('marketTaken' in p, false);
   });
 
   it('없는 계정은 키째로 없다 — 빈 표를 지어내지 않는다', () => {
     const p = migrateProfile({ ...createProfile('빈성', 3) })!;
     assert.equal(p.marketOwned, undefined);
     assert.equal(p.marketCarry, undefined);
-    assert.equal(p.marketTaken, undefined);
   });
 });
 

@@ -52,7 +52,9 @@ export type SfxId =
   | 'walking_edit'
   // 전투 결과 (2026-11-26 기획자) — 두루마리 · 글자 · 보상 줄 · 캐릭터 보상이 「쿵」 튀어나올 때마다(원본 `assets/Audio/new/결과표출.mp3`),
   // 승리 곡 0.5초 뒤의 환호(원본 `assets/Audio/new/승리_환호성.mp3`)
-  | 'result_pop' | 'victory_cheer';
+  | 'result_pop' | 'victory_cheer'
+  // 전투 아이템 구매의 금화 분수(2026-11-27 — 임시로 합성한 금속음, `Celebrate`의 `coins`)
+  | 'coin_clink';
 
 const VOLUME = 0.8;
 

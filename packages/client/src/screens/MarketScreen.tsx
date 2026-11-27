@@ -43,7 +43,7 @@ import { pickOfficerName } from '../i18n/story.ts';
 import { GradeBadge } from './GradeBadge.tsx';
 import { Layer, LayerContext, useServerCall } from './market/parts.tsx';
 import { MercStatus, MercView } from './market/MercView.tsx';
-import { ItemShop, ItemStorage } from './market/ItemShop.tsx';
+import { ItemShop, ItemStorage, ItemsStatus } from './market/ItemShop.tsx';
 import { GoodsStatus, GoodsView } from './market/GoodsView.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { buildingNameText } from './buildingText.ts';
@@ -141,6 +141,7 @@ export function MarketScreen({ profile, onBack, onChange, onAcademy }: {
       {view === 'home' && <MarketStatus profile={profile} />}
       {view === 'merc' && <MercStatus profile={profile} />}
       {view === 'goods' && <GoodsStatus profile={profile} />}
+      {view === 'items' && <ItemsStatus profile={profile} />}
 
       <div className="place-body mkt-body mkt-body-flow" data-view={view}>
         {/* 홈 = 현황판 + 배너 셋 + 바닥의 [금화 충전] 하나 (2026-11-24 기획자 — 옛 [상품 구매] 판을 홈으로 올렸다) */}

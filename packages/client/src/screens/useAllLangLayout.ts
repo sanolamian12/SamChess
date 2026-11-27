@@ -26,6 +26,16 @@ export interface LangBox {
   box: RefObject<HTMLElement | null>;
   /** 높이를 하나로 맞출 줄 — 판 안에서 고르는 선택자(예: `:scope > .cty-bld`) */
   rows?: string;
+  /**
+   * `false`면 줄 높이(`--row-h`)만 걸고 판의 `min-height`는 안 박는다 — 줄이 판 흐름 밖의 **숨은 사본**이라
+   * 「판 = 줄 아닌 몫 + 줄 수 × 줄 높이」가 성립하지 않을 때(전투 아이템, 2026-11-27). 판 높이는 CSS가 `--row-h`로 정한다
+   */
+  panel?: boolean;
+  /**
+   * 줄의 **너비**도 열 언어 가운데 가장 넓은 것을 `--row-w`로 건다 — 글자 길이를 따라 늘어나는 단추를 어느 언어로 봐도 같은 폭으로
+   * (전투 아이템 [보관함으로]의 붓 획, 2026-11-27). 줄은 재는 동안 제 폭대로 서야 한다(`inline-flex` · `min-width: var(--row-w)`)
+   */
+  width?: boolean;
 }
 
 export function useAllLangLayout(boxes: readonly LangBox[], sig: string): void {
@@ -67,11 +77,12 @@ export function useAllLangLayout(boxes: readonly LangBox[], sig: string): void {
 
 function measure(boxes: readonly LangBox[], busy: { current: boolean }): void {
   if (busy.current) return;
-  const targets = boxes.map((b) => ({ el: b.box.current, rows: b.rows })).filter((x): x is { el: HTMLElement; rows: string | undefined } => !!x.el);
+  const targets = boxes.map((b) => ({ el: b.box.current, rows: b.rows, fix: b.panel !== false, wide: b.width === true }))
+    .filter((x): x is { el: HTMLElement; rows: string | undefined; fix: boolean; wide: boolean } => !!x.el);
   if (targets.length === 0) return;
   busy.current = true;
-  for (const { el } of targets) { el.style.minHeight = ''; el.style.removeProperty('--row-h'); }
-  const stats = targets.map(() => ({ maxRow: 0, panels: [] as { rest: number; n: number }[] }));
+  for (const { el } of targets) { el.style.minHeight = ''; el.style.removeProperty('--row-h'); el.style.removeProperty('--row-w'); }
+  const stats = targets.map(() => ({ maxRow: 0, maxW: 0, panels: [] as { rest: number; n: number }[] }));
   const orig = currentLang();
   try {
     for (const { id } of LANGS) {
@@ -82,8 +93,10 @@ function measure(boxes: readonly LangBox[], busy: { current: boolean }): void {
         let n = 0;
         if (rows) {
           for (const row of el.querySelectorAll<HTMLElement>(rows)) {
-            const h = row.getBoundingClientRect().height;
+            const rect = row.getBoundingClientRect();
+            const h = rect.height;
             sum += h; n++;
+            stats[i]!.maxW = Math.max(stats[i]!.maxW, rect.width);
             stats[i]!.maxRow = Math.max(stats[i]!.maxRow, h);
           }
         }
@@ -94,12 +107,13 @@ function measure(boxes: readonly LangBox[], busy: { current: boolean }): void {
     flushSync(() => previewLang(orig));
     busy.current = false;
   }
-  targets.forEach(({ el, rows }, i) => {
+  targets.forEach(({ el, rows, fix, wide }, i) => {
     const s = stats[i]!;
     const row = Math.ceil(s.maxRow);
     if (rows && row > 0) el.style.setProperty('--row-h', `${row}px`);
+    if (rows && wide && s.maxW > 0) el.style.setProperty('--row-w', `${Math.ceil(s.maxW)}px`);
     const panel = Math.max(...s.panels.map((p) => p.rest + p.n * row));
-    if (panel > 0) el.style.minHeight = `${Math.ceil(panel)}px`;
+    if (fix && panel > 0) el.style.minHeight = `${Math.ceil(panel)}px`;
     el.dataset['allLang'] = '1';
   });
 }

@@ -230,6 +230,8 @@ FRAMES: dict[str, str] = {
     "facility/ic_forge_craft": "cel-forge.png",
     # 장수 모집(2026-11-25 기획자) — 뒤의 계정 문장. 환경설정 [계정] 아이콘의 원본을 그대로 크게 굽는다(모루와 같은 까닭). 앞에 뽑힌 장수들이 선다
     "control/ic_set_account": "cel-recruit.png",
+    # 전투 아이템 구매(2026-11-27 기획자) — 뒤의 물자 상자. 장터 [재고] 아이콘의 원본을 그대로 크게 굽는다(모루와 같은 까닭). 앞에 산 아이템의 금테 메달이 튀어나온다
+    "shop/ic_mk_stock": "cel-stock.png",
 }
 
 # 폭 상한을 따로 두는 그림 — 화면에서 아주 작게 그려지는데 `FRAME_MAX_WIDTH`(960)로 구우면 낭비다
@@ -237,7 +239,8 @@ FRAME_WIDTH: dict[str, int] = {"slot-empty": 360, "slot-done": 360, "slot-first2
                              "dialog_portrait": 480, "dialog_line": 1600, "책략_패널": 600,
                              "celebrate_levelup": 512, "celebrate_build": 512,
                              "celebrate_chest": 512, "celebrate_goldbag": 512, "celebrate_scroll": 256,
-                             "facility/ic_forge_craft": 512, "control/ic_set_account": 512}
+                             "facility/ic_forge_craft": 512, "control/ic_set_account": 512,
+                             "shop/ic_mk_stock": 512}
 
 # **투명 칸 없이 검은 바탕으로 온 프레임** (2026-10-08). 생성 AI(Gemini)가 알파를 못 내서 JPG에 검정으로 둘렀다.
 # 캔버스 가장자리에서 이어진 검정만 걷는다 — 판 안쪽의 짙은 옻칠(거의 검정)은 테두리에 막혀 안 닿는다.
@@ -289,6 +292,34 @@ GLOWS: dict[str, tuple[str, int]] = {
     "blink_blue": ("glow-blink-blue.png", 640),
     "blink_green": ("glow-blink-green.png", 640),
 }
+
+GLOW_FADE = (0.55, 0.97)
+"""섬광의 가장자리 지우개 (2026-11-27 기획자 — 「돌릴 때 가장자리에 사각형 티가 난다」). 그림이 가로로 길어 세로로 뻗은 빛줄기가
+위 · 아래 변에서 칼로 자른 듯 끊겨 있었고(흰 별빛은 맨 윗줄 밝기 49), 돌면 그 끊긴 줄이 마름모 테두리로 보였다. 그림에 내접하는
+타원 반지름의 비율로 (안쪽, 바깥쪽) — 안쪽까지는 그대로, 바깥쪽에서 0이 되게 부드럽게 줄인다. 타원 밖(네 모서리)은 전부 0.
+타원만으로는 흰 별빛에 넓게 깔린 옅은 안개(반지름 절반에서 밝기 중앙값 32)가 16:9 꼴 그대로 남아 돌 때 길쭉한 판으로 보여서,
+바깥으로 갈수록 옅은 값을 깎는 바닥(`GLOW_HAZE`)도 함께 뺀다 — 밝은 빛줄기는 남고 안개만 걷힌다"""
+
+GLOW_HAZE = (0.4, 0.8, 30.0)
+"""(깎기 시작하는 반지름, 다 깎는 반지름, 그때 바닥 밝기) — 이 밝기 밑은 0, 위는 0~255로 다시 편다"""
+
+
+def _smooth(t: np.ndarray) -> np.ndarray:
+    t = np.clip(t, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def glow_fade(alpha: np.ndarray) -> np.ndarray:
+    """섬광의 밝기(= 투명도)에서 가장자리 · 바깥 안개를 지운다 — `GLOW_FADE` · `GLOW_HAZE` 참조"""
+    h, w = alpha.shape
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+    r = np.hypot((x + .5 - w / 2) / (w / 2), (y + .5 - h / 2) / (h / 2))
+    h0, h1, level = GLOW_HAZE
+    floor = level * _smooth((r - h0) / (h1 - h0))
+    cleared = np.clip((alpha - floor) * 255.0 / (255.0 - floor), 0, 255)
+    lo, hi = GLOW_FADE
+    return cleared * _smooth((hi - r) / (hi - lo))
+
 
 BLACK_BG_LEVEL = 28
 """이보다 어두운(RGB 최댓값) 픽셀을 「바탕일 수 있다」로 본다. JPEG 잡음이 바탕에 10~20으로 깔린다."""
@@ -1461,8 +1492,10 @@ def main() -> int:
             pad.paste(pic, ((want_w - pic.width) // 2, 0))
             pic = pad
         rgb = np.asarray(fit_resize(pic, width), dtype=np.float32)
-        alpha = rgb.max(axis=2)
-        color = np.where(alpha[..., None] > 0, rgb * 255.0 / np.maximum(alpha[..., None], 1.0), 0)
+        bright = rgb.max(axis=2)
+        # 색은 원래 밝기로 편다 — 지운 뒤의 투명도로 나누면 옅어진 자리가 하얗게 탄다
+        color = np.where(bright[..., None] > 0, rgb * 255.0 / np.maximum(bright[..., None], 1.0), 0)
+        alpha = glow_fade(bright)
         out = np.dstack([np.clip(color, 0, 255), alpha]).astype(np.uint8)
         Image.fromarray(out, "RGBA").save(dst, optimize=True)
         made_frames.append(out_name)

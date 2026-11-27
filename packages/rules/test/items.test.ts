@@ -128,7 +128,7 @@ test('차 — MP 전량 회복(최대치에서 잘린다)', () => {
   assert.equal(rock.mp, rock.maxMp);
 });
 
-test('★ 탕약 · 차는 **자기 자신에게도** 쓴다 (2026-10-15 기획자 확정 — 설명 「아군 1명(자신 포함)」)', () => {
+test('★ 탕약 · 차는 **자기 자신에게도** 쓴다 (2026-10-15 기획자 확정 · 세 아이템 설명은 2026-11-27에 「(자신 포함)」을 뺐다 — 효과는 그대로)', () => {
   // 엔진은 처음부터 받았다(거리 0이 반경 1 안이다). 규칙으로 정했으니 여기서 고정한다
   const hurt = structuredClone(fight(TANG));
   hurt.units[U('P1-King')]!.hp = 1;
@@ -141,8 +141,9 @@ test('★ 탕약 · 차는 **자기 자신에게도** 쓴다 (2026-10-15 기획�
   const king = filled.state.units[U('P1-King')]!;
   assert.equal(king.mp, king.maxMp, '차 — 자신 MP 전량');
 
-  for (const id of [TANG, CHA]) {
-    assert.ok(marketItemById.get(id)!.text.includes('(자신 포함)'), `${id} 설명이 규칙을 말한다`);
+  // 차는 설명이 규칙을 그대로 말한다. 탕약은 「아군이면 자신도 든다」를 맥락에 맡긴다(2026-11-27 기획자)
+  for (const id of [TANG, CHA, MOK]) {
+    assert.ok(!marketItemById.get(id)!.text.includes('(자신 포함)'), `${id} 설명은 「(자신 포함)」을 뺐다 — 「아군」에 자신이 든다`);
   }
 });
 

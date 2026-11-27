@@ -20,11 +20,13 @@
  * 도시 증축은 용머리 올리기(`city`, 2026-11-22 — 거중기 기어에 바짝 붙어 시작해 궁궐 공사장 전체로 물러나며 짐이 올라가고, 용마루 끝으로 다가가
  * 용머리가 「쿵」 놓이자 곧바로 햇빛에 「쨍」 빛나 화면이 빛으로 찬다). 초심의 서는 명상하는 선비(`respec`, 2026-11-26 — 가슴에서 빠져나간 빛이
  * 머리 위에 모여 기의 구슬이 되고, 그 원이 커져 화면을 덮는다 — 무대는 장수 모집과 같은 바탕).
+ * 전투 아이템 구매는 금화 분수(`coins`, 2026-11-27 기획자 — **작은 급인데 제 도입부를 쓰는 하나**, 1.8초): 화면이 어두워지고 아래에서 금화가
+ * 「짤그랑」 하며 약한 분수처럼 터져 오르다 하얘진다 → 물자 상자 위에 산 아이템의 금테 메달이 튀어나온다.
  * 길이(5초) · 하얘지는 끝 · 그 뒤 무대는 어느 도입부든 같다. 그림은 `tools/build_celebrate_intro.py`가 굽는다.
  *
  * **급은 둘이다** (2026-11-22 기획자 — 「7초가 큰 급, 2초가 작은 급」): 큰 급(`tier="big"`, 기본)은 위의 5초 모음 + 무대(약 2초) — 강화 · 도시 증축 ·
  * 대장간 제작 · 태학 연구. 작은 급(`small`)은 모음이 0.9초(세 빛이 빠르게 돌며 모여 번쩍)이고 축하음은 「쾅」 4.1초 앞부터 튼다 — 건물 짓기 · 증축 · 금화 구매.
- * 작은 급은 도입부 갈래(`intro`)를 안 쓴다. 모음만 따로 쓰는 자리(장터 아이템 구매 · 8연 뽑기)는 `CelebrateCharge`.
+ * 작은 급은 도입부 갈래(`intro`)를 안 쓴다 — 금화 분수(`coins`)만 예외다. 모음만 따로 쓰는 자리(장터 아이템 구매 · 8연 뽑기)는 `CelebrateCharge`.
  *
  * 모으는 동안은 눌러도 · 키를 눌러도 안 닫힌다(소리와 맞춘 연출이다). **`data-modal`은 무대가 열린 뒤에야 붙는다** — 검사가
  * 「축하 화면이 떴다」를 기다리면 모음이 끝날 때까지 저절로 기다린다(모으는 중은 `.cel-back[data-phase="charge"]`).
@@ -62,7 +64,36 @@ export const CHARGE_MS_OF: Record<CelebrateTier, number> = { big: CHARGE_MS, sma
 /** 축하음을 어디서부터 트나(초) — 「쾅」이 5.0초에 있으니 작은 급은 4.1초부터 틀어 0.9초에 「쾅」 */
 const SOUND_FROM: Record<CelebrateTier, number> = { big: 0, small: 4.1 };
 /** 도입부 — 모으는 5초 동안 무엇을 보여 주나 */
-export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city' | 'recruit' | 'respec';
+export type CelebrateIntro = 'swirl' | 'forge' | 'academy' | 'academyDipper' | 'academyWeb' | 'city' | 'recruit' | 'respec' | 'coins';
+/**
+ * 금화 분수 도입부의 길이 — 작은 급(0.9초)보다 조금 길다: 분수가 오를 틈(2026-11-27 기획자 「짧은 애니메이션」).
+ * CSS의 `.cco-*`(1.8초)와 같은 값이다 — 바꾸면 함께. 축하음은 「쾅」(5.0초)이 이 끝에 오게 3.2초부터 튼다
+ */
+const COINS_MS = 1800;
+/**
+ * 「짤그랑」 — [트는 시각 ms, 크기, 빠르기]. 금화가 물결로 터지는 때(`COIN_DROPS`의 묶음)에 맞췄고, 빠르기를 흔들어 같은 소리가 겹친 티가 덜 나게.
+ * 소리는 `assets/Audio/effects/coin_clink.mp3`(임시로 합성한 금속음 — 같은 이름으로 바꿔 넣으면 그대로 쓴다)
+ */
+const COIN_CLINKS: readonly (readonly [number, number, number])[] = [
+  [140, .7, 1], [330, .55, 1.12], [520, .65, .94], [700, .5, 1.06], [880, .6, 1.18], [1060, .45, .9], [1240, .4, 1.1],
+];
+/**
+ * 금화 스물넷 — 바닥에서 물결 일곱(0.14초부터 0.18초 간격)으로 터져 오른다. 자리 · 높이 · 흔들림 · 도는 빠르기는 고정 값
+ * (난수를 쓰지 않는다: 같은 화면은 언제나 같게 보인다). 물결마다 가운데 가까이부터 바깥으로 퍼진다
+ */
+const COIN_DROPS = Array.from({ length: 24 }, (_, i) => {
+  const wave = i % 7;
+  const spread = ((i * 37) % 23) / 22 - .5;            // −0.5 ~ 0.5
+  return {
+    x: +(50 + spread * 72).toFixed(1),                   // 가로 14 ~ 86%
+    at: 140 + wave * 180 + ((i * 29) % 60),
+    rise: +(48 + ((i * 17) % 30)).toFixed(0),            // 화면 높이의 48 ~ 77%
+    drift: +(spread * 14 + (((i * 11) % 7) - 3)).toFixed(1),
+    dur: 820 + ((i * 53) % 260),
+    size: +(2.1 + ((i * 7) % 5) * .32).toFixed(2),
+    spin: 360 + ((i * 41) % 4) * 180,
+  };
+});
 /**
  * 망치가 칼날을 치는 시각 — CSS의 `cin-hammer` 열쇠틀(30 · 60 · 90%)과 `cin-hit[data-n]`의 늦춤(1.5 · 3.0 · 4.5초)이 같은 값이다.
  * 셋째가 축하음이 차오르기 시작하는 4.5초에 떨어지고, 그 섬광이 5초에 화면을 덮는다.
@@ -388,6 +419,32 @@ function RespecIntro(): React.JSX.Element {
   );
 }
 
+/**
+ * 금화 분수 도입부 (2026-11-27 기획자 — 전투 아이템 구매) — 어두워진 화면 바닥에서 금화가 물결로 「짤그랑」 터지며 약한 분수처럼 오르다
+ * (터지는 자리에 작은 섬광), 바닥의 금빛이 차올라 1.8초에 하얘진다. 자리 · 시각은 `COIN_DROPS`, 꼴은 CSS(`.cco-*`)
+ */
+function CoinsIntro(): React.JSX.Element {
+  return (
+    <div className="modal-back cel-back" data-phase="charge" data-intro="coins" aria-hidden>
+      <div className="cel-charge cin-coins">
+        <span className="cco-glow" />
+        {COIN_DROPS.map((c, i) => (
+          <i key={i} className="cco-coin" style={{
+            left: `${c.x}%`, animationDelay: `${c.at}ms`, animationDuration: `${c.dur}ms`,
+            '--rise': `${c.rise}cqh`, '--drift': `${c.drift}cqw`, '--s': `${c.size}rem`, '--spin': `${c.spin}deg`,
+          } as React.CSSProperties}>
+            <img src="market/gold.png" alt="" style={{ animationDuration: `${Math.round(c.dur / 2)}ms`, animationDelay: `${c.at}ms` }} />
+          </i>
+        ))}
+        {COIN_DROPS.filter((_, i) => i % 2 === 0).map((c, i) => (
+          <i key={`p${i}`} className="cco-pop" style={{ left: `${c.x}%`, animationDelay: `${c.at}ms` }} />
+        ))}
+        <span className="cco-white" />
+      </div>
+    </div>
+  );
+}
+
 /** 흰 · 보라 · 금 — 삼각형 꼭짓점 셋(120°씩) */
 const FLARES = ['white', 'purple', 'gold'] as const;
 
@@ -438,8 +495,8 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   /** 큰 글씨 아래 줄들 */
   children?: ReactNode;
 }): React.JSX.Element {
-  const intro: CelebrateIntro = tier === 'small' ? 'swirl' : introAsked;
-  const chargeMs = instant ? 0 : CHARGE_MS_OF[tier];
+  const intro: CelebrateIntro = tier === 'small' && introAsked !== 'coins' ? 'swirl' : introAsked;
+  const chargeMs = instant ? 0 : intro === 'coins' ? COINS_MS : CHARGE_MS_OF[tier];
   const [leaving, setLeaving] = useState(false);
   const [charging, setCharging] = useState(!instant);
   const chargingRef = useRef(!instant);
@@ -471,7 +528,7 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
 
   useEffect(() => {
     const t0 = performance.now();
-    const main = sound ? playSfx(sound, { from: instant ? 0 : SOUND_FROM[tier] }) : null;
+    const main = sound ? playSfx(sound, { from: instant ? 0 : intro === 'coins' ? 5 - COINS_MS / 1000 : SOUND_FROM[tier] }) : null;
     const fades: number[] = [];
     // 장수 모집 — 걸음 소리를 시간차로 겹치고, 번쩍 직전에 잦아들게
     const steps: HTMLAudioElement[] = [];
@@ -481,7 +538,8 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
     }, at)) : [];
     const stepFade = recruit ? window.setTimeout(() => steps.forEach((el) => fades.push(fadeOut(el, RECRUIT_STEPS_FADE_MS))), RECRUIT_STEPS_FADE_AT) : 0;
     const clangs = intro === 'forge' ? FORGE_STRIKES_MS.map((ms) => window.setTimeout(() => playSfx(FORGE_CLANG), ms))
-      : intro === 'city' ? CITY_SOUNDS.map(([id, ms]) => window.setTimeout(() => playSfx(id, { volume: 0.85 }), ms)) : [];
+      : intro === 'city' ? CITY_SOUNDS.map(([id, ms]) => window.setTimeout(() => playSfx(id, { volume: 0.85 }), ms))
+      : intro === 'coins' ? COIN_CLINKS.map(([ms, volume, rate]) => window.setTimeout(() => playSfx('coin_clink', { volume, rate }), ms)) : [];
     const open = (): void => { chargingRef.current = false; openedAt.current = recruit ? performance.now() : 0; setCharging(false); };
     let shown = instant ? 0 : window.setTimeout(open, chargeMs);
     // 걷는 중에 누르면 곧장 번쩍으로 — 걸음은 끊고, 축하음은 그 자리(4.6초)부터 다시 튼다. 한 번만
@@ -579,6 +637,8 @@ export function Celebrate({ modal, title, art, badge, big, bigField = 'doneLevel
   }
 
   if (charging && intro === 'respec') return <RespecIntro />;
+
+  if (charging && intro === 'coins') return <CoinsIntro />;
 
   if (charging) return <SwirlCharge tier={tier} />;
 

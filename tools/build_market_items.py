@@ -7,6 +7,7 @@ r"""assets/icons/ui/market_items.png 의 4×4 시트를 시장 아이템 16장�
 | 원본 | 출력 |
 |---|---|
 | `assets/icons/ui/market_items.png` (681², 4행 4열 · 투명 배경) | `public/market-items/{id}.png` 16장 |
+| (위에서 자른 `{id}.png`) + 아이콘 메달의 금빛 고리(`build_icons_composed.py`) | `public/market-items/medal-{id}.png` 256² — 구매 완료 무대의 둥근 배지 (2026-11-27, 병기 메달과 같은 꼴) |
 
 행이 부류(약·책·말·도구), 열이 해금 레벨(Lv2~Lv5)이다. 어느 칸이 어느 품목인지는
 **`packages/data/generated/marketItems.json`(정본)의 `no`가 정한다** — 매핑표를
@@ -91,6 +92,51 @@ def cut_points(counts: list[int], want: int, axis: str) -> list[int] | None:
     return [(a + b) // 2 + 1 for a, b in inner]
 
 
+# ── 아이템 메달 (2026-11-27 기획자) ─────────────────────────────────
+# 구매 완료 무대(`ItemShop`의 `ItemBoughtDone`)의 둥근 배지 — 병기 메달(`build_blacksmith.py`의 `build_medals`)과 같은 금빛 고리 ·
+# 밝은 바탕 원에 아이템 그림을 꽉 채운다(불투명 화소가 가운데에서 가장 먼 거리로 크기를 잡는다).
+MEDAL_BG = (190, 164, 116)
+MEDAL_REACH = .95
+
+
+def build_medals(items: list[dict], force: bool) -> list[str]:
+    import numpy as np
+    from PIL import ImageFilter
+    sys.path.insert(0, str(TOOLS))
+    import build_icons_composed as bic
+    if not bic.RING_SRC.exists():
+        return []
+    bic.RING, bic.INNER, bic.HELMET = bic.load_ring()
+    N, R = bic.N, bic.INNER
+    made: list[str] = []
+    for item in items:
+        src = OUT / f"{item['id']}.png"
+        dst = OUT / f"medal-{item['id']}.png"
+        if not src.exists():
+            continue
+        if dst.exists() and not force and dst.stat().st_mtime >= src.stat().st_mtime:
+            continue
+        with Image.open(src) as im:
+            art = bic.trim(im.convert("RGBA"), floor=24)
+        a = np.array(art.getchannel("A")) > 24
+        ys, xs = np.nonzero(a)
+        cx, cy = (xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2
+        k = R * MEDAL_REACH / (float(np.hypot(xs - cx, ys - cy).max()) or 1.0)
+        art = art.resize((max(1, round(art.width * k)), max(1, round(art.height * k))), Image.LANCZOS)
+        out = Image.new("RGBA", (N, N))
+        out.alpha_composite(bic.backdrop(MEDAL_BG))
+        pos = (round(N / 2 - cx * k), round(N / 2 - cy * k))
+        sh = Image.new("RGBA", art.size, (0, 0, 0, 0))
+        sh.putalpha(art.getchannel("A").point(lambda v: v * .45))
+        out.alpha_composite(sh.filter(ImageFilter.GaussianBlur(4)), (pos[0] + 2, pos[1] + 4))
+        out.alpha_composite(art, pos)
+        out.putalpha(Image.fromarray(np.minimum(np.array(out.getchannel("A")), np.array(bic.disc_mask()))))
+        out.alpha_composite(bic.RING)
+        out.save(dst, optimize=True)
+        made.append(f"medal-{item['id']}.png (메달)")
+    return made
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser()
@@ -150,6 +196,7 @@ def main() -> int:
         if max(cell.width, cell.height) < SMALL_WARN:
             small.append(f"{item['name']} {cell.width}×{cell.height}")
 
+    made += build_medals(items, args.force)
     for line in made:
         print(f"  · {line}")
     print(f"{len(made)}장 저장 · {skipped}장 건너뜀 → {OUT}")

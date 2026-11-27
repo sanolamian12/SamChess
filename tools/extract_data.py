@@ -2908,15 +2908,15 @@ MARKET_ITEM_PASSIVES: dict[str, dict] = {
 # 값을 되읽는 자리와 목적이 같다 — 효과(위 두 표)를 고치고 문장을 안 고치면
 # 화면이 거짓말을 한다.
 MARKET_ITEM_TEXT: dict[str, str] = {
-    "tang-yak": "8방향 내 아군 1명(자신 포함)의 HP +5",
-    "cha": "8방향 내 아군 1명(자신 포함)의 MP 전량 회복",
-    "mok-u-yu-ma": "8방향 내 아군 전원(자신 포함)의 HP +5",
+    "tang-yak": "8방향 내 아군 1명의 HP +5",
+    "cha": "8방향 내 아군 1명의 MP 전량 회복",
+    "mok-u-yu-ma": "8방향 내 아군 전원의 HP +5",
     "ma-bi-san": "지속 90 동안 받는 데미지 0",
     "cheong-nang-seo": "착용 장수가 이 전투에서 부상을 입지 않음",
     "tae-pyeong-yo-sul": "책략 MP 소모 −1 (MP 1은 0)",
     "yuk-do-sam-ryak": "피격 시 30% 확률로 반격",
     "son-ja-byeong-beop-seo": "최종 계산 뒤 주는 데미지 +1 · 받는 데미지 −1 (하한 0)",
-    "dae-wan-ma": "WT −10",
+    "dae-wan-ma": "착용 장수의 WT −10",
     "jeok-ro": "WT −10, HP가 0이 될 때 한 번 HP 1로 버팀",
     "jeol-yeong": "WT −10, 착용자 HP 절반 이하면 −15로 바뀜",
     "jeok-to-ma": "WT −20",
@@ -2931,11 +2931,14 @@ MARKET_ITEM_TEXT: dict[str, str] = {
 #
 # 탕약 · 차는 엔진이 처음부터 **자기 자신도 받았다**(`allyOne` + 반경 1 — 거리 0이 반경 안이다). 설명만 「아군 1명」이라
 # 목우유마의 「(자신 포함)」과 뜻이 갈렸고, 2026-10-15 기획자가 「자기에게도 쓴다」로 정해 문장을 규칙에 맞췄다.
+# **2026-11-27에 세 아이템(탕약 · 차 · 목우유마) 모두 「(자신 포함)」을 뺐다**(기획자 — 「아군」이면 자신도 든다는 것을 맥락으로 안다. 효과는 그대로).
+# 탕약 · 차는 엑셀 원문 그대로라 정정이 없고, 목우유마만 엑셀 쪽 「(자신 포함)」을 덜어 낸다.
+# 대완마는 무엇의 WT인지 말한다 — 「WT −10」 → 「착용 장수의 WT −10」(2026-11-27 기획자).
 #
 # ★ **원본이 고쳐지면 스스로 알린다** — 엑셀이 이미 새 문장이면 「이 정정은 이제 필요 없다」고 찍는다.
 MARKET_ITEM_TEXT_FIXES: dict[str, tuple[str, str]] = {
-    "tang-yak": ("8방향 내 아군 1명의 HP +5", "8방향 내 아군 1명(자신 포함)의 HP +5"),
-    "cha": ("8방향 내 아군 1명의 MP 전량 회복", "8방향 내 아군 1명(자신 포함)의 MP 전량 회복"),
+    "dae-wan-ma": ("WT −10", "착용 장수의 WT −10"),
+    "mok-u-yu-ma": ("8방향 내 아군 전원(자신 포함)의 HP +5", "8방향 내 아군 전원의 HP +5"),
 }
 
 # 효과 한 줄의 나머지 아홉 언어 (2026-09-24). 대장간의 `EQUIP_TEXT_I18N`과 같은 까닭으로
@@ -2948,37 +2951,37 @@ MARKET_ITEM_TEXT_FIXES: dict[str, tuple[str, str]] = {
 # 「adjacent」 한 낱말이다(엔진의 반경 1이 곧 대각선을 포함한 여덟 칸이다).
 MARKET_ITEM_TEXT_I18N: dict[str, dict[str, str]] = {
     "tang-yak": {
-        "en": "1 adjacent ally (incl. self): HP +5",
-        "ja": "周囲8マスの味方1人（自身含む）のHP +5",
-        "zh_Hant": "周圍8格內友軍1人（含自身）HP +5",
-        "zh_Hans": "周围8格内友军1人（含自身）HP +5",
-        "pt_BR": "1 aliado adjacente, incluindo você: HP +5",
-        "pt_PT": "1 aliado adjacente, incluindo o próprio: HP +5",
-        "it": "1 alleato adiacente, sé incluso: HP +5",
-        "es_419": "1 aliado adyacente, incluido uno mismo: HP +5",
-        "mn": "Хажуугийн 1 холбоотон (өөрөө орно): HP +5",
+        "en": "1 adjacent ally: HP +5",
+        "ja": "周囲8マスの味方1人のHP +5",
+        "zh_Hant": "周圍8格內友軍1人 HP +5",
+        "zh_Hans": "周围8格内友军1人 HP +5",
+        "pt_BR": "1 aliado adjacente: HP +5",
+        "pt_PT": "1 aliado adjacente: HP +5",
+        "it": "1 alleato adiacente: HP +5",
+        "es_419": "1 aliado adyacente: HP +5",
+        "mn": "Хажуугийн 1 холбоотон: HP +5",
     },
     "cha": {
-        "en": "1 adjacent ally (incl. self): MP fully restored",
-        "ja": "周囲8マスの味方1人（自身含む）のMPを全回復",
-        "zh_Hant": "周圍8格內友軍1人（含自身）MP全部恢復",
-        "zh_Hans": "周围8格内友军1人（含自身）MP全部恢复",
-        "pt_BR": "1 aliado adjacente, incluindo você: MP totalmente restaurado",
-        "pt_PT": "1 aliado adjacente, incluindo o próprio: MP totalmente restaurado",
-        "it": "1 alleato adiacente, sé incluso: MP completamente ripristinati",
-        "es_419": "1 aliado adyacente, incluido uno mismo: MP restaurado por completo",
-        "mn": "Хажуугийн 1 холбоотон (өөрөө орно): MP бүрэн сэргэнэ",
+        "en": "1 adjacent ally: MP fully restored",
+        "ja": "周囲8マスの味方1人のMPを全回復",
+        "zh_Hant": "周圍8格內友軍1人 MP全部恢復",
+        "zh_Hans": "周围8格内友军1人 MP全部恢复",
+        "pt_BR": "1 aliado adjacente: MP totalmente restaurado",
+        "pt_PT": "1 aliado adjacente: MP totalmente restaurado",
+        "it": "1 alleato adiacente: MP completamente ripristinati",
+        "es_419": "1 aliado adyacente: MP restaurado por completo",
+        "mn": "Хажуугийн 1 холбоотон: MP бүрэн сэргэнэ",
     },
     "mok-u-yu-ma": {
-        "en": "All adjacent allies (incl. self): HP +5",
-        "ja": "周囲8マスの味方全員（自身含む）のHP +5",
-        "zh_Hant": "周圍8格內全體友軍（含自身）HP +5",
-        "zh_Hans": "周围8格内全体友军（含自身）HP +5",
-        "pt_BR": "Todos os aliados adjacentes, incluindo você: HP +5",
-        "pt_PT": "Todos os aliados adjacentes, incluindo o próprio: HP +5",
-        "it": "Tutti gli alleati adiacenti, sé incluso: HP +5",
-        "es_419": "Todos los aliados adyacentes, incluido uno mismo: HP +5",
-        "mn": "Хажуугийн бүх холбоотон (өөрөө орно): HP +5",
+        "en": "All adjacent allies: HP +5",
+        "ja": "周囲8マスの味方全員のHP +5",
+        "zh_Hant": "周圍8格內全體友軍 HP +5",
+        "zh_Hans": "周围8格内全体友军 HP +5",
+        "pt_BR": "Todos os aliados adjacentes: HP +5",
+        "pt_PT": "Todos os aliados adjacentes: HP +5",
+        "it": "Tutti gli alleati adiacenti: HP +5",
+        "es_419": "Todos los aliados adyacentes: HP +5",
+        "mn": "Хажуугийн бүх холбоотон: HP +5",
     },
     "ma-bi-san": {
         "en": "Damage taken 0 (duration 90)",
@@ -3035,7 +3038,17 @@ MARKET_ITEM_TEXT_I18N: dict[str, dict[str, str]] = {
         "es_419": "Tras el cálculo final: daño infligido +1 · daño recibido −1 (mín. 0)",
         "mn": "Эцсийн тооцооны дараа: учруулах хохирол +1 · авах хохирол −1 (доод 0)",
     },
-    "dae-wan-ma": {lang: "WT −10" for lang in EQUIP_LORE_LANGS},
+    "dae-wan-ma": {
+        "en": "Bearer's WT −10",
+        "ja": "装備した武将のWT −10",
+        "zh_Hant": "裝備武將的WT −10",
+        "zh_Hans": "装备武将的WT −10",
+        "pt_BR": "WT do portador −10",
+        "pt_PT": "WT do portador −10",
+        "it": "WT del portatore −10",
+        "es_419": "WT del portador −10",
+        "mn": "Эзэмшигчийн WT −10",
+    },
     "jeok-ro": {
         "en": "WT −10, once holds at HP 1 when HP would hit 0",
         "ja": "WT −10、HPが0になる時に一度だけHP1で耐える",

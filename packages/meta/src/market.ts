@@ -1,13 +1,14 @@
 /**
- * 시장 아이템 — 보유·하루 매물·지참 (2026-09-23, GDD §6.5).
+ * 시장 아이템 — 보유·지참 (2026-09-23, GDD §6.5).
  *
  * ────────────────────────────────────────────────────────────────
  * 대장간과 다른 두 가지 ★
  * ────────────────────────────────────────────────────────────────
  *
  * 1. **1회용이라 총량에 천장이 없다.** 대장간은 종류당 보유 상한이 있어 전부
- *    만들면 1,495금화에서 끝나는데, 시장은 계속 사고 계속 쓴다. 대신 **하루
- *    매물**(`marketStockLeft`)과 **보유 총량**(`marketCapacity`) 둘이 조인다.
+ *    만들면 1,495금화에서 끝나는데, 시장은 계속 사고 계속 쓴다. 조이는 것은
+ *    **보유 총량**(`marketCapacity`) 하나다 — 하루 매물(재고)은 2026-11-27에 걷었다(기획자 —
+ *    물량은 보관함 상한이 이미 막고, 재고는 사람만 불편하게 했다. 「오늘 산 수」 `marketTaken`도 함께 없어졌다).
  * 2. **자루가 아니라 개수다.** 대장간은 자루마다 키가 있고(`{id}#{n}`) 값이
  *    「지금 누가 끼고 있나」인데, 시장은 같은 것이 여러 개라 **수량**으로 센다.
  *
@@ -18,7 +19,6 @@
  * | 필드 | 임자 | 왜 |
  * |---|---|---|
  * | `marketOwned` (보유 수량) | **서버** | 금화로 산다 |
- * | `marketTaken` (오늘 산 수량) | **서버** | 하루 매물을 재는 값이다 |
  * | `marketCarry` (누가 들고 갈지) | **클라이언트** | 총량을 안 바꾼다 — 대장간 지급·농지 파수꾼과 같은 결 |
  *
  * ────────────────────────────────────────────────────────────────
@@ -39,9 +39,6 @@ import type { MarketItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
 import { equippedBy } from './forge.ts';
-// 날짜 경계는 **계정 전체에 하나**다 — 도적떼와 같은 KST 자정이다. 둘로 두면
-// 서버가 날짜를 두 벌 계산해야 하고, 어느 쪽이 오늘인지가 화면마다 갈린다.
-import { raidDay as kstDay } from './raid.ts';
 import type { CarriedBattle, InPlayItem, MetaResult, PlayerProfile, ReasonParams } from './types.ts';
 
 /** 아이템을 파는 최소 시장 레벨 — Lv1 시장은 아이템을 안 판다 (GDD §6.5) */
@@ -73,41 +70,15 @@ export const marketOwnedCount = (profile: PlayerProfile): number =>
 export const marketHeldCount = (profile: PlayerProfile, item: string): number =>
   Math.max(0, profile.marketOwned?.[item] ?? 0);
 
-/**
- * 하루에 풀리는 매물 — 종류당 `시장 Lv − 해금 Lv + 1`개.
- *
- * **대장간 피라미드(`forgeCopiesAllowed`)와 같은 식이고 뜻만 다르다** —
- * 대장간은 종류당 보유 상한, 시장은 하루 매물이다. 아직 해금 전이면 0이다.
- */
-export const marketDailyStock = (marketLv: number, unlockLevel: number): number =>
-  Math.max(0, marketLv - unlockLevel + 1);
-
-/**
- * 오늘 그 품목을 **몇 개 더 살 수 있나.**
- *
- * ★ **날이 바뀌면 `marketTaken`은 「없는 것」이 된다** — 지우지 않고 날짜만
- * 비교한다. 지우려면 누군가 그 순간에 계정을 만져야 하는데, 아무도 안 들르는
- * 계정도 다음 날이면 매물이 차 있어야 한다(군량 충전과 같은 결).
- */
-export function marketStockLeft(profile: PlayerProfile, item: string, nowMs: number): number {
-  const def = marketItemById.get(item);
-  if (!def) return 0;
-  const total = marketDailyStock(marketLevel(profile), def.unlockLevel);
-  const taken = profile.marketTaken?.day === kstDay(nowMs)
-    ? Math.max(0, profile.marketTaken.counts[item] ?? 0)
-    : 0;
-  return Math.max(0, total - taken);
-}
-
 // ── 사기 ───────────────────────────────────────────────────────
 
 /**
- * 살 수 있나 — **금화 · 하루 매물 · 보유 총량 셋**을 본다.
+ * 살 수 있나 — **금화 · 보유 총량 둘**을 본다(하루 매물은 2026-11-27에 걷었다).
  *
  * 거부하는 말을 여기서 낸다 — 화면이 이유를 다시 짓지 않는다.
  */
 export function canBuyMarketItem(
-  profile: PlayerProfile, item: string, nowMs: number,
+  profile: PlayerProfile, item: string, _nowMs: number,
 ): MetaResult {
   const def = marketItemById.get(item);
   if (!def) return fail(`모르는 아이템이다 — ${item}`, 'market.unknownItem');
@@ -121,9 +92,6 @@ export function canBuyMarketItem(
     return fail(`시장 Lv${def.unlockLevel}이 필요합니다 — 지금 Lv${lv}`,
       'market.locked', { need: def.unlockLevel, have: lv });
   }
-  if (marketStockLeft(profile, item, nowMs) <= 0) {
-    return fail('오늘 나온 물량이 다 나갔습니다', 'market.soldOut');
-  }
   if (marketOwnedCount(profile) >= marketCapacity(profile)) {
     return fail(`더 둘 곳이 없다 (${marketOwnedCount(profile)}/${marketCapacity(profile)})`,
       'market.full', { have: marketOwnedCount(profile), max: marketCapacity(profile) });
@@ -136,7 +104,7 @@ export function canBuyMarketItem(
 }
 
 /**
- * 한 개 산다 — 금화를 빼고 보유를 늘리고 **오늘 산 수를 센다.**
+ * 한 개 산다 — 금화를 빼고 보유를 늘리고 구매일을 적는다.
  *
  * 판정은 `canBuyMarketItem()`이 이미 했다고 보고 여기서는 계산만 한다
  * (`applyBuyMaterials()`와 같은 결). 부르는 쪽이 서버라 검사와 적용이 한 요청 안에 있다.
@@ -146,15 +114,10 @@ export function applyBuyMarketItem(
 ): PlayerProfile {
   const def = marketItemById.get(item);
   if (!def) throw new Error(`모르는 아이템이다: ${item}`);
-  const today = kstDay(nowMs);
-  // 날이 바뀌었으면 오늘 것부터 다시 센다 — 어제 산 수는 아무 뜻이 없다
-  const counts = profile.marketTaken?.day === today ? { ...profile.marketTaken.counts } : {};
-  counts[item] = (counts[item] ?? 0) + 1;
   return {
     ...profile,
     gold: profile.gold - def.gold,
     marketOwned: { ...profile.marketOwned, [item]: marketHeldCount(profile, item) + 1 },
-    marketTaken: { day: today, counts },
     marketBoughtAt: { ...profile.marketBoughtAt, [item]: [...(profile.marketBoughtAt?.[item] ?? []), nowMs] },
   };
 }

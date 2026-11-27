@@ -147,8 +147,7 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 그대로다 — §5의 「뜻이 바뀔 때만 올린다」).
   const marketOwned = readMarketOwned(raw.marketOwned);
   if (Object.keys(marketOwned).length > 0) profile.marketOwned = marketOwned;
-  const marketTaken = readMarketTaken(raw.marketTaken);
-  if (marketTaken) profile.marketTaken = marketTaken;
+  // 옛 `marketTaken`(하루 매물의 「오늘 산 수」)은 읽지 않는다 — 재고를 걷어 뜻이 없어졌다(2026-11-27). 버전은 그대로(필드가 빠질 뿐)
   // 보유보다 많이 들려 보낸 것은 걷는다(`fitCarry`, 2026-11-12) — 읽는 자리마다(서버의 판 시작 · 명단) 가진 만큼만 실린다
   const marketCarry = fitCarry({ ...profile, marketCarry: readMarketCarry(raw.marketCarry, profile) }).marketCarry ?? {};
   if (Object.keys(marketCarry).length > 0) profile.marketCarry = marketCarry;
@@ -545,19 +544,6 @@ function readMarketOwned(raw: unknown): Partial<Record<string, number>> {
     if (n > 0) out[id] = n;
   }
   return out;
-}
-
-/**
- * 오늘 산 수량. **날짜가 없거나 꼴이 아니면 통째로 버린다** — 반쪽만 남기면
- * 「어느 날의 수인지」를 계산하는 쪽이 지어내야 하고, 버려도 잃는 것은
- * 「오늘 이미 샀다」뿐이다(하루가 지나면 어차피 없는 것이 된다).
- */
-function readMarketTaken(raw: unknown): PlayerProfile['marketTaken'] {
-  if (!isRecord(raw)) return undefined;
-  const day = raw.day;
-  if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return undefined;
-  const counts = readMarketOwned(raw.counts);
-  return Object.keys(counts).length > 0 ? { day, counts } : undefined;
 }
 
 /**
