@@ -18,7 +18,7 @@
 import { strict as assert } from 'node:assert';
 import test from 'node:test';
 import {
-  DEPLOY_MS, SCOUT_MS, advanceTime, deployLimitMs, apply, createBattle, isOver, takeTurn,
+  DEPLOY_MS, SCOUT_MS, advanceTime, collectionIntroMs, deployLimitMs, apply, createBattle, isOver, takeTurn,
 } from '@samchess/rules';
 import type { BattleEvent, BattleMode, BattleState, RosterEntry, Side } from '@samchess/rules';
 import { makeAiOpponent } from '@samchess/meta';
@@ -515,4 +515,29 @@ test('상대 차례에 낼 수 있는 의도는 [턴 가져오기] 하나다 —
     playback.update(STEP_MS);
   }
   assert.ok(seenTheirTurn, '상대 차례에 한 번도 닿지 않았다 — 검사가 돌지 않는다');
+});
+
+test('AI와 싸우는 판은 배치를 건너뛴다(`skipDeploy`) — 정찰부터 · 사람의 ready가 기록에 · 서버 재생과 같은 판', () => {
+  const base = fresh('3v3', 21);
+  const [id, u] = Object.entries(base.units)[0]!;
+  // 컬렉션이 켜져 있으면 정찰 마감 앞에 장면 길이가 붙는다
+  const initial = { ...base, units: { ...base.units, [id]: { ...u, bonuses: [{ source: 'x', kind: 'stat', stat: 'hp', value: 1 }] } } } as BattleState;
+  let pushed = 0;
+  const t = new LocalTransport(initial, 'P1', { now: () => 0, skipDeploy: true, onIntent: () => { pushed++; } });
+  assert.equal(t.skippedDeploy, true);
+  assert.equal(t.initial.phase, 'scout', '첫 판이 정찰이 아니다');
+  assert.deepEqual(t.getIntentLog(), [{ t: 'ready' }]);
+  const msgs: ServerMsg[] = [];
+  t.open((m) => msgs.push(m));
+  assert.equal(pushed, 1, '건너뛴 ready를 서버에 덧붙이지 않았다');
+  assert.equal(msgs[0]!.deadlineInMs, SCOUT_MS + collectionIntroMs(initial));
+  assert.ok(collectionIntroMs(initial) > 0, '장면 길이가 0이면 이 검사는 아무것도 안 본다');
+
+  // 서버의 재생기는 배치 단계에서 AI ready → 사람의 ready 순으로 둔다 — 같은 판이 된다
+  const viaReplay = apply(apply(initial, 'P2', { t: 'ready' }).state, 'P1', { t: 'ready' }).state;
+  assert.deepEqual({ ...t.initial, log: [] }, { ...viaReplay, log: [] });
+
+  // 끊긴 판(배치가 이미 지났다)이나 사람 대 사람은 건너뛰지 않는다
+  assert.equal(new LocalTransport(viaReplay, 'P1', { skipDeploy: true }).skippedDeploy, false);
+  assert.equal(new LocalTransport(initial, 'P1').skippedDeploy, false);
 });

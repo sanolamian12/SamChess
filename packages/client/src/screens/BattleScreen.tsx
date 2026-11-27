@@ -157,6 +157,8 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
           initialState = made.state;
           const t = new LocalTransport(made.state, 'P1', {
             intentLog: saved, onIntent: () => uploader?.push(),
+            // AI와 싸우는 판은 배치 30초가 없다 — 정찰부터(2026-11-27 기획자). 배치는 서버가 깐 프리셋 그대로
+            skipDeploy: true,
             // 대결의 패는 서버가 낸다 — 시드는 이 화면이 알아 엔진 난수로 뽑으면 미리 읽힌다(GDD §3.11 R16)
             duelReveal: () => uploader?.revealDuel() ?? Promise.resolve(null),
           });
@@ -167,8 +169,8 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         // 재생이 안 되는 기록(덧붙이기가 막으므로 오지 않는다) — 판을 처음부터 다시 둘 수는 없으니 로컬로 새로 연다
         console.warn(`[ai-battle] 적힌 판을 되살리지 못했다 — ${made.reason}`);
       }
-      // `deploy` 단계로 시작한다 — 배치 → (상대 준비) → 정찰 → 전투 (GDD §3.9).
-      // 상대(AI)는 곧바로 준비를 마치므로 「매칭 대기」는 눈에 보이지 않는다.
+      // 판은 `deploy` 단계로 만들지만 배치는 건너뛴다 — 프리셋을 깔고 곧장 정찰 → 전투 (2026-11-27 기획자, `skipDeploy`).
+      // 배치 30초는 사람 대 사람(온라인)에만 있다.
       let initial = createBattle({
         matchId: `${opponent.kind}-${seed}`,
         seed,
@@ -190,7 +192,7 @@ export function BattleScreen({ profile, mode, picks, seed: given, squad, opponen
         initial = apply(initial, 'P1', { t: 'deploy', placements: preset }).state;
       }
       // **AI 대전의 판정 주체는 같은 프로세스의 룰 엔진이다** — 서버가 꺼져 있어도 돈다
-      const t = new LocalTransport(initial, 'P1');
+      const t = new LocalTransport(initial, 'P1', { skipDeploy: true });
       localTransport = t;
       return t;
     }

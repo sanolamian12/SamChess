@@ -25,6 +25,7 @@ import {
 import type { BoardDims } from './layout.ts';
 import { Playback } from './playback.ts';
 import type { RoomClose } from './transport.ts';
+import { skippedScoutLimitMs } from './transport.ts';
 import { FRAME_H, FRAME_ORIGIN_Y, FRAME_SIZE, FRAME_W, POSE, PoseDirector, type GlintKind, type SoundCue } from './poses.ts';
 import { CameraRig, GUIDE_FOLLOW_PER_SEC, SCALE_FIT, SCALE_FOCUS, viewOf, type CameraCue, type View } from './camera.ts';
 import {
@@ -632,6 +633,12 @@ export class BattleScene extends Phaser.Scene {
         const left = this.playback.remainingMs;
         this.collectionFx.play(left === null ? 0 : deployLimitMs(this.state) - left);
       }
+      // AI와 싸우는 판은 배치를 건너뛰고 정찰부터 연다(2026-11-27) — 장면은 정찰이 열리자마자, 마감은 「장면 + 정찰 30초」
+      if (!this.introShown && this.playback.phase === 'scouting' && this.playback.skippedDeploy) {
+        this.introShown = true;
+        const left = this.playback.remainingMs;
+        this.collectionFx.play(left === null ? 0 : skippedScoutLimitMs(this.state) - left);
+      }
       // 차례가 넘어가면 고르던 명령은 의미가 없다 — `CommandFlow.sync()`가 차례마다 비운다(`refreshStatus`)
       this.syncUnits();
       // 승부가 났다. 남은 대화가 다 나간 뒤에 알린다 — 결과 화면이 곧바로 덮으면
@@ -640,7 +647,7 @@ export class BattleScene extends Phaser.Scene {
     }
     // 동점 주사위 — 배치가 열릴 때 한 번, 컬렉션 장면이 걷힌 뒤에. `?dice=1`은 눈으로 확인하는 통로다 — 데모 판(`?demo=1`)은
     // 배치를 건너뛰고 시작해서 첫 단계에서 굴린다
-    if (!this.diced && !this.collectionFx.active && (this.playback.phase === 'deploying' || diceForced())) this.rollDice();
+    if (!this.diced && !this.collectionFx.active && (this.playback.phase === 'deploying' || (this.playback.skippedDeploy && this.playback.phase === 'scouting') || diceForced())) this.rollDice();
     if (this.finishing && this.log.pending === 0) {
       this.finishing = false;
       this.debugFinishedAt = performance.now();

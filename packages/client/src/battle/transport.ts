@@ -55,7 +55,7 @@
  */
 
 import { advanceTime, apply, duelAiIntent, eventsFor, other, revealWithSeed, takeTurn, toWire, validate } from '@samchess/rules';
-import { SCOUT_MS, deployLimitMs, duelStepKey, duelStepMs } from '@samchess/rules';
+import { SCOUT_MS, collectionIntroMs, deployLimitMs, duelStepKey, duelStepMs } from '@samchess/rules';
 import type { BattleEvent, BattlePhase, BattleState, Intent, ServerMsg, Side } from '@samchess/rules';
 import type { BattleRewards } from '@samchess/meta';
 
@@ -110,7 +110,19 @@ export interface BattleTransport {
    * 쪽에서는 로컬 반영으로 물러난다는 점에서 같지만 뜻이 다르다.
    */
   waitForSettled?(timeoutMs: number): Promise<BattleRewards | null>;
+
+  /**
+   * 배치 30초를 건너뛰고 정찰부터 열었다 (2026-11-27 기획자 — **AI와 싸우는 판**: AI 대전 · 공성전 · 도적떼).
+   * 화면은 배치가 열릴 때 돌던 컬렉션 발동 장면 · 동점 주사위를 정찰이 열릴 때 돌린다. 온라인(사람 대 사람)은 언제나 거짓이다
+   */
+  readonly skippedDeploy?: boolean;
 }
+
+/**
+ * 배치를 건너뛴 판의 정찰 마감 — 정찰 30초 앞에 컬렉션 발동 장면을 붙인다(배치 마감 `deployLimitMs`와 같은 결).
+ * 화면이 남은 시간에서 장면이 어디까지 갔는지 거꾸로 잴 때도 이 값을 쓴다
+ */
+export const skippedScoutLimitMs = (state: Pick<BattleState, 'units'>): number => SCOUT_MS + collectionIntroMs(state);
 
 /**
  * 단계별 실시간 제한 — **없으면 마감이 없다.**
@@ -120,9 +132,9 @@ export interface BattleTransport {
  * `waiting`도 마찬가지로 AI 상대에게는 나타나지 않는다.
  * 배치는 컬렉션 발동 장면을 앞에 붙인다(`deployLimitMs`) — 서버와 같은 함수다.
  */
-function limitFor(state: BattleState): number | undefined {
+function limitFor(state: BattleState, skippedDeploy = false): number | undefined {
   if (state.phase === 'deploy') return deployLimitMs(state);
-  if (state.phase === 'scout') return SCOUT_MS;
+  if (state.phase === 'scout') return skippedDeploy ? skippedScoutLimitMs(state) : SCOUT_MS;
   return duelStepMs(state);
 }
 
@@ -145,6 +157,7 @@ const stepKeyOf = (state: BattleState): string => `${state.phase}/${duelStepKey(
 export class LocalTransport implements BattleTransport {
   readonly initial: BattleState;
   readonly humanSide: Side | null;
+  readonly skippedDeploy: boolean;
 
   private state: BattleState;
   private inbox: ((msg: ServerMsg) => void) | null = null;
@@ -219,6 +232,12 @@ export class LocalTransport implements BattleTransport {
        * 다시 불러 잇는다(튜토리얼의 차례 뒤 안내 `GuideTurn.after`, 2026-11-10)
        */
       hold?: (state: BattleState) => boolean;
+      /**
+       * **배치를 건너뛴다** (2026-11-27 기획자) — AI와 싸우는 판은 초를 세며 상대를 기다릴 일이 없어 배치 30초가 쓸모없다.
+       * 판이 배치 단계로 왔으면 상대(AI) → 사람 순으로 `ready`를 넣어(서버 재생 `replayLocalMatch`와 같은 순서) 정찰부터 연다.
+       * 사람의 `ready`는 수 기록에 들어가고, 덧붙이기(`onIntent`)는 `open()`에서 한 번 부른다. 배치는 저장된 프리셋 그대로다
+       */
+      skipDeploy?: boolean;
     },
   ) {
     // 기본 AI는 사람에게 일기토 · 설전을 건다(GDD §3.11) — 받는 쪽 답 · 마감은 아래 `settleDuel` · `armDuel`이 맡는다.
@@ -229,9 +248,19 @@ export class LocalTransport implements BattleTransport {
     this.hold = opts?.hold ?? null;
     this.intentLog = [...(opts?.intentLog ?? [])];
     this.onIntent = opts?.onIntent ?? null;
-    this.initial = initial;
-    this.state = initial;
     this.humanSide = humanSide;
+    // 배치 건너뛰기 — 끊긴 판을 되살린 것(이미 배치가 지났다)이면 아무 일도 없다
+    let first = initial;
+    this.skippedDeploy = !!opts?.skipDeploy && humanSide !== null && initial.phase === 'deploy' && !initial.ready[humanSide];
+    if (this.skippedDeploy) {
+      for (const side of ['P1', 'P2'] as Side[]) {
+        if (side !== humanSide && !first.ready[side]) first = apply(first, side, { t: 'ready' }).state;
+      }
+      this.intentLog.push({ t: 'ready' });
+      first = apply(first, humanSide!, { t: 'ready' }).state;
+    }
+    this.initial = first;
+    this.state = first;
     this.now = opts?.now ?? Date.now;
     this.opponentReadyMs = opts?.opponentReadyMs ?? null;
     this.opponentAnswerMs = opts?.opponentAnswerMs ?? null;
@@ -243,6 +272,8 @@ export class LocalTransport implements BattleTransport {
 
   open(inbox: (msg: ServerMsg) => void): void {
     this.inbox = inbox;
+    // 건너뛴 배치의 `ready`도 사람의 수다 — 서버에 덧붙여 둔다(끊겨도 정찰부터 되살린다)
+    if (this.skippedDeploy) this.onIntent?.();
     // 첫 통 — 「지금 이렇고, 이만큼 남았다」. 온라인에서도 방에 들어가면 이게 온다
     this.emit([]);
     /*
@@ -423,7 +454,7 @@ export class LocalTransport implements BattleTransport {
       this.phaseAt = this.now();
       this.armDuel();
     }
-    const limit = limitFor(this.state);
+    const limit = limitFor(this.state, this.skippedDeploy);
     const left = limit === undefined || this.heldLeft !== null ? null : Math.max(0, limit - (this.now() - this.phaseAt));
     this.inbox({ t: 'sync', state: toWire(this.state, this.humanSide), events: this.humanSide ? eventsFor(this.state, events, this.humanSide) : events, deadlineInMs: left });
   }

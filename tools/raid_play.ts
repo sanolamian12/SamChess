@@ -275,8 +275,18 @@ try {
     .catch(() => fail('메인의 도시 이름 옆에 [전투하기]가 없다'));
   await shot('raid-04-main-fight');
   await page.click('.scr-main [data-action="raidFight"]');
-  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'deploying', undefined, { timeout: 20_000 })
-    .catch(() => fail('[전투하기]를 눌렀는데 배치 단계가 안 온다'));
+  // AI와 싸우는 판은 배치 30초를 건너뛰고 정찰부터 연다 (2026-11-27 기획자)
+  await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'scouting', undefined, { timeout: 20_000 })
+    .catch(() => fail('[전투하기]를 눌렀는데 정찰 단계가 안 온다 — 배치를 건너뛰지 않았다'));
+  {
+    const seen = await page.evaluate(() => {
+      const pb = (window as any).__battle.scene.debugPlayback;
+      return { sawDeploy: pb.state.log.some((e: any) => e.e === 'phaseChanged' && e.phase === 'deploy'), remain: pb.remainingSec, ready: pb.state.ready };
+    });
+    if (!seen.ready.P1 || !seen.ready.P2) await fail(`정찰인데 양쪽이 준비를 안 마쳤다 — ${JSON.stringify(seen.ready)}`);
+    if (!seen.remain || seen.remain > 31) await fail(`정찰 마감이 이상하다 — ${seen.remain}초`);
+    ok(`배치 없이 정찰부터 — 남은 ${seen.remain}초`);
+  }
   const board = await page.evaluate(() => {
     const s = (window as any).__battle.scene.debugPlayback.state;
     const units = Object.values(s.units as Record<string, any>);
@@ -293,10 +303,10 @@ try {
   const fightingRow = await until(row, (p) => p.raid?.status === 'fighting', '서버가 전투 시작을 굳혔다');
   ok(`판 25×15 · 성채 9칸 · King (12,12) · 도적 [${board.bandits.join()}] · 서버 시드 ${fightingRow.raid!.battle!.seed}`);
   await page.waitForTimeout(800);
-  await shot('raid-05-deploy');
+  await shot('raid-05-scout');
 
-  // ── 준비 → 내 차례 → 항복 ────────────────────────────────────
-  step('준비 → 내 차례에 항복 (판 안의 항복은 패배다 — 살아 있는 도적 수만큼)');
+  // ── [전투 시작] → 내 차례 → 항복 ─────────────────────────────
+  step('[전투 시작] → 내 차례에 항복 (판 안의 항복은 패배다 — 살아 있는 도적 수만큼)');
   await page.click('#ctx-prep button.go');
   await page.waitForFunction(() => (window as any).__battle?.scene?.debugPlayback?.phase === 'awaitingInput', undefined, { timeout: 60_000 })
     .catch(() => fail('60초를 기다려도 내 차례가 오지 않는다'));

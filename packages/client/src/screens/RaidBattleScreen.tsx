@@ -77,6 +77,8 @@ export function RaidBattleScreen({ profile, onDone }: {
     const transport = new LocalTransport(initial, humanSide, {
       intentLog: saved,
       onIntent: () => uploader?.push(),
+      // 배치 30초 없이 정찰부터 — AI와 싸우는 판(2026-11-27 기획자). 파수꾼은 기본 자리(King은 성채 한가운데)
+      skipDeploy: true,
     });
     uploader = new RaidIntentUploader(() => transport.getIntentLog(), saved.length);
 

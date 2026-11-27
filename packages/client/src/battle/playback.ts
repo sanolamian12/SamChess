@@ -178,6 +178,9 @@ export class Playback {
     return this.deadlineMs === null ? null : Math.max(0, this.deadlineMs - this.now());
   }
 
+  /** 배치를 건너뛰고 정찰부터 연 판(AI와 싸우는 판, 2026-11-27) — 컬렉션 발동 장면 · 동점 주사위가 정찰이 열릴 때 돈다 */
+  get skippedDeploy(): boolean { return this.transport.skippedDeploy ?? false; }
+
   /** 연출에 필요한 시간을 알린다. `onChange` 안에서 화면이 부른다. */
   hold(ms: number): void {
     if (ms > 0) this.holdMs = Math.max(this.holdMs, ms);
