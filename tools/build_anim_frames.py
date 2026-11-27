@@ -254,6 +254,7 @@ def split_cells(path: Path, rows: int, cols: int) -> list[np.ndarray]:
 # 웅크린 정면)은 안 믿고, 믿을 칸이 하나도 없는 장은 예전처럼 몸 키(+ 손 보정)로 잰다.
 HEAD_UP = 3          # 특징점을 잡기 전에 키우는 배 — 240 해상도의 머리는 100px 안팎이라 그대로는 점이 적다
 HEAD_INLIERS = 12    # 이만큼 이상 맞아야 그 칸의 머리 배율을 믿는다(실측: 맞는 칸 19~280 · 틀린 칸 2~11)
+HEAD_TILT = 30        # 도 — 이보다 기운 머리 측정은 버린다(누운 칸의 눌린 얼굴)
 _SIFT = None
 
 
@@ -296,6 +297,9 @@ def head_ratio(head: np.ndarray, frame: np.ndarray) -> tuple[float | None, int]:
     if M is None:
         return None, 0
     n = int(inl.sum())
+    # 크게 기운 머리(쓰러져 누운 칸)는 옆으로 눌린 얼굴이라 배율이 틀린다 — 주연 피격이 그 한 칸으로 ×1.23이 됐다(2026-11-27)
+    if abs(np.degrees(np.arctan2(M[1, 0], M[0, 0]))) > HEAD_TILT:
+        return None, n
     return (float(np.hypot(M[0, 0], M[1, 0])) if n >= HEAD_INLIERS else None), n
 
 
