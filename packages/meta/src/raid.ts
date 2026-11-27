@@ -28,7 +28,8 @@
 
 import { RAID } from '@samchess/data';
 import { GUARD_SIDE, banditRoster, raidMode, replayPrefix } from '@samchess/rules';
-import type { BattleConfig, BattleState, Intent, OfficerId, Side } from '@samchess/rules';
+import type { BattleConfig, BattleState, Intent, OfficerId, RosterEntry, Side } from '@samchess/rules';
+import { unitPower } from './power.ts';
 import { applyInjuries, buildingLevel } from './city.ts';
 import { cityBonus } from './cityBonus.ts';
 import { fallenAfterShield, settleCarried } from './market.ts';
@@ -281,6 +282,70 @@ export function surrenderRaid(profile: PlayerProfile, nowMs: number): PlayerProf
   const raid = profile.raid;
   if (!raid || !raidActive(raid)) throw new Error('항복할 도적떼가 없습니다');
   return surrender(profile, raid, Math.floor(nowMs));
+}
+
+// ── 자동 전투 (2026-11-27 기획자) ─────────────────────────────
+//
+// 판을 두지 않고 **전투력으로 결말을 낸다** — 오래 하다 보면 「군량은 지키고 싶은데 싸우기는 번거로운」 날을 위한 편의다.
+//
+// | 예측 | 결말 |
+// |---|---|
+// | 승리(아군 전투력 > 도적 전투력) | 약탈 없음 · **보상도 없음** |
+// | 패배(같거나 낮음) | 항복과 같은 약탈(출몰한 도적 전부) |
+//
+// 전투력은 대전의 것(`unitPower`)을 쓴다 — 계수는 도적 수로 정한 모드(`raidMode`) 하나로 양쪽을 잰다(인원이 달라도
+// 유닛 합이라 같은 자로 잰다). 성채 · 판 크기는 안 본다. 부상 · 컬렉션도 대전의 전투력처럼 안 본다.
+// 화면의 예측과 서버의 정산이 **같은 함수**를 부른다 — 화면이 본 예측과 다르면 서버가 거절한다(`expectWin`).
+
+export interface RaidAutoForecast {
+  /** 실제로 설 파수꾼(`guardsOf`)의 전투력 — 없으면 0 */
+  mine: number;
+  /** 도적 전투력 */
+  theirs: number;
+  /** 이긴다고 보는가 — `mine > theirs` */
+  win: boolean;
+  /** 지면 빼앗길 군량 — 지금 군량 기준(항복과 같은 셈). 이기면 0 */
+  loot: number;
+}
+
+export function raidAutoForecast(profile: PlayerProfile): RaidAutoForecast | null {
+  const raid = profile.raid;
+  if (!raid) return null;
+  const mode = raidMode(raid.bandits);
+  const sum = (entries: readonly RosterEntry[]): number => Math.round(entries.reduce((s, e) => s + unitPower(mode, e), 0));
+  const mine = sum(toRosterEntries(profile, guardsOf(profile)));
+  const theirs = sum(banditRoster(raid.bandits));
+  const win = mine > theirs;
+  return { mine, theirs, win, loot: win ? 0 : raidLoot(profile, raid, profile.grain, raid.bandits) };
+}
+
+/** [자동 전투]를 할 수 있는가 — 출몰해 있고(싸우는 중이 아니고) 마감 전. 파수꾼이 없어도 된다(패배로 예측된다) */
+export function canAutoRaid(profile: PlayerProfile, nowMs: number): MetaResult {
+  const raid = profile.raid;
+  if (!raid || !raidActive(raid)) return no('오늘은 도적떼가 없습니다', 'raid.none');
+  if (raid.status === 'fighting') return no('이미 전투가 시작되었습니다', 'raid.started');
+  if (nowMs >= raidDeadline(profile, raid)) return no('시간이 지났습니다 — 항복으로 처리됩니다', 'raid.expired');
+  return { ok: true };
+}
+
+/**
+ * 자동 전투를 정산한다 — 결말은 `won`(약탈 · 보상 없음) 아니면 `lost`(항복과 같은 약탈)이고 `auto: true`가 붙는다.
+ * `expectWin`을 주면 그 예측과 다를 때 거절한다(`raid.autoChanged`) — 화면을 연 뒤 파수꾼이 바뀌었다 등.
+ */
+export function autoRaid(profile: PlayerProfile, nowMs: number, expectWin?: boolean): PlayerProfile {
+  const check = canAutoRaid(profile, nowMs);
+  if (!check.ok) rejectWith(check);
+  const raid = profile.raid!;
+  const f = raidAutoForecast(profile)!;
+  if (expectWin !== undefined && expectWin !== f.win) {
+    rejectWith({ reason: '그사이 형세가 바뀌었습니다 — 다시 확인해 주십시오', code: 'raid.autoChanged' });
+  }
+  const at = Math.floor(nowMs);
+  return {
+    ...profile,
+    grain: profile.grain - f.loot,
+    raid: { ...raid, status: f.win ? 'won' : 'lost', loot: f.loot, auto: true, settledAt: at },
+  };
 }
 
 // ── 전투 (서버) ─────────────────────────────────────────────

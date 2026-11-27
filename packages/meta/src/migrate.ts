@@ -856,6 +856,7 @@ function readRaid(raw: unknown): RaidState | undefined {
   if (out.status === 'fighting' && !out.battle) return undefined;
   if (raw.loot !== undefined) out.loot = Math.max(0, Math.floor(num(raw.loot, 0)));
   if (raw.settledAt !== undefined) out.settledAt = Math.max(0, Math.floor(num(raw.settledAt, 0)));
+  if (raw.auto === true) out.auto = true;
   if (isRecord(raw.rewards)) {
     const r = raw.rewards;
     out.rewards = {

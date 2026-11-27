@@ -473,6 +473,8 @@ export interface RaidState {
   loot?: number;
   rewards?: BattleRewards;
   settledAt?: number;
+  /** [자동 전투]로 끝났다 — 판 없이 전투력으로 낸 결말(`autoRaid`, 2026-11-27). 승리여도 보상이 없다 */
+  auto?: true;
 }
 
 /**

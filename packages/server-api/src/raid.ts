@@ -20,7 +20,7 @@
 
 import { randomInt } from 'node:crypto';
 import {
-  appendRaidIntents, canStartRaid, consumeCarried, guardsOf, raidActive, raidBattleConfig, settleCarried,
+  appendRaidIntents, autoRaid, canAutoRaid, canStartRaid, raidAutoForecast, consumeCarried, guardsOf, raidActive, raidBattleConfig, settleCarried,
   settleRaid, startRaid, startsWithRaidIntents, surrenderRaid,
 } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
@@ -59,6 +59,25 @@ export async function surrenderRaidAction(uid: string): Promise<RaidActionResult
     if (!raidActive(profile.raid)) return { next: null, value: fail(409, '항복할 도적떼가 없다', 'raid.none') };
     // **항복해도 안 돌아온다** — 돌려주면 「지겠다 싶으면 다 쓰고 항복」이 공짜다(`surrenderRaid`가 내려놓는다)
     const next = surrenderRaid(profile, now);
+    return { next, value: { ok: true, profile: next } };
+  });
+}
+
+/**
+ * [자동 전투] — 판 없이 전투력으로 결말을 낸다(`autoRaid`, 2026-11-27). `expectWin`은 화면이 보여 준 예측이다 —
+ * 그사이 파수꾼이 바뀌어 예측이 달라졌으면 409(`raid.autoChanged`)로 돌려보내 다시 보게 한다.
+ */
+export async function autoRaidAction(uid: string, expectWin: boolean | undefined): Promise<RaidActionResult> {
+  const now = Date.now();
+  return mutateProfile<RaidActionResult>(uid, (profile) => {
+    if (!profile) return { next: null, value: fail(404, 'no profile') };
+    const check = canAutoRaid(profile, now);
+    if (!check.ok) return { next: null, value: fail(409, check.reason, check.code) };
+    const f = raidAutoForecast(profile);
+    if (expectWin !== undefined && f && f.win !== expectWin) {
+      return { next: null, value: fail(409, '그사이 형세가 바뀌었다', 'raid.autoChanged') };
+    }
+    const next = autoRaid(profile, now);
     return { next, value: { ok: true, profile: next } };
   });
 }

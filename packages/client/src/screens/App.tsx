@@ -97,7 +97,7 @@ import { pingPresence } from '../meta/presence.ts';
 import { WarInbox } from './WarPanel.tsx';
 import type { WarBattle } from './WarPanel.tsx';
 import type { RaidAlertKind } from './RaidAlert.tsx';
-import { RaidRequestFailed, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
+import { RaidRequestFailed, autoRaidOnServer, startRaidOnServer, surrenderRaidOnServer } from '../meta/raid.ts';
 import { pickOfficerNameById } from '../i18n/story.ts';
 import { useFrameFit } from './useFrameFit.ts';
 import { TapTip } from './TapTip.tsx';
@@ -670,7 +670,7 @@ export function App(): React.JSX.Element {
     if (!raid) return;
     if (raidAlert) {
       // 떠 있던 알림의 사건이 끝났다(다른 탭에서 싸웠다 등) — 거둔다
-      if (raidAlert !== 'settled' && raid.status !== 'pending') setRaidAlert(null);
+      if (raidAlert !== 'settled' && raidAlert !== 'autoDone' && raid.status !== 'pending') setRaidAlert(null);
       return;
     }
     if (raid.status === 'pending') {
@@ -730,6 +730,31 @@ export function App(): React.JSX.Element {
       setRaidError(e instanceof RaidRequestFailed ? e.message : String(e));
       // 메인·농지의 단추로 왔으면 알림이 없다 — 이유를 말할 자리로 연다
       setRaidAlert((k) => k ?? 'first');
+    }).finally(() => { raidInFlight.current = false; setRaidBusy(false); });
+  };
+
+  /**
+   * [자동 전투] (2026-11-27 기획자) — 예측 판을 열고([취소]면 열었던 알림으로), [실행]이면 서버가 같은 셈으로 정산한다.
+   * 보여 준 예측을 함께 보내 그사이 형세가 바뀌었으면 거절받는다 — 그때는 계정을 다시 읽어 새 예측을 보여 준다
+   */
+  const raidAutoFrom = useRef<RaidAlertKind>('first');
+  const openRaidAuto = (): void => {
+    if (raidAlert && raidAlert !== 'auto') raidAutoFrom.current = raidAlert;
+    setRaidError(null);
+    setRaidAlert('auto');
+  };
+  const cancelRaidAuto = (): void => { setRaidError(null); setRaidAlert(raidAutoFrom.current); };
+  const runRaidAuto = (expectWin: boolean): void => {
+    if (raidInFlight.current) return;
+    raidInFlight.current = true;
+    setRaidBusy(true);
+    setRaidError(null);
+    void autoRaidOnServer(expectWin).then((next) => {
+      setProfileState(next);
+      setRaidAlert('autoDone');
+    }, (e: unknown) => {
+      setRaidError(e instanceof RaidRequestFailed ? e.message : String(e));
+      if (e instanceof RaidRequestFailed && e.code === 'raid.autoChanged') void loadProfile().then((p) => { if (p) setProfileState(p); });
     }).finally(() => { raidInFlight.current = false; setRaidBusy(false); });
   };
 
@@ -1105,6 +1130,9 @@ export function App(): React.JSX.Element {
           onFight={fightRaid}
           onSurrender={surrenderRaid}
           onToFarm={() => { closeRaidAlert(); setScreen({ name: 'building', building: 'farm' }); }}
+          onAuto={openRaidAuto}
+          onAutoRun={runRaidAuto}
+          onAutoCancel={cancelRaidAuto}
           onClose={closeRaidAlert}
         />
       )}

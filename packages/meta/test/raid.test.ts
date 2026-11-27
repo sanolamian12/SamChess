@@ -7,10 +7,10 @@ import { describe, it } from 'node:test';
 import { createBattle } from '@samchess/rules';
 import type { Intent, OfficerId, PieceType } from '@samchess/rules';
 import {
-  RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, appendRaidIntents, canStartRaid, createProfile, guardSlots,
+  RAID_ABANDON_MS, RAID_LAST_CALL_MS, RAID_RESPONSE_MS, addSquad, appendRaidIntents, autoRaid, canAutoRaid, canStartRaid, createProfile, guardSlots,
   REWARD_TABLE, grantBattleRewards, guardsOf, guardsTakenBy, initialBuildings, migrateProfile, newInstance, officerDuty, raidActive,
   raidAbandonRemainingMs, raidAbandoned, raidBattleConfig, raidBlocksSortie, raidDay, raidIntentsOf, raidLastCall, raidLoot,
-  raidRemainingMs, resumeRaidState, setGuards, settleRaid, startRaid, startsWithRaidIntents, surrenderRaid, syncRaid,
+  raidAutoForecast, raidRemainingMs, resumeRaidState, setGuards, settleRaid, startRaid, startsWithRaidIntents, surrenderRaid, syncRaid,
   updateSquad, validateGuards,
 } from '../src/index.ts';
 import type { PlayerProfile, RaidState, RosterPick } from '../src/index.ts';
@@ -426,5 +426,48 @@ describe('저장 형식', () => {
   it('없는 장수의 파수꾼 칸은 되접으며 지운다', () => {
     const p = { ...city(3), farmGuards: [P('King', 'yu-bi'), P('Rock', 'no-such-officer')] };
     assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(p)))!.farmGuards, [P('King', 'yu-bi')]);
+  });
+});
+
+describe('자동 전투 — 전투력으로 결말 (2026-11-27)', () => {
+  it('파수꾼이 없으면 패배 예측 · 실행하면 항복과 같은 약탈 · 보상 없음', () => {
+    const p = spawned(2);
+    const f = raidAutoForecast(p)!;
+    assert.equal(f.mine, 0);
+    assert.ok(f.theirs > 0);
+    assert.equal(f.win, false);
+    assert.equal(f.loot, raidLoot(p, p.raid!, p.grain, p.raid!.bandits));
+    const after = autoRaid(p, T0 + MIN);
+    assert.equal(after.raid!.status, 'lost');
+    assert.equal(after.raid!.auto, true);
+    assert.equal(after.grain, p.grain - f.loot);
+    assert.equal(surrenderRaid(p, T0 + MIN).grain, after.grain, '항복과 같은 약탈');
+    assert.equal(raidActive(after.raid), false);
+  });
+
+  it('도적 둘에 Lv1 장수 둘이면 승리 예측 · 실행하면 약탈도 보상도 없다', () => {
+    const p = setGuards(spawned(2), [P('King', 'gwan-u'), P('Queen', 'jo-un')]);
+    const f = raidAutoForecast(p)!;
+    assert.equal(f.win, true, `${f.mine} vs ${f.theirs}`);
+    assert.equal(f.loot, 0);
+    const after = autoRaid(p, T0 + MIN);
+    assert.equal(after.raid!.status, 'won');
+    assert.equal(after.raid!.loot, 0);
+    assert.equal(after.raid!.rewards, undefined);
+    assert.equal(after.grain, p.grain);
+    assert.equal(after.raid!.auto, true);
+  });
+
+  it('보여 준 예측과 다르면 거절 · 마감 뒤 · 싸우는 중에는 안 된다', () => {
+    const p = spawned(2);
+    assert.throws(() => autoRaid(p, T0 + MIN, true));
+    assert.equal(canAutoRaid(p, T0 + RAID_RESPONSE_MS).ok, false);
+    const fighting = startRaid(setGuards(p, [P('King', 'gwan-u')]), T0 + MIN, 7);
+    assert.equal(canAutoRaid(fighting, T0 + 2 * MIN).ok, false);
+  });
+
+  it('auto 표시는 되접기를 지나도 남는다', () => {
+    const after = autoRaid(spawned(2), T0 + MIN);
+    assert.equal(migrateProfile(JSON.parse(JSON.stringify(after)))!.raid!.auto, true);
   });
 });

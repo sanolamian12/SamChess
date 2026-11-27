@@ -47,7 +47,7 @@
  * > 데이터가 쌓여 다시 재는 것은 **의도된 변경**이어야 한다 — 테스트가 계수를 고정한다.
  */
 
-import { officerById, skillById } from '@samchess/data';
+import { combatantById, skillById } from '@samchess/data';
 import { UNITS_PER_SIDE } from '@samchess/rules';
 import type { BattleMode, OfficerId, RosterEntry } from '@samchess/rules';
 import { statsFrom } from './profile.ts';
@@ -112,7 +112,8 @@ export const statsFromPicks = statsFrom;
  * 버티지 못해 책략이 도는 판에서 실측 승률이 35.8%로 최하다(HANDOFF §7).
  */
 export function unitFeatures(entry: { officer: OfficerId; statPicks: readonly StatPick[] }): PowerFeatures {
-  const officer = officerById.get(entry.officer);
+  // 도적도 잰다(도적떼 자동 전투, 2026-11-27) — 260명은 `officerById`와 같은 값이다
+  const officer = combatantById.get(entry.officer);
   if (!officer) throw new Error(`알 수 없는 장수: ${entry.officer}`);
   const skill = officer.uniqueSkill ? skillById.get(officer.uniqueSkill) : undefined;
   const stats = statsFromPicks(entry.statPicks);

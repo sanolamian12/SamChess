@@ -9597,6 +9597,19 @@ button.mkt-pack:not(:disabled):hover { filter: drop-shadow(0 2px 3px #3a240f66) 
   border-width: .38rem 1.1rem; border-image: url(ui/btn-primary.png) 12% 11% fill;
   color: #f4ecd8; text-shadow: 0 1px 2px #00000080;
 }
+/* [자동 전투] · 예측 판의 [실행] — 금빛 두루마리(`btn-alert.png`, 두루마리 단추 공용 자르기 `12% 11%`, 2026-11-27 기획자) */
+.raid-alert-box .raid-acts .btn.raid-btn-auto {
+  border-width: .38rem 1.1rem; border-image: url(ui/btn-alert.png) 12% 11% fill;
+  color: #4a2e12; text-shadow: 0 1px 0 #fff3c080;
+}
+/* 자동 전투 예측 — 대치 판 밑 전투력 한 줄 · 「승리 예상 / 패배 예상」 · 결말 한 줄 */
+.raid-vs-pow { display: inline-flex; align-items: center; gap: .2rem; margin: 0; font-weight: 800; font-size: .95rem; color: #ffe08a; font-variant-numeric: tabular-nums; }
+.raid-vs-pow .gic img { width: 1.2rem; height: 1.2rem; object-fit: contain; }
+.raid-auto-verdict { margin: .2rem 0 .1rem; text-align: center; font-size: 1.35rem; font-weight: 800; letter-spacing: .06em; text-shadow: 0 .08rem .15rem #000a; }
+.raid-auto-verdict.win { color: #8fe07a; }
+.raid-auto-verdict.lose { color: #f0624f; }
+.raid-auto-note { margin: .2rem .4rem .5rem; text-align: center; font-size: .88rem; font-weight: 700; color: #f4ecd8; word-break: keep-all; }
+.raid-auto-box .raid-loot-big { margin: .3rem 0 0; }
 /* 단추 왼쪽 그림 — 두 단추에서 **한 세로줄**에 선다. 글자는 가운데 그대로 — 좌우 안쪽 여백을 같게 두어 그림과 안 겹친다 */
 .raid-alert-box .raid-acts .btn:not(.raid-btn-close) { --ico-x: 1.75rem; --bw-l: 1.1rem; position: relative; padding: 0 2.1rem; }
 .raid-btn-ico {

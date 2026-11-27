@@ -143,6 +143,8 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   // 도적떼 — 이기면 보상, 지면 약탈(줄어듦)
   'POST /raid/start': [],
   'POST /raid/surrender': BATTLE,
+  // 자동 전투 — 이겨도 보상이 없고 지면 군량만 준다. 늘리는 것이 없다
+  'POST /raid/auto': [],
   'POST /raid/intents': [],
   'POST /raid/result': BATTLE,
   // 우편 — 보상은 관리자가 적은 것이다(`MailReward` = 지급의 종류)

@@ -20,7 +20,7 @@ import {
   CITY_NAME_TAKEN, CityNameTakenError, applyAcademyAction, applyCollectionAction, applyAccountAction, applyCityAction, applyForgeAction, applyGrainAction,
   RaidBlockedError, completeTutorial, deleteProfile, exchangeSurplusCards, getProfile, pullGacha, saveProfile,
 } from './profileStore.ts';
-import { appendRaidIntentsAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
+import { appendRaidIntentsAction, autoRaidAction, settleRaidAction, startRaidAction, surrenderRaidAction } from './raid.ts';
 import type { RaidActionResult } from './raid.ts';
 import type { GrainAction } from './profileStore.ts';
 import { appendAiIntentsAction, matchAiAction, revealAiDuelAction, settleAiAction, startAiAction } from './aiBattle.ts';
@@ -290,6 +290,14 @@ export function registerRoutes(app: FastifyInstance): void {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
     return sendRaid(reply, await surrenderRaidAction(user.uid));
+  });
+
+  // [자동 전투] — 전투력으로 결말(2026-11-27). `expectWin`은 화면이 보여 준 예측
+  app.post('/raid/auto', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const b = (req.body ?? {}) as Partial<{ expectWin: boolean }>;
+    return sendRaid(reply, await autoRaidAction(user.uid, typeof b.expectWin === 'boolean' ? b.expectWin : undefined));
   });
 
   // 싸우는 동안 낸 의도를 덧붙인다 — 끊긴 자리에서 이어 두기 위해서다(`raid.ts`, 2026-10-15)

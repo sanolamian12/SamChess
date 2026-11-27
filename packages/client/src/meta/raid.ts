@@ -53,6 +53,9 @@ export const startRaidOnServer = (): Promise<PlayerProfile> => post('/raid/start
 /** [항복] */
 export const surrenderRaidOnServer = (): Promise<PlayerProfile> => post('/raid/surrender', {});
 
+/** [자동 전투] → [실행] — 화면이 보여 준 예측(`expectWin`)과 서버의 셈이 다르면 `raid.autoChanged`로 거절된다 */
+export const autoRaidOnServer = (expectWin: boolean): Promise<PlayerProfile> => post('/raid/auto', { expectWin });
+
 /**
  * 끝난 판 — 사람이 낸 의도만 보낸다. 서버가 처음부터 다시 돌려 결말을 낸다.
  * 재생이 어긋나면 서버가 **항복으로 정산하고** 거절한다(`raid.replayFailed`) — 그때도

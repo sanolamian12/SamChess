@@ -6,11 +6,12 @@
  *
  * 시험 계정에 농지 Lv3 · 보초병 셋 · 도적 셋을 심고, 언어 열 개로 알림을 찍으며 판 안의 글자가
  * 넘치는지(`scrollWidth > clientWidth`) 잰다. 보초병이 없는 알림(「미편성」) · 메인 · 농지도 찍는다.
+ * [자동 전투](2026-11-27)도 — 예측 판을 언어마다 찍고, 판이 화면 안에 드는지 재고, 승 · 패를 하나씩 실행한다.
  * 사진은 OS 임시 폴더(`SHOTS`로 바꾼다).
  */
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
-import { SORTIE_TUTORIALS, addSquad, garrisonOf, newInstance, raidDay, setGuards, squadAt } from '../packages/meta/src/index.ts';
+import { SORTIE_TUTORIALS, addSquad, garrisonOf, newInstance, officerDuty, raidDay, setGuards, squadAt } from '../packages/meta/src/index.ts';
 import type { OfficerId, PieceType } from '@samchess/rules';
 import type { PlayerProfile } from '../packages/meta/src/index.ts';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
@@ -59,11 +60,13 @@ async function seed(guards: number, bandits = guards || 3): Promise<void> {
   const farm = Math.max(3, guards, bandits);
   let p = withGarrisons({ ...stored, cityLevel: Math.max(3, farm), grain: 60, buildings: { ...stored.buildings, barracks: 2, farm } });
   const roster = { ...p.roster };
-  const extra = ['yu-bi', 'gwan-u', 'jang-bi', 'jo-un', 'ma-cho'] as OfficerId[];
+  const extra = ['yu-bi', 'gwan-u', 'jang-bi', 'jo-un', 'ma-cho', 'hwang-chung', 'jo-jo', 'jang-ryo', 'ju-yu'] as OfficerId[];
   for (const id of extra) if (!roster[id]) roster[id] = newInstance(id);
   p = { ...p, roster, farmGuards: [] };
   const pieces: PieceType[] = ['King', 'Rock', 'Bishop', 'Knight', 'Pawn'];
-  if (guards) p = setGuards(p, extra.slice(0, guards).map((officer, i) => ({ piece: pieces[i]!, officer })));
+  // 부대(수비대)에 든 장수는 보초병이 못 된다 — 비어 있는 장수만 고른다
+  const free = extra.filter((id) => officerDuty(p, id) !== 'squad');
+  if (guards) p = setGuards(p, free.slice(0, guards).map((officer, i) => ({ piece: pieces[i]!, officer })));
   p = { ...p, raid: { day: raidDay(Date.now()), bandits, spawnedAt: Date.now(), grainAtSpawn: p.grain, status: 'pending' } };
   await saveProfileTrusted(uid, { ...p, tutorial: { done: [...SORTIE_TUTORIALS] } });
 }
@@ -84,6 +87,13 @@ const vsCheck = () => page.evaluate(() => {
     if (u.getBoundingClientRect().height > 30) out.push('미편성 두 줄');
   }
   return out;
+});
+
+/** 판이 화면(프레임) 안에 다 드는가 — 스크롤이 없으므로 넘치면 잘린다 */
+const fits = () => page.evaluate(() => {
+  const box = document.querySelector('.raid-alert-box')!.getBoundingClientRect();
+  const frame = document.querySelector('#frame')!.getBoundingClientRect();
+  return box.top >= frame.top - 1 && box.bottom <= frame.bottom + 1 ? [] : [`판이 화면 밖 (판 ${Math.round(box.top)}~${Math.round(box.bottom)}, 화면 ${Math.round(frame.top)}~${Math.round(frame.bottom)})`];
 });
 
 /** 알림 판 안에서 글자가 넘친 요소 */
@@ -129,9 +139,19 @@ try {
       await page.reload({ waitUntil: 'networkidle' });
       await page.waitForSelector('[data-modal="raidAlert"][data-kind="first"]', { timeout: 20_000 });
       await page.waitForTimeout(600);
-      const o = [...await overflow(), ...await vsCheck()];
+      const o = [...await overflow(), ...await vsCheck(), ...await fits()];
       if (o.length) bad(`${tag} ${lang} — ${o.join(' / ')}`); else ok(`${tag} ${lang} — 넘침 없음`);
       await shot(`alert-${tag}-${lang}`);
+      // [자동 전투] → 예측 판 → [취소]로 돌아온다
+      await page.click('[data-action="raidAuto"]');
+      await page.waitForSelector('[data-modal="raidAlert"][data-kind="auto"]');
+      await page.waitForTimeout(300);
+      const a = [...await overflow(), ...await vsCheck(), ...await fits()];
+      const pw = await page.evaluate(() => [document.querySelector('[data-field="minePower"]')?.getAttribute('data-power'), document.querySelector('[data-field="theirPower"]')?.getAttribute('data-power')]);
+      if (a.length) bad(`자동 ${tag} ${lang} — ${a.join(' / ')}`); else ok(`자동 ${tag} ${lang} — 넘침 없음 · 전투력 ${pw.join(' vs ')}`);
+      await shot(`auto-${tag}-${lang}`);
+      await page.click('[data-action="raidAutoCancel"]');
+      await page.waitForSelector('[data-modal="raidAlert"][data-kind="first"]');
     }
   }
   await page.evaluate(() => localStorage.setItem('samchess.lang', 'ko'));
@@ -145,6 +165,34 @@ try {
     await page.waitForTimeout(600);
     await shot(`alert-${n}v${n}-ko`);
   }
+
+  // 자동 전투 실행 — 보초병 없음(패배 → 약탈) · 보초병 셋 대 도적 하나(승리 → 약탈도 보상도 없음)
+  for (const [tag, g, bn] of [['lose', 0, 3], ['win', 3, 1]] as const) {
+    await seed(g, bn);
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('[data-modal="raidAlert"][data-kind="first"]', { timeout: 20_000 });
+    await page.click('[data-action="raidAuto"]');
+    await page.waitForSelector('[data-modal="raidAlert"][data-kind="auto"]');
+    const expect = await page.$eval('[data-field="verdict"]', (e) => e.getAttribute('data-win'));
+    const shown = Number(await page.$eval('[data-field="loot"]', (e) => e.getAttribute('data-loot')).catch(() => '0'));
+    if (expect !== (tag === 'win' ? '1' : '0')) bad(`${tag} 예측이 ${expect}`);
+    await shot(`auto-run-${tag}-before`);
+    await page.click('[data-action="raidAutoRun"]');
+    await page.waitForSelector('[data-modal="raidAlert"][data-kind="autoDone"]', { timeout: 10_000 });
+    await page.waitForTimeout(800);
+    await shot(`auto-run-${tag}-done`);
+    const stored = (await getProfile(uid))!;
+    const want = tag === 'win' ? 'won' : 'lost';
+    if (stored.raid?.status !== want || stored.raid.auto !== true) bad(`${tag} 저장 상태 ${stored.raid?.status} auto=${stored.raid?.auto}`);
+    else if ((stored.raid.loot ?? 0) !== shown) bad(`${tag} 약탈 ${stored.raid.loot} ≠ 예측 판 ${shown}`);
+    else if (tag === 'win' && stored.raid.rewards) bad('승리인데 보상이 붙었다');
+    else ok(`${tag} 실행 — ${want} · 약탈 ${stored.raid.loot ?? 0} (예측 판 ${shown})`);
+    await page.click('[data-action="raidOk"]');
+    await page.waitForSelector('[data-modal="raidAlert"]', { state: 'detached' });
+  }
+  await seed(3);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-action="raidClose"]', { timeout: 20_000 });
 
   await page.click('[data-action="raidClose"]');
   await page.waitForSelector('[data-modal="raidAlert"]', { state: 'detached' });

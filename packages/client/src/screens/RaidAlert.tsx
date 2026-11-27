@@ -6,17 +6,19 @@
  * | `first` | 출몰을 처음 본 순간(메인 화면) | [항복] · [지금 전투] · [닫기] (파수꾼이 없으면 [지금 전투]가 농지로 보내며 빛난다) |
  * | `lastCall` | 남은 1분 — 어느 메타 화면에서든 | 위와 같다 — 제목만 「곧 마감이다」 |
  * | `settled` | 마감이 지나 서버가 항복으로 정산했다 | [확인] |
+ * | `auto` | [자동 전투]를 눌렀다 — 전투력 예측 | [실행] · [취소] |
+ * | `autoDone` | 자동 전투를 실행했다 — 결말 | [확인] |
  *
  * **언제 띄울지는 App이 정한다** — 이 컴포넌트는 그리기만 한다. 남은 시간은 `raidRemainingMs()`
  * (meta)가 내고, 문장은 `raidText.ts`의 것을 쓴다.
  *
  * 짜임 (2026-11-20 기획자) — 맨 위 대치 판(왼쪽 아군 꼬마 · 가운데 쌍검 + 섬광 · 오른쪽 도적 꼬마, 판 밑에
  * 「아군」 · 「적군」, 아무도 안 세웠으면 아군 자리에 주홍 붓 획 「미편성」) → 「승리 시 · 항복 시」 두 줄 → 말풍선 위 「(모래시계) m:ss 후 약탈」 →
- * [항복] · [지금 전투] · [닫기]. 옛 [전투 준비]는 닫기와 같은 일이라 [닫기](뒤로 가기 판)로 바꿨다.
+ * [항복] · [지금 전투] · [자동 전투] · [닫기]. 옛 [전투 준비]는 닫기와 같은 일이라 [닫기](뒤로 가기 판)로 바꿨다.
  */
 
 import { NPC_OFFICERS } from '@samchess/data';
-import { RAID_ABANDON_MS, guardsOf, raidAbandoned, raidLoot, raidRemainingMs, raidWinReward } from '@samchess/meta';
+import { RAID_ABANDON_MS, guardsOf, raidAbandoned, raidAutoForecast, raidLoot, raidRemainingMs, raidWinReward } from '@samchess/meta';
 import type { PlayerProfile } from '@samchess/meta';
 import { Say } from './Steward.tsx';
 import { t, tParts } from '../i18n/index.ts';
@@ -26,7 +28,7 @@ import { OfficerStand } from './OfficerArt.tsx';
 import { GameIcon } from './GameIcon.tsx';
 import { formatCountdown } from './raidText.ts';
 
-export type RaidAlertKind = 'first' | 'lastCall' | 'settled';
+export type RaidAlertKind = 'first' | 'lastCall' | 'settled' | 'auto' | 'autoDone';
 
 /** 「승리 시」 요약 — 「(카드) × 2, (군량) +1」 (2026-11-20 기획자). 정산이 주는 줄(`raidWinReward()`)에서 내고 0인 칸은 안 적는다 */
 function WinSummary(): React.JSX.Element {
@@ -60,7 +62,58 @@ function Stands({ ids, flip }: { ids: readonly string[]; flip?: boolean }): Reac
   );
 }
 
-export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurrender, onToFarm, onClose }: {
+/**
+ * 대치 판 — 고유기술 판(`panel-battle-skill`) 위에 반씩. 꼬마는 전투 시트 0번 칸, 도적은 왼쪽을 본다.
+ * 자동 전투 예측(`power`)이면 「아군」 · 「적군」 밑에 전투력을 한 줄씩 단다
+ */
+function VsBoard({ profile, power }: { profile: PlayerProfile; power?: { mine: number; theirs: number } }): React.JSX.Element {
+  const raid = profile.raid!;
+  const guards = guardsOf(profile);
+  const bandits = NPC_OFFICERS.slice(0, raid.bandits);
+  const pow = (n: number, field: string): React.JSX.Element => (
+    <p className="raid-vs-pow" data-field={field} data-power={n}>
+      <GameIcon name="battle-point" label={t('raid.auto.power')} /><span className="raid-vs-pow-n">{n}</span>
+    </p>
+  );
+  return (
+    <div className="raid-vs" data-field="body">
+      <div className="raid-vs-side ally" data-field="guards" data-guards={guards.length} data-none={guards.length === 0 ? '1' : '0'}>
+        {guards.length > 0
+          ? <Stands ids={guards.map((g) => g.officer)} />
+          : (
+            /* 아무도 안 세웠으면 꼬마 자리에 주홍 붓 획 「미편성」 — 폭은 열 언어 중 가장 긴 말에 맞춰 못 박는다 */
+            <div className="raid-vs-stands raid-vs-empty">
+              <span className="frm-stroke frm-stroke-locked raid-vs-unassigned" data-field="unassigned">{t('raid.alert.unassigned')}</span>
+            </div>
+          )}
+        <p className="raid-vs-cap"><span className="who">{t('raid.alert.ally')}</span></p>
+        {power && pow(power.mine, 'minePower')}
+      </div>
+      <div className="raid-vs-mid" aria-hidden="true">
+        <img className="raid-vs-hit" src="duel/hit.png" alt="" />
+        <img className="raid-vs-swords" src="icons/battle.png" alt="" />
+      </div>
+      <div className="raid-vs-side foe" data-field="bandits" data-n={raid.bandits}>
+        <Stands ids={bandits.map((b) => b.id)} flip />
+        <p className="raid-vs-cap"><span className="who">{t('raid.alert.foe')}</span></p>
+        {power && pow(power.theirs, 'theirPower')}
+      </div>
+    </div>
+  );
+}
+
+/** 「(군량) −N」 큰 글씨 — 항복 정산 · 자동 전투 패배가 같이 쓴다 */
+function LootBig({ loot }: { loot: number }): React.JSX.Element {
+  return (
+    <p className="raid-loot-big" data-field="loot" data-loot={loot}>
+      <img className="raid-loot-grain" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
+      {/* 빼기는 붙임표(-) — 명조(Song Myung)의 「−」(U+2212)는 가늘고 길어 숫자와 떨어져 보인다 */}
+      <span className="raid-loot-n">-{loot}</span>
+    </p>
+  );
+}
+
+export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurrender, onToFarm, onAuto, onAutoRun, onAutoCancel, onClose }: {
   kind: RaidAlertKind;
   profile: PlayerProfile;
   nowMs: number;
@@ -69,6 +122,12 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
   onFight: () => void;
   onSurrender: () => void;
   onToFarm: () => void;
+  /** [자동 전투] — 예측 판을 연다 */
+  onAuto: () => void;
+  /** 예측 판의 [실행] — 보여 준 예측을 함께 보낸다 */
+  onAutoRun: (expectWin: boolean) => void;
+  /** 예측 판의 [취소] — 알림으로 돌아간다 */
+  onAutoCancel: () => void;
   onClose: () => void;
 }): React.JSX.Element | null {
   useLang();
@@ -78,7 +137,58 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
   // 항복하면 잃는 군량 — 서버가 항복을 정산할 때 부르는 것과 **같은 함수**다
   const loss = raidLoot(profile, raid, profile.grain, raid.bandits);
   const left = formatCountdown(raidRemainingMs(profile, raid, nowMs));
-  const bandits = NPC_OFFICERS.slice(0, raid.bandits);
+
+  // ── 자동 전투 (2026-11-27 기획자) — 예측 판 · 결말 판 ──
+  if (kind === 'auto') {
+    const f = raidAutoForecast(profile)!;
+    return (
+      <div className="modal-back raid-alert" data-modal="raidAlert" data-kind={kind}>
+        <div className="modal frg-confirm raid-alert-box raid-auto-box" data-win={f.win ? '1' : '0'}>
+          <p className="modal-ttl">{t('raid.auto.title')}</p>
+          <VsBoard profile={profile} power={f} />
+          <p className={`raid-auto-verdict ${f.win ? 'win' : 'lose'}`} data-field="verdict" data-win={f.win ? '1' : '0'}>
+            {t(f.win ? 'raid.auto.win' : 'raid.auto.lose')}
+          </p>
+          {f.win
+            ? <p className="raid-auto-note" data-field="note">{t('raid.auto.winNote')}</p>
+            : (
+              <>
+                <LootBig loot={f.loot} />
+                <p className="raid-auto-note" data-field="note">{t('raid.auto.loseNote')}</p>
+              </>
+            )}
+          <Say text={error} level={profile.cityLevel} name="error" repeat />
+          <div className="frg-confirm-acts raid-acts">
+            <button className="btn wide raid-btn-auto" data-action="raidAutoRun" disabled={busy} onClick={() => onAutoRun(f.win)}>
+              <img className="raid-btn-ico" src="icons/officer/opp-ai.png" alt="" />
+              <span className="lbl">{t('raid.auto.run')}</span>
+            </button>
+            <button className="btn wide raid-btn-close" data-action="raidAutoCancel" disabled={busy} onClick={onAutoCancel}>
+              <span className="lbl">{t('raid.auto.cancel')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (kind === 'autoDone') {
+    const won = raid.status === 'won';
+    return (
+      <div className="modal-back raid-alert" data-modal="raidAlert" data-kind={kind}>
+        <div className="modal frg-confirm raid-alert-box raid-alert-loot raid-auto-done" data-win={won ? '1' : '0'}>
+          <p className="modal-ttl">{t(won ? 'raid.auto.doneWon' : 'raid.auto.doneLost')}</p>
+          {won
+            ? <p className="raid-auto-note" data-field="note">{t('raid.auto.doneWonNote')}</p>
+            : <LootBig loot={raid.loot ?? 0} />}
+          <div className="frg-confirm-acts raid-acts">
+            <button className="btn wide raid-btn-fight" data-action="raidOk" onClick={onClose}>
+              <span className="lbl">{t('raid.ok')}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-back raid-alert" data-modal="raidAlert" data-kind={kind}>
@@ -96,11 +206,7 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
                 {t('raid.abandoned.body', { loot: raid.loot ?? 0, min: RAID_ABANDON_MS / 60_000 })}
               </p>
             ) : (
-              <p className="raid-loot-big" data-field="loot" data-loot={raid.loot ?? 0}>
-                <img className="raid-loot-grain" src="market/grain.png" alt={t('main.grain')} title={t('main.grain')} />
-                {/* 빼기는 붙임표(-) — 명조(Song Myung)의 「−」(U+2212)는 가늘고 길어 숫자와 떨어져 보인다 */}
-                <span className="raid-loot-n">-{raid.loot ?? 0}</span>
-              </p>
+              <LootBig loot={raid.loot ?? 0} />
             )}
             {/* [확인]도 [지금 전투]와 같은 옥색 판이다(2026-09-22 지정) */}
             <div className="frg-confirm-acts raid-acts">
@@ -112,28 +218,7 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
         ) : (
           <>
             <p className="modal-ttl">{t(kind === 'first' ? 'raid.alert.title' : 'raid.lastCall.title')}</p>
-            {/* 대치 판 — 고유기술 판(`panel-battle-skill`) 위에 반씩. 꼬마는 전투 시트 0번 칸, 도적은 왼쪽을 본다 */}
-            <div className="raid-vs" data-field="body">
-              <div className="raid-vs-side ally" data-field="guards" data-guards={guards.length} data-none={guards.length === 0 ? '1' : '0'}>
-                {guards.length > 0
-                  ? <Stands ids={guards.map((g) => g.officer)} />
-                  : (
-                    /* 아무도 안 세웠으면 꼬마 자리에 주홍 붓 획 「미편성」 — 폭은 열 언어 중 가장 긴 말에 맞춰 못 박는다 */
-                    <div className="raid-vs-stands raid-vs-empty">
-                      <span className="frm-stroke frm-stroke-locked raid-vs-unassigned" data-field="unassigned">{t('raid.alert.unassigned')}</span>
-                    </div>
-                  )}
-                <p className="raid-vs-cap"><span className="who">{t('raid.alert.ally')}</span></p>
-              </div>
-              <div className="raid-vs-mid" aria-hidden="true">
-                <img className="raid-vs-hit" src="duel/hit.png" alt="" />
-                <img className="raid-vs-swords" src="icons/battle.png" alt="" />
-              </div>
-              <div className="raid-vs-side foe" data-field="bandits" data-n={raid.bandits}>
-                <Stands ids={bandits.map((b) => b.id)} flip />
-                <p className="raid-vs-cap"><span className="who">{t('raid.alert.foe')}</span></p>
-              </div>
-            </div>
+            <VsBoard profile={profile} />
             {/* 「이름 : 값」 두 줄 — 승리 시 · 항복 시 (2026-11-20 기획자). 약탈률 괄호는 걷었다 — 컬렉션이 깎았으면 인장만 */}
             <dl className="raid-info">
               <div className="raid-info-line">
@@ -175,6 +260,11 @@ export function RaidAlert({ kind, profile, nowMs, busy, error, onFight, onSurren
                 disabled={busy} onClick={guards.length > 0 ? onFight : onToFarm}>
                 <img className="raid-btn-ico" src="icons/battle.png" alt="" />
                 <span className="lbl">{t('raid.fightNow')}</span>
+              </button>
+              {/* [자동 전투] — 금빛 두루마리. 판 없이 전투력으로 결말을 낸다(예측 판을 먼저 띄운다) */}
+              <button className="btn wide raid-btn-auto" data-action="raidAuto" disabled={busy} onClick={onAuto}>
+                <img className="raid-btn-ico" src="icons/officer/opp-ai.png" alt="" />
+                <span className="lbl">{t('raid.auto')}</span>
               </button>
               <button className="btn wide raid-btn-close" data-action="raidClose" onClick={onClose}>
                 <span className="lbl">{t('raid.close')}</span>
