@@ -1266,19 +1266,23 @@ const stage = () => page.evaluate(() => {
   } : null;
 });
 
+/*
+ * **AI와 싸우는 판은 배치 30초를 건너뛰고 정찰부터 연다** (2026-11-27 기획자, `LocalTransport`의 `skipDeploy`).
+ * 판을 만들 때 AI → 사람 순으로 `ready`가 들어가 있으므로 양쪽 다 준비를 마친 상태다. 배치를 옮겨 보는 검사는
+ * 사람 대 사람 판(배치 30초가 남은 곳)의 몫이라 여기서는 안 한다 — `npm run look:online`이 그 판을 지난다.
+ */
 let stg = await stage();
-if (stg?.phase !== 'deploying') fail(`출전 뒤 배치 단계가 아니다 (${stg?.phase} / ${stg?.engine})`);
-if (stg.hidden) fail('배치 단계인데 배치 패널이 숨겨져 있다');
-// 상대(AI)는 기다릴 것이 없으므로 곧바로 준비를 마친다 — 「매칭 대기」가 눈에 안 보인다
-if (!stg.ready['P2']) fail('AI가 준비를 마치지 않았다 — 배치에서 멈춘다');
-if (stg.ready['P1']) fail('내가 준비를 누르지도 않았는데 준비 상태다');
-// 배치 30초 · 정찰 30초 (2026-08-04 조정) — 배치가 길면 판이 늘어진다
-if (!stg.remain || stg.remain > 30) fail(`배치 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
+if (stg?.phase !== 'scouting') fail(`출전 뒤 정찰 단계가 아니다 — AI 판은 배치를 건너뛴다 (${stg?.phase} / ${stg?.engine})`);
+if (stg.hidden) fail('정찰 단계인데 배치 패널이 숨겨져 있다');
+if (!stg.ready['P2']) fail('AI가 준비를 마치지 않았다');
+if (!stg.ready['P1']) fail('배치를 건너뛰었는데 내 ready가 서지 않았다');
+// 정찰 30초(+ 컬렉션 발동 장면) — 이 계정은 컬렉션이 없어 30초를 넘지 않는다
+if (!stg.remain || stg.remain > 30) fail(`정찰 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
 
 /*
  * **배치 프리셋이 실제로 깔렸는가** (E · §5-14). 저장은 됐는데 전투에 안 실리면
  * 화면에는 「어라, 기본 배치네」로만 보인다 — 규칙 테스트로는 잡히지 않는 자리다.
- * 프리셋은 「초기값」이지 「확정」이 아니라, 아래에서 그대로 한 칸 옮겨 본다.
+ * AI 판은 배치를 건너뛰므로 프리셋이 곧 그 판의 자리다.
  */
 {
   const want = [...squadPlan.deploy].map((c) => `${c.x},${c.y}`).sort().join(' ');
@@ -1286,69 +1290,24 @@ if (!stg.remain || stg.remain > 30) fail(`배치 제한시간이 이상하다: $
   if (want !== got) fail(`저장한 배치가 안 깔렸다 — 저장 [${want}] / 판 [${got}]`);
   console.log(`✓ 배치 프리셋 적용 — [${got}] (전투 시작 때 이대로 깔린다)`);
 }
-console.log(`✓ 배치 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}]`);
 // 배치·정찰은 전투와 **다른 곡**이다. 화면은 그 경계를 모르고 단계만 안다
 await expectBgm('prep', '배치·정탐');
-
-// 내 기물을 골라 진영 안 다른 칸으로 옮긴다
-const placedBefore = stg.mine.join(' ');
-const spot = await page.evaluate(() => {
-  const pb = (window as any).__battle.scene.debugPlayback;
-  const u = Object.values(pb.state.units as Record<string, any>).find((x: any) => x.side === 'P1') as any;
-  /*
-   * **옮길 자리는 배치 구역 안이어야 한다.** 예전에는 `y - 2`였는데, E의 배치
-   * 프리셋이 기물을 구역 맨 윗줄로 옮겨 두자 목적지가 **구역 밖**이 되어 엔진이
-   * 거부했다 — 화면에서는 「안 옮겨진다」로만 보인다. 한 칸씩만 움직인다.
-   */
-  return {
-    from: { x: u.pos.x, y: u.pos.y },
-    to: { x: u.pos.x + 1, y: u.pos.y < 19 ? u.pos.y + 1 : u.pos.y - 1 },
-  };
-});
-const cell = (x: number, y: number) => page.evaluate(([px, py]) => {
-  const sc = (window as any).__battle.scene;
-  const r = (sc.game.canvas as HTMLCanvasElement).getBoundingClientRect();
-  const v = sc.cameras.main.worldView;
-  return {
-    x: r.left + ((px * 96 + 48 - v.x) / v.width) * r.width,
-    y: r.top + ((py * 120 + 60 - v.y) / v.height) * r.height,
-  };
-}, [x, y]);
-
-let at = await cell(spot.from.x, spot.from.y);
-await page.mouse.click(at.x, at.y);
-await page.waitForTimeout(200);
-// 고르면 진영 안 빈 칸이 칠해진다 (엔진의 배치 구역과 같은 자리)
-if (await page.evaluate(() => (window as any).__battle.scene.debugMarkCommands()) === 0) {
-  fail('기물을 골라도 배치 가능한 칸이 표시되지 않는다');
-}
-at = await cell(spot.to.x, spot.to.y);
-await page.mouse.click(at.x, at.y);
-await page.waitForTimeout(300);
-
-stg = await stage();
-if (stg!.mine.join(' ') === placedBefore) fail(`배치에서 기물이 옮겨지지 않았다: ${placedBefore}`);
-console.log(`✓ 배치 이동 — [${placedBefore}] → [${stg!.mine.join(' ')}]`);
-
-// 준비완료 → 정찰
-await page.click('#ctx-prep button.go');
-await page.waitForTimeout(400);
-stg = await stage();
-if (stg?.phase !== 'scouting') fail(`준비완료 뒤 정찰이 아니다 (${stg?.phase} / ${stg?.engine})`);
-if (!stg.ready['P1']) fail('준비완료를 눌렀는데 ready가 서지 않았다');
-if (!stg.remain || stg.remain > 30) fail(`정찰 제한시간이 이상하다: ${stg.remain} (30초여야 한다)`);
 // 정찰은 끝까지 세되 마지막 5초만 숫자를 보여준다 (GDD §3.9)
 // 카운트는 판 한가운데(`#countdown`, pptx 100쪽). 글자 칸이 **있는데 비어 있는가**를 본다 — 칸째 없으면 이 검사는 언제나 통과한다
-const clockShown = await page.evaluate(() => document.querySelector('#countdown .cd-num')?.textContent ?? 'missing');
-if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 한다: "${clockShown}"`);
-console.log(`✓ 정찰 단계 — 남은 ${stg.remain}초, 버튼 "${stg.button}" (카운트다운은 마지막 5초부터)`);
+{
+  const clockShown = await page.evaluate(() => document.querySelector('#countdown .cd-num')?.textContent ?? 'missing');
+  if (clockShown !== '') fail(`정찰 초반에는 카운트다운을 숨겨야 한다: "${clockShown}"`);
+}
+console.log(`✓ 정찰 단계(배치 건너뜀) — 남은 ${stg.remain}초, 버튼 "${stg.button}", 내 기물 [${stg.mine.join(' ')}] (카운트다운은 마지막 5초부터)`);
 
 // 전투 시작
 await page.click('#ctx-prep button.go');
-await page.waitForTimeout(1500);
+// 재생기의 단계는 연출이 도는 동안 굳어 있다(`settlePending`) — 시간을 다시 적지 말고 판이 걷히기를 기다린다
+await page.waitForFunction(() => ((document.getElementById('ctx-prep') as HTMLElement | null)?.dataset.phase ?? '') === '', null, { timeout: 15000 })
+  .catch(() => {});
 stg = await stage();
 if (stg?.engine === 'scout' || stg?.engine === 'deploy') fail(`전투가 시작되지 않았다 (${stg?.engine})`);
-if (!stg!.hidden) fail('전투가 시작됐는데 배치 패널이 남아 있다');
+if (!stg!.hidden) fail(`전투가 시작됐는데 배치 패널이 15초 넘게 남아 있다 (${stg!.phase} / ${stg!.engine})`);
 console.log(`✓ 전투 시작 — ${stg!.phase} / ${stg!.engine}`);
 await expectBgm('battle', '전투');
 
@@ -1786,10 +1745,17 @@ console.log(`✓ 장수 카드 — ${detail.name} / ${detail.lv} / 여섯 값 ·
   if (!holder) {
     // 지금 열린 장수에 기술이 없으면 카드를 닫고 하나씩 열어 본다 (C·D급 134명)
     await closeCard();
-    for (const r of await listRows()) {
-      await openCardOf(r.officer);
-      if (await page.$('.ofcard-modal [data-action="skill"]')) { holder = r; break; }
-      await closeCard();
+    // 한 쪽은 6명이다(2026-11-27 꺾쇠 넘김) — 첫 쪽이 C·D급뿐일 수 있어 [다음 쪽]으로 넘기며 찾는다
+    const nextPage = '.ofc-fill .page-arrow[data-dir="next"]';
+    for (let pg = 0; !holder && pg < 30; pg++) {
+      for (const r of await listRows()) {
+        await openCardOf(r.officer);
+        if (await page.$('.ofcard-modal [data-action="skill"]')) { holder = r; break; }
+        await closeCard();
+      }
+      if (holder || !(await page.$(`${nextPage}:not(:disabled)`))) break;
+      await page.click(nextPage);
+      await page.waitForTimeout(150);
     }
   }
   if (!holder) fail('고유기술을 가진 장수가 하나도 없다 — 초기 지급에 S·A·B가 들어간다');
@@ -2039,7 +2005,8 @@ await page.click('[data-action="confirm"]');
 // 판은 결과가 올 때까지 닫지 않는다(`LevelUpPanel`). 거절이면 판이 남고 그 말을 싣는다
 const waitLevelUp = async (what: string): Promise<void> => {
   // 오르면 축하 판(`Celebrate`, 2026-11-20)이 뜬다 — 오른 레벨 · 고른 능력 줄을 보고 [확인]으로 카드에
-  const celebrated = await page.waitForSelector('[data-modal="levelUpDone"]', { timeout: 8_000 }).then(() => true).catch(() => false);
+  // 서버 왕복 뒤에 뜬다 — 8초로는 가끔 모자라 늦게 뜬 축하 판이 다음 [강화]를 가렸다(2026-11-28)
+  const celebrated = await page.waitForSelector('[data-modal="levelUpDone"]', { timeout: 15_000 }).then(() => true).catch(() => false);
   if (celebrated) {
     const cel = await page.evaluate(() => ({
       level: document.querySelector('[data-modal="levelUpDone"] [data-field="doneLevel"] [data-level]')?.getAttribute('data-level') ?? '',
@@ -2116,12 +2083,15 @@ console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은
     const a = m.getBoundingClientRect(), b = frame.getBoundingClientRect();
     return {
       what: m.textContent?.trim() ?? '',
+      // 돌려받는 카드는 글자가 아니라 「(카드 그림) ×N」이다(2026-11-26 확인 판 개편) — 수는 `data-refund`로 본다
+      refund: (m.querySelector('[data-field="respecChange"]') as HTMLElement | null)?.dataset.refund ?? null,
+      card: !!m.querySelector('[data-field="respecChange"] .rsp-ask-card'),
       covers: Math.abs(a.top - b.top) < 4 && Math.abs(a.height - b.height) < 4,
     };
   });
   if (!modal) fail('재설계를 골랐는데 확인 팝업이 안 뜬다');
   if (!modal!.covers) fail('재설계 확인 팝업이 화면을 덮지 않는다 — 내용 맨 아래에 흘러 붙었다');
-  if (!/카드\s*3장/.test(modal!.what)) fail(`돌려받을 카드 수가 안 적혀 있다: "${modal!.what}"`);
+  if (modal!.refund !== '3' || !modal!.card || !/×\s*3/.test(modal!.what)) fail(`돌려받을 카드 수가 안 적혀 있다: "${modal!.what}"`);
 
   // [뒤로 가기]로 나가면 아무 일도 없어야 한다
   await page.click('[data-modal="respecAsk"] [data-action="confirmCancel"]');
@@ -2136,17 +2106,21 @@ console.log(`✓ 강화 — ${before} → ${after}, 책략 ${tactics}종, 찍은
   // 이번엔 확정 — **재설계는 서버 왕복이다**(A1 — 금화가 서버 소유). 완료 판이 뜰 때까지 본다
   await openRespec();
   await page.click('[data-modal="respecAsk"] [data-action="confirmOk"]');
-  await page.waitForSelector('[data-modal="respecDone"]', { timeout: 8_000 })
-    .catch(async () => fail(`[확정]을 눌렀는데 8초가 지나도 완료 판이 안 뜬다: "${await page.textContent('.stw[data-say="refused"] [data-field="guideText"]').catch(() => '')}"`));
-  const refunded = await page.textContent('[data-modal="respecDone"] [data-field="refund"]');
-  if (!refunded?.includes('3')) fail(`완료 판의 회수 카드가 「${refunded}」다 — ×3이라야 한다`);
-  // [궁궐로 이동] → 장수 일람 + 그 장수의 카드 (2026-09-25 기획자 지정 — 예전에는 전면
-  // 레벨/스킬 관리 화면이었다. 행선지가 바뀐 뒤 이 검사만 옛 화면을 기다리고 있었다)
-  await page.click('[data-action="toPalace"]');
-  await page.waitForSelector(`.ofcard-modal[data-officer="${who}"]`, { timeout: 5_000 })
-    .catch(() => fail('[궁궐로 이동]을 눌렀는데 장수 일람에서 그 장수의 카드가 안 열린다'));
-  if (!(await page.$('[data-screen="officer-list"]'))) fail('[궁궐로 이동]이 장수 일람으로 가지 않았다');
-  // 나머지 검사는 일람 위의 판에서 잇는다 — 도시로 돌아가 다시 연다
+  // 완료 무대는 5초 도입부(명상하는 선비, `Celebrate intro="respec"`) 뒤에 열린다 — 서버 왕복까지 넉넉히
+  await page.waitForSelector('[data-modal="respecDone"]', { timeout: 20_000 })
+    .catch(async () => fail(`[확정]을 눌렀는데 20초가 지나도 완료 판이 안 뜬다: "${await page.textContent('.stw[data-say="refused"] [data-field="guideText"]').catch(() => '')}"`));
+  // 돌려받은 수는 `data-refund`(글자는 도입부 뒤에 센다 — 2026-11-26 완료 무대 개편)
+  const refunded = await page.getAttribute('[data-modal="respecDone"] [data-field="refund"]', 'data-refund');
+  if (refunded !== '3') fail(`완료 판의 회수 카드가 「${refunded}」다 — 3이라야 한다`);
+  // 완료 무대는 다른 축하처럼 「화면을 터치해주세요」 — [궁궐로 이동] · [닫기]는 걷었다(2026-11-26 기획자)
+  if (await page.$('[data-modal="respecDone"] [data-action="toPalace"]')) fail('완료 무대에 옛 [궁궐로 이동]이 남아 있다');
+  // 도입부(명상하는 선비) 동안의 누름 칸은 「건너뛰기」다 — 무대의 「화면을 터치해주세요」가 선 뒤에 누른다
+  await page.waitForSelector('[data-modal="respecDone"] .cel-tap', { timeout: 15_000 })
+    .catch(() => fail('완료 무대에 「화면을 터치해주세요」가 안 선다'));
+  await page.click('[data-modal="respecDone"] .cel-hit');
+  await page.waitForSelector('[data-modal="respecDone"]', { state: 'detached', timeout: 8_000 })
+    .catch(() => fail('완료 무대를 눌렀는데 닫히지 않는다'));
+  // 나머지 검사는 장수 상세에서 잇는다 — 도시로 돌아가 다시 연다
   await reenter();
   await openLevels();
   const reset = await lvState();
@@ -2328,13 +2302,13 @@ console.log(`✓ 저장 유지 — ${kept}`);
       const scr = document.querySelector('[data-screen="city"]') as HTMLElement | null;
       if (!scr) return null;
       const at = (f: string) => document.querySelector(`[data-field="${f}"]`);
-      const txt = (f: string) => at(f)?.querySelector('.v')?.textContent?.trim() ?? '';
       return {
         level: Number(scr.dataset.cityLevel),
         // **등용 장수·군량 줄은 2026-09-05에 현황판에서 빠졌다**(건물 일곱 줄이 그 자리다) —
         // 스모크가 계속 그 줄을 읽어 빈 글자를 받았다. 풀은 아래 저장분에서, 상한·요율을
         // 정하는 것은 건물이므로 건물 레벨(`data-level`)로 본다
-        materials: txt('materials'),
+        // 자재는 요건 칸의 「가진 수/필요한 수」(2026-11-23 도시 관리 개편 — `.v` 글자 칸이 없어졌다)
+        materials: at('materials')?.textContent?.replace(/\s+/g, '') ?? '',
         buildings: Object.fromEntries([...document.querySelectorAll('[data-building]')].map((el) =>
           [(el as HTMLElement).dataset.building!, Number((el as HTMLElement).dataset.level)])),
       };
@@ -2377,14 +2351,19 @@ console.log(`✓ 저장 유지 — ${kept}`);
     if (!(b in it!.buildings)) fail(`현황판에 ${b} 줄이 없다: ${JSON.stringify(it!.buildings)}`);
   }
   // 자재 줄은 「가진 수 / 다음 레벨에 드는 수」다(2026-09-18)
-  if (!it!.materials.includes('/ 10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
+  if (!it!.materials.endsWith('/10')) fail(`증축 자재 줄이 다르다: "${it!.materials}"`);
   {
     const up = await upgradeState();
     if (up.upgradeOn) fail('재료가 0인데 [증축]이 눌린다');
     // 막힌 이유는 **말하지 않는다**(2026-11-23 기획자 — 모자란 조건은 조건 칸이 붉게 보여 준다).
     // 이 계정은 장수 10명(Lv2 조건)을 채웠고 AI 대전에서 지기만 했다 — 남은 것은 누적 승리 칸이다(2026-11-14 조건)
     if (up.why) fail(`막힌 이유를 내관이 말한다(말하지 않기로 했다): "${up.why}"`);
-    if (!await page.$('[data-screen="city"] [data-cond="wins"]:not([data-ok="1"])')) fail('이긴 적이 없는데 누적 승리 칸이 채움으로 뜬다');
+    if (!await page.$('[data-field="conds"] [data-cond="wins"]:not([data-ok="1"])')) {
+      const conds = await page.$$eval('[data-field="conds"] [data-cond]', (els) => els.map((e) =>
+        `${(e as HTMLElement).dataset.cond}=${(e as HTMLElement).dataset.ok}(${e.textContent?.trim()})`));
+      const bw = (await apiGet())['battleWins'];
+      fail(`이긴 적이 없는데 누적 승리 칸이 채움으로 뜬다 — 칸 [${conds.join(' ')}] · 서버 battleWins=${bw}`);
+    }
   }
   console.log(`✓ 도시 관리 — 3시간에 군량 5 → ${it!.saved.grain} · ${it!.pool} · ${it!.materials}`);
 
@@ -2480,7 +2459,7 @@ console.log(`✓ 저장 유지 — ${kept}`);
     }
   }
   if (it!.pool !== poolAfterLoss + 5) fail(`궁궐을 안 골랐는데 풀이 바뀌었다 — ${it!.pool}`);
-  if (!it!.materials.includes('/ 15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
+  if (!it!.materials.endsWith('/15')) fail(`다음 레벨 재료가 안 바뀌었다: "${it!.materials}"`);
   // [건물 관리]와 짓기 단추는 없어졌다(2026-11-23)
   if (await page.$('[data-action="buildings"], .scr-city [data-action="build"]')) fail('도시 관리에 옛 [건물 관리]/[짓기]가 남았다');
   console.log(`✓ 증축 — Lv2 · 고른 셋(${PICKS.join(' · ')})만 한 단계 · 풀 그대로(${it!.pool})`);
