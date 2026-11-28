@@ -3158,7 +3158,8 @@ button.lv-tactic-row {
 .cty-peek-lv .bld-badge { height: 2rem; }
 .cty-peek[data-level="0"] .cty-peek-lv .bld-badge { filter: grayscale(1); opacity: .45; }
 .cty-peek[data-level="0"] .cty-peek-lv .bld-glow { display: none; }
-.cty-peek-line { margin: 0; font-size: .9rem; color: #4a3826; display: flex; align-items: center; flex-wrap: wrap; gap: .15rem .3rem; }
+/* 건물 한 장의 본문 ×1.2(.9 → 1.08rem, 2026-11-28 기획자) */
+.cty-peek-line { margin: 0; font-size: 1.08rem; color: #4a3826; display: flex; align-items: center; flex-wrap: wrap; gap: .15rem .3rem; }
 .cty-peek-line .gic img { height: 1.6em; }
 /* 살 것 · 만들 것 — 둥근 금테 배지(장수 상세 [아이템] 단추의 `.ofcard-held-badge[data-shape="round"]`와 같은 값). 줄에 늘어놓고 많으면 접힌다 */
 .cty-peek-badge {
@@ -3175,7 +3176,7 @@ button.lv-tactic-row {
 /* 태학 — 이 레벨에서 고르지 않은 주제(셋 가운데 하나만 연구한다) */
 .cty-peek-line .cty-peek-off > img { filter: grayscale(1); opacity: .6; }
 /* 대장간 한 장 — 아직 연구 안 한 병기(2026-11-28) */
-.cty-peek-line .cty-peek-off > .cty-peek-badge { filter: grayscale(1); opacity: .6; }
+.cty-peek-line .cty-peek-badge.cty-peek-off { filter: grayscale(1); opacity: .6; }
 .cty-peek-line .tac-icon.cty-peek-tac { width: 2rem; height: 2rem; }
 /* 「+」 표지는 글자 하한(.8rem)까지 — 작은 엠블럼에서 .55rem으로 줄었다 */
 .cty-peek-line .cty-peek-tac .tac-icon-plus { font-size: .9rem; }
@@ -3183,7 +3184,8 @@ button.lv-tactic-row {
 .cty-peek-badge[data-kind="equip"] .cty-peek-badge-in img { width: 125%; height: 125%; max-width: none; }
 .cty-blds-st .cty-bld .ic { display: inline-flex; line-height: 0; }
 .cty-blds-st .cty-bld .ic .gic-bld img { height: 1.9rem; }
-.cty-blds-st .cty-bld .nm { min-width: 0; max-width: none; font-size: .9rem; white-space: nowrap; overflow: hidden; }
+/* 건물 이름 ×1.2(.9 → 1.08rem, 2026-11-28 기획자). 몽골어는 한 줄에 안 들면 그대로(아래) */
+.cty-blds-st .cty-bld .nm { min-width: 0; max-width: none; font-size: 1.08rem; white-space: nowrap; overflow: hidden; }
 .cty-blds-st .cty-bld .nm .gic-t { display: block; font-size: calc(1em * var(--nm-scale, 1)); line-height: 1.2; white-space: nowrap; }
 .cty-blds-st .cty-bld .lv { white-space: nowrap; font-size: .9rem; }
 .cty-blds-st .cty-bld .lv .bld-badge { height: 1.9rem; }
@@ -3244,6 +3246,10 @@ button.lv-tactic-row {
 
 .cty-acts { display: flex; flex-direction: column; gap: .35rem; margin-top: .5rem; }
 .cty-acts .btn { justify-content: center; }
+/* [증축]의 아이콘 — 단추 왼쪽 끝(2026-11-28 기획자). 흐름 밖이라 단추 높이 · 글자 가운데에 안 닿는다(궁궐 바닥 판과 같은 높이) */
+.cty-acts .btn[data-action="upgrade"] { position: relative; }
+.cty-up-ic { position: absolute; left: 1.4rem; top: 50%; translate: 0 -50%; line-height: 0; pointer-events: none; }
+.cty-up-ic .gic img { height: 1.9rem; width: auto; }
 .cty-modal { display: flex; flex-direction: column; gap: .4rem; }
 /* 증축 축하 팝업 — 오른 레벨을 크게 한 번 (2026-09-04). 값이 나가는 확인 팝업과
    **같은 판**을 쓰되 가운데 정렬과 큰 숫자만 더한다 — 새 판을 만들지 않는다. */
@@ -3393,6 +3399,8 @@ button.lv-tactic-row {
 }
 /* 잠겼을 때 기본값(`opacity: .34`)까지 흐려지면 양피지 위에서 글자가 사라진다 */
 .scr-city .btn.primary:disabled { opacity: .55; }
+/* 바닥 명령 판의 [증축] — 위아래 테를 참나무 단추(.3rem)와 같게. .35rem이면 이 단추 하나가 2px 높아 판이 궁궐 바닥 판보다 커지며 들썩였다(2026-11-28 기획자) */
+.scr-city .cty-acts .btn.primary { border-top-width: .3rem; border-bottom-width: .3rem; }
 
 .scr-city .place-bar {
   flex-direction: column; align-items: stretch;

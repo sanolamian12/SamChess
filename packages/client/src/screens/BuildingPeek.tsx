@@ -33,10 +33,10 @@ export function nextBuilding(profile: PlayerProfile, id: BuildingId): { profile:
  * 살 수 있는 것 · 만들 수 있는 것 한 개 — **둥근 금테 배지** (2026-11-23 기획자, 장수 상세 [아이템] 단추의 배지와 같은 꼴:
  * 금빛 고리 안 검은 원에 그림). 이름은 올리면(`title`)
  */
-function PeekBadge({ src, name, kind, id }: { src: string; name: string; kind: string; id?: string }): React.JSX.Element {
+function PeekBadge({ src, name, kind, id, off = false }: { src: string; name: string; kind: string; id?: string; off?: boolean }): React.JSX.Element {
   // 아이템 · 병기구는 그림 뒤에 후광 — 부대 · [아이템] 단추와 같은 `HeldArt`(레벨이 높을수록 자주 · 금, 2026-11-23 기획자)
   return (
-    <span className="cty-peek-badge" title={name} data-kind={kind}>
+    <span className={`cty-peek-badge${off ? ' cty-peek-off' : ''}`} title={name} data-kind={kind}>
       <span className="cty-peek-badge-in">{id ? <HeldArt id={id} /> : <img src={src} alt={name} draggable={false} />}</span>
     </span>
   );
@@ -100,9 +100,7 @@ function peekLinesAll(profile: PlayerProfile, row: BuildingRow, future: boolean)
       return [
         { field: 'craft', body: <>{t(future ? 'city.peek.newCraft' : 'city.peek.craft', { n: forgeQuota(lv) })}
           {shown.map((e) => (
-            <span key={e.id} className={!future && !done.has(e.id) ? 'cty-peek-off' : undefined}>
-              <PeekBadge src={`blacksmith/${e.id}.png`} name={pickEquipName(e)} kind="equip" id={e.id} />
-            </span>
+            <PeekBadge key={e.id} src={`blacksmith/${e.id}.png`} name={pickEquipName(e)} kind="equip" id={e.id} off={!future && !done.has(e.id)} />
           ))}</> },
         { field: 'status', body: t('city.peek.forgeCount', { done: done.size, shelf: forgeShelf(profile).length }) },
       ];

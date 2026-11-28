@@ -56,6 +56,7 @@
     "look:online": "node --experimental-strip-types --env-file=.env tools/online_look.ts",
     "look:forge": "node --experimental-strip-types --env-file=.env tools/forge_research_ux.ts",
     "look:items": "node --experimental-strip-types --env-file=.env tools/item_shop_look.ts",
+    "look:city": "node --experimental-strip-types --env-file=.env tools/city_screen_look.ts",
     "smoke:academy-ux": "node --experimental-strip-types --env-file=.env tools/academy_ux.ts",
     "smoke:settings-ux": "node --experimental-strip-types tools/settings_ux.ts",
     "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",

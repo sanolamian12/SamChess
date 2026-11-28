@@ -105,12 +105,11 @@ export function CityUpgrade({ profile, onChange, cue, onModal }: {
         {cost === null
           ? <GameIcon name="bld-max" label={t('city.upgrade.max')} text />
           : (
-            // 「도시 증축 ([자재] -10)」 — 무엇을 내는지 글자 대신 자재 그림으로 (2026-11-12 지정)
+            // 「[아이콘]  증축」 — 아이콘은 단추 왼쪽 끝, 글자는 가운데. 「([자재] -10)」는 걷었다(2026-11-28 기획자 — 바닥 명령 판이
+            // 궁궐의 것보다 높아져 화면을 넘길 때 판이 들썩였다. 내는 자재는 요건 칸 · 고르기 판이 말한다)
             <>
-              <GameIcon name="city-upgrade" label={t('city.upgrade')} text />
-              <span className="cty-cost" data-field="cost" data-cost={cost}>
-                (<GameIcon name="res-materials" label={t('city.materials')} />-{cost})
-              </span>
+              <span className="cty-up-ic" aria-hidden><GameIcon name="city-upgrade" label="" /></span>
+              <span className="lbl" data-field="cost" data-cost={cost}>{t('city.upgrade')}</span>
             </>
           )}
       </button>
