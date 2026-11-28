@@ -163,6 +163,17 @@
       }
     ],
     "text": "8방향 내 아군 1명의 HP 50% 회복",
+    "textI18n": {
+      "en": "1 adjacent ally: restores 50% HP",
+      "ja": "周囲8マスの味方1人のHPを50%回復",
+      "zh_Hant": "周圍8格內友軍1人 恢復50% HP",
+      "zh_Hans": "周围8格内友军1人 恢复50% HP",
+      "pt_BR": "1 aliado adjacente: recupera 50% do HP",
+      "pt_PT": "1 aliado adjacente: recupera 50% do HP",
+      "it": "1 alleato adiacente: recupera il 50% degli HP",
+      "es_419": "1 aliado adyacente: recupera el 50% de HP",
+      "mn": "Хажуугийн 1 холбоотон: HP-ийн 50% сэргэнэ"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. Hua Tuo's anaesthetic powder, mafeisan: a small lidded white porcelain jar with its wooden stopper set aside, spilling a little pale grey-green powder onto a folded paper packet, next to a worn stone mortar and pestle and a few dried hemp flower heads and datura blossoms. Precious and medicinal, cool pale tones, a faint numbing stillness about it.",
     "lore": "화타의 마취약. 술에 타 마시면 배를 갈라도 아픔을 모른다 했으나, 처방은 그가 죽으며 함께 사라졌다.",
     "nameI18n": {
@@ -192,6 +203,17 @@
       "noInjury": true
     },
     "text": "아군 전원이 이 전투에서 부상을 입지 않음",
+    "textI18n": {
+      "en": "No ally is injured in this battle",
+      "ja": "この戦闘で味方全員が負傷しない",
+      "zh_Hant": "本場戰鬥全體友軍不會負傷",
+      "zh_Hans": "本场战斗全体友军不会负伤",
+      "pt_BR": "Nenhum aliado se fere nesta batalha",
+      "pt_PT": "Nenhum aliado se fere nesta batalha",
+      "it": "Nessun alleato subisce ferite in questa battaglia",
+      "es_419": "Ningún aliado sufre heridas en esta batalla",
+      "mn": "Энэ тулаанд бүх холбоотон шархдахгүй"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Blue Bag medical manual, qingnang shu: a bundle of narrow bamboo writing slips bound with cord and half rolled open, wrapped in a deep blue-green silk pouch whose drawstring hangs loose. A slim leather roll of bronze acupuncture needles lies open beside it and a sprig of dried medicinal herb rests on top. Faded indigo dye, worn silk nap, no legible lettering.",
     "lore": "화타가 평생의 의술을 적어 푸른 주머니에 넣어 둔 의서. 옥리가 화를 두려워해 받지 않아 불길 속에 사라졌다.",
     "nameI18n": {
@@ -228,6 +250,17 @@
       }
     ],
     "text": "사용 후 3일간 책략 MP 소모 0",
+    "textI18n": {
+      "en": "After use, tactics cost 0 MP for 3 days",
+      "ja": "使用後3日間、策略のMP消費0",
+      "zh_Hant": "使用後3天內策略MP消耗0",
+      "zh_Hans": "使用后3天内策略MP消耗0",
+      "pt_BR": "Após usar, táticas custam 0 MP por 3 dias",
+      "pt_PT": "Após usar, as táticas custam 0 MP durante 3 dias",
+      "it": "Dopo l'uso, tattiche a 0 MP per 3 giorni",
+      "es_419": "Tras usarlo, las tácticas cuestan 0 MP durante 3 días",
+      "mn": "Хэрэглэсний дараа 3 хоногийн турш стратегийн MP зарцуулалт 0"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Daoist scripture of arcane arts, taiping yaoshu: a scroll of coarse yellow hemp paper partly unrolled over a bundle of bamboo slips, its wooden rollers capped in tarnished bronze, tied with a saffron silk cord. Strips of yellow talisman paper marked with swirling illegible cinnabar-red charm script are tucked into the fold, and a faint pale aura clings to the edges. Ochre and cinnabar, incense-smoked, faintly supernatural.",
     "lore": "장각이 남화노선에게 받았다는 도교 비서. 바람과 비를 부르는 술법이 적혀 있었다 한다.",
     "nameI18n": {
@@ -264,6 +297,17 @@
       }
     ],
     "text": "사용 후 2일간 피격 시 반격",
+    "textI18n": {
+      "en": "After use, counterattacks when hit for 2 days",
+      "ja": "使用後2日間、攻撃を受けると反撃",
+      "zh_Hant": "使用後2天內受到攻擊時反擊",
+      "zh_Hans": "使用后2天内受到攻击时反击",
+      "pt_BR": "Após usar, revida ao ser atingido por 2 dias",
+      "pt_PT": "Após usar, riposta ao ser atingido durante 2 dias",
+      "it": "Dopo l'uso, contrattacca quando colpito per 2 giorni",
+      "es_419": "Tras usarlo, contraataca al ser golpeado durante 2 días",
+      "mn": "Хэрэглэсний дараа 2 хоногийн турш цохиулахад хариу цохино"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Six Secret Teachings and Three Strategies, liutao sanlue: two separate bundles of bamboo writing slips, one lying flat and half unrolled and the other still tightly rolled and tied, bound with plain dark hemp cord, resting on a coarse undyed cloth. Slips darkened with handling, one cracked and re-bound with fresh cord, an ink stone and worn brush set aside. Plain, heavily used, scholarly and unglamorous.",
     "lore": "강태공의 『육도』와 황석공이 장량에게 준 『삼략』을 묶어 부르는 병법서. 읽는 책이 아니라 손에 익히는 책이다.",
     "nameI18n": {
@@ -300,6 +344,17 @@
       }
     ],
     "text": "사용 후 3일간 받는 데미지 반감 (다른 반감과 겹침)",
+    "textI18n": {
+      "en": "After use, damage taken halved for 3 days (stacks with other halving)",
+      "ja": "使用後3日間、被ダメージ半減（他の半減と重なる）",
+      "zh_Hant": "使用後3天內受到傷害減半（與其他減半疊加）",
+      "zh_Hans": "使用后3天内受到伤害减半（与其他减半叠加）",
+      "pt_BR": "Após usar, dano recebido pela metade por 3 dias (acumula com outras reduções)",
+      "pt_PT": "Após usar, dano recebido para metade durante 3 dias (acumula com outras reduções)",
+      "it": "Dopo l'uso, danni subiti dimezzati per 3 giorni (si somma agli altri dimezzamenti)",
+      "es_419": "Tras usarlo, daño recibido a la mitad durante 3 días (se acumula con otras reducciones)",
+      "mn": "Хэрэглэсний дараа 3 хоногийн турш хүлээх хохирол хагас (бусад хагасалттай давхарна)"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Art of War, sunzi bingfa: a long bundle of finely finished bamboo slips bound with twisted silk cord, rolled open just enough to show the ranks of slips, weighted at one end by a carved pale jade bar and resting on a square of deep indigo brocade. A lacquered wooden case with bronze clasps lies open behind it. Revered and immaculately kept, warm bamboo gold against indigo, no legible lettering.",
     "lore": "손무가 지은 병법의 고전. 조조가 직접 주를 달아 남긴 『위무주손자』가 오늘날 전하는 판본의 바탕이다.",
     "nameI18n": {
@@ -336,6 +391,17 @@
       }
     ],
     "text": "사용 후 3일간 WT −10",
+    "textI18n": {
+      "en": "WT −10 for 3 days",
+      "ja": "使用後3日間 WT −10",
+      "zh_Hant": "使用後3天內 WT −10",
+      "zh_Hans": "使用后3天内 WT −10",
+      "pt_BR": "WT −10 por 3 dias",
+      "pt_PT": "WT −10 durante 3 dias",
+      "it": "WT −10 per 3 giorni",
+      "es_419": "WT −10 durante 3 días",
+      "mn": "3 хоногийн турш WT −10"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Ferghana warhorse, dawan ma, riderless and standing in profile turned slightly toward the viewer: a tall long-legged golden bay with a dark mane, deep chest and dished face, wearing plain military tack of undyed leather, a simple bronze snaffle bit and a low wooden saddle with a coarse felt blanket. A sturdy army mount, dusty coat, no ornament.",
     "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다.",
     "nameI18n": {
@@ -365,6 +431,17 @@
       "wtDeltaLowHp": -20
     },
     "text": "HP가 절반 이하일 때 WT −20",
+    "textI18n": {
+      "en": "WT −20 while HP is at half or below",
+      "ja": "HPが半分以下のとき WT −20",
+      "zh_Hant": "HP在一半以下時 WT −20",
+      "zh_Hans": "HP在一半以下时 WT −20",
+      "pt_BR": "WT −20 com HP pela metade ou menos",
+      "pt_PT": "WT −20 com HP a metade ou menos",
+      "it": "WT −20 con HP a metà o meno",
+      "es_419": "WT −20 con HP a la mitad o menos",
+      "mn": "HP хагас буюу түүнээс бага үед WT −20"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Dilu, riderless and standing alert in profile turned slightly toward the viewer: a powerful dark bay stallion with a stark white blaze running down its forehead, ears pricked and muscles gathered as if about to leap, wearing plain campaign tack of dark leather with iron fittings. Wet flank, mud-spattered legs, a wary and slightly ill-omened air.",
     "lore": "이마에 흰 점이 박힌 유비의 말. 주인을 해치는 흉마라 했으나, 단계에서 세 길을 뛰어넘어 그를 살렸다.",
     "nameI18n": {
@@ -401,6 +478,17 @@
       }
     ],
     "text": "사용 후 3일간 WT −30",
+    "textI18n": {
+      "en": "WT −30 for 3 days",
+      "ja": "使用後3日間 WT −30",
+      "zh_Hant": "使用後3天內 WT −30",
+      "zh_Hans": "使用后3天内 WT −30",
+      "pt_BR": "WT −30 por 3 dias",
+      "pt_PT": "WT −30 durante 3 dias",
+      "it": "WT −30 per 3 giorni",
+      "es_419": "WT −30 durante 3 días",
+      "mn": "3 хоногийн турш WT −30"
+    },
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Red Hare, chitu ma, riderless and rearing slightly in profile turned toward the viewer: a magnificent flame-red chestnut stallion with a burning copper coat, flowing crimson mane and tail and fierce intelligent eyes, wearing ornate gilt-bronze tack with a tasselled breast collar, a crimson saddle blanket edged in gold and phoenix-motif cheek pieces. Heat shimmer at its hooves, the most famous horse under heaven, regal and untamable.",
     "lore": "하루에 천 리를 달린다는 명마. 「사람 중에는 여포, 말 중에는 적토」라 불렸고 뒤에 관우에게 넘어갔다.",
     "nameI18n": {
