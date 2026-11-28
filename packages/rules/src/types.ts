@@ -123,6 +123,8 @@ export type TargetSpec =
    */
   | {
     kind: 'enemyOne'; anywhere?: boolean; withinRadius?: number;
+    /** **이 줄들 위의 칸만** — 상하좌우(4) · 대각선 포함(8) 방향으로 `length`칸 이내, 사이의 유닛은 안 막는다(유성추, 2026-11-28) */
+    lines?: { dirs: 4 | 8; length: number };
     /**
      * **고유기술이 아직 남은 적만** (조조 「영웅론」, 2026-09-25 기획자 확정).
      *
@@ -228,11 +230,9 @@ export type StatusId =
    * 손자병법서가 「간뇌도지」의 반감을 덮어 1/4이 안 되고 수극이 「일당백」의 지속형 결정타를 1회형으로 바꾼다.
    */
   /** 수극 — 다음 공격 한 번 결정타 확정(`charges: 1`). 읽는 자리는 `critSure()`, 깎는 자리는 `resolveAttack` */
-  | 'itemCritNext'
   /** 의천검 — 아군 전원 결정타 확정(1일). 읽는 자리는 `critSure()` */
   | 'itemCritAll'
   /** 유성추 — 다음 공격 한 번 사거리가 8방향 두 칸(기물의 사거리에 **더한다**). 읽는 자리는 `attackCellsOf()` */
-  | 'itemRangeTwo'
   /** 손자병법서 — 받는 공격 피해 반감. **다른 반감과 겹친다**(1/4) — 읽는 자리는 `halvingsOf()` */
   | 'itemIncomingHalf'
   /** 태평요술 — 책략 MP 소모 0. 읽는 자리는 `tacticMpCost()` */
@@ -295,9 +295,7 @@ export const STATUS_META: Readonly<Record<StatusId, {
   duelBoon: { kind: 'buff', label: '일기토 효과', desc: '일기토에서 이긴 기세 — 공격이 반드시 크리티컬로 들어가고(데미지 ×2), 공격으로 받는 데미지가 절반이 된다.' },
   debateBoon: { kind: 'buff', label: '설전 효과', desc: '설전에서 이긴 기세 — 책략을 MP 소모 없이 시전하고, 책략이 반드시 걸린다. 「결계」를 두른 상대에게 거는 환술은 막힌다.' },
   skillSealed: { kind: 'debuff', label: '고유기술 봉인', desc: '게임이 끝날 때까지 고유기술을 쓸 수 없다. 시전 중이던 고유기술은 무산됐다. 풀리지 않는다.' },
-  itemCritNext: { kind: 'buff', label: '다음 공격 결정타', desc: '다음 공격 한 번이 반드시 결정타로 들어간다 (데미지 ×2).' },
   itemCritAll: { kind: 'buff', label: '결정타 100%', desc: '공격이 반드시 결정타로 들어간다 (데미지 ×2).' },
-  itemRangeTwo: { kind: 'buff', label: '사거리 두 칸', desc: '다음 공격 한 번은 8방향 두 칸 안의 적도 겨눌 수 있다.' },
   itemIncomingHalf: { kind: 'buff', label: '받는 피해 반감', desc: '받는 데미지가 절반이 된다. 다른 반감과 겹친다.' },
   itemZeroMp: { kind: 'buff', label: '책략 MP 0', desc: '책략을 MP 소모 없이 시전한다.' },
   itemCounter: { kind: 'buff', label: '반격', desc: '공격을 받으면 반드시 반격한다.' },

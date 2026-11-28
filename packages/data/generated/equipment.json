@@ -63,15 +63,15 @@
     "gold": 2,
     "effects": [
       {
-        "t": "applyStatus",
+        "t": "strike",
         "target": {
-          "kind": "self"
+          "kind": "enemyOne",
+          "withinRadius": 1
         },
-        "status": "itemCritNext",
-        "charges": 1
+        "critical": true
       }
     ],
-    "text": "사용 후 다음 공격 1번 결정타 100%",
+    "text": "8방향 내 적군 1명을 결정타로 공격",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A short Han dynasty throwing halberd, shou-ji: a straight iron spike head with one crescent side branch bound to the shaft with cord, a short shaft about forty centimetres long, leather-wrapped grip, blackened iron. One weapon in the foreground with two more crossed behind it, suggesting a set carried at the waist.",
     "lore": "던지는 짧은 극. 정사에 실물로 나오는 몇 안 되는 무기로, 손책과 태사자가 맞붙었을 때 손책이 태사자의 수극을 빼앗고 태사자는 손책의 투구를 빼앗았다는 기록이 있다.",
     "nameI18n": {
@@ -150,15 +150,17 @@
     "gold": 2,
     "effects": [
       {
-        "t": "applyStatus",
+        "t": "strike",
         "target": {
-          "kind": "self"
-        },
-        "status": "itemRangeTwo",
-        "charges": 1
+          "kind": "enemyOne",
+          "lines": {
+            "dirs": 8,
+            "length": 2
+          }
+        }
       }
     ],
-    "text": "사용 후 다음 공격 1번 사거리가 8방향 두 칸",
+    "text": "8방향 두 칸 이내 적군 1명을 공격",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A meteor hammer, liuxing chui: a fist-sized spiked iron ball attached to a long slender iron chain, the chain coiled in loose loops with a short leather hand-grip at the far end. Dark oiled iron, the spikes blunted from use. The coil arranged so the ball hangs slightly forward.",
     "lore": "왕쌍이 쓴 것으로 연의에 나오는 사슬 끝 쇠공. 품에 숨겼다가 추격전에서 뒤돌아 던지는 기습 무기로, 정면 대결이 아니라 상대가 방심한 순간을 노린다.",
     "nameI18n": {
@@ -477,7 +479,7 @@
         "duration": 90
       }
     ],
-    "text": "1일간 아군 전원 결정타 100%",
+    "text": "사용 즉시 1일간 아군 전원 결정타 100%",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. An imperial straight jian, the Yitian sword: a long mirror-polished blade engraved with clouds and a coiling dragon along the ricasso, gold fittings inlaid with white jade, a large tasselled silk knot at the pommel, an ornate gold-mounted scabbard beside it. Bright, ceremonial, the weapon of a man who rules.",
     "lore": "조조가 몸에 지녔던 보검. 이름은 \"하늘에 기댄다\"는 뜻으로, 청강검이 날카로움의 검이라면 이쪽은 권위의 검이다.",
     "nameI18n": {

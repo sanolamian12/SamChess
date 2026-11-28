@@ -880,9 +880,6 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
     case 'attack': {
       const unit = s.units[s.activeUnit!]!;
       s.activeTurn!.acted = true;
-      // 유성추(「다음 공격 한 번 사거리 두 칸」) — 겨눈 순간 쓴 것이다. 후보는 이미 `validate`가 그 사거리로 골랐다
-      const reach = findStatus(unit, 'itemRangeTwo');
-      if (reach) consumeCharge(unit, reach, events);
       for (const id of intent.targets) {
         if (isOver(s)) break;
         const target = s.units[id]!;

@@ -228,35 +228,43 @@ test('육도삼략 — 2일간 맞으면 반드시 반격한다(굴리지 않는
   assert.equal(events.filter((e) => e.e === 'attacked').length, 2, '맞고 → 반격');
 });
 
-test('의천검 — 1일간 아군 전원 결정타 100%', () => {
+test('★ 의천검 — 쓰는 즉시 1일간 아군 전원 결정타 100% · 쓴 그 차례의 공격부터 들어간다', () => {
   const s = use('ui-cheon-geom').state;
   for (const u of Object.values(s.units).filter((x) => x.side === 'P1')) {
     assert.equal(findStatus(u, 'itemCritAll')?.expiresAt, 90, u.id);
     assert.equal(forecastAttack(s, u.id, U('P2-King'))!.criticalRate, 100, u.id);
   }
+  assert.equal(s.activeUnit, U('P1-King'), '차례가 그대로다');
+  const r = apply(s, 'P1', { t: 'attack', targets: [U('P2-King')] });
+  assert.equal((r.events.find((e) => e.e === 'attacked') as { critical: boolean }).critical, true, '쓰고 바로 친 한 대가 결정타');
 });
 
-// ── 다음 공격 한 번 (수극 · 유성추) ─────────────────────────────
+// ── 쓰는 즉시 치는 한 대 (수극 · 유성추, 2026-11-28 기획자 — 「다음 공격」 상태에서 바꿨다) ──
 
-test('★ 수극 — 쓰고 **같은 차례에** 친다. 그 한 대가 결정타이고 횟수가 깎인다', () => {
-  const used = use('su-geuk').state;
-  assert.equal(used.activeUnit, U('P1-King'), '차례가 그대로다');
-  assert.equal(forecastAttack(used, U('P1-King'), U('P2-King'))!.criticalRate, 100);
-  const r = apply(used, 'P1', { t: 'attack', targets: [U('P2-King')] });
-  assert.equal((r.events.find((e) => e.e === 'attacked') as { critical: boolean }).critical, true);
-  assert.equal(hasStatus(r.state.units[U('P1-King')]!, 'itemCritNext'), false, '한 번 쓰면 없어진다');
+test('★ 수극 — 8방향 내 적 1명을 **쓰는 즉시** 결정타로 치고, 차례가 이어져 또 공격할 수 있다', () => {
+  const r = use('su-geuk', U('P2-King'));
+  const hit = r.events.find((e) => e.e === 'attacked' && e.unit === U('P1-King')) as { critical: boolean; target: UnitId };
+  assert.equal(hit.target, U('P2-King'));
+  assert.equal(hit.critical, true);
+  assert.equal(r.state.activeUnit, U('P1-King'), '차례가 그대로다');
+  const far = structuredClone(fight('su-geuk'));
+  far.units[U('P2-King')]!.pos = { x: 10, y: 8 };      // 두 칸 — 안 닿는다
+  assert.equal(validate(giveControl(far, U('P1-King')), 'P1', { t: 'useItem', target: U('P2-King') }).ok, false);
 });
 
-test('유성추 — 다음 공격 한 번 8방향 두 칸까지 닿고, 치면 없어진다', () => {
+test('유성추 — 8방향 두 칸 줄 위의 적 1명을 쓰는 즉시 친다(사이의 유닛은 안 막는다) · 줄 밖은 안 닿는다', () => {
   const far = structuredClone(fight('yu-seong-chu'));
   far.units[U('P2-King')]!.pos = { x: 15, y: 15 };
-  far.units[U('P2-Bishop')]!.pos = { x: 10, y: 8 };     // 위로 두 칸
-  const before = giveControl(far, U('P1-King'));
-  assert.equal(legalTargetsFor(before, U('P1-King')).includes(U('P2-Bishop')), false, '쓰기 전에는 안 닿는다');
-  const used = apply(before, 'P1', { t: 'useItem' }).state;
-  assert.ok(legalTargetsFor(used, U('P1-King')).includes(U('P2-Bishop')), '쓰면 닿는다');
-  const hit = apply(used, 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).state;
-  assert.equal(hasStatus(hit.units[U('P1-King')]!, 'itemRangeTwo'), false);
+  far.units[U('P2-Bishop')]!.pos = { x: 12, y: 8 };     // 대각선 두 칸
+  far.units[U('P2-Queen')]!.pos = { x: 11, y: 8 };      // (1, 2) — 줄 밖
+  far.units[U('P2-Bishop')]!.hp = 99;
+  const s = giveControl(far, U('P1-King'));
+  assert.equal(validate(s, 'P1', { t: 'useItem', target: U('P2-Queen') }).ok, false, '줄 밖');
+  const r = apply(s, 'P1', { t: 'useItem', target: U('P2-Bishop') });
+  const hit = r.events.find((e) => e.e === 'attacked' && e.unit === U('P1-King')) as { target: UnitId };
+  assert.equal(hit.target, U('P2-Bishop'));
+  assert.ok(r.state.units[U('P2-Bishop')]!.hp < 99);
+  assert.equal(r.state.activeUnit, U('P1-King'), '차례가 그대로다');
 });
 
 // ── 아이템으로 치는 한 대 (개산대부 · 청룡언월도 · 장팔사모) ──────

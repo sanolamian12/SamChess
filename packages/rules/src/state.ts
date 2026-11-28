@@ -710,7 +710,7 @@ export function duelRulesOn(state: Pick<BattleState, 'scenario' | 'duels'>): boo
  */
 export function critSure(unit: UnitState): boolean {
   return findStatus(unit, 'critical100') !== undefined || hasStatus(unit, 'duelBoon')
-    || hasStatus(unit, 'itemCritNext') || hasStatus(unit, 'itemCritAll');
+    || hasStatus(unit, 'itemCritAll');
 }
 
 /** **받는 공격 피해가 절반인가** — 「반감」 · 「용맹전진」(`incomingDamageHalf`) · 허저 오라 · 일기토 효과(`duelBoon`). 맞는 쪽(대신받기 뒤)을 넣는다 */
@@ -729,20 +729,11 @@ export function halvingsOf(state: BattleState, victim: UnitState): number {
 }
 
 /**
- * 이 유닛의 공격이 닿는 칸 — 기물 마스크 + 유성추(`itemRangeTwo`)의 8방향 두 칸 (2026-11-28).
- * 유성추는 기물의 사거리를 **바꾸지 않고 더한다** — 원래 닿던 칸을 잃지 않는다. 판정(`legalTargetsFor`)과
- * 화면의 공격 범위가 이것 하나를 본다.
+ * 이 유닛의 공격이 닿는 칸 — 판정(`legalTargetsFor`)과 화면의 공격 범위가 이것 하나를 본다. 지금은 기물 마스크 그대로다
+ * (2026-11-28 유성추가 「사거리 두 칸」 상태였을 때 생긴 자리 — 유성추는 쓰는 즉시 치는 아이템이 됐다. 사거리를 바꾸는 것이 다시 생기면 여기에)
  */
 export function attackCellsOf(state: BattleState, unit: UnitState): Vec2[] {
-  const cells = attackCells(unit.piece, unit.pos, state.boardSize);
-  if (!hasStatus(unit, 'itemRangeTwo')) return cells;
-  for (const d of DIRS_8) {
-    for (let k = 1; k <= 2; k++) {
-      const p = { x: unit.pos.x + d.x * k, y: unit.pos.y + d.y * k };
-      if (inBounds(p, state.boardSize) && !cells.some((c) => samePos(c, p))) cells.push(p);
-    }
-  }
-  return cells;
+  return attackCells(unit.piece, unit.pos, state.boardSize);
 }
 
 /** 8방향 — 앞 넷이 4방향(상하좌우)이다 */
@@ -961,9 +952,6 @@ export function resolveAttack(
   const critical = forceCritical || critSure(attacker) ? true : roll(state, criticalRateOf(attacker, target));
   // 일기토 효과가 이미 크리를 확정하면 「증폭」의 횟수는 아낀다 — 반감도 같다
   if (!forceCritical && amplify && !hasStatus(attacker, 'duelBoon')) consumeCharge(attacker, amplify, events);
-  // 수극(「다음 공격 한 번」) — 내 공격이면 깎는다(반격 · 아이템 한 대는 「다음 공격」이 아니다)
-  const nextCrit = findStatus(attacker, 'itemCritNext');
-  if (nextCrit && !isCounter && !forceCritical) consumeCharge(attacker, nextCrit, events);
 
   // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King이면 그대로 승리다 (GDD §12 A5, 2026-10-16 개정)
   const execute = findStatus(attacker, 'instantKillNext');

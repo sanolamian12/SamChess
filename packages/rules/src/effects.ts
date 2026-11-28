@@ -186,6 +186,16 @@ export function resolveTacticTarget(
   if (radius !== undefined && chebyshev(caster.pos, unit.pos) > radius) {
     return { ok: false, reason: `${radius}칸 이내여야 한다` };
   }
+  // 줄 위의 칸만(유성추 — 8방향 두 칸). 사이의 유닛은 안 막는다
+  const lines = spec.kind === 'enemyOne' ? spec.lines : undefined;
+  if (lines) {
+    const dx = Math.abs(unit.pos.x - caster.pos.x);
+    const dy = Math.abs(unit.pos.y - caster.pos.y);
+    const onLine = lines.dirs === 4 ? dx === 0 || dy === 0 : dx === 0 || dy === 0 || dx === dy;
+    if (!onLine || Math.max(dx, dy) > lines.length || (dx === 0 && dy === 0)) {
+      return { ok: false, reason: `${lines.dirs}방향 ${lines.length}칸 이내여야 한다` };
+    }
+  }
   return { ok: true, ctx: { caster, targetUnit: unit } };
 }
 
