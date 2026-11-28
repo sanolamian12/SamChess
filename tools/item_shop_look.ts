@@ -60,6 +60,12 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 });
   await page.click('[data-place="market"]', { force: true });
+  // 금화 충전 — 한 장(2026-11-28 그림 · 보유 줄 ×1.3)
+  await page.click('[data-action="openGold"]');
+  await page.waitForSelector('.mkt-pack[data-pack="5"]');
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${SHOTS}/gold-${LANG || 'ko'}.png` });
+  await page.click('[data-action="backHome"]');
   await page.click('[data-action="openItems"]');
   await page.waitForSelector('[data-field="itemShop"] .mkt-item-card[data-item]');
   await page.waitForTimeout(600);
