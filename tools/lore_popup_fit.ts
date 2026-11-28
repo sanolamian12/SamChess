@@ -37,7 +37,7 @@ try {
     const back = document.createElement('div');
     back.className = 'modal-back lore-back';
     // 제목 · 체크 줄까지 넣고 판 전체가 넘치는지 본다(제목은 긴 이름 + 자로)
-    back.innerHTML = '<div class="lore-modal" style="animation:none"><h3 class="lore-title"><span class="lore-name">Сыма И</span><span class="lore-courtesy">Чжунда</span></h3><p class="lore-text"></p><div class="lore-okrow"><button class="lore-ok"></button></div></div>';
+    back.innerHTML = '<div class="lore-modal" style="animation:none"><h3 class="lore-title"><span class="lore-name">Сыма И</span><span class="lore-courtesy">Чжунда</span><span class="lore-life">(179 ~ 251 AD)</span></h3><p class="lore-text"></p><div class="lore-okrow"><button class="lore-ok"></button></div></div>';
     host.appendChild(back);
     const modal = back.querySelector<HTMLElement>('.lore-modal')!;
     const p = back.querySelector<HTMLElement>('.lore-text')!;

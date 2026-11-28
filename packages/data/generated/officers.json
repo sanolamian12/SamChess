@@ -44,6 +44,10 @@
       "it": "Stratega di Wei. Il suo consiglio spinse Li Jue e Guo Si su Chang'an gettando l'impero nel caos; al servizio di Zhang Xiu batté due volte Cao Cao, poi passò dalla sua parte e assicurò la successione a Cao Pi.",
       "es_419": "Estratega de Wei. Su consejo lanzó a Li Jue y Guo Si sobre Chang'an y hundió al imperio en el caos; al servicio de Zhang Xiu venció dos veces a Cao Cao, luego se pasó a él y aseguró la sucesión de Cao Pi.",
       "mn": "Вэйн зөвлөх түшмэл. Ли Цзюэ, Го Сы нарт Чанъань руу довтлохыг зөвлөж тэнгэрийн доорхийг самууруулав. Чжан Сюгийн доор Цао Цаог хоёр удаа ялж, дараа нь түүнд бууж өгөөд Цао Пигийн залгамжлалыг батлав."
+    },
+    "life": {
+      "born": 147,
+      "died": 223
     }
   },
   {
@@ -91,6 +95,10 @@
       "it": "Funzionario civile di Shu. Amico di Liu Bei fin dal paese natale, lo seguì dalla giovinezza. Di spirito libero e lingua pronta, convinse Liu Zhang a cedere la provincia di Yi.",
       "es_419": "Funcionario civil de Shu. Amigo de Liu Bei desde su tierra natal, lo siguió desde joven. De espíritu libre y lengua ágil, convenció a Liu Zhang de entregar la provincia de Yi.",
       "mn": "Шугийн иргэний түшмэл. Лю Бэйтэй нэг нутгийн анд бөгөөд залуугаасаа түүнийг дагасан. Тайван зантай, ярианы авьяастай тул И мужийг бууж өгөх хэлэлцээрт Лю Чжаныг ятгаж чадав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -138,6 +146,10 @@
       "it": "Feroce generale di Wu. In gioventù pirata fluviale sotto vele di seta; più tardi assalì l'accampamento di Cao Cao con poco più di cento cavalieri e tornò senza perdere un uomo.",
       "es_419": "Feroz general de Wu. En su juventud, pirata de río bajo velas de seda; más tarde asaltó el campamento de Cao Cao con poco más de cien jinetes y volvió sin perder un hombre.",
       "mn": "Угийн догшин жанжин. Залуудаа торгон дарвуул мандуулан голоор дээрэмддэг усны дээрэмчин байв. Хожим зуу орчхон морьтоор Цао Цаогийн хуаранг шөнө довтолж, нэг ч хүн алдалгүй эргэн ирэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -185,6 +197,10 @@
       "it": "Funzionario civile di Wu. Troppo povero per comprare libri, copiava a mano i volumi altrui per istruirsi, e recò a Cao Cao la lettera di finta resa di Huang Gai.",
       "es_419": "Funcionario civil de Wu. Demasiado pobre para comprar libros, copiaba a mano los volúmenes ajenos para instruirse, y llevó a Cao Cao la carta de rendición fingida de Huang Gai.",
       "mn": "Угийн иргэний түшмэл. Ядуу тул номоо худалдан авч чадалгүй бусдын номыг хуулж бичиж эрдэм номд хүрэв. Хуан Гайн хуурамч бууж өгөх захидлыг Цао Цаод хүргэв."
+    },
+    "life": {
+      "born": null,
+      "died": 243
     }
   },
   {
@@ -232,6 +248,10 @@
       "it": "Generale Supremo di Shu. Ufficiale di Wei passato a Zhuge Liang, ne ereditò il proposito e tramò la restaurazione anche dopo la caduta dello Stato, morendo nel tentativo.",
       "es_419": "Gran General de Shu. Oficial de Wei que se pasó a Zhuge Liang y heredó su propósito; tramó la restauración incluso tras la caída del Estado y murió en el intento.",
       "mn": "Шугийн их жанжин. Вэйн жанжин байснаа Чжугэ Лянд нэгдэж түүний зорилгыг өвлөв. Улс мөхсөний дараа ч сэргээхийг завдаж, бүтэлгүйтэн үрэгдэв."
+    },
+    "life": {
+      "born": 202,
+      "died": 264
     }
   },
   {
@@ -267,6 +287,10 @@
       "it": "Ufficiale agli ordini di Han Fu. Contrario a cedere la provincia di Ji a Yuan Shao, tentò con Min Chun di ucciderlo e vi perse la vita.",
       "es_419": "Oficial a las órdenes de Han Fu. Opuesto a entregar la provincia de Ji a Yuan Shao, intentó con Min Chun matarlo y perdió la vida.",
       "mn": "Хань Фугийн харьяат. Цзи мужийг Юань Шаод шилжүүлэхийг эсэргүүцэж, Минь Чунытэй хамт түүнийг хөнөөхөөр завдаад амиа алдав."
+    },
+    "life": {
+      "born": null,
+      "died": 191
     }
   },
   {
@@ -302,6 +326,10 @@
       "it": "Uno dei Quattro Pilastri di Hebei. Si arrese a Cao Cao a Guandu insieme a Zhang He; nel romanzo cade più tardi sotto la lancia di Zhao Yun.",
       "es_419": "Uno de los Cuatro Pilares de Hebei. Se rindió a Cao Cao en Guandu junto con Zhang He; en la novela cae más tarde bajo la lanza de Zhao Yun.",
       "mn": "Хэбэйн Дөрвөн Баганы нэг. Гуаньдугийн тулаанд Чжан Хэтэй хамт Цао Цаод бууж өгөв. Романд хожим Чжао Юний жадан дор унадаг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -337,6 +365,10 @@
       "it": "Grande generale agli ordini di Lü Bu. Si diceva che il suo Corpo Spezzaschiere non incontrasse formazione che non riuscisse a rompere; ammonì il signore fino all'ultimo — e fino all'ultimo gli fu leale.",
       "es_419": "Gran general a las órdenes de Lü Bu. Se decía que su Cuerpo Rompefilas no hallaba formación que no pudiera quebrar; amonestó a su señor hasta el final, y hasta el final le fue leal.",
       "mn": "Люй Бугийн харьяат нэрт жанжин. Түүний удирдсан Эгнээ Эвдэгч Хороо эвдэж чадахгүй эгнээ үгүй гэгддэг байв. Эзэндээ эцсээ хүртэл сануулж, эцсээ хүртэл үнэнч байв."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -384,6 +416,10 @@
       "it": "Cancelliere di Wu. Parco di parole e poco incline al vino; si diceva che perfino Sun Quan misurasse i propri discorsi in sua presenza.",
       "es_419": "Canciller de Wu. Parco en palabras y poco dado al vino; se decía que incluso Sun Quan medía sus dichos en su presencia.",
       "mn": "Угийн тэргүүн сайд. Цөөн үгтэй, архинд дургүй байв. Сунь Цюань хүртэл түүний өмнө үгээ хэмжиж ярьдаг байсан гэдэг."
+    },
+    "life": {
+      "born": 168,
+      "died": 243
     }
   },
   {
@@ -419,6 +455,10 @@
       "it": "Capo di un popolo tribale. Conosceva le terre montuose come le linee del proprio palmo.",
       "es_419": "Jefe de un pueblo tribal. Conocía las tierras montañosas como las líneas de su propia palma.",
       "mn": "Харь овгийн ахлагч. Уулархаг нутгийн байдлыг алганы шугам мэт сайн мэддэг байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -454,6 +494,10 @@
       "it": "Generale agli ordini di Liu Zhang. Tenne il passo di Baishui con Yang Huai sorvegliando Liu Bei, e da lui fu messo a morte.",
       "es_419": "General a las órdenes de Liu Zhang. Guardó el paso de Baishui con Yang Huai vigilando a Liu Bei, y por él fue muerto.",
       "mn": "Лю Чжаны харьяат жанжин. Ян Хуайтай хамт Байшуйн боомтыг хамгаалж Лю Бэйг сэрэмжилж байсан ч харин ч түүний гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 212
     }
   },
   {
@@ -489,6 +533,10 @@
       "it": "Fratello minore di Gongsun Zan. Nell'aiutare Yuan Shu fu colpito da una freccia degli uomini di Yuan Shao — la scintilla che mise l'una contro l'altra le due potenze.",
       "es_419": "Hermano menor de Gongsun Zan. Al auxiliar a Yuan Shu fue alcanzado por una flecha de los hombres de Yuan Shao: la chispa que enfrentó a las dos potencias.",
       "mn": "Гунсунь Цзаний дүү. Юань Шуд туслах явцдаа Юань Шаогийн цэргийн сумаар онуулж нас барав. Энэ нь хоёр хүчний хагарлын шалтгаан болов."
+    },
+    "life": {
+      "born": null,
+      "died": 191
     }
   },
   {
@@ -536,6 +584,10 @@
       "it": "Signore della guerra del nord. I suoi Volontari del Cavallo Bianco, montati soltanto su cavalli bianchi, atterrivano le tribù di frontiera; sospinto da Yuan Shao, si gettò fra le fiamme della torre di Yijing.",
       "es_419": "Señor de la guerra del norte. Sus Voluntarios del Caballo Blanco, montados solo en caballos blancos, aterraban a las tribus de la frontera; empujado por Yuan Shao, se arrojó a las llamas de la torre de Yijing.",
       "mn": "Умард нутгийн цэргийн ноён. Зөвхөн цагаан морь унасан Цагаан Морьтны Сайн Дурынхан хилийн харь овгуудыг сүрдүүлдэг байв. Юань Шаод шахагдаж Ицзин цамхгийн галд өөрийгөө хаяв."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -583,6 +635,10 @@
       "it": "Cancelliere di Beihai. Discendente di Confucio e primo dei Sette Maestri di Jian'an, ricordato per aver ceduto la pera più grande a quattro anni. La sua ostinata opposizione a Cao Cao gli costò la vita.",
       "es_419": "Canciller de Beihai. Descendiente de Confucio y primero de los Siete Maestros de Jian'an, recordado por ceder la pera más grande a los cuatro años. Su porfiada oposición a Cao Cao le costó la vida.",
       "mn": "Бэйхайн сайд. Күнзийн хойч бөгөөд Цзянъаны Долоон Багшийн тэргүүн. Дөрвөн настайдаа том лийрийг бусдад өгсөн явдал нь уламжлагдан үлджээ. Цао Цаог удаа дараа эсэргүүцэж цаазлагдав."
+    },
+    "life": {
+      "born": 153,
+      "died": 208
     }
   },
   {
@@ -618,6 +674,10 @@
       "it": "Ufficiale aggiunto di Wuling. Quando l'amministratore Jin Xuan si mosse per resistere a Liu Bei, lo abbatté e aprì le porte.",
       "es_419": "Oficial auxiliar de Wuling. Cuando el administrador Jin Xuan se dispuso a resistir a Liu Bei, lo abatió y abrió las puertas.",
       "mn": "Улингийн туслах түшмэл. Захирагч Цзинь Сюань Лю Бэйтэй тэмцэхээр завдахад түүнийг цавчиж хотын хаалгыг нээв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -665,6 +725,10 @@
       "it": "Stratega di Cao Cao. La sua lettura quasi profetica degli eventi gli valse un favore singolare, ma morì a trentotto anni; sconfitto alle Scogliere Rosse, Cao Cao si dolse che nulla di ciò sarebbe accaduto se Guo Jia fosse vissuto.",
       "es_419": "Estratega de Cao Cao. Su lectura casi profética de lo que vendría le ganó un favor sin igual, pero murió a los treinta y ocho; derrotado en los Acantilados Rojos, Cao Cao lamentó que nada de eso habría pasado de seguir vivo Guo Jia.",
       "mn": "Цао Цаогийн зөвлөх түшмэл. Ирээдүйг нэвт харах аргаараа онцгой хайр хүлээсэн ч гучин найман настайдаа нас барав. Улаан Хадад ялагдсан Цао Цао \"Го Цзя амьд байсан бол ингэхгүй байсан\" хэмээн харамсчээ."
+    },
+    "life": {
+      "born": 170,
+      "died": 207
     }
   },
   {
@@ -712,6 +776,10 @@
       "it": "Stratega agli ordini di Yuan Shao. A Guandu la sua calunnia spinse Zhang He da Cao Cao, e dopo la morte di Yuan Shao aizzò Yuan Tan, aggravando la lotta fra i fratelli.",
       "es_419": "Estratega a las órdenes de Yuan Shao. En Guandu su calumnia empujó a Zhang He hacia Cao Cao, y muerto Yuan Shao azuzó a Yuan Tan, agravando la disputa entre los hermanos.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдуд Чжан Хэг гүтгэж Цао Цао руу түлхэв. Юань Шаог нас барсны дараа Юань Танийг өдөөж ах дүүсийн тэмцлийг гүнзгийрүүлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 205
     }
   },
   {
@@ -747,6 +815,10 @@
       "it": "Luogotenente di Dong Zhuo. Detenne il potere accanto a Li Jue, ma i due presero a contendersi e sprofondarono la capitale in un disordine ancora maggiore.",
       "es_419": "Lugarteniente de Dong Zhuo. Retuvo el poder junto a Li Jue, pero ambos se enfrentaron y hundieron la capital en un desorden aún mayor.",
       "mn": "Дун Чжогийн харьяат. Ли Цзюэтэй хамт эрх мэдлийг барьсан ч хоорондоо тэмцэлдэж нийслэлийг улам самууруулав."
+    },
+    "life": {
+      "born": null,
+      "died": 197
     }
   },
   {
@@ -782,6 +854,10 @@
       "it": "Brigante di Guangchuan. Viveva fra i ladri, ma il suo talento per i conti e per gli stratagemmi induceva perfino i capi a soppesarne le parole.",
       "es_419": "Bandido de Guangchuan. Vivía entre ladrones, pero su cabeza para los números y las estratagemas hacía que hasta los jefes sopesaran sus palabras.",
       "mn": "Гуанчуаны дээрэмчин. Хулгайчдын дунд амьдарч байсан ч тооцоо, арга ухаанд гарамгай тул ахлагчид хүртэл түүний үгийг хүндэтгэн сонсдог байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -829,6 +905,10 @@
       "it": "Generale di Shu. Tenendo il passo di Jiameng, inchiodò per quasi un anno una forza dieci volte superiore alla sua.",
       "es_419": "General de Shu. Sosteniendo el paso de Jiameng, mantuvo clavada casi un año a una fuerza diez veces mayor que la suya.",
       "mn": "Шугийн жанжин. Цзямэнгийн боомтыг хамгаалж, өөрөөсөө арав дахин олон дайсныг бараг нэг жилийн турш хорьж барив."
+    },
+    "life": {
+      "born": 178,
+      "died": 217
     }
   },
   {
@@ -867,6 +947,10 @@
       "it": "Funzionario degli Han Posteriori. Cospirò con Geng Wu per eliminare Yuan Shao; il piano fu scoperto e vi perse la vita.",
       "es_419": "Funcionario de los Han Posteriores. Conspiró con Geng Wu para eliminar a Yuan Shao; el plan se descubrió y perdió la vida.",
       "mn": "Хожуу Хань улсын түшмэл. Гэн Утай хамсаж Юань Шаог зайлуулах завдал тавьсан ч илэрч амиа алдав."
+    },
+    "life": {
+      "born": null,
+      "died": 191
     }
   },
   {
@@ -914,6 +998,10 @@
       "it": "Grande generale di Shu. Abbatté Yan Liang e annegò i sette eserciti di Yu Jin a Fancheng, scuotendo l'impero, ma fu catturato dalle forze di Wu nella provincia di Jing. I secoli successivi lo venerarono come dio della guerra.",
       "es_419": "Gran general de Shu. Abatió a Yan Liang y ahogó a los siete ejércitos de Yu Jin en Fancheng, estremeciendo al imperio; pero cayó preso de las fuerzas de Wu en la provincia de Jing. Los siglos posteriores lo veneraron como dios de la guerra.",
       "mn": "Шугийн нэрт жанжин. Янь Ляныг цавчиж, Фаньчэн хотод Юй Цзиний долоон цэргийг усанд живүүлж хүчээ дэлхийд мэдүүлсэн боловч Цзин мужид У улсын гарт олзлогдон амиа алдав. Хожмын үед дайны бурхан болгон шүтэх болжээ."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -949,6 +1037,10 @@
       "it": "Figlio di Guan Yu. Difese la provincia di Jing al fianco del padre e con lui fu catturato e giustiziato a Maicheng.",
       "es_419": "Hijo de Guan Yu. Defendió la provincia de Jing junto a su padre y con él fue capturado y ejecutado en Maicheng.",
       "mn": "Гуань Юйн хүү. Эцэгтэйгээ хамт Цзин мужийг хамгаалж, Майчэнд хамт олзлогдон цаазлагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -984,6 +1076,10 @@
       "it": "Superstite dei Turbanti Gialli. Cinse d'assedio Beihai e ridusse Kong Rong alla disperazione.",
       "es_419": "Remanente de los Turbantes Amarillos. Cercó Beihai y llevó a Kong Rong a la desesperación.",
       "mn": "Шар алчууртны үлдэгдэл. Бэйхайг бүсэлж Кун Жуныг бэрх байдалд оруулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1031,6 +1127,10 @@
       "it": "Figlio di Guan Yu. Versato nelle lettere e nelle armi, divenne attendente di palazzo appena adulto e godette del favore particolare di Zhuge Liang — ma, come il padre, non visse a lungo.",
       "es_419": "Hijo de Guan Yu. Versado en las letras y en las armas, llegó a asistente de palacio apenas salido de la adolescencia y gozó del favor especial de Zhuge Liang; pero, como su padre, no vivió mucho.",
       "mn": "Гуань Юйн хүү. Бичиг зэвсэг хоёуланд гарамгай, залуухандаа ордны түшмэл болж Чжугэ Лянгийн онцгой хайрыг хүлээсэн ч эцгийн адил урт наслаагүй."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1078,6 +1178,10 @@
       "it": "Stratega di Liu Biao. Con l'astuzia spazzò via i capibanda della provincia di Jing e ne gettò le fondamenta; morto Liu Biao, consigliò la resa a Cao Cao.",
       "es_419": "Estratega de Liu Biao. Con ardides barrió a los cabecillas bandidos de la provincia de Jing y asentó sus bases; muerto Liu Biao, aconsejó la rendición a Cao Cao.",
       "mn": "Лю Бяогийн зөвлөх түшмэл. Заль мэхээр Цзин мужийн дээрэмчин ноёдыг дарж сууриа тавив. Лю Бяог нас барсны дараа Цао Цаод бууж өгөхийг зөвлөв."
+    },
+    "life": {
+      "born": null,
+      "died": 214
     }
   },
   {
@@ -1113,6 +1217,10 @@
       "it": "Generale agli ordini di Yuan Shao. A Jieqiao i suoi balestrieri spezzarono i Volontari del Cavallo Bianco di Gongsun Zan.",
       "es_419": "General a las órdenes de Yuan Shao. En Jieqiao sus ballesteros quebraron a los Voluntarios del Caballo Blanco de Gongsun Zan.",
       "mn": "Юань Шаогийн харьяат жанжин. Цзецяод хүчит нумын цэргээр Гунсунь Цзаний Цагаан Морьтны Сайн Дурынхныг бут цохив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1151,6 +1259,10 @@
       "it": "Amministratore di Wuling. Mentre si apprestava a resistere alle forze di Liu Bei, fu ucciso dal suo stesso ufficiale Gong Zhi.",
       "es_419": "Administrador de Wuling. Mientras se disponía a resistir a las fuerzas de Liu Bei, fue muerto por su propio oficial Gong Zhi.",
       "mn": "Улин хотын захирагч. Лю Бэйн цэрэгтэй тэмцэхээр завдсанаа харьяат Гун Чжид хөнөөгдөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1186,6 +1298,10 @@
       "it": "Generale in capo agli ordini di Yuan Shu. Feroce guerriero dalla lama a tre punte, incalzò Liu Bei in più occasioni.",
       "es_419": "General en jefe a las órdenes de Yuan Shu. Feroz guerrero de hoja de tres puntas, acosó a Liu Bei en varias ocasiones.",
       "mn": "Юань Шугийн харьяат ерөнхий жанжин. Гурван үзүүрт сэлэм эзэмшдэг догшин дайчин бөгөөд Лю Бэйг хэд хэдэн удаа шахав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1221,6 +1337,10 @@
       "it": "Generale agli ordini di Liu Zhang. Affrontò le forze di Liu Bei sul fronte del passo di Fushui.",
       "es_419": "General a las órdenes de Liu Zhang. Enfrentó a las fuerzas de Liu Bei en el frente del paso de Fushui.",
       "mn": "Лю Чжаны харьяат жанжин. Фушуйн боомтын фронтод Лю Бэйн цэргийг угтан тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1256,6 +1376,10 @@
       "it": "Generale agli ordini di Cao Cao. Fu inviato con Zhu Ling alla testa delle truppe in soccorso di Liu Bei.",
       "es_419": "General a las órdenes de Cao Cao. Fue enviado con Zhu Ling al frente de tropas para auxiliar a Liu Bei.",
       "mn": "Цао Цаогийн харьяат жанжин. Чжу Линтэй хамт цэрэг удирдан Лю Бэйд туслахаар илгээгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1303,6 +1427,10 @@
       "it": "Gran Comandante di Wu. Donò un intero granaio per aiutare Zhou Yu e tenne fede all'alleanza con Shu fino all'ultimo, nonostante la contesa per la provincia di Jing.",
       "es_419": "Gran Comandante de Wu. Donó un granero entero para ayudar a Zhou Yu y sostuvo la alianza con Shu hasta el final, pese al pleito por la provincia de Jing.",
       "mn": "Угийн ерөнхий жанжин. Бүтэн агуулахаа өгч Чжоу Юйд тусалсан. Цзин мужийн маргааны дунд ч Шутай байгуулсан холбоогоо эцсээ хүртэл хадгалав."
+    },
+    "life": {
+      "born": 172,
+      "died": 217
     }
   },
   {
@@ -1338,6 +1466,10 @@
       "it": "Generale di Shu. Servì Liu Zhang prima di passare a Liu Bei, e cadde combattendo Zhang He nella contesa per Hanzhong.",
       "es_419": "General de Shu. Sirvió a Liu Zhang antes de pasarse a Liu Bei, y cayó peleando contra Zhang He en la disputa por Hanzhong.",
       "mn": "Шугийн жанжин. Лю Чжанд зүтгэсний дараа Лю Бэйд нэгдэж, Ханьчжуны төлөөх тулаанд Чжан Хэтэй тулалдаж амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 218
     }
   },
   {
@@ -1385,6 +1517,10 @@
       "it": "Generale di Wu. Nutriva profondo rancore verso Gan Ning, che gli aveva ucciso il padre, finché questi non gli salvò la vita in battaglia e i due divennero amici.",
       "es_419": "General de Wu. Guardaba hondo rencor a Gan Ning, que había matado a su padre, hasta que este le salvó la vida en batalla y ambos se hicieron amigos.",
       "mn": "Угийн жанжин. Эцгийг нь хөнөөсөн Гань Нинтэй гүн өшөөтэй байсан ч тулааны талбарт түүнд амиа аврагдсанаар өшөөгөө мартаж нөхөрлөв."
+    },
+    "life": {
+      "born": 189,
+      "died": 217
     }
   },
   {
@@ -1432,6 +1568,10 @@
       "it": "Ispettore della provincia di Xu. Uomo gentile, ma la morte del padre di Cao Cao entro i suoi confini gli attirò un grande esercito di rappresaglia; sul letto di morte affidò la provincia di Xu a Liu Bei.",
       "es_419": "Inspector de la provincia de Xu. Hombre bondadoso, pero la muerte del padre de Cao Cao dentro de sus fronteras le atrajo un gran ejército de represalia; en su lecho de muerte confió la provincia de Xu a Liu Bei.",
       "mn": "Сюй мужийн байцаагч. Даруу зантай хүн байсан боловч Цао Цаогийн эцэг түүний нутагт нас барсны улмаас их цэргийн өшөө авалтыг хүлээв. Нас барахдаа Сюй мужийг Лю Бэйд даатгав."
+    },
+    "life": {
+      "born": 132,
+      "died": 194
     }
   },
   {
@@ -1467,6 +1607,10 @@
       "it": "Capo di una roccaforte montana presso Xiakou. Si diceva fosse forte abbastanza da smuovere massi con il solo corpo.",
       "es_419": "Jefe de un reducto montañés cerca de Xiakou. Se decía que era lo bastante fuerte para mover peñascos con el solo cuerpo.",
       "mn": "Сякоугийн ойролцоох уулын хүрээний ахлагч. Хүч ихтэй бөгөөд их чулууг биеэрээ өнхрүүлдэг байсан гэдэг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1514,6 +1658,10 @@
       "it": "Stratega di Wei. Ideò il piano per trasferire l'imperatore Xian a Xudu, e più tardi guidò la spinta perché Cao Cao fosse elevato a Duca di Wei.",
       "es_419": "Estratega de Wei. Ideó el plan para trasladar al emperador Xian a Xudu, y luego encabezó el impulso para elevar a Cao Cao como Duque de Wei.",
       "mn": "Вэйн зөвлөх түшмэл. Сянь-ди хааныг Сюйду руу нүүлгэх төлөвлөгөөг зохиов. Хожим Цао Цаог Вэйн ван болгох ажлыг тэргүүлэн ахалав."
+    },
+    "life": {
+      "born": 156,
+      "died": 236
     }
   },
   {
@@ -1561,6 +1709,10 @@
       "it": "Ministro tiranno della fine degli Han. Incendiò Luoyang e cambiava imperatori a piacimento, ma cadde sotto l'alabarda di Lü Bu per il disegno di Wang Yun.",
       "es_419": "Ministro tirano del final de los Han. Incendió Luoyang y cambiaba emperadores a su antojo, pero cayó ante la alabarda de Lü Bu por el designio de Wang Yun.",
       "mn": "Хожуу Хань улсын эрх барих түшмэл. Лоян хотыг шатааж, хаан ширээг дураараа сольж тэнгэрийн доорхийг доргиов. Эцэст нь Ван Юний бодлогод унаж Люй Бугийн жадан дор амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 192
     }
   },
   {
@@ -1608,6 +1760,10 @@
       "it": "Funzionario civile di Wei. Governò così bene un distretto in disordine che i profughi vi tornarono in massa, e assistette Cao Cao nella campagna di Hanzhong.",
       "es_419": "Funcionario civil de Wei. Gobernó tan bien un distrito arruinado que los desplazados volvieron en masa, y asistió a Cao Cao en la campaña de Hanzhong.",
       "mn": "Вэйн иргэний түшмэл. Эвдэрсэн шянг сайн засаж дүрвэгсдийг эргүүлэн татав. Ханьчжуны аян дайнд Цао Цаог дэмжив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1643,6 +1799,10 @@
       "it": "Generale agli ordini di Liu Zhang. Si accampò accanto a Leng Bao.",
       "es_419": "General a las órdenes de Liu Zhang. Acampó junto a Leng Bao.",
       "mn": "Лю Чжаны харьяат жанжин. Лэн Баотай зэрэгцүүлэн хуаран байгуулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1678,6 +1838,10 @@
       "it": "Cugino di Ma Chao. Servì Shu anche dopo la rovina del clan e, alla fine, abbatté Wei Yan chiudendo la vicenda.",
       "es_419": "Primo de Ma Chao. Sirvió a Shu incluso tras la ruina de su clan y, al final, abatió a Wei Yan para cerrar el asunto.",
       "mn": "Ма Чаогийн үеэл. Овог удам нь мөхсөний дараа ч Шу улсад зүтгэж, эцэст нь Вэй Яныг цавчиж үймээнийг намжаав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1725,6 +1889,10 @@
       "it": "Signore della guerra di Xiliang. Discendente di Ma Yuan, dominava il nord-ovest; salito a corte, fu messo a morte con i suoi.",
       "es_419": "Señor de la guerra de Xiliang. Descendiente de Ma Yuan, dominaba el noroeste; subió a la corte y fue ejecutado junto con los suyos.",
       "mn": "Силянгийн цэргийн ноён. Ма Юанийн хойч бөгөөд баруун хойд нутгийг эзэмшив. Ордонд орсныхоо дараа удам угсаатайгаа хамт цаазлагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 212
     }
   },
   {
@@ -1772,6 +1940,10 @@
       "it": "Funzionario civile di Shu. Fra cinque fratelli, quello dalle sopracciglia bianche era il migliore — di qui l'espressione \"sopracciglia bianche\" per indicare il più notevole di un gruppo. Perì nella disfatta di Yiling.",
       "es_419": "Funcionario civil de Shu. De cinco hermanos, el de cejas blancas era el mejor: de ahí la expresión \"cejas blancas\" para nombrar al más notable de un grupo. Pereció en la derrota de Yiling.",
       "mn": "Шугийн иргэний түшмэл. Таван ахан дүүсийн дотроос цагаан хөмсөгтэй нь хамгийн шилдэг байсан тул \"цагаан хөмсөг\" гэдэг үг үүнээс гарчээ. Илин дэх ялагдалд амь үрэгдэв."
+    },
+    "life": {
+      "born": 187,
+      "died": 222
     }
   },
   {
@@ -1819,6 +1991,10 @@
       "it": "Fratello minore di Ma Liang. Il suo consiglio di conquistare i cuori anziché le città fu lodato nella campagna meridionale, ma disobbedì agli ordini a Jieting, perse la battaglia e fu giustiziato fra le lacrime.",
       "es_419": "Hermano menor de Ma Liang. Su consejo de conquistar corazones antes que ciudades fue elogiado en la campaña del sur, pero desobedeció órdenes en Jieting, perdió la batalla y fue ejecutado entre lágrimas.",
       "mn": "Ма Лянгийн дүү. Өмнөд аян дайнд хот бус зүрхийг эзлэх арга дэвшүүлж үнэлэгдсэн ч Цзетинд цэргийн зарлигийг зөрчиж их ялагдал хүлээснээр нулимс дунд цаазлагдав."
+    },
+    "life": {
+      "born": 190,
+      "died": 228
     }
   },
   {
@@ -1854,6 +2030,10 @@
       "it": "Generale agli ordini di Cao Cao. Serviva la casa Yuan e, morto Yuan Shao, lasciò l'esercito di Yuan Shang e si arrese durante la campagna di Ye.",
       "es_419": "General a las órdenes de Cao Cao. Servía a la casa Yuan y, muerto Yuan Shao, dejó el ejército de Yuan Shang y se rindió durante la campaña de Ye.",
       "mn": "Цао Цаогийн харьяат жанжин. Юань овгийнхонд зүтгэж байсан бөгөөд Юань Шао нас барсны дараа Е хотын тулалдааны үеэр Юань Шаны цэргээс гарч бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1901,6 +2081,10 @@
       "it": "Grande generale di Shu. Alla testa della cavalleria di Xiliang spinse Cao Cao a un passo dalla morte a Weiqiao. Si sottomise poi a Liu Bei ed entrò fra i Cinque Generali Tigre.",
       "es_419": "Gran general de Shu. Al frente de la caballería de Xiliang llevó a Cao Cao al borde de la muerte en Weiqiao. Después se sometió a Liu Bei y entró en los Cinco Generales Tigre.",
       "mn": "Шугийн нэрт жанжин. Силянгийн морьт цэргийг удирдан Вэйцяод Цао Цаог үхлийн ирмэг хүртэл шахав. Хожим Лю Бэйд бууж, Таван Барс жанжны эгнээнд оров."
+    },
+    "life": {
+      "born": 176,
+      "died": 222
     }
   },
   {
@@ -1936,6 +2120,10 @@
       "it": "Generale di Wu. Da un'imboscata catturò Guan Yu e suo figlio.",
       "es_419": "General de Wu. Desde una emboscada capturó a Guan Yu y a su hijo.",
       "mn": "Угийн жанжин. Отолт зохион байгуулж Гуань Юй хийгээд түүний хүүг олзлов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -1983,6 +2171,10 @@
       "it": "Uomo di Stato di Wei. Noto come magistrato duro, incapace di piegare la legge, tenne poi Hefei e sbarrò a lungo l'avanzata di Wu verso nord.",
       "es_419": "Estadista de Wei. Conocido como magistrado severo, incapaz de torcer la ley, después ocupó Hefei y cerró largamente el avance de Wu hacia el norte.",
       "mn": "Вэйн нэрт түшмэл. Хууль цааз няцаадаггүй хатуу түшмэл гэж нэр гарсан. Хожим Хэфэйг хариуцаж У улсын умард чиглэлийн давшилтыг удаан хугацаанд хаав."
+    },
+    "life": {
+      "born": null,
+      "died": 242
     }
   },
   {
@@ -2030,6 +2222,10 @@
       "it": "Generale di Shu. Consegnò Shangyong a Wei e ottenne il favore di Cao Pi; tentò poi di tornare a Shu e fu schiacciato dalla marcia fulminea di Sima Yi.",
       "es_419": "General de Shu. Entregó Shangyong a Wei y obtuvo el favor de Cao Pi; luego intentó volver a Shu y fue aplastado por la marcha fulminante de Sima Yi.",
       "mn": "Шугийн жанжин. Шанъюныг Вэйд өгч Цао Пигийн хайрыг олсон ч дараа нь дахин Шу руу эргэхийг завдаж, Сыма Ийн аадар мэт довтолгоонд бут цохигдов."
+    },
+    "life": {
+      "born": null,
+      "died": 228
     }
   },
   {
@@ -2065,6 +2261,10 @@
       "it": "Ufficiale subalterno di Beihai. Da poco avviato all'arte della guerra, aveva scarsa esperienza di combattimento reale.",
       "es_419": "Oficial subalterno de Beihai. Recién iniciado en el arte de la guerra, tenía poca experiencia de combate real.",
       "mn": "Бэйхайн доод зэргийн офицер. Цэргийн ухааныг сурч эхэлсэн удаагүй тул бодит тулааны туршлага дутмаг байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2112,6 +2312,10 @@
       "it": "Funzionario civile di Wei. Propose di sostenere il Figlio del Cielo per comandare a chi non si sottometteva, e la sua imparzialità nelle nomine raddrizzò il costume della corte.",
       "es_419": "Funcionario civil de Wei. Propuso sostener al Hijo del Cielo para dar órdenes a quienes no se sometían, y su imparcialidad en los nombramientos enderezó las costumbres de la corte.",
       "mn": "Вэйн иргэний түшмэл. \"Тэнгэрийн хүүг өргөмжилж, бөхийхгүй хүмүүсийг захир\" хэмээх бодлого дэвшүүлж, түшмэл сонгон шалгаруулахдаа шударга байснаар ордны уур амьсгалыг цэгцлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 216
     }
   },
   {
@@ -2159,6 +2363,10 @@
       "it": "Grande generale della provincia di Jing. Le sue lacrime di vergogna per essersi arreso tardi commossero Cao Cao; tenne poi Jiangxia e sbarrò a lungo la via del nord a Wu.",
       "es_419": "Gran general de la provincia de Jing. Sus lágrimas de vergüenza por haberse rendido tarde conmovieron a Cao Cao; ocupó luego Jiangxia y cerró largamente el paso al norte a Wu.",
       "mn": "Цзин мужийн нэрт жанжин. Хожуу бууж өгснөө ичин нулимс дуслуулж Цао Цаог сэтгэл хөдөлгөв. Дараа нь Цзянсяг хариуцаж У улсын умард зүгийн замыг удаан хааж байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2194,6 +2402,10 @@
       "it": "Feroce generale agli ordini di Yuan Shao. Il suo nome correva accanto a quello di Yan Liang; uscito a vendicarlo, fu ucciso a Yanjin.",
       "es_419": "Feroz general a las órdenes de Yuan Shao. Su nombre corría junto al de Yan Liang; salió a vengarlo y murió en Yanjin.",
       "mn": "Юань Шаогийн харьяат догшин жанжин. Янь Лянтай нэр зэрэгцэж байв. Түүний өшөөг авахаар мордож Яньцзинь хэмээх газар амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -2241,6 +2453,10 @@
       "it": "Fratello minore di Mi Zhu. Amministratore della commenda di Nan sotto Guan Yu, si arrese a Wu e aprì la via alla perdita della provincia di Jing; il fratello ne morì di vergogna.",
       "es_419": "Hermano menor de Mi Zhu. Como administrador de la comandancia de Nan sirvió bajo Guan Yu, pero se rindió a Wu y abrió el camino a la pérdida de la provincia de Jing; su hermano murió de vergüenza.",
       "mn": "Ми Чжугийн дүү. Нань аймгийн захирагчаар Гуань Юйг дэмжиж байсан ч У улсад бууж өгч, Цзин мужийг алдах эхлэлийг тавив. Ах Ми Чжу нь энэ гэмийг ичиж өвчнөөр нас барав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2288,6 +2504,10 @@
       "it": "Funzionario civile di Shu. Grande possidente della provincia di Xu che, nel momento più basso di Liu Bei, gli consegnò l'intero patrimonio e la propria sorella per rimetterlo in piedi.",
       "es_419": "Funcionario civil de Shu. Gran magnate de la provincia de Xu que, en el momento más bajo de Liu Bei, le entregó su fortuna entera y a su propia hermana para ponerlo de pie otra vez.",
       "mn": "Шугийн иргэний түшмэл. Сюй мужийн их баян бөгөөд Лю Бэй хамгийн хүнд байхад бүх хөрөнгөө болон эгчээ хамт өгч түүнийг дахин босгожээ."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2335,6 +2555,10 @@
       "it": "Generale di Wu. Rozzo e amante del lusso, ma valido in battaglia; contribuì alla cattura di Guan Yu nella campagna della provincia di Jing.",
       "es_419": "General de Wu. Tosco y aficionado al lujo, pero recio en el combate; contribuyó a la captura de Guan Yu en la campaña de la provincia de Jing.",
       "mn": "Угийн жанжин. Бүдүүлэг бөгөөд тансаг амьдралд дуртай байсан ч тулаанд хүчтэй. Цзин мужийн аян дайнд Гуань Юйг олзлоход гавьяа байгуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 234
     }
   },
   {
@@ -2382,6 +2606,10 @@
       "it": "Feroce generale di Wei. Uscì ad affrontare Guan Yu con la propria bara in spalla e, una volta catturato, rifiutò di cedere e scelse la morte.",
       "es_419": "Feroz general de Wei. Salió a enfrentar a Guan Yu con su propio ataúd al hombro y, una vez capturado, se negó a ceder y escogió la muerte.",
       "mn": "Вэйн догшин жанжин. Өөрийн авсаа үүрч Гуань Юйтэй тулгарахаар мордов. Олзлогдсоны дараа ч бөхийхөөс татгалзаж үхлийг сонгов."
+    },
+    "life": {
+      "born": null,
+      "died": 219
     }
   },
   {
@@ -2429,6 +2657,10 @@
       "it": "Stratega di Shu. Chiamato Fenice Nascente, accanto al Drago Dormiente. Offrì tre piani per prendere la provincia di Yi, ma fu colpito da una freccia lungo la strada per Luocheng.",
       "es_419": "Estratega de Shu. Llamado Fénix Naciente, junto al Dragón Dormido. Ofreció tres planes para tomar la provincia de Yi, pero una flecha lo alcanzó camino de Luocheng.",
       "mn": "Шугийн цэргийн зөвлөх. Нойрсох Луутай зэрэгцүүлэн Дэгдээхий Гарьд хэмээн нэрлэгдсэн. И мужийг эзлэх гурван арга зааварласан ч Лочэн рүү давших замд сумаар онох болж, хүсэл нь тасрав."
+    },
+    "life": {
+      "born": 179,
+      "died": 214
     }
   },
   {
@@ -2464,6 +2696,10 @@
       "it": "Signore del castello di Xindu. Affidatario di una sola piccola fortezza in Hebei, ne proteggeva la gente ed era capace tanto nelle armi quanto nel comando.",
       "es_419": "Señor del castillo de Xindu. A cargo de una sola fortaleza pequeña en Hebei, protegía a su gente y era capaz tanto en las armas como en el mando.",
       "mn": "Синьду хотын эзэн. Хэбэй дэх ганц жижиг хотыг хариуцаж ард иргэдээ хамгаалсан бөгөөд зэвсгийн ур чадвар, цэрэг захирах чадвар хоёуланг эзэмшсэн байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2511,6 +2747,10 @@
       "it": "Stratega di Shu. Attirò Liu Bei nella provincia di Yi e tracciò il disegno per prendere Hanzhong. Liu Bei si fidava di lui più che di ogni altro, e si disse che il disastro di Yiling non sarebbe mai avvenuto se fosse stato in vita.",
       "es_419": "Estratega de Shu. Atrajo a Liu Bei a la provincia de Yi y trazó el diseño para tomar Hanzhong. Liu Bei confiaba en él por encima de todos, y se dijo que el desastre de Yiling nunca habría ocurrido de seguir con vida.",
       "mn": "Шугийн зөвлөх түшмэл. Лю Бэйг И муж руу оруулж, Ханьчжуныг эзлэх төлөвлөгөөг зурав. Лю Бэй түүнд хамгийн их итгэдэг байсан бөгөөд хэрэв амьд байсан бол Илин дэх сүйрэл гарахгүй байсан гэж хүмүүс ярьжээ."
+    },
+    "life": {
+      "born": 176,
+      "died": 220
     }
   },
   {
@@ -2558,6 +2798,10 @@
       "it": "Cancelliere di Wu. Pacificò la provincia di Jiao e diede stabilità al sud; frugale e riflessivo, conservò a lungo la fiducia della corte.",
       "es_419": "Canciller de Wu. Pacificó la provincia de Jiao y estabilizó el sur; frugal y reflexivo, conservó por muchos años la confianza de la corte.",
       "mn": "Угийн тэргүүн сайд. Цзяо мужийг тайвшруулж өмнөд нутгийг тогтворжуулав. Даруу бөгөөд гүн ухаантай тул удаан хугацаанд итгэл хүлээв."
+    },
+    "life": {
+      "born": null,
+      "died": 247
     }
   },
   {
@@ -2593,6 +2837,10 @@
       "it": "Stratega agli ordini di Yuan Shao. Con Shen Pei sostenne Yuan Shang e infiammò la lotta per la successione.",
       "es_419": "Estratega a las órdenes de Yuan Shao. Junto con Shen Pei respaldó a Yuan Shang y encendió la disputa sucesoria.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Шэнь Пэйтэй хамт Юань Шаныг дэмжиж, хаан ширээний төлөөх тэмцлийг улам ширүүсгэв."
+    },
+    "life": {
+      "born": null,
+      "died": 202
     }
   },
   {
@@ -2628,6 +2876,10 @@
       "it": "Parente acquisito di Liu Zhang. Difese Mianzhu prima di arrendersi, e servì poi a Shu.",
       "es_419": "Pariente político de Liu Zhang. Defendió Mianzhu antes de rendirse, y sirvió después en Shu.",
       "mn": "Лю Чжаны хадам төрөл. Мяньчжуг хамгаалж байгаад бууж өгсний дараа Шу улсад алба хаав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2675,6 +2927,10 @@
       "it": "Cancelliere di Shu. In ambasceria a Wu ribatté con disinvoltura alle frecciate della sala, e succedette a Jiang Wan alla guida del governo.",
       "es_419": "Canciller de Shu. En embajada a Wu devolvió con soltura las pullas de la sala, y sucedió a Jiang Wan al frente del gobierno.",
       "mn": "Шугийн тэргүүн сайд. У улсад элчээр очиход танхимын шоолол доогийг хурц үгээр няцааж, Цзян Ванийн дараа төрийн хэргийг хариуцав."
+    },
+    "life": {
+      "born": null,
+      "died": 253
     }
   },
   {
@@ -2710,6 +2966,10 @@
       "it": "Re delle tribù Wuxi. Volto rosso e occhi azzurri, brandiva un flagello di ferro; si unì alla campagna orientale di Liu Bei e morì per mano di Wu.",
       "es_419": "Rey de las tribus Wuxi. De rostro rojo y ojos azules, blandía un mangual de hierro; se unió a la campaña oriental de Liu Bei y murió a manos de Wu.",
       "mn": "Усигийн харь овгуудын хаан. Улаан царайтай, хөх нүдтэй бөгөөд төмөр гурвалжин бөмбөг эргүүлдэг байв. Лю Бэйн дорнод аян дайнд нэгдэж, Угийн гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 222
     }
   },
   {
@@ -2757,6 +3017,10 @@
       "it": "Figlio maggiore di Sima Yi. Ereditò il potere effettivo in Wei e, benché gravemente malato, soffocò la ribellione di Guanqiu Jian prima di morire.",
       "es_419": "Hijo mayor de Sima Yi. Heredó el poder efectivo en Wei y, pese a estar gravemente enfermo, sofocó la rebelión de Guanqiu Jian antes de morir.",
       "mn": "Сыма Ийн том хүү. Эцгийнхээ дараа Вэйн бодит эрхийг барив. Хүнд өвчтэй байхдаа ч Гуаньцю Цзяний бослогыг дарж, дараа нь таалал төгсөв."
+    },
+    "life": {
+      "born": 208,
+      "died": 255
     }
   },
   {
@@ -2804,6 +3068,10 @@
       "it": "Secondo figlio di Sima Yi. Distrusse Shu e salì a Re di Jin; della sua ambizione si diceva che anche i passanti la conoscessero.",
       "es_419": "Segundo hijo de Sima Yi. Destruyó Shu y ascendió a Rey de Jin; de su ambición se decía que hasta los transeúntes la conocían.",
       "mn": "Сыма Ийн бага хүү. Шу улсыг мөхөөж Цзинь улсын ван болов. Түүний хүсэл эрмэлзлийг замын хүн ч мэддэг байсан гэдэг."
+    },
+    "life": {
+      "born": 211,
+      "died": 265
     }
   },
   {
@@ -2851,6 +3119,10 @@
       "it": "Gran Comandante di Wei. Neutralizzò le campagne di Zhuge Liang rifiutando battaglia e, più tardi, tolse il potere al clan Cao, gettando le fondamenta dei Jin.",
       "es_419": "Gran Comandante de Wei. Neutralizó las campañas de Zhuge Liang negándose a dar batalla y, más tarde, le arrebató el poder al clan Cao, sentando las bases de Jin.",
       "mn": "Вэйн ерөнхий жанжин. Тулаанаас зайлсхийх удаан хугацааны тактикаар Чжугэ Лянгийн умард аян дайныг хаав. Хожим төрийн эргэлт хийж Цао овгоос эрх мэдлийг булаан авч, Цзинь улсын суурийг тавив."
+    },
+    "life": {
+      "born": 179,
+      "died": 251
     }
   },
   {
@@ -2886,6 +3158,10 @@
       "it": "Generale di Wu. Servì nella campagna di Yiling.",
       "es_419": "General de Wu. Sirvió en la campaña de Yiling.",
       "mn": "Угийн жанжин. Илин дэх аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2921,6 +3197,10 @@
       "it": "Generale di Wei. Servì sul fronte della provincia di Jing sotto Cao Cao.",
       "es_419": "General de Wei. Sirvió en el frente de la provincia de Jing bajo Cao Cao.",
       "mn": "Вэйн жанжин. Цао Цаогийн доор Цзин мужийн фронтод оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -2968,6 +3248,10 @@
       "it": "Il primo stratega di Liu Bei. Quando la madre cadde nelle mani di Cao Cao, si congedò in lacrime e, partendo, raccomandò Zhuge Liang.",
       "es_419": "El primer estratega de Liu Bei. Cuando su madre cayó en manos de Cao Cao, se despidió entre lágrimas y, al partir, recomendó a Zhuge Liang.",
       "mn": "Лю Бэйн олсон анхны цэргийн зөвлөх. Эх нь Цао Цаогийн гарт орох үед нулимс дуслуулан салж, явахдаа Чжугэ Ляныг санал болгосон."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3015,6 +3299,10 @@
       "it": "Grande generale di Wu. Quando l'esercito di Cao Pi giunse a Guangling, sull'altra sponda del fiume, eresse in una sola notte un muro di canne e terra — abbastanza da ingannare l'occhio e rimandare indietro il nemico.",
       "es_419": "Gran general de Wu. Cuando la hueste de Cao Pi llegó a Guangling, en la otra orilla del río, levantó en una sola noche una muralla de juncos y tierra, suficiente para engañar la vista y hacer volver al enemigo.",
       "mn": "Угийн нэрт жанжин. Цао Пигийн их цэрэг голын нөгөө эрэгт орших Гуанлинд ирэхэд ганц шөнийн дотор хулс, шавраар хэрэм босгож, дайсны нүдийг хуурч ухраав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3050,6 +3338,10 @@
       "it": "Generale agli ordini di Dong Zhuo. Talento autentico, batté Cao Cao a Xingyang e Sun Jian a Liangren.",
       "es_419": "General a las órdenes de Dong Zhuo. Talento genuino, batió a Cao Cao en Xingyang y a Sun Jian en Liangren.",
       "mn": "Дун Чжогийн харьяат жанжин. Синъян хотод Цао Цаог, Лянжэнь хэмээх газар Сунь Цзяныг ялсан жинхэнэ чадвартан байв."
+    },
+    "life": {
+      "born": null,
+      "died": 192
     }
   },
   {
@@ -3097,6 +3389,10 @@
       "it": "Grande generale di Wei. Ruppe di petto le linee d'assedio di Guan Yu a Fancheng, e le sue colonne di ritorno serbavano un ordine così perfetto che Cao Cao lo paragonò a Zhou Yafu.",
       "es_419": "Gran general de Wei. Rompió de frente las líneas de asedio de Guan Yu en Fancheng, y sus columnas de regreso guardaban un orden tan perfecto que Cao Cao lo comparó con Zhou Yafu.",
       "mn": "Вэйн нэрт жанжин. Фаньчэн хотыг бүсэлсэн Гуань Юйн эгнээг нүүр тулан эвдэв. Буцаж ирэх цэргийн жагсаал огт эмх замбараагүй болоогүй тул Цао Цао түүнийг Чжоу Яфутай зүйрлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 227
     }
   },
   {
@@ -3144,6 +3440,10 @@
       "it": "Funzionario civile di Wu. In un duello verbale con un inviato di Shu, la sua replica fulminea fece ridere l'intera sala.",
       "es_419": "Funcionario civil de Wu. En un duelo verbal con un enviado de Shu, su réplica veloz hizo reír a toda la sala.",
       "mn": "Угийн иргэний түшмэл. Шугийн элчтэй хийсэн үгийн тулаанд хурц хариултаар танхимыг инээлгэв."
+    },
+    "life": {
+      "born": null,
+      "died": 243
     }
   },
   {
@@ -3191,6 +3491,10 @@
       "it": "Funzionario civile di Shu. Raccomandato da Tao Qian, curò ogni rapporto diplomatico con Yuan Shao e Liu Biao durante gli anni erranti di Liu Bei.",
       "es_419": "Funcionario civil de Shu. Recomendado por Tao Qian, llevó toda la diplomacia con Yuan Shao y Liu Biao durante los años errantes de Liu Bei.",
       "mn": "Шугийн иргэний түшмэл. Тао Цяний хүсэлтээр Лю Бэйд нэгдэж, тэнүүчилсэн жилүүдэд Юань Шао, Лю Бяотой харилцах бүх ажлыг ганцаараа хариуцав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3238,6 +3542,10 @@
       "it": "Progenitore di Wu, detto la Tigre di Jiangdong. Fu il solo a entrare a Luoyang durante la coalizione anti-Dong Zhuo, ma una freccia nella provincia di Jing troncò la sua ambizione.",
       "es_419": "Progenitor de Wu, llamado el Tigre de Jiangdong. Fue el único que entró en Luoyang durante la coalición anti-Dong Zhuo, pero una flecha en la provincia de Jing truncó su ambición.",
       "mn": "У улсын үндэслэгч. Цзяндуны Бар хэмээн нэрлэгдэв. Дун Чжогийн эсрэг холбооны үед ганцаараа Лоян хотод оров. Гэвч Цзин мужид сумаар онуулж хүсэл нь дундаа тасрав."
+    },
+    "life": {
+      "born": 155,
+      "died": 191
     }
   },
   {
@@ -3273,6 +3581,10 @@
       "it": "Generale di origini fra i briganti del monte Tai. Si legò a Lü Bu prima di passare a Cao Cao.",
       "es_419": "General de origen entre los bandidos del monte Tai. Se ligó a Lü Bu antes de pasarse a Cao Cao.",
       "mn": "Тайшань уулын дээрэмчний гаралтай жанжин. Эхлээд Люй Буд нийлж, дараа нь Цао Цаод бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3320,6 +3632,10 @@
       "it": "Primo imperatore di Wu. Raccolse a diciannove anni l'eredità del fratello e tenne Jiangdong, eccellendo soprattutto nel giudicare gli uomini e nel lasciar loro briglia sciolta.",
       "es_419": "Primer emperador de Wu. Recogió a los diecinueve años la herencia de su hermano y conservó Jiangdong, destacando sobre todo por juzgar a los hombres y darles rienda.",
       "mn": "У улсын анхны эзэн хаан. Арван есөн настайдаа ахынхаа өвийг хүлээн авч Цзяндуныг хамгаалав. Хүн танин ажил даалгахдаа юунаас ч илүү гарамгай байв."
+    },
+    "life": {
+      "born": 182,
+      "died": 252
     }
   },
   {
@@ -3367,6 +3683,10 @@
       "it": "Cugino di Sun Quan. Amante degli studi, teneva letterati persino in accampamento, e presidiava posizioni chiave lungo il fiume.",
       "es_419": "Primo de Sun Quan. Aficionado al estudio, mantenía letrados incluso en el campamento, y guardaba posiciones clave a lo largo del río.",
       "mn": "Сунь Цюанийн үеэл. Эрдэм номд дуртай тул хуарандаа ч эрдэмтэн залуус байлгадаг байв. Голын эрэг дэх чухал байрлалыг хариуцан хамгаалав."
+    },
+    "life": {
+      "born": 177,
+      "died": 215
     }
   },
   {
@@ -3402,6 +3722,10 @@
       "it": "Generale del clan imperiale di Wu. Affrontò l'esercito di Liu Bei nella campagna di Yiling.",
       "es_419": "General del clan imperial de Wu. Enfrentó al ejército de Liu Bei en la campaña de Yiling.",
       "mn": "Угийн хаан угсааны жанжин. Илин дэх аян дайнд Лю Бэйн цэргийг угтан тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3437,6 +3761,10 @@
       "it": "Ufficiale agli ordini di Lü Bu. Cinta d'assedio Xiapi, con Wei Xu legò il proprio signore e lo consegnò a Cao Cao.",
       "es_419": "Oficial a las órdenes de Lü Bu. Cercada Xiapi, junto con Wei Xu ató a su propio señor y lo entregó a Cao Cao.",
       "mn": "Люй Бугийн харьяат жанжин. Сяпи хот бүслэгдэхэд Вэй Сюйтэй хамт эзнээ хүлж Цао Цаод хүлээлгэн өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3472,6 +3800,10 @@
       "it": "Ufficiale subalterno delle province.",
       "es_419": "Oficial subalterno de las provincias.",
       "mn": "Орон нутгийн доод зэргийн цэргийн түшмэл."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3507,6 +3839,10 @@
       "it": "Figura agli ordini di Liu Biao. Portò la lettera di resa a Cao Cao.",
       "es_419": "Figura a las órdenes de Liu Biao. Llevó la carta de rendición a Cao Cao.",
       "mn": "Лю Бяогийн харьяат. Бууж өгөх бичгийг барин Цао Цаогийн цэрэг рүү очив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3554,6 +3890,10 @@
       "it": "Erudito degli Han Posteriori. Uno degli Otto Draghi del clan Xun; convocato da Dong Zhuo, cospirò poi con Wang Yun per eliminarlo.",
       "es_419": "Erudito de los Han Posteriores. Uno de los Ocho Dragones del clan Xun; convocado por Dong Zhuo, conspiró después con Wang Yun para eliminarlo.",
       "mn": "Хожуу Хань улсын нэрт эрдэмтэн. Сюнь овгийн Найман Луугийн нэг. Дун Чжод дуудагдсаны дараа Ван Юньтэй хамт түүнийг зайлуулах санаа тээв."
+    },
+    "life": {
+      "born": 128,
+      "died": 190
     }
   },
   {
@@ -3601,6 +3941,10 @@
       "it": "Generale agli ordini di Yuan Shao. A guardia delle granaglie a Wuchao, era ubriaco quando Cao Cao colpì — e così ebbe inizio la rovina del suo signore.",
       "es_419": "General a las órdenes de Yuan Shao. Custodiando el grano en Wuchao, estaba ebrio cuando Cao Cao atacó, y así empezó la ruina de su señor.",
       "mn": "Юань Шаогийн харьяат жанжин. Учаод хүнсний нөөцийг хамгаалж байгаад архинд согтуурсны улмаас Цао Цаогийн гэнэтийн довтолгоонд өртөж, эзнийхээ мөхлийн эхлэлийг тавив."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -3648,6 +3992,10 @@
       "it": "Stratega di Wei, salutato come talento degno di assistere un re. Diede a Cao Cao il disegno generale per la Pianura Centrale, ma si oppose alla sua elevazione a Duca di Wei e morì nell'oscurità.",
       "es_419": "Estratega de Wei, saludado como talento digno de asistir a un rey. Le dio a Cao Cao el diseño general para la Llanura Central, pero se opuso a su elevación como Duque de Wei y murió en la sombra.",
       "mn": "Вэйн зөвлөх түшмэл. Хааныг тэтгэх авьяастан хэмээн үнэлэгдэв. Цао Цаод Төв Тэгш талыг эзлэх ерөнхий төлөвлөгөөг өгсөн боловч түүнийг Вэйн ван болохыг эсэргүүцэж, гунигтайгаар нас барав."
+    },
+    "life": {
+      "born": 163,
+      "died": 212
     }
   },
   {
@@ -3695,6 +4043,10 @@
       "it": "Stratega di Wei. Nipote di Xun Yu, gli si attribuiscono dodici piani ingegnosi; semplice all'apparenza, acuto nell'intimo.",
       "es_419": "Estratega de Wei. Sobrino de Xun Yu, se le atribuyen doce planes ingeniosos; sencillo por fuera, agudo por dentro.",
       "mn": "Вэйн зөвлөх түшмэл. Сюнь Юйн ач бөгөөд арван хоёр гайхамшигт арга дэвшүүлсэн гэдэг. Гаднаа тэнэг мэт боловч дотроо ухаалаг байсан гэж үнэлэгддэг."
+    },
+    "life": {
+      "born": 157,
+      "died": 214
     }
   },
   {
@@ -3730,6 +4082,10 @@
       "it": "Stratega agli ordini di Yuan Shao, annoverato fra gli ufficiali del campo di Hebei attorno all'epoca di Guandu.",
       "es_419": "Estratega a las órdenes de Yuan Shao, contado entre los oficiales del campo de Hebei por la época de Guandu.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдугийн тулааны үеийн Хэбэйн хуарангийн жагсаалтад нэр нь бичигдсэн хүн."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3777,6 +4133,10 @@
       "it": "Stratega agli ordini di Yuan Shao. Tanto inflessibile da rifiutare ogni offerta di resa; all'esecuzione chiese di inginocchiarsi rivolto a nord, verso Hebei.",
       "es_419": "Estratega a las órdenes de Yuan Shao. Tan inflexible que rechazó toda oferta de rendición; en la ejecución pidió arrodillarse mirando al norte, hacia Hebei.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Хатуу шулуун занг барьж эцэст нь бууж өгсөнгүй. Цаазлагдахдаа Хэбэй зүг рүү харан өвдөглөхийг хүсчээ."
+    },
+    "life": {
+      "born": null,
+      "died": 204
     }
   },
   {
@@ -3824,6 +4184,10 @@
       "it": "Grande generale di Wei. Di bassa statura, era sempre il primo a salire sulle mura, e seguì Cao Cao in quasi tutte le campagne.",
       "es_419": "Gran general de Wei. De baja estatura, era siempre el primero en subir a la muralla, y acompañó a Cao Cao en casi todas sus campañas.",
       "mn": "Вэйн нэрт жанжин. Биеийн өндөр багатай ч үргэлж хамгийн түрүүнд хэрэм өөд авирч, Цао Цаог дагаж бараг бүх аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": 218
     }
   },
   {
@@ -3859,6 +4223,10 @@
       "it": "Generale agli ordini di Yuan Shu.",
       "es_419": "General a las órdenes de Yuan Shu.",
       "mn": "Юань Шугийн харьяат жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": 197
     }
   },
   {
@@ -3894,6 +4262,10 @@
       "it": "Feroce generale agli ordini di Yuan Shao. Vanto dei guerrieri di Hebei, cadde sotto la lama di Guan Yu a Baima.",
       "es_419": "Feroz general a las órdenes de Yuan Shao. Orgullo de los guerreros de Hebei, cayó bajo el filo de Guan Yu en Baima.",
       "mn": "Юань Шаогийн харьяат догшин жанжин. Хэбэйн эрэлхэг жанждын тэргүүн байсан ч Байма хэмээх газар Гуань Юйн иронд унав."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -3929,6 +4301,10 @@
       "it": "Generale agli ordini di Cao Cao.",
       "es_419": "General a las órdenes de Cao Cao.",
       "mn": "Цао Цаогийн харьяат жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3964,6 +4340,10 @@
       "it": "Generale agli ordini di Han Xuan. Uscì a difendere Changsha e perse la testa per mano di Guan Yu al primo scontro.",
       "es_419": "General a las órdenes de Han Xuan. Salió a defender Changsha y perdió la cabeza ante Guan Yu al primer choque.",
       "mn": "Хань Сюанийн харьяат жанжин. Чанша хотыг хамгаалахаар мордсон боловч Гуань Юйтэй анхны мөргөлдөөнд толгойгоо тасчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -3999,6 +4379,10 @@
       "it": "Generale delle province.",
       "es_419": "General de las provincias.",
       "mn": "Орон нутгийн жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4034,6 +4418,10 @@
       "it": "Consigliere di Zhang Lu. Avido di tangenti, calunniò Pang De e Ma Chao e alla fine vendette il suo signore; Cao Cao, detestando tale slealtà, lo fece giustiziare in piazza.",
       "es_419": "Consejero de Zhang Lu. Ávido de sobornos, calumnió a Pang De y Ma Chao y al final vendió a su señor; Cao Cao, aborreciendo tal deslealtad, lo hizo ejecutar en la plaza del mercado.",
       "mn": "Чжан Лугийн зөвлөх. Хээл хахууль хайрлаж Пан Дэ, Ма Чао нарыг гүтгэн, эцэст нь эзнээ худалдав. Цао Цао түүний үнэнч бус занг жигшин зах дээр цаазлав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4081,6 +4469,10 @@
       "it": "Funzionario civile di Wei. Tanto pronto d'ingegno da leggere più volte nella mente di Cao Cao — finché non spiegò il senso di \"costole di pollo\", turbò l'esercito e fu messo a morte.",
       "es_419": "Funcionario civil de Wei. De ingenio tan rápido que adivinó una y otra vez el pensamiento de Cao Cao, hasta que explicó el sentido de \"costillas de pollo\", inquietó al ejército y fue ejecutado.",
       "mn": "Вэйн иргэний түшмэл. Ухаан нь илүүдэж Цао Цаогийн бодлыг дахин дахин таамагладаг байв. Эцэст нь \"тахианы хавирга\" гэдгийн утгыг тайлж цэргийн сэтгэлийг хөдөлгөсөн гэмээр цаазлагдав."
+    },
+    "life": {
+      "born": 175,
+      "died": 219
     }
   },
   {
@@ -4116,6 +4508,10 @@
       "it": "Arciere di Wuling. Tiratore che serviva l'amministratore da lungo tempo.",
       "es_419": "Arquero de Wuling. Tirador que servía al administrador desde hacía mucho tiempo.",
       "mn": "Улингийн харваач. Захирагчид удаан хугацаанд зүтгэсэн нумчин байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4151,6 +4547,10 @@
       "it": "Generale agli ordini di Zhang Lu. Difese il passo di Yangping.",
       "es_419": "General a las órdenes de Zhang Lu. Defendió el paso de Yangping.",
       "mn": "Чжан Лугийн харьяат жанжин. Янпиний боомтыг хамгаалав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4186,6 +4586,10 @@
       "it": "Generale agli ordini di Zhang Lu. Si oppose alle forze di Cao Cao sul fronte di Hanzhong.",
       "es_419": "General a las órdenes de Zhang Lu. Se opuso a las fuerzas de Cao Cao en el frente de Hanzhong.",
       "mn": "Чжан Лугийн харьяат жанжин. Ханьчжуны фронтод Цао Цаогийн цэрэгтэй тэмцэв."
+    },
+    "life": {
+      "born": null,
+      "died": 215
     }
   },
   {
@@ -4221,6 +4625,10 @@
       "it": "Generale di origini nella piccola nobiltà di provincia.",
       "es_419": "General de origen en la pequeña nobleza provincial.",
       "mn": "Орон нутгийн ноёдын гаралтай жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4256,6 +4664,10 @@
       "it": "Generale agli ordini di Liu Zhang. Insistette più volte perché Liu Bei fosse rimandato nella provincia di Jing, e trovò la fine al passo di Baishui insieme a Gao Pei.",
       "es_419": "General a las órdenes de Liu Zhang. Insistió una y otra vez en que se devolviera a Liu Bei a la provincia de Jing, y halló su fin en el paso de Baishui junto a Gao Pei.",
       "mn": "Лю Чжаны харьяат жанжин. Лю Бэйг Цзин муж руу буцаахыг удаа дараа сануулсан бөгөөд Гао Пэйтэй хамт Байшуйн боомтод төгсгөлөө үзэв."
+    },
+    "life": {
+      "born": null,
+      "died": 212
     }
   },
   {
@@ -4291,6 +4703,10 @@
       "it": "Generale agli ordini di Gongsun Zan. Alla testa dell'avanguardia a Jieqiao, fu colto dalle balestre pesanti di Qu Yi e ucciso.",
       "es_419": "General a las órdenes de Gongsun Zan. Al frente de la vanguardia en Jieqiao, fue alcanzado por las ballestas pesadas de Qu Yi y murió.",
       "mn": "Гунсунь Цзаний харьяат жанжин. Цзецяод урд эгнээг удирдаж байгаад Цюй Ийн хүчит нумын сумаар онуулж амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 191
     }
   },
   {
@@ -4326,6 +4742,10 @@
       "it": "Brigante della regione di Runan. Con Zhu Jiang agiva in coppia per sfuggire agli occhi del governo.",
       "es_419": "Bandido de la región de Runan. Junto con Zhu Jiang actuaba en pareja para escapar de los ojos del gobierno.",
       "mn": "Жунань орчмын дээрэмчин. Чжу Гантай хамтарч засгийн газрын нүднээс зайлсхийж явдаг байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4361,6 +4781,10 @@
       "it": "Generale veterano di Shu. Catturato mentre difendeva la commenda di Ba, disse a Zhang Fei che vi erano generali pronti a perdere la testa, ma nessuno ad arrendersi — e si guadagnò invece il rispetto di chi lo aveva preso.",
       "es_419": "General veterano de Shu. Capturado mientras defendía la comandancia de Ba, le dijo a Zhang Fei que había generales dispuestos a perder la cabeza, pero ninguno a rendirse, y se ganó en cambio el respeto de quien lo había apresado.",
       "mn": "Шугийн өтөл жанжин. Ба аймгийг хамгаалж байгаад Чжан Фэйд олзлогдсон ч \"толгойгоо тасчуулах жанжин бий ч бууж өгөх жанжин үгүй\" хэмээн бөхийсөнгүй, харин ч түүний хүндэтгэлийг хүлээв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4396,6 +4820,10 @@
       "it": "Letterato e funzionario di Wu. Morto Lu Su, quando Sun Quan volle affidargli diecimila soldati, rifiutò in lacrime, dicendosi un semplice letterato ignaro di guerra.",
       "es_419": "Erudito y funcionario de Wu. Muerto Lu Su, cuando Sun Quan quiso confiarle diez mil soldados, se negó entre lágrimas, diciendo que era un simple letrado que nada sabía de guerra.",
       "mn": "Угийн эрдэмтэн түшмэл. Лү Су нас барсны дараа Сунь Цюань түүнд түмэн цэрэг даатгах гэхэд, өөрийгөө бичиг номын хүн, цэргийн хэрэг мэдэхгүй хэмээн нулимс унагаан татгалзав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4443,6 +4871,10 @@
       "it": "Generale di Wei. Represse i briganti delle province di Qing e Xu e mantenne quieta la frontiera per molti anni.",
       "es_419": "General de Wei. Sometió a los bandidos de las provincias de Qing y Xu y mantuvo tranquila la frontera durante muchos años.",
       "mn": "Вэйн жанжин. Цин, Сюй мужийн дээрэмчдийг дарж, хилийн бүсийг олон жил тайван байлгав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4478,6 +4910,10 @@
       "it": "Generale agli ordini di Cao Cao. Fece campagna insieme al fratello.",
       "es_419": "General a las órdenes de Cao Cao. Hizo campaña junto con su hermano.",
       "mn": "Цао Цаогийн харьяат жанжин. Ах дүүгийнхээ хамт аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4525,6 +4961,10 @@
       "it": "Gran Comandante di Wu. Semplice soldato finché Sun Quan non lo esortò a leggere; tre giorni dopo era uomo da guardare con occhi nuovi. Il suo stratagemma delle vesti bianche conquistò la provincia di Jing.",
       "es_419": "Gran Comandante de Wu. Simple soldado hasta que Sun Quan lo instó a leer; tres días después ya era hombre al que había que mirar con otros ojos. Su estratagema de las ropas blancas le ganó la provincia de Jing.",
       "mn": "Угийн ерөнхий жанжин. Ердийн цэргийн хүн байсан ч Сунь Цюань ном унших зөвлөгөө өгсний дараа гурав хоногийн дараа \"нүдээ арчиж дахин харах\" ёстой хүн болов. Цагаан хувцасны аргаар Цзин мужийг гартаа авав."
+    },
+    "life": {
+      "born": 178,
+      "died": 220
     }
   },
   {
@@ -4572,6 +5012,10 @@
       "it": "Gran Maresciallo di Wu. Curò le finanze fin dal tempo di Sun Ce e applicò le regole con tale rigore da non piegarle mai per nessuno.",
       "es_419": "Gran Mariscal de Wu. Manejó las finanzas desde los tiempos de Sun Ce y cumplió las reglas con tal rigor que nunca hizo excepciones.",
       "mn": "Угийн их жанжин. Сунь Цэгийн үеэс санхүүг бүхэлд нь хариуцаж, дүрэм журмыг чанд сахин хэнд ч хувийн хөнгөлөлт үзүүлж байгаагүй."
+    },
+    "life": {
+      "born": null,
+      "died": 228
     }
   },
   {
@@ -4607,6 +5051,10 @@
       "it": "Fratello di Lü Kuang. I due servirono insieme Cao Cao.",
       "es_419": "Hermano de Lü Kuang. Ambos sirvieron juntos a Cao Cao.",
       "mn": "Люй Куаны ах дүү. Хамтдаа Цао Цаод зүтгэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4654,6 +5102,10 @@
       "it": "Il guerriero più possente della fine degli Han: fra gli uomini Lü Bu, fra i cavalli Lepre Rossa. Avendo tradito due signori di seguito, perse ogni credito e trovò la fine a Xiapi.",
       "es_419": "El guerrero más poderoso del final de los Han: entre los hombres, Lü Bu; entre los caballos, Liebre Roja. Habiendo traicionado a dos señores seguidos, perdió todo crédito y halló su fin en Xiapi.",
       "mn": "Хожуу Хань улсын хамгийн хүчирхэг дайчин. \"Хүмүүсийн дотор Люй Бу, морьдын дотор Улаан Туулай\" хэмээн ярьдаг байв. Хоёр эзнээ дараалан урвасны улмаас итгэл алдаж, Сяпид төгсгөлөө үзэв."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -4689,6 +5141,10 @@
       "it": "Ufficiale agli ordini di Zhang Lu. Dissuase il suo signore dal proclamarsi re e, quando Cao Cao invase, gli consigliò di ritirarsi a Bazhong prima di arrendersi — così Zhang Lu fu accolto con onore.",
       "es_419": "Oficial a las órdenes de Zhang Lu. Disuadió a su señor de proclamarse rey y, cuando Cao Cao invadió, le aconsejó replegarse a Bazhong antes de rendirse; así Zhang Lu fue recibido con honores.",
       "mn": "Чжан Лугийн түшмэл. Эзнээ өөрийгөө ван хэмээн зарлахаас сэргийлэв. Цао Цао довтлоход шууд бууж өгөлгүй эхлээд Бачжун руу ухарч, дараа нь бууж өгөхийг зөвлөсөн тул Чжан Лу хүндэтгэлтэй хүлээн авагдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4724,6 +5180,10 @@
       "it": "Generale di Shu. Si accampò a Xiabian durante la campagna di Hanzhong, fu battuto dalle forze di Cao Cao e ucciso da genti tribali mentre ripiegava.",
       "es_419": "General de Shu. Acampó en Xiabian durante la campaña de Hanzhong, fue batido por las fuerzas de Cao Cao y muerto por gente tribal mientras se retiraba.",
       "mn": "Шугийн жанжин. Ханьчжуны аян дайнд Сябянь хэмээх газар буудалласан боловч Цао Цаогийн цэрэгт ялагдаж, ухрах замдаа харь овгийнхны гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 218
     }
   },
   {
@@ -4771,6 +5231,10 @@
       "it": "Generale di Shu. Guidò più volte l'avanguardia a Yiling e nelle campagne del nord.",
       "es_419": "General de Shu. Encabezó la vanguardia una y otra vez en Yiling y en las campañas del norte.",
       "mn": "Шугийн жанжин. Илин болон умард аян дайнд дахин дахин урд эгнээг удирдаж нэр гаргав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4818,6 +5282,10 @@
       "it": "Generale di Shu. Parente acquisito di Liu Zhang, si arrese e servì Shu, sbaragliando un esercito di Wei sul fronte di Hanzhong.",
       "es_419": "General de Shu. Pariente político de Liu Zhang, se rindió y sirvió a Shu, deshaciendo a un ejército de Wei en el frente de Hanzhong.",
       "mn": "Шугийн жанжин. Лю Чжаны хадам төрөл байсан ч бууж өгч Шу улсад зүтгэн, Ханьчжуны фронтод Вэйн цэргийг бут цохив."
+    },
+    "life": {
+      "born": null,
+      "died": 237
     }
   },
   {
@@ -4853,6 +5321,10 @@
       "it": "Generale di Wuling. L'orgoglio gli correva alto, e di rado ammetteva la sconfitta.",
       "es_419": "General de Wuling. Su orgullo corría alto, y rara vez admitía la derrota.",
       "mn": "Улингийн жанжин. Бардам зантай тул ялагдлаа хялбархан хүлээн зөвшөөрдөггүй байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4888,6 +5360,10 @@
       "it": "Figura dell'accampamento di Lü Bu. Andò come emissario a implorare soccorso da Yuan Shu.",
       "es_419": "Figura del campamento de Lü Bu. Fue como emisario a pedir auxilio a Yuan Shu.",
       "mn": "Люй Бугийн хуарангийн хүн. Юань Шугаас тусламж гуйх элчээр очив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4923,6 +5399,10 @@
       "it": "Ufficiale aggiunto agli ordini di Liu Zhang. Si appese a testa in giù alla porta della città per implorare il signore di non accogliere Liu Bei e, respinto, recise egli stesso la fune.",
       "es_419": "Oficial auxiliar a las órdenes de Liu Zhang. Se colgó cabeza abajo de la puerta de la ciudad para rogarle a su señor que no admitiera a Liu Bei y, desoído, cortó él mismo la soga.",
       "mn": "Лю Чжаны харьяат туслах түшмэл. Лю Бэйг битгий оруул хэмээн хотын хаалганаас толгойгоороо доош өлгөгдөж сануулав. Үг нь сонсогдоогүйд өөрөө олсоо тасчив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -4970,6 +5450,10 @@
       "it": "Funzionario civile di Shu. Avvertì Guan Yu che le torri di segnalazione erano mal presidiate; inascoltato, gli rimase accanto fino alla fine a Maicheng.",
       "es_419": "Funcionario civil de Shu. Advirtió a Guan Yu que las torres de señales estaban mal guarnecidas; desoído, permaneció a su lado hasta el final en Maicheng.",
       "mn": "Шугийн иргэний түшмэл. Цзин мужид Гуань Юйд гал дохионы цамхгийн хамгаалалт сул байгааг сануулсан ч сонсогдоогүй бөгөөд Майчэн хүртэл эцсээ хүртэл хамт байв."
+    },
+    "life": {
+      "born": null,
+      "died": 222
     }
   },
   {
@@ -5005,6 +5489,10 @@
       "it": "Figura agli ordini di Liu Biao. Insistette con Liu Cong per la resistenza fino all'ultimo istante, mentre questi si apprestava ad arrendersi.",
       "es_419": "Figura a las órdenes de Liu Biao. Insistió a Liu Cong en resistir hasta el último instante, cuando este se disponía a rendirse.",
       "mn": "Лю Бяогийн харьяат. Бууж өгөхөөр завдаж байсан Лю Цунд эсэргүүцэхийг эцсийн мөч хүртэл ятгав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5052,6 +5540,10 @@
       "it": "Uno dei Sette Maestri dell'era Jian'an. Compose la \"Rapsodia della Salita alla Torre\" mentre trovava rifugio nella provincia di Jing, e servì poi Cao Cao.",
       "es_419": "Uno de los Siete Maestros de la era Jian'an. Compuso la \"Rapsodia de la Subida a la Torre\" mientras se refugiaba en la provincia de Jing, y sirvió después a Cao Cao.",
       "mn": "Цзянъаны Долоон Багшийн нэг. Цзин мужид түр хоргодож байхдаа \"Цамхагт гарсан тухай яруу найраг\"-ийг зохиов. Хожим Цао Цаод зүтгэв."
+    },
+    "life": {
+      "born": 177,
+      "died": 217
     }
   },
   {
@@ -5087,6 +5579,10 @@
       "it": "Generale al comando della cavalleria.",
       "es_419": "General al mando de la caballería.",
       "mn": "Морьт цэрэг удирдах жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5122,6 +5618,10 @@
       "it": "Generale agli ordini di Cao Cao. Scese in campo insieme a Liu Dai.",
       "es_419": "General a las órdenes de Cao Cao. Salió a campo junto con Liu Dai.",
       "mn": "Цао Цаогийн харьяат жанжин. Лю Дайтай хамт цэрэг гаргав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5169,6 +5669,10 @@
       "it": "Generale di Shu. Non sapeva scrivere dieci caratteri, ma sapeva condurre le truppe: nel caos di Jieting fu il solo a tenere i ranghi, e più tardi arrestò un grande esercito di Wei a Xingshi.",
       "es_419": "General de Shu. No sabía escribir ni diez caracteres, pero entendía de mandar tropas: en el caos de Jieting fue el único que mantuvo la formación, y más tarde contuvo a un gran ejército de Wei en Xingshi.",
       "mn": "Шугийн жанжин. Арван үсэг ч мэддэггүй байсан боловч цэрэг захирахдаа гарамгай. Цзетингийн үймээнд ганцаараа эгнээгээ хадгалж, хожим Синши хэмээх газарт Вэйн их цэргийг зогсоов."
+    },
+    "life": {
+      "born": null,
+      "died": 248
     }
   },
   {
@@ -5216,6 +5720,10 @@
       "it": "Generale di Shu. Preso da Wu, si finse morto per fuggire e corse mille li per tornare da Liu Bei. Tenne la lancia in pugno fino al giorno in cui Shu cadde.",
       "es_419": "General de Shu. Apresado por Wu, se fingió muerto para escapar y corrió mil li de vuelta hasta Liu Bei. Mantuvo la lanza en la mano hasta el día en que Shu cayó.",
       "mn": "Шугийн жанжин. У улсад олзлогдоход үхсэн дүр эсгэн зугтаж, мянган газар давхиж Лю Бэй рүү эргэн ирэв. Шу улс мөхөх өдөр хүртэл жадаа тавьсангүй."
+    },
+    "life": {
+      "born": null,
+      "died": 264
     }
   },
   {
@@ -5263,6 +5771,10 @@
       "it": "Grande generale di Wei, celebre per la disciplina ferrea. Intrappolato dall'inondazione a Fancheng, si arrese a Guan Yu e perse l'onore di una vita.",
       "es_419": "Gran general de Wei, célebre por su disciplina de hierro. Atrapado por la inundación en Fancheng, se rindió a Guan Yu y perdió el honor de toda una vida.",
       "mn": "Вэйн нэрт жанжин. Цэргийн сахилга батаараа алдартай байсан ч Фаньчэн хотод үер усанд баригдаж Гуань Юйд бууж өгснөөр насан туршийн нэр төрөө алдав."
+    },
+    "life": {
+      "born": null,
+      "died": 221
     }
   },
   {
@@ -5310,6 +5822,10 @@
       "it": "Funzionario civile di Wu. Maestro del Libro dei Mutamenti, parlava senza freni, irritò Sun Quan e fu esiliato nella provincia di Jiao.",
       "es_419": "Funcionario civil de Wu. Maestro del Libro de las Mutaciones, hablaba sin frenos, irritó a Sun Quan y fue desterrado a la provincia de Jiao.",
       "mn": "Угийн иргэний түшмэл. \"Өөрчлөлтийн ном\"-д нэвтэрсэн боловч шулуун үгээ хэлэхээс буцдаггүй тул Сунь Цюанийн хилэнг хүрч Цзяо муж руу цөлөгдөв."
+    },
+    "life": {
+      "born": 164,
+      "died": 233
     }
   },
   {
@@ -5345,6 +5861,10 @@
       "it": "Generale agli ordini di Gongsun Zan. Cavalcava con i Volontari del Cavallo Bianco e combatté a lungo le tribù del nord.",
       "es_419": "General a las órdenes de Gongsun Zan. Cabalgaba con los Voluntarios del Caballo Blanco y combatió largamente a las tribus del norte.",
       "mn": "Гунсунь Цзаний харьяат жанжин. Цагаан Морьтны Сайн Дурынхныг дагаж умард зүгийн харь овгуудтай удаан тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5392,6 +5912,10 @@
       "it": "Il maggior signore della guerra della fine degli Han. Sorretto da quattro generazioni di ministri, riunì le quattro province di Hebei — ma era lento a decidere e sordo ai consigli, e crollò a Guandu.",
       "es_419": "El mayor señor de la guerra del final de los Han. Respaldado por cuatro generaciones de ministros, reunió las cuatro provincias de Hebei; pero era lento para decidir y sordo a los consejos, y se desplomó en Guandu.",
       "mn": "Хожуу Хань улсын хамгийн том цэргийн ноён. Дөрвөн үеийн сайд бүхий язгуур гэрийн нэрийг үүрч Хэбэйн дөрвөн мужийг нэгтгэв. Гэвч шийдвэр гаргахдаа удаан, зөвлөгөөг сонсдоггүй тул Гуаньдугийн тулаанд нурав."
+    },
+    "life": {
+      "born": null,
+      "died": 202
     }
   },
   {
@@ -5439,6 +5963,10 @@
       "it": "Signore della guerra della fine degli Han. Fratello minore di Yuan Shao, confidò nel Sigillo Imperiale che aveva ottenuto e si proclamò imperatore — facendosi nemici da ogni parte e rovinando.",
       "es_419": "Señor de la guerra del final de los Han. Hermano menor de Yuan Shao, confió en el Sello Imperial que había obtenido y se proclamó emperador, ganándose enemigos por todos lados y cayendo.",
       "mn": "Хожуу Хань улсын цэргийн ноён. Юань Шаогийн дүү бөгөөд олж авсан Хаан Тамгандаа найдан өөрийгөө хаан хэмээн зарлав. Ингэснээр дөрвөн зүгт дайсантай болж мөхөв."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -5474,6 +6002,10 @@
       "it": "Cugino di Yuan Shu. Alla morte di questi raccolse i seguaci rimasti e il Sigillo Imperiale e ripiegò su Lujiang.",
       "es_419": "Primo de Yuan Shu. Tras la muerte de este reunió a los seguidores restantes y el Sello Imperial y se retiró a Lujiang.",
       "mn": "Юань Шугийн үеэл. Юань Шуг нас барсны дараа үлдсэн бүлэг болон Хаан Тамгыг цуглуулан Лүцзян руу ухрав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5509,6 +6041,10 @@
       "it": "Ufficiale agli ordini di Lü Bu. Si unì a Song Xian nella cattura di Lü Bu.",
       "es_419": "Oficial a las órdenes de Lü Bu. Se unió a Song Xian en la captura de Lü Bu.",
       "mn": "Люй Бугийн харьяат жанжин. Сун Сяньтэй хамсаж Люй Буг олзлов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5556,6 +6092,10 @@
       "it": "Feroce generale di Shu. Presidiò Hanzhong per anni e guidò l'avanguardia nelle campagne del nord, proponendo un'incursione per la valle di Ziwu. Dopo la morte di Zhuge Liang si scontrò con Yang Yi e morì bollato come traditore.",
       "es_419": "Feroz general de Shu. Guardó Hanzhong durante años y encabezó la vanguardia en las campañas del norte, proponiendo una incursión por el valle de Ziwu. Tras la muerte de Zhuge Liang chocó con Yang Yi y murió señalado como traidor.",
       "mn": "Шугийн догшин жанжин. Ханьчжуныг олон жил хамгаалж, умард аян дайнд урд эгнээнд явж, Цзыугийн хөндийгөөр гэнэдүүлэн довтлохыг санал болгожээ. Чжугэ Ляныг нас барсны дараа Ян Итэй зөрчилдөж, урвагчийн нэр зүүн үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 234
     }
   },
   {
@@ -5591,6 +6131,10 @@
       "it": "Generale agli ordini di Liu Zhang. Tenne Luocheng contro le forze di Liu Bei.",
       "es_419": "General a las órdenes de Liu Zhang. Sostuvo Luocheng contra las fuerzas de Liu Bei.",
       "mn": "Лю Чжаны харьяат жанжин. Лочэн хотыг хамгаалж Лю Бэйн цэрэгтэй тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5626,6 +6170,10 @@
       "it": "Figlio maggiore di Liu Biao. Messo da parte dai parenti della matrigna, chiese a Zhuge Liang come sopravvivere e partì per Jiangxia per salvarsi.",
       "es_419": "Hijo mayor de Liu Biao. Desplazado por los parientes de su madrastra, le preguntó a Zhuge Liang cómo sobrevivir y partió a Jiangxia para salvarse.",
       "mn": "Лю Бяогийн ууган хүү. Хойд эхийн төрлүүдэд шахагдахад Чжугэ Лянгаас амьдрах замаа асууж, Цзянся руу гарч биеэ хамгаалав."
+    },
+    "life": {
+      "born": null,
+      "died": 209
     }
   },
   {
@@ -5661,6 +6209,10 @@
       "it": "Generale agli ordini di Cao Cao. Marciò con Wang Zhong contro Liu Bei nella provincia di Xu.",
       "es_419": "General a las órdenes de Cao Cao. Marchó con Wang Zhong contra Liu Bei en la provincia de Xu.",
       "mn": "Цао Цаогийн харьяат жанжин. Ван Чжунтай хамт Сюй муж дахь Лю Бэйг дарахаар мордов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5696,6 +6248,10 @@
       "it": "Amministratore di Lingling. Resistette alla campagna meridionale di Liu Bei.",
       "es_419": "Administrador de Lingling. Resistió la campaña de Liu Bei hacia el sur.",
       "mn": "Линлин хотын захирагч. Лю Бэйн өмнөд аян дайныг эсэргүүцэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5731,6 +6287,10 @@
       "it": "Superstite dei Turbanti Gialli con base a Runan. Si oppose a Cao Cao e si unì a Liu Bei per minacciare i dintorni di Xudu.",
       "es_419": "Remanente de los Turbantes Amarillos asentado en Runan. Se opuso a Cao Cao y se unió a Liu Bei para amenazar los alrededores de Xudu.",
       "mn": "Жунань нутагт байрлаж байсан Шар алчууртны үлдэгдэл. Цао Цаотай тэмцэж, Лю Бэйтэй холбоо тогтоон Сюйду хотын ойролцоог сүрдүүлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -5766,6 +6326,10 @@
       "it": "Figlio adottivo di Liu Bei. Abile nelle armi e utile nella campagna della provincia di Yi, ricevette l'ordine di togliersi la vita per aver rifiutato soccorso a Guan Yu a Maicheng.",
       "es_419": "Hijo adoptivo de Liu Bei. Hábil con las armas y útil en la campaña de la provincia de Yi, recibió la orden de quitarse la vida por negarle auxilio a Guan Yu en Maicheng.",
       "mn": "Лю Бэйн өргөж авсан хүү. Зэвсэгт чадварлаг бөгөөд И мужийг эзлэхэд гавьяа байгуулсан ч Майчэн дэх Гуань Юйд туслах цэрэг явуулахаас татгалзсан гэмээр өөрийгөө хөнөөх зарлиг хүлээв."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -5813,6 +6377,10 @@
       "it": "Primo imperatore di Shu Han. Si levò dalla vendita di stuoie di paglia nella contea di Zhuo e divise l'impero in tre non per talento, ma per il dono di conquistare i cuori.",
       "es_419": "Primer emperador de Shu Han. Se levantó desde la venta de esteras de paja en el condado de Zhuo, y dividió el imperio en tres no por su talento, sino por su don para ganarse los corazones.",
       "mn": "Шу Хан улсын анхны эзэн хаан. Чжо шянд дэвсгэр нэхэж зарж байснаас дэвшин гарч, авьяас билгээрээ бус хүмүүсийн сэтгэлийг татах чадвараараа тэнгэрийн доорхийг гурав хуваав."
+    },
+    "life": {
+      "born": 161,
+      "died": 223
     }
   },
   {
@@ -5860,6 +6428,10 @@
       "it": "Secondo imperatore di Shu Han. Lo Stato si resse finché visse Zhuge Liang; poi si appoggiò agli eunuchi e perse gli altari della propria casa.",
       "es_419": "Segundo emperador de Shu Han. El Estado se mantuvo entero mientras vivió Zhuge Liang; después se apoyó en los eunucos y perdió los altares de su casa.",
       "mn": "Шу Хан улсын хоёр дахь эзэн хаан. Чжугэ Лян амьд байх хугацаанд улс бүрэн бүтэн байсан ч түүнийг одсоны дараа тайган түшмэдийг ойртуулж, өвөг дээдсийн ариун сүмээ алджээ."
+    },
+    "life": {
+      "born": 207,
+      "died": 271
     }
   },
   {
@@ -5895,6 +6467,10 @@
       "it": "Figlio maggiore di Liu Zhang. Trincerato a Luocheng, tenne a bada l'esercito di Liu Bei per quasi un anno.",
       "es_419": "Hijo mayor de Liu Zhang. Atrincherado en Luocheng, contuvo al ejército de Liu Bei casi un año.",
       "mn": "Лю Чжаны ууган хүү. Лочэн хотод бэхлэн байж Лю Бэйн цэргийг бараг нэг жил зогсоов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -5942,6 +6518,10 @@
       "it": "Stratega di Wei. Discendente della casa Han al servizio di Cao Cao, aveva occhio così limpido per i tempi da prevedere più volte gli eventi.",
       "es_419": "Estratega de Wei. Descendiente de la casa Han al servicio de Cao Cao, tenía tan clara lectura de los tiempos que acertó una y otra vez sobre lo que vendría.",
       "mn": "Вэйн зөвлөх түшмэл. Хань угсааны хойч атлаа Цао Цаод зүтгэв. Цаг үеийг унших мэлмий тод тул ирээдүйг олон удаа зөв таамаглав."
+    },
+    "life": {
+      "born": null,
+      "died": 234
     }
   },
   {
@@ -5989,6 +6569,10 @@
       "it": "Governatore della provincia di Yi. Mite d'indole ma incapace di decidere, invitò Liu Bei per contenere Hanzhong e finì per consegnargli il proprio Stato.",
       "es_419": "Gobernador de la provincia de Yi. Apacible de carácter pero incapaz de decidir, invitó a Liu Bei para contener Hanzhong y terminó entregándole su propio Estado.",
       "mn": "И мужийн эрхлэгч. Зөөлөн зантай ч шийдэмгий бус. Ханьчжуныг хаахын тулд урьсан Лю Бэйд харин ч улсаа өгчээ."
+    },
+    "life": {
+      "born": null,
+      "died": 219
     }
   },
   {
@@ -6024,6 +6608,10 @@
       "it": "Figlio minore di Liu Biao. Succedette al padre e subito consegnò l'intera provincia di Jing a Cao Cao.",
       "es_419": "Hijo menor de Liu Biao. Sucedió a su padre y enseguida entregó la provincia de Jing entera a Cao Cao.",
       "mn": "Лю Бяогийн бага хүү. Эцгийнхээ албыг залгамжилсан боловч удалгүй Цзин мужийг бүхэлд нь Цао Цаод өргөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6071,6 +6659,10 @@
       "it": "Governatore della provincia di Jing. Annoverato fra gli Otto Modelli, governò Jing in pace per vent'anni — ma non tese mai la mano all'impero.",
       "es_419": "Gobernador de la provincia de Jing. Contado entre los Ocho Modelos, gobernó Jing en paz durante veinte años; pero nunca tendió la mano hacia el imperio.",
       "mn": "Цзин мужийн эрхлэгч. Найман Онцлогийн нэгд тооцогдох нэрт хүн бөгөөд Цзин мужийг хорин жил амар тайван захирав. Гэвч тэнгэрийн доорхийг булаах зориг эцэст нь төрсөнгүй."
+    },
+    "life": {
+      "born": 142,
+      "died": 208
     }
   },
   {
@@ -6106,6 +6698,10 @@
       "it": "Figlio di Liu Du. Difese Lingling mettendo Xing Daorong in prima linea, ma alla fine si arrese.",
       "es_419": "Hijo de Liu Du. Defendió Lingling poniendo a Xing Daorong al frente, pero al final se rindió.",
       "mn": "Лю Дугийн хүү. Линлин хотыг хамгаалж Син Даожуныг урд эгнээнд гаргасан ч эцэст нь бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6153,6 +6749,10 @@
       "it": "Cancelliere di Wu. Bruciò fino alla rovina il grande esercito di Liu Bei a Yiling e sbaragliò Cao Xiu a Shiting. Negli ultimi anni rimase invischiato nelle dispute per la successione e morì amareggiato.",
       "es_419": "Canciller de Wu. Quemó hasta la ruina al gran ejército de Liu Bei en Yiling y deshizo a Cao Xiu en Shiting. En sus últimos años quedó enredado en las disputas por la sucesión y murió amargado.",
       "mn": "Угийн тэргүүн сайд. Илин хэмээх газар Лю Бэйн их цэргийг галаар шатааж бут цохив. Шитинд Цао Сюйг ялав. Хожуу насандаа хаан ширээний төлөөх маргаанд орооцолдож, гуниг дунд нас барав."
+    },
+    "life": {
+      "born": 183,
+      "died": 245
     }
   },
   {
@@ -6200,6 +6800,10 @@
       "it": "Funzionario civile di Wu. A sei anni, a un banchetto di Yuan Shu, nascose dei mandarini in seno per portarli alla madre, e divenne emblema di pietà filiale.",
       "es_419": "Funcionario civil de Wu. A los seis años, en un banquete de Yuan Shu, escondió mandarinas en su ropa para llevárselas a su madre, y quedó como ejemplo de piedad filial.",
       "mn": "Угийн иргэний түшмэл. Зургаан настайдаа Юань Шугийн найранд жүрж өвөртлөн ээждээ авч өгөх гэсэн явдлаараа ач тусыг хариулагчийн үлгэр жишээ болов."
+    },
+    "life": {
+      "born": 188,
+      "died": 219
     }
   },
   {
@@ -6235,6 +6839,10 @@
       "it": "Luogotenente di Dong Zhuo. Morto il signore, s'impadronì di Chang'an, mise le mani sull'imperatore Xian e dominò la corte.",
       "es_419": "Lugarteniente de Dong Zhuo. Muerto su señor, se apoderó de Chang'an, puso las manos sobre el emperador Xian y dominó la corte.",
       "mn": "Дун Чжогийн харьяат. Эзнийг нь үхсэний дараа Чанъань хотыг эзэмдэж, Сянь-ди хааныг гартаа авч ордныг захирав."
+    },
+    "life": {
+      "born": null,
+      "died": 198
     }
   },
   {
@@ -6270,6 +6878,10 @@
       "it": "Figura agli ordini di Liu Biao. Si oppose alla resa di Liu Cong e resistette fino all'ultimo.",
       "es_419": "Figura a las órdenes de Liu Biao. Se opuso a la rendición de Liu Cong y resistió hasta el final.",
       "mn": "Лю Бяогийн харьяат. Лю Цуны бууж өгөхийг эсэргүүцэж эцсээ хүртэл тэмцэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6305,6 +6917,10 @@
       "it": "Guerriera che viveva isolata sul monte Tai. Aveva il dono di trattare con le fiere, e chi saliva sul monte la scambiava per il suo spirito.",
       "es_419": "Guerrera que vivía aislada en el monte Tai. Tenía el don de tratar con las fieras, y quienes subían al monte la tomaban por su espíritu.",
       "mn": "Тайшань ууланд ганцаараа амьдарч байсан эмэгтэй дайчин. Араатан амьтныг номхотгох чадвартай тул ууланд орсон хүмүүс түүнийг уулын эзэн гэж боддог байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6340,6 +6956,10 @@
       "it": "Ufficiale agli ordini di Dong Zhuo. Attirò Lü Bu con il dono di Lepre Rossa e più tardi aiutò quello stesso Lü Bu ad abbattere Dong Zhuo.",
       "es_419": "Oficial a las órdenes de Dong Zhuo. Atrajo a Lü Bu con el regalo de Liebre Roja y más tarde ayudó a ese mismo Lü Bu a derribar a Dong Zhuo.",
       "mn": "Дун Чжогийн харьяат жанжин. Улаан Туулай морийг өгөөшөө болгож Люй Буг татан оруулав. Хожим тэрхүү Люй Бутай хамт Дун Чжог цавчив."
+    },
+    "life": {
+      "born": null,
+      "died": 192
     }
   },
   {
@@ -6387,6 +7007,10 @@
       "it": "Ministro anziano di Shu. Condivise l'incarico affidato sul letto di morte a Baidicheng, ma fallì nell'inviare le granaglie per la campagna del nord, tentò di occultare l'errore e fu destituito.",
       "es_419": "Ministro principal de Shu. Compartió el encargo del lecho de muerte en Baidicheng, pero falló en enviar el grano para la campaña del norte, intentó encubrirlo y fue destituido.",
       "mn": "Шугийн эрхэм түшмэл. Байдичэнд Лю Бэйн гэрээслэлийг хамт хүлээсэн ч умард аян дайны тээвэрт бүтэлгүйтэж, түүнийгээ нуухыг завдсанаар энгийн иргэн болгон буулгагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 234
     }
   },
   {
@@ -6422,6 +7046,10 @@
       "it": "Generale delle province.",
       "es_419": "General de las provincias.",
       "mn": "Орон нутгийн жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6469,6 +7097,10 @@
       "it": "Genero e consigliere di Dong Zhuo. Avvelenò l'imperatore deposto Shao e propose il trasferimento della capitale, assumendosi ogni nefandezza del suo signore.",
       "es_419": "Yerno y consejero de Dong Zhuo. Envenenó al depuesto emperador Shao y propuso el traslado de la capital, encargándose de toda vileza de su señor.",
       "mn": "Дун Чжогийн хүргэн бөгөөд зөвлөх. Хаан ширээнээс буулгасан Шао-ди хааныг хордуулж, нийслэлээ нүүлгэхийг зөвлөх зэргээр эзнийхээ бүх бузар хэргийг гүйцэтгэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6504,6 +7136,10 @@
       "it": "Generale di Wu. Servì nella campagna di Yiling.",
       "es_419": "General de Wu. Sirvió en la campaña de Yiling.",
       "mn": "Угийн жанжин. Илин дэх аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6551,6 +7187,10 @@
       "it": "Funzionario civile di Shu. Servì Liu Biao prima di passare a Liu Bei. È ricordato per aver ribattuto con una battuta alla domanda beffarda di Sun Quan, durante un'ambasceria a Wu.",
       "es_419": "Funcionario civil de Shu. Sirvió a Liu Biao antes de pasarse a Liu Bei. Se lo recuerda por responder con una ocurrencia a la pregunta burlona de Sun Quan, durante una embajada a Wu.",
       "mn": "Шугийн иргэний түшмэл. Лю Бяод зүтгэсний дараа Лю Бэйд нэгдэв. У улсад элчээр очиход Сунь Цюанийн ёжтой асуултыг хурц үгээр няцаасан явдлаараа алдартай."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6598,6 +7238,10 @@
       "it": "Generale di Wei. Uomo d'arme amante degli studi, non contese mai i meriti; a Hefei mise da parte l'astio verso Zhang Liao e uscì in campo al suo fianco.",
       "es_419": "General de Wei. Hombre de armas aficionado al estudio, nunca disputó méritos; en Hefei dejó de lado su desavenencia con Zhang Liao y salió a campo a su lado.",
       "mn": "Вэйн жанжин. Цэргийн хүн атлаа номд дуртай, гавьяа булаацалдаж байгаагүй. Хэфэйд Чжан Ляотой муудалцсанаа хойш тавьж, зэрэгцэн байлдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6633,6 +7277,10 @@
       "it": "Generale agli ordini di Yuan Shu. Lasciato con Qiao Rui e altri a fermare Cao Cao a Qiyang, vi cadde.",
       "es_419": "General a las órdenes de Yuan Shu. Dejado con Qiao Rui y otros para contener a Cao Cao en Qiyang, cayó allí.",
       "mn": "Юань Шугийн харьяат жанжин. Цяо Жуй нарын хамт Циянд үлдэж Цао Цаог зогсоохыг оролдоод алагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 197
     }
   },
   {
@@ -6680,6 +7328,10 @@
       "it": "Funzionario civile di Shu. Convinse Ma Chao a sottomettersi a Liu Bei e governò i territori meridionali, mantenendo quieta la frontiera.",
       "es_419": "Funcionario civil de Shu. Convenció a Ma Chao de someterse a Liu Bei y gobernó los territorios del sur, manteniendo tranquila la frontera.",
       "mn": "Шугийн иргэний түшмэл. Ма Чаог ятгаж Лю Бэйд бууж өгүүлэв. Хожим өмнөд нутгийг захирч хилийн бүсийг тайван байлгав."
+    },
+    "life": {
+      "born": null,
+      "died": 231
     }
   },
   {
@@ -6715,6 +7367,10 @@
       "it": "Generale agli ordini di Yuan Shao. Corse in soccorso di Wuchao ma fu abbattuto per strada da Zhang Liao.",
       "es_419": "General a las órdenes de Yuan Shao. Cabalgó a socorrer Wuchao, pero fue abatido en el camino por Zhang Liao.",
       "mn": "Юань Шаогийн харьяат жанжин. Учаог аврахаар давхисан боловч замдаа Чжан Ляогийн гарт цавчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -6750,6 +7406,10 @@
       "it": "Generale agli ordini di Yuan Shao. Dopo il crollo di Yuan Shang, con Jiao Chu consegnò la provincia di You a Cao Cao.",
       "es_419": "General a las órdenes de Yuan Shao. Tras el derrumbe de Yuan Shang, junto con Jiao Chu entregó la provincia de You a Cao Cao.",
       "mn": "Юань Шаогийн харьяат жанжин. Юань Шан нурсны дараа Цзяо Чутай хамт Ю мужийг Цао Цаод бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6797,6 +7457,10 @@
       "it": "Signore di Hanzhong. Alla guida della Via dei Cinque Staia di Riso, governò trent'anni dispensando rimedi al popolo e, arrendendosi, lasciò i magazzini sigillati — per il che Cao Cao lo lodò.",
       "es_419": "Señor de Hanzhong. Al frente del Camino de las Cinco Fanegas de Arroz, gobernó treinta años repartiendo remedios al pueblo y, al rendirse, dejó los almacenes sellados, por lo que Cao Cao lo elogió.",
       "mn": "Ханьчжуны эзэн. Таван Түмэн Будааны Замыг тэргүүлж, ард түмэнд эм тарааж гучин жил захирав. Бууж өгөхдөө ч агуулахаа лацдаж үлдээсэн тул Цао Цаогийн магтаалыг хүлээв."
+    },
+    "life": {
+      "born": null,
+      "died": 216
     }
   },
   {
@@ -6844,6 +7508,10 @@
       "it": "Amministratore di Chenliu. Uno degli Otto Cuochi e un tempo amico di Cao Cao, seguì il consiglio di Chen Gong, fece entrare Lü Bu e rivoltò l'intera provincia di Yan.",
       "es_419": "Administrador de Chenliu. Uno de los Ocho Cocineros y antaño amigo de Cao Cao, siguió el consejo de Chen Gong, hizo entrar a Lü Bu y volteó la provincia de Yan entera.",
       "mn": "Чэньлюгийн захирагч. Найман Тогоочийн нэг бөгөөд Цао Цаогийн анд байсан ч Чэнь Гунгийн үгийг дагаж Люй Буг оруулж ирэн Янь мужийг бүхэлд нь эргүүлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 195
     }
   },
   {
@@ -6879,6 +7547,10 @@
       "it": "Brigante della provincia di Jing. Si impadronì del famoso cavallo Dilu e lo cavalcava quando cadde sotto la lancia di Zhao Yun.",
       "es_419": "Bandido de la provincia de Jing. Se apoderó del famoso caballo Dilu y lo montaba cuando cayó bajo la lanza de Zhao Yun.",
       "mn": "Цзин мужийн дээрэмчин. Дилу хэмээх алдарт хүлгийг булаан унаж явсаад Чжао Юний жадан дор унав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -6926,6 +7598,10 @@
       "it": "Feroce generale di Shu. Sul ponte di Changban fermò da solo l'esercito di Cao Cao. Non si piegò mai davanti ai potenti, ma trattava i propri uomini con durezza e morì per mano loro.",
       "es_419": "Feroz general de Shu. En el puente de Changban detuvo él solo a la hueste de Cao Cao. Jamás se inclinó ante los poderosos, pero trataba con dureza a sus propios hombres y murió a manos de ellos.",
       "mn": "Шугийн догшин жанжин. Чанбаний гүүрэн дээр ганцаараа зогсож Цао Цаогийн их цэргийг зогсоов. Хүчирхэгт хэзээ ч бөхийгөөгүй ч харьяат цэргүүдээ хатуу зэрхэлж, эцэст нь тэдний гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 221
     }
   },
   {
@@ -6973,6 +7649,10 @@
       "it": "Anziano uomo di Stato di Wu. Sun Ce gli affidò gli affari interni sul letto di morte; i suoi consigli inflessibili lo opposero spesso a Sun Quan.",
       "es_419": "Anciano estadista de Wu. Sun Ce le confió los asuntos internos en su lecho de muerte; sus consejos inflexibles lo enfrentaron a menudo con Sun Quan.",
       "mn": "Угийн ахмад түшмэл. Сунь Цэ нас барахдаа дотоод хэргийг даатгасан хүн. Шулуун үг хэлдэг тул Сунь Цюаньтэй байнга зөрчилддөг байв."
+    },
+    "life": {
+      "born": 156,
+      "died": 236
     }
   },
   {
@@ -7020,6 +7700,10 @@
       "it": "Aiutante della provincia di Yi. Poco avvenente ma incapace di dimenticare ciò che aveva visto una volta, consegnò le mappe delle terre occidentali a Liu Bei, fu scoperto e messo a morte.",
       "es_419": "Asistente de la provincia de Yi. De aspecto poco agraciado pero incapaz de olvidar lo que veía una sola vez, entregó los mapas de las tierras del oeste a Liu Bei, fue descubierto y ejecutado.",
       "mn": "И мужийн туслах түшмэл. Царай муутай ч нэг харснаа мартдаггүй байв. Барууны нутгийн газрын зургийг Лю Бэйд өгсөн нь илэрч цаазлагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 212
     }
   },
   {
@@ -7067,6 +7751,10 @@
       "it": "Signore della guerra di Wan. Si arrese a Cao Cao, si rivoltò di nuovo — costando la vita a Dian Wei e Cao Ang — e più tardi si sottomise ancora su esortazione di Jia Xu.",
       "es_419": "Señor de la guerra de Wan. Se rindió a Cao Cao, se volvió contra él de nuevo —costando la vida a Dian Wei y Cao Ang— y más tarde se sometió otra vez por instancia de Jia Xu.",
       "mn": "Вань хотын цэргийн ноён. Цао Цаод бууж өгөөд дахин урвасны улмаас Дянь Вэй, Цао Ан нар амиа алдав. Хожим Цзя Сюйн зөвлөснөөр дахин бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": 207
     }
   },
   {
@@ -7102,6 +7790,10 @@
       "it": "Comandante di un corpo di cavalleria.",
       "es_419": "Comandante de un cuerpo de caballería.",
       "mn": "Морьт цэргийн ангийг удирдах жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7149,6 +7841,10 @@
       "it": "Cancelliere di Shu. Additato per tempo da Zhuge Liang come successore, resse senza mutare espressione una corte scossa dalla scomparsa del Cancelliere.",
       "es_419": "Canciller de Shu. Señalado temprano por Zhuge Liang como sucesor, sostuvo sin mudar el gesto una corte sacudida por la ausencia del Canciller.",
       "mn": "Шугийн тэргүүн сайд. Чжугэ Лян эртнээс залгамжлагчаа болгон сонгосон бөгөөд сайд одсоны дараа доргисон ордныг царай зүсээ ч өөрчлөлгүй тайвшруулав."
+    },
+    "life": {
+      "born": null,
+      "died": 246
     }
   },
   {
@@ -7196,6 +7892,10 @@
       "it": "Grande generale di Wei. A Hefei condusse ottocento uomini contro i centomila di Sun Quan; da allora, si diceva, i bambini di Jiangdong smettevano di piangere al suo nome.",
       "es_419": "Gran general de Wei. En Hefei condujo ochocientos hombres contra los cien mil de Sun Quan; desde entonces, se decía, los niños de Jiangdong dejaban de llorar al oír su nombre.",
       "mn": "Вэйн нэрт жанжин. Хэфэйд найман зуун цэргээр Сунь Цюанийн арван түмэнтэй тулгарав. Түүнээс хойш Цзяндуны хүүхдүүд түүний нэрийг сонсоод уйлахаа болидог байжээ."
+    },
+    "life": {
+      "born": 169,
+      "died": 222
     }
   },
   {
@@ -7231,6 +7931,10 @@
       "it": "Fratello minore di Zhang Lu. Gli fu affidato il passo di Yangping e diede battaglia al grande esercito di Cao Cao.",
       "es_419": "Hermano menor de Zhang Lu. Se le confió el paso de Yangping y dio batalla al gran ejército de Cao Cao.",
       "mn": "Чжан Лугийн дүү. Янпиний боомтыг хариуцаж Цао Цаогийн их цэргийг угтан тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7266,6 +7970,10 @@
       "it": "Generale della provincia di Jing. Divise con Cai Mao il comando della flotta.",
       "es_419": "General de la provincia de Jing. Compartió con Cai Mao el mando de la flota.",
       "mn": "Цзин мужийн жанжин. Цай Маотай хамт усан цэргийг хариуцав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7301,6 +8009,10 @@
       "it": "Grande generale agli ordini di Liu Zhang. Tese l'imboscata al Pendio della Fenice Caduta in cui morì Pang Tong e, una volta catturato, scelse la morte dicendo di non poter servire due signori.",
       "es_419": "Gran general a las órdenes de Liu Zhang. Tendió la emboscada en la Ladera del Fénix Caído donde murió Pang Tong y, una vez capturado, escogió la muerte diciendo que no podía servir a dos señores.",
       "mn": "Лю Чжаны харьяат нэрт жанжин. Унасан Гарьдын Энгэрт отолт тавьж Пан Туныг хөнөөв. Олзлогдсоны дараа ч \"хоёр эзэнд зүтгэхгүй\" хэмээн үхлийг сонгов."
+    },
+    "life": {
+      "born": null,
+      "died": 213
     }
   },
   {
@@ -7336,6 +8048,10 @@
       "it": "Figlio di Zhang Fei. Portò l'ardore paterno nelle campagne del nord, ma morì giovane; si racconta che Zhuge Liang sputasse sangue alla notizia.",
       "es_419": "Hijo de Zhang Fei. Llevó el ímpetu de su padre a las campañas del norte, pero murió joven; se cuenta que Zhuge Liang escupió sangre al saberlo.",
       "mn": "Чжан Фэйн хүү. Эцгийнхээ зоригийг өвлөн умард аян дайнд оролцсон ч залуудаа таалал төгсөв. Энэ мэдээг сонсоод Чжугэ Лян цус бөөлжсөн гэдэг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7383,6 +8099,10 @@
       "it": "Grande generale di Wei. Lasciò Yuan Shao per Cao Cao e leggeva il terreno con tale acume che Shu lo temeva più di ogni altro, finché una freccia lo raggiunse sul sentiero di Mumen.",
       "es_419": "Gran general de Wei. Dejó a Yuan Shao por Cao Cao y leía el terreno con tal agudeza que Shu lo temía más que a ningún otro, hasta que una flecha lo alcanzó en el sendero de Mumen.",
       "mn": "Вэйн нэрт жанжин. Юань Шаогоос салж Цао Цаод бууж өгсөн. Газар орны байдлыг уншихдаа гарамгай тул Шу улс түүнээс хамгийн их эмээдэг байв. Эцэст нь Мумэний замд сумаар онуулж амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 231
     }
   },
   {
@@ -7418,6 +8138,10 @@
       "it": "Capo tribale della regione di Guanzhong. Condusse la sua gente nelle guerre della Pianura Centrale.",
       "es_419": "Jefe tribal de la región de Guanzhong. Condujo a su gente a las guerras de la Llanura Central.",
       "mn": "Гуаньчжун орчмын харь овгийн тэргүүн. Аймгаа удирдан Төв Тэгш талын дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7465,6 +8189,10 @@
       "it": "Generale di Wu. Servì fin dal tempo di Sun Ce e mostrò magnanimità tale da raccomandare un uomo che un tempo aveva attentato alla sua vita.",
       "es_419": "General de Wu. Sirvió desde los tiempos de Sun Ce y mostró magnanimidad suficiente para recomendar a un hombre que alguna vez atentó contra su vida.",
       "mn": "Угийн жанжин. Сунь Цэгийн үеэс аян дайнд оролцов. Нэгэнтээ өөрийг нь хөнөөхийг завдсан хүнийг харин ч албанд дэвшүүлэх өгөөмөр сэтгэлтэй байв."
+    },
+    "life": {
+      "born": null,
+      "died": 219
     }
   },
   {
@@ -7500,6 +8228,10 @@
       "it": "Il primo fra gli strateghi di Yuan Shao. Consigliò di accogliere il Figlio del Cielo e ammonì contro la battaglia affrettata a Guandu, ma fu sempre respinto. Catturato, morì tentando la fuga, e Cao Cao lo seppellì con onore.",
       "es_419": "El principal estratega de Yuan Shao. Aconsejó acoger al Hijo del Cielo y advirtió contra la batalla precipitada en Guandu, pero fue desoído siempre. Capturado, murió al intentar escapar, y Cao Cao lo sepultó con honores.",
       "mn": "Юань Шаогийн хамгийн шилдэг зөвлөх түшмэл. Тэнгэрийн хүүг угтан авахыг зөвлөж, Гуаньдугийн яаруу тулааныг эсэргүүцсэн ч тэр бүр няцаагдав. Олзлогдсоны дараа зугтахыг завдаж амь үрэгдэхэд Цао Цао түүнийг хүндэтгэн оршуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -7547,6 +8279,10 @@
       "it": "Stratega agli ordini di Yuan Shao. Imprigionato per aver sostenuto una guerra di logoramento, fu messo a morte dopo la sconfitta del suo signore anziché liberato.",
       "es_419": "Estratega a las órdenes de Yuan Shao. Encarcelado por defender una guerra de desgaste, fue ejecutado tras la derrota de su señor en lugar de liberado.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Удаан хугацааны тулааныг санал болгосон гэмээр шоронд хоригдсон бөгөөд эзнийг нь ялагдсаны дараа сулласангүй, харин ч цаазлав."
+    },
+    "life": {
+      "born": null,
+      "died": 200
     }
   },
   {
@@ -7582,6 +8318,10 @@
       "it": "Capo di un popolo tribale. Fluente nella lingua e nella scrittura della Pianura Centrale, curava tutte le trattative.",
       "es_419": "Jefe de un pueblo tribal. Fluido en la lengua y la escritura de la Llanura Central, se encargaba de todas las negociaciones.",
       "mn": "Харь овгийн ахлагч. Төв Тэгш талын хэл бичигт нэвтэрсэн тул хэлэлцээрийн ажлыг бүхэлд нь хариуцав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7629,6 +8369,10 @@
       "it": "Generale veterano di Wu. Anziano che servì tre generazioni della casa Sun. Dapprima sottovalutò il giovane Zhou Yu; poi ne misurò la statura e lo seguì di cuore.",
       "es_419": "General veterano de Wu. Anciano que sirvió a tres generaciones de la casa Sun. Al principio menospreció al joven Zhou Yu; luego midió su talla y lo siguió de corazón.",
       "mn": "Угийн өтөл жанжин. Сунь овгийн гурван үеийг дамжин зүтгэсэн ахмад. Эхэндээ залуу Чжоу Юйг дорд үзсэн ч түүний авьяасыг мэдээд чин сэтгэлээсээ дагав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7676,6 +8420,10 @@
       "it": "Generale veterano di Wu. Sotto la tormenta di neve a Dongxing ordinò agli uomini di deporre corazze ed elmi e assalì il campo di Wei con le sole lame corte, riportando una grande vittoria.",
       "es_419": "General veterano de Wu. Bajo la nevada de Dongxing ordenó a sus hombres soltar corazas y yelmos, y asaltó el campamento de Wei solo con armas cortas, logrando una gran victoria.",
       "mn": "Угийн өтөл жанжин. Дунсин дэх цасан шуурганд цэргүүдээ хуяг дуулгаа тайлуулж, зөвхөн богино зэвсгээр Вэйн хуаранг гэнэдүүлэн довтолж, том ялалт байгуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 271
     }
   },
   {
@@ -7723,6 +8471,10 @@
       "it": "Stratega di Wei. Alto oltre otto *chi* e intrepido, tenne da solo tre città quando Cao Cao stava per perdere la provincia di Yan.",
       "es_419": "Estratega de Wei. De más de ocho *chi* de estatura e intrépido, sostuvo él solo tres ciudades cuando Cao Cao estaba a punto de perder la provincia de Yan.",
       "mn": "Вэйн зөвлөх түшмэл. Найман тохоос давсан өндөртэй, зоригтой. Цао Цао Янь мужийг алдах шахах үед ганцаараа гурван хотыг хамгаалав."
+    },
+    "life": {
+      "born": 141,
+      "died": 220
     }
   },
   {
@@ -7770,6 +8522,10 @@
       "it": "Ministro anziano di Wu. Fratello maggiore di Zhuge Liang, deriso per il viso lungo; la sua indole mite ne fece il ponte fra Wu e Shu.",
       "es_419": "Ministro principal de Wu. Hermano mayor de Zhuge Liang, objeto de burlas por su rostro alargado; su índole apacible lo volvió el puente entre Wu y Shu.",
       "mn": "Угийн эрхэм түшмэл. Чжугэ Лянгийн ах бөгөөд царай нь урт тул илжигтэй зүйрлүүлэн шоолуулдаг байв. Зөөлөн зантай тул У, Шу хоёрын хоорондох гүүр болов."
+    },
+    "life": {
+      "born": 174,
+      "died": 241
     }
   },
   {
@@ -7817,6 +8573,10 @@
       "it": "Cancelliere di Shu Han. A Longzhong espose il piano per dividere l'impero in tre; dopo la morte di Liu Bei sostenne il giovane imperatore e marciò cinque volte a nord, fino a cadere a Wuzhang.",
       "es_419": "Canciller de Shu Han. En Longzhong expuso el plan de dividir el imperio en tres; tras la muerte de Liu Bei sostuvo al joven emperador y marchó cinco veces al norte, hasta caer en Wuzhang.",
       "mn": "Шу Хан улсын тэргүүн сайд. Лунчжунд тэнгэрийн доорхийг гурав хуваах төлөвлөгөөг дэвшүүлэв. Лю Бэйг нас барсны дараа бага эзнийг тэтгэж, таван удаа умард зүг рүү аян дайнд гарсны эцэст Учжан талд одоо шиг унтарчээ."
+    },
+    "life": {
+      "born": 181,
+      "died": 234
     }
   },
   {
@@ -7852,6 +8612,10 @@
       "it": "Sottoposto di Guan Yu. Gli rimase accanto durante il crollo della provincia di Jing e con lui trovò la fine a Maicheng.",
       "es_419": "Subordinado de Guan Yu. Se mantuvo a su lado durante el derrumbe de la provincia de Jing y con él halló el final en Maicheng.",
       "mn": "Гуань Юйн харьяат. Цзин муж нурах үед ч хажуугаас нь салалгүй, Майчэнд хамт төгсгөлөө үзэв."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -7887,6 +8651,10 @@
       "it": "Amministratore di Guiyang. Dopo essersi arreso alle forze di Liu Bei, tentò di dare in sposa la cognata vedova a Zhao Yun, e ne raccolse soltanto l'ira.",
       "es_419": "Administrador de Guiyang. Tras rendirse a las fuerzas de Liu Bei, intentó casar a su cuñada viuda con Zhao Yun, y solo cosechó su enojo.",
       "mn": "Гуйян хотын захирагч. Лю Бэйн цэрэгт бууж өгсний дараа бэлэвсэн бэргэнээ Чжао Юньд өгөхийг завдаж, харин ч түүний уур хилэнг хүрээв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -7934,6 +8702,10 @@
       "it": "Primo imperatore di Wei. Ricevette l'abdicazione dell'imperatore Xian e subentrò agli Han. Critico di valore, autore del *Dianlun*, fu però meschino verso i fratelli.",
       "es_419": "Primer emperador de Wei. Recibió la abdicación del emperador Xian y reemplazó a los Han. Crítico de valía, autor del *Dianlun*, fue en cambio mezquino con sus hermanos.",
       "mn": "Вэй улсын анхны эзэн хаан. Сянь-ди хааны хаан ширээ шилжүүлэхийг хүлээн авч Хань улсыг халав. Утга зохиолд ойр, *Дянълунь* зохиолыг үлдээсэн ч ах дүүстээ явцуу хандаж байжээ."
+    },
+    "life": {
+      "born": 187,
+      "died": 226
     }
   },
   {
@@ -7969,6 +8741,10 @@
       "it": "Arciere agli ordini di Lü Bu. La sua freccia colpì l'occhio di Xiahou Dun.",
       "es_419": "Arquero a las órdenes de Lü Bu. Su flecha alcanzó el ojo de Xiahou Dun.",
       "mn": "Люй Бугийн харьяат харваач. Сяхоу Дунийн нүдийг сумаар онов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8016,6 +8792,10 @@
       "it": "Generale di Wei. Comandò la cavalleria scelta della Tigre e del Leopardo; il rigore e l'assenza di favoritismi gli valsero la fiducia di Cao Cao.",
       "es_419": "General de Wei. Mandó la caballería de élite del Tigre y el Leopardo; su rigor y su falta de favoritismos le ganaron la confianza de Cao Cao.",
       "mn": "Вэйн жанжин. Сонгомол морьт цэрэг болох Барс Ирвэсийн Хороог удирдав. Хатуу чанга, хувийн ашиг сонирхолгүй тул Цао Цаогийн итгэлийг олов."
+    },
+    "life": {
+      "born": null,
+      "died": 210
     }
   },
   {
@@ -8063,6 +8843,10 @@
       "it": "Figlio di Cao Cao e il maggior poeta del suo tempo. Sotto la persecuzione del fratello avrebbe composto una poesia in sette passi, salvandosi così la vita.",
       "es_419": "Hijo de Cao Cao y el mejor poeta de su tiempo. Bajo el acoso de su hermano habría compuesto un poema en siete pasos, salvando así la vida.",
       "mn": "Цао Цаогийн хүү, тухайн үеийн шилдэг яруу найрагч. Ахынхаа шахалт дор долоон алхмын дотор шүлэг зохиож амиа авардаг байсан гэдэг яриа уламжлагджээ."
+    },
+    "life": {
+      "born": 192,
+      "died": 232
     }
   },
   {
@@ -8110,6 +8894,10 @@
       "it": "Grande generale di Shu. A Changban sfondò le linee nemiche con il piccolo Liu Shan stretto al petto; a Hanzhong respinse l'esercito di Cao Cao con un accampamento vuoto e le porte spalancate.",
       "es_419": "Gran general de Shu. En Changban rompió las líneas enemigas con el pequeño Liu Shan contra el pecho; en Hanzhong ahuyentó al ejército de Cao Cao con un campamento vacío y las puertas abiertas de par en par.",
       "mn": "Шугийн нэрт жанжин. Чанбань хэмээх газарт бяцхан Лю Шаныг өвөртөө хийн дайсны эгнээг нэвт цохиж гарав. Ханьчжун дахь тулаанд хоосон хуаран, ангайлгасан хаалгаар Цао Цаогийн цэргийг ухраажээ."
+    },
+    "life": {
+      "born": null,
+      "died": 229
     }
   },
   {
@@ -8157,6 +8945,10 @@
       "it": "Grande Generale di Wei. Cugino di Cao Cao, tenne Fancheng fino all'ultimo persino sotto l'inondazione provocata da Guan Yu.",
       "es_419": "Gran General de Wei. Primo de Cao Cao, sostuvo Fancheng hasta el final aun bajo la inundación provocada por Guan Yu.",
       "mn": "Вэйн их жанжин. Цао Цаогийн үеэл бөгөөд Гуань Юйн усан довтолгоонд ч нурахгүй Фаньчэн хотыг эцсээ хүртэл хамгаалав."
+    },
+    "life": {
+      "born": 168,
+      "died": 223
     }
   },
   {
@@ -8192,6 +8984,10 @@
       "it": "Generale agli ordini di Dong Zhuo. Servì nei combattimenti contro la coalizione.",
       "es_419": "General a las órdenes de Dong Zhuo. Sirvió en los combates contra la coalición.",
       "mn": "Дун Чжогийн харьяат жанжин. Холбооны цэрэгтэй хийсэн тулаанд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8239,6 +9035,10 @@
       "it": "Grande Progenitore di Wei, detto l'eroe astuto di un'epoca torbida. Pacificò la Pianura Centrale con le colonie militari e il reclutamento aperto dei talenti, e i suoi versi inaugurarono un'epoca letteraria.",
       "es_419": "Gran Progenitor de Wei, llamado el héroe astuto de una era revuelta. Pacificó la Llanura Central con colonias militares y el reclutamento abierto de talentos, y sus versos abrieron una era literaria.",
       "mn": "Вэй улсын Их Өвөг. Замбараагүй цагийн зальтай баатар хэмээн нэрлэгдэв. Цэргийн тариалан ба авьяастныг чөлөөтэй элсүүлэх замаар Төв Тэгш талыг тайвшруулж, шүлэг зохиолд ч гарамгай байсны хувьд нэгэн эриний утга зохиолыг нээв."
+    },
+    "life": {
+      "born": 155,
+      "died": 220
     }
   },
   {
@@ -8286,6 +9086,10 @@
       "it": "Grande Generale di Wei. Cresciuto come pupillo di Cao Cao, respinse più volte le campagne di Zhuge Liang e aveva la generosità di dividere le ricompense con i soldati.",
       "es_419": "Gran General de Wei. Criado como pupilo de Cao Cao, rechazó más de una vez las campañas de Zhuge Liang, y tenía la generosidad de repartir sus recompensas con los soldados.",
       "mn": "Вэйн их жанжин. Цао Цаогийн өргөмөл хүү болж өссөн бөгөөд Чжугэ Лянгийн умард аян дайныг хэд хэдэн удаа няцаав. Шагналаа цэргүүдтэйгээ хуваадаг өгөөмөр зантай байв."
+    },
+    "life": {
+      "born": null,
+      "died": 231
     }
   },
   {
@@ -8333,6 +9137,10 @@
       "it": "Figlio di Cao Cao, detto Barba Gialla. Forte abbastanza da domare le fiere a mani nude, sottomise gli Wuhuan del nord.",
       "es_419": "Hijo de Cao Cao, llamado Barba Amarilla. Con fuerza suficiente para dominar fieras a mano limpia, sometió a los Wuhuan del norte.",
       "mn": "Цао Цаогийн хүү. Сахал нь шарлаг тул Шар Сахалт хэмээн нэрлэгддэг байв. Зэрлэг араатныг нүцгэн гараар барих хүчтэй бөгөөд умард зүгийн Ухуань овгийг эзлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 223
     }
   },
   {
@@ -8368,6 +9176,10 @@
       "it": "Generale della provincia di Xu. Servì Tao Qian e diede la figlia in sposa a Lü Bu.",
       "es_419": "General de la provincia de Xu. Sirvió a Tao Qian y dio a su hija en matrimonio a Lü Bu.",
       "mn": "Сюй мужийн жанжин. Тао Цянид зүтгэж, охиноо Люй Буд өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": 196
     }
   },
   {
@@ -8403,6 +9215,10 @@
       "it": "Brigante che vagava per la regione di Pengcheng. Combatteva leggendo il terreno, anziché affidarsi alla forza bruta.",
       "es_419": "Bandido que recorría la región de Pengcheng. Peleaba leyendo el terreno, en lugar de confiar en la fuerza bruta.",
       "mn": "Пэнчэн орчмоор тэнүүчилж явсан дээрэмчин. Хүч чадалдаа найдахаас илүү газар орны байдлыг уншиж тулалддаг байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8450,6 +9266,10 @@
       "it": "Generale di Wei. In fuga da Xingyang cedette il proprio cavallo a Cao Cao, dicendo che l'impero poteva fare a meno di lui, ma non del suo signore.",
       "es_419": "General de Wei. Huyendo de Xingyang le cedió su propio caballo a Cao Cao, diciendo que el imperio podía prescindir de él, pero no de su señor.",
       "mn": "Вэйн жанжин. Синъян хотоос зугтахдаа өөрийн морио Цао Цаод өгч, \"Тэнгэрийн доор Хун үгүй ч болно, харин эзэн та үгүй бол болохгүй\" гэж хэлжээ."
+    },
+    "life": {
+      "born": null,
+      "died": 232
     }
   },
   {
@@ -8497,6 +9317,10 @@
       "it": "Gran Maresciallo di Wei. Detto il puledro dai mille li del clan Cao, fu sbaragliato da Lu Xun a Shiting e morì poco dopo per un ascesso.",
       "es_419": "Gran Mariscal de Wei. Llamado el potro de mil li del clan Cao, fue derrotado por Lu Xun en Shiting y murió poco después de un absceso.",
       "mn": "Вэйн их жанжин. Цао овгийн мянган газрын унага хэмээн нэрлэгддэг байв. Шитинд Лу Сюньд бут цохигдсоны дараа нурууны буглаа даамжирч нас барав."
+    },
+    "life": {
+      "born": null,
+      "died": 228
     }
   },
   {
@@ -8532,6 +9356,10 @@
       "it": "Brigante di Runan. Guidava la sua banda accanto a Yan Shuang.",
       "es_419": "Bandido de Runan. Encabezaba su banda junto a Yan Shuang.",
       "mn": "Жунаний дээрэмчин. Янь Шуантай хамт бүлгээ удирдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8567,6 +9395,10 @@
       "it": "Funzionario degli Han Posteriori, servì come Colonnello Supervisore dell'Esercito.",
       "es_419": "Funcionario de los Han Posteriores, sirvió como Coronel Supervisor del Ejército.",
       "mn": "Хожуу Хань улсын түшмэл. Цэргийг хянах цэргийн даргын албыг хашиж байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8614,6 +9446,10 @@
       "it": "Grande generale di Wu. Prese la provincia di Jing con Lü Meng, e si fece un nome tenendo Jiangling contro un grande esercito di Wei per quasi mezzo anno.",
       "es_419": "Gran general de Wu. Tomó la provincia de Jing con Lü Meng, y se hizo un nombre sosteniendo Jiangling contra un gran ejército de Wei durante casi medio año.",
       "mn": "Угийн нэрт жанжин. Люй Мэнтэй хамт Цзин мужийг эзлэв. Цзянлин хотыг Вэйн их цэргийн эсрэг бараг хагас жил барьж нэр гаргав."
+    },
+    "life": {
+      "born": 182,
+      "died": 249
     }
   },
   {
@@ -8661,6 +9497,10 @@
       "it": "Generale di Wei. Passò da Yuan Shao a Cao Cao, servì in molte campagne ed era rinomato per il coraggio.",
       "es_419": "General de Wei. Pasó de Yuan Shao a Cao Cao, sirvió en muchas campañas y fue renombrado por su valor.",
       "mn": "Вэйн жанжин. Юань Шаогоос Цао Цао руу шилжиж, олон аян дайнд оролцон эрэлхэг зоригоороо алдаршив."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8708,6 +9548,10 @@
       "it": "Gran Comandante di Wu. Alle Scogliere Rosse incendiò la flotta di Cao Cao. Tanto esperto di musica da voltare il capo ogni volta che una nota andava storta.",
       "es_419": "Gran Comandante de Wu. En los Acantilados Rojos incendió la armada de Cao Cao. Tan versado en música que volteaba la cabeza cada vez que una nota salía mal.",
       "mn": "Угийн ерөнхий жанжин. Улаан Хадад галаар довтолж Цао Цаогийн усан цэргийг шатаав. Хөгжимд сайтар нэвтэрсэн тул аялгуу алдагдвал заавал эргэж хардаг байжээ."
+    },
+    "life": {
+      "born": 175,
+      "died": 210
     }
   },
   {
@@ -8743,6 +9587,10 @@
       "it": "Attendente di Guan Yu. Un tempo fra le bande dei Turbanti Gialli, fu tanto preso dal portamento di Guan Yu da recarne la Lama del Drago Verde per tutta la vita — e si uccise quando il suo signore cadde.",
       "es_419": "Sirviente de Guan Yu. Antes miembro de las bandas de los Turbantes Amarillos, quedó tan prendado de su porte que cargó el Sable del Dragón Verde toda su vida, y se dio muerte cuando su señor cayó.",
       "mn": "Гуань Юйн зарц. Урьд нь Шар алчууртны нэг байсан боловч түүний сүр жавхлан дор бөхийж, насан туршдаа Ногоон Луугийн Сэлмийг үүрч явав. Эзнийг нь үхэхэд өөрийгөө хөнөөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8790,6 +9638,10 @@
       "it": "Feroce generale di Wu. Salvare Sun Quan lo lasciò coperto di ferite, e a un banchetto Sun Quan gli versò una coppa per ogni cicatrice, nominandole a una a una.",
       "es_419": "Feroz general de Wu. Salvar a Sun Quan lo dejó cubierto de heridas, y en un banquete Sun Quan le sirvió una copa por cada cicatriz, nombrándolas una por una.",
       "mn": "Угийн догшин жанжин. Сунь Цюанийг аврах гэж бүх бие нь шархаар дүүрэв. Сунь Цюань найрын ширээнд шарх бүрийг нь зааж нэрлэн, түүнд архи хийж өгчээ."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8837,6 +9689,10 @@
       "it": "Uomo di Stato di Wei. Nella confusione seguita alla morte di Cao Cao esortò a raccogliere subito la successione senza attendere le formalità, e così risolse l'ascesa di Cao Pi.",
       "es_419": "Estadista de Wei. En la confusión tras la muerte de Cao Cao instó a tomar la sucesión de inmediato sin esperar formalidades, y así resolvió la entronización de Cao Pi.",
       "mn": "Вэйн нэрт түшмэл. Цао Цаог нас барсны дараах үймээний дунд ёслол хүлээлгүй нэн даруй хаан ширээг залгамжлахыг зөвлөж, Цао Пигийн өргөмжлөлийг шийдвэрлэв."
+    },
+    "life": {
+      "born": null,
+      "died": 237
     }
   },
   {
@@ -8884,6 +9740,10 @@
       "it": "Stratega di Lü Bu. Aiutò un tempo Cao Cao, ma se ne allontanò disgustato dalla sua crudeltà; il rifiuto di Lü Bu di ascoltarne i piani rovinò entrambi. Non vacillò nemmeno davanti al patibolo.",
       "es_419": "Estratega de Lü Bu. Alguna vez auxilió a Cao Cao, pero se apartó de él asqueado por su crueldad; la negativa de Lü Bu a escuchar sus planes arruinó a ambos. No flaqueó ni ante el cadalso.",
       "mn": "Люй Бугийн зөвлөх түшмэл. Нэгэнтээ Цао Цаод тусалсан ч түүний харгислалыг жигшин нүүр буруулав. Люй Бу түүний аргыг сонсоогүйн улмаас хамт мөхөв. Цаазын талбайд ч царай зүсээ өөрчлөөгүй."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -8919,6 +9779,10 @@
       "it": "Generale agli ordini di Yuan Shu. Servì nella campagna contro Lü Bu.",
       "es_419": "General a las órdenes de Yuan Shu. Sirvió en la campaña contra Lü Bu.",
       "mn": "Юань Шугийн харьяат жанжин. Люй Буг дарах аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -8966,6 +9830,10 @@
       "it": "Notabile della provincia di Xu. Contribuì molto ad aiutare Liu Bei ad abbattere Lü Bu, ma il gusto per il pesce crudo gli procurò una malattia e morì giovane.",
       "es_419": "Notable de la provincia de Xu. Hizo mucho por ayudar a Liu Bei a derribar a Lü Bu, pero su gusto por el pescado crudo le trajo enfermedad y murió joven.",
       "mn": "Сюй мужийн нэрт хүн. Лю Бэйд туслан Люй Буг унагахад их үүрэг гүйцэтгэв. Гэвч түүхий загас дуртай байсны улмаас өвчилж, залуудаа таалал төгсөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9013,6 +9881,10 @@
       "it": "Uno dei Sette Maestri di Jian'an. Il suo proclama sferzante contro Cao Cao lo avrebbe fatto balzare in piedi da un'emicrania feroce; catturato più tardi, fu risparmiato perché Cao Cao ne apprezzava l'ingegno.",
       "es_419": "Uno de los Siete Maestros de Jian'an. Su proclama mordaz contra Cao Cao lo habría hecho saltar de la cama en plena jaqueca; capturado después, fue perdonado porque Cao Cao estimaba su talento.",
       "mn": "Цзянъаны Долоон Багшийн нэг. Цао Цаог хатуу шүүмжилсэн уриалга бичсэн нь толгой өвдөж хэвтэж байсан түүнийг үсрэн босгосон гэдэг. Хожим олзлогдсон ч Цао Цао авьяасыг нь хайрлан уучилж дэргэдээ авав."
+    },
+    "life": {
+      "born": null,
+      "died": 217
     }
   },
   {
@@ -9060,6 +9932,10 @@
       "it": "Generale di Wu. Alto sette *chi* e dalle braccia lunghe, guidò l'avanguardia fin dal tempo di Sun Ce e morì proteggendo il suo signore a Hefei.",
       "es_419": "General de Wu. De siete *chi* de estatura y brazos largos, encabezó la vanguardia desde los tiempos de Sun Ce y murió protegiendo a su señor en Hefei.",
       "mn": "Угийн жанжин. Долоон тохой өндөр, гар нь урт бөгөөд Сунь Цэгийн үеэс урд эгнээнд явав. Хэфэйд эзнээ хамгаалж амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 215
     }
   },
   {
@@ -9095,6 +9971,10 @@
       "it": "Compagno di Zhang Wu. Guidava la banda con lui e fu ucciso da Zhang Fei.",
       "es_419": "Compañero de Zhang Wu. Encabezaba la banda con él y fue muerto por Zhang Fei.",
       "mn": "ЧжанУгийн нөхөр. Хамтдаа бүлгээ удирдаж явсаад Чжан Фэйн гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9130,6 +10010,10 @@
       "it": "Generale di Shu. Servì nelle campagne del nord e contribuì alla presa di Wudu e Yinping, ma fu poi giustiziato per aver disobbedito agli ordini.",
       "es_419": "General de Shu. Sirvió en las campañas del norte y ayudó a tomar Wudu y Yinping, pero fue ejecutado después por desobedecer órdenes.",
       "mn": "Шугийн жанжин. Умард аян дайнд оролцож Уду, Иньпиныг эзлэхэд хувь нэмэр оруулсан ч дараа нь зарлиг зөрчсөн гэмээр цаазлагдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9165,6 +10049,10 @@
       "it": "Generale agli ordini di Zhao Fan. Difese Guiyang insieme a Bao Long e fu catturato da Zhao Yun.",
       "es_419": "General a las órdenes de Zhao Fan. Defendió Guiyang junto a Bao Long y fue capturado por Zhao Yun.",
       "mn": "Чжао Фаний харьяат жанжин. Бао Лунтай хамт Гуйян хотыг хамгаалж байгаад Чжао Юньд олзлогдов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9200,6 +10088,10 @@
       "it": "Guardia del corpo di Gongsun Zan. Restava al fianco del signore come un'ombra.",
       "es_419": "Guardaespaldas de Gongsun Zan. Se mantenía al lado de su señor como una sombra.",
       "mn": "Гунсунь Цзаний хамгаалагч дайчин. Эзнийхээ хажууд сүүдэр мэт байнга байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9235,6 +10127,10 @@
       "it": "Figura dell'accampamento di Yuan Shao, annoverata fra i suoi ufficiali in Hebei.",
       "es_419": "Figura del campamento de Yuan Shao, contada entre sus oficiales en Hebei.",
       "mn": "Юань Шаогийн хуарангийн хүн. Хэбэйн жанждын дунд нэр нь бичигдсэн байдаг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9270,6 +10166,10 @@
       "it": "Ispettore insediato nella provincia di Xu da Cao Cao. Si mosse per contenere Liu Bei e vi perse la vita.",
       "es_419": "Inspector instalado en la provincia de Xu por Cao Cao. Quiso frenar a Liu Bei y perdió la vida.",
       "mn": "Цао Цаогийн Сюй мужид томилсон байцаагч. Лю Бэйг хазаарлахыг завдаж амь үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 199
     }
   },
   {
@@ -9317,6 +10217,10 @@
       "it": "Parente acquisito nella provincia di Jing. Cognato di Liu Biao, teneva le truppe, insediò Liu Cong e guidò la resa di Jing.",
       "es_419": "Pariente político en la provincia de Jing. Cuñado de Liu Biao, controlaba las tropas, instaló a Liu Cong y encabezó la rendición de Jing.",
       "mn": "Цзин мужийн хадам төрөл. Лю Бяогийн хадам дүү бөгөөд цэргийн эрхийг барьж Лю Цуныг өргөмжилсөн. Цзин мужийг бууж өгөх ажлыг тэргүүлэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9352,6 +10256,10 @@
       "it": "Generale agli ordini di Cao Cao. Perse un nipote per mano di Guan Yu e partì giurando vendetta.",
       "es_419": "General a las órdenes de Cao Cao. Perdió a un sobrino a manos de Guan Yu y salió jurando venganza.",
       "mn": "Цао Цаогийн харьяат жанжин. Ач хүүгээ Гуань Юйд алдаж, өшөө авахаар мордов."
+    },
+    "life": {
+      "born": null,
+      "died": 201
     }
   },
   {
@@ -9387,6 +10295,10 @@
       "it": "Parente di Cai Mao. Alle Scogliere Rosse entrò nel campo di Zhou Yu con una finta resa, ma fu rivoltato contro i suoi e decapitato.",
       "es_419": "Pariente de Cai Mao. En los Acantilados Rojos entró en el campamento de Zhou Yu con una rendición fingida, terminó usado contra los suyos y fue decapitado.",
       "mn": "Цай Маогийн төрөл. Улаан Хадад хуурамчаар бууж өгөн Чжоу Юйн хуаранд орсон боловч эсрэгээр ашиглагдаж, эцэст нь толгойгоо тасчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9422,6 +10334,10 @@
       "it": "Parente di Cai Mao, uno dei membri del clan Cai che si spartivano il potere militare della provincia di Jing.",
       "es_419": "Pariente de Cai Mao, uno de los miembros del clan Cai que se repartían el poder militar de la provincia de Jing.",
       "mn": "Цай Маогийн төрөл. Цзин мужийн цэргийн эрхийг хуваан барьж байсан Цай овгийн нэг хүн."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9457,6 +10373,10 @@
       "it": "Generale agli ordini di Yuan Shao. Insieme a Zhang Nan consegnò la provincia di You a Cao Cao.",
       "es_419": "General a las órdenes de Yuan Shao. Junto con Zhang Nan entregó la provincia de You a Cao Cao.",
       "mn": "Юань Шаогийн харьяат жанжин. Чжан Наньтай хамт Ю мужийг Цао Цаод бууж өгөв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9492,6 +10412,10 @@
       "it": "Moglie del re Nanman Meng Huo. I suoi pugnali lanciati non fallivano mai, e guidava personalmente le truppe in battaglia.",
       "es_419": "Esposa del rey Nanman Meng Huo. Sus dagas arrojadizas nunca fallaban, y ella misma conducía tropas al combate.",
       "mn": "Өмнөд Мангийн хаан Мэн Хогийн эхнэр. Шидсэн хутга нь хэзээ ч алддаггүй байсан бөгөөд өөрөө цэрэг удирдан байлдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9539,6 +10463,10 @@
       "it": "Grande generale di Wu. Il suo arco era prodigioso e non falliva mai; è ricordato per aver afferrato Sun Ce per la corazza a Shenting.",
       "es_419": "Gran general de Wu. Su arco era prodigioso y nunca fallaba; se lo recuerda por sujetar a Sun Ce por la coraza en Shenting.",
       "mn": "Угийн нэрт жанжин. Нумын урлаг нь гайхамшигтай бөгөөд хэзээ ч алддаггүй байв. Шэньтин хэмээх газар Сунь Цэтэй хуягнаас нь атган зодолдсон явдлаараа алдартай."
+    },
+    "life": {
+      "born": 166,
+      "died": 206
     }
   },
   {
@@ -9574,6 +10502,10 @@
       "it": "Generale agli ordini di Zhao Fan. Ex cacciatore, si diceva avesse abbattuto una tigre a mani nude.",
       "es_419": "General a las órdenes de Zhao Fan. Antiguo cazador, se decía que había abatido un tigre a mano limpia.",
       "mn": "Чжао Фаний харьяат жанжин. Урьд нь анчин байсан бөгөөд барыг нүцгэн гараар барьж байсан гэдэг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9609,6 +10541,10 @@
       "it": "Ufficiale agli ordini di Cao Cao. Al ponte di Changban il ruggito di Zhang Fei gli spezzò il cuore, e cadde morto di sella.",
       "es_419": "Oficial a las órdenes de Cao Cao. En el puente de Changban el rugido de Zhang Fei le reventó el corazón, y cayó muerto de la silla.",
       "mn": "Цао Цаогийн харьяат жанжин. Чанбаний гүүрэн дээр Чжан Фэйн архиралтыг сонсоод элэг цөс нь хагарч, мориноосоо унан үхэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9644,6 +10580,10 @@
       "it": "Generale di Wei. Membro del clan Xiahou, servì nella campagna di Hanzhong.",
       "es_419": "General de Wei. Miembro del clan Xiahou, sirvió en la campaña de Hanzhong.",
       "mn": "Вэйн жанжин. Сяхоу овгийн хүн бөгөөд Ханьчжуны аян дайнд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9691,6 +10631,10 @@
       "it": "Grande generale di Wei. Colpito all'occhio da una freccia, la strappò, inghiottì il proprio occhio e continuò a combattere. Frugale e amante degli studi, era particolarmente caro a Cao Cao.",
       "es_419": "Gran general de Wei. Alcanzado en un ojo por una flecha, la arrancó, se tragó su propio ojo y siguió peleando. Frugal y amante del estudio, era especialmente querido por Cao Cao.",
       "mn": "Вэйн нэрт жанжин. Нүдэнд нь сум тусахад түүнийг сугалж аваад өөрийн нүдээ залгиж, цааш нь тулалдав. Даруу амьдралтай, номд дуртай тул Цао Цао түүнийг онцгойлон хүндэлдэг байв."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -9726,6 +10670,10 @@
       "it": "Generale di Wei. Servì nella battaglia di Bowang.",
       "es_419": "General de Wei. Sirvió en la batalla de Bowang.",
       "mn": "Вэйн жанжин. Бован дахь тулаанд оролцов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9761,6 +10709,10 @@
       "it": "Generale di Wei. Legato a Cao Pi fin dall'infanzia, si fece un nome prendendo Jiangling.",
       "es_419": "General de Wei. Cercano a Cao Pi desde la infancia, se hizo un nombre al tomar Jiangling.",
       "mn": "Вэйн жанжин. Цао Питэй багаасаа дотно бөгөөд Цзянлиныг эзэлж нэр гаргав."
+    },
+    "life": {
+      "born": null,
+      "died": 226
     }
   },
   {
@@ -9808,6 +10760,10 @@
       "it": "Grande generale di Wei. Tanto rapido nelle marce che si parlava di cinquecento li in tre giorni e mille in sei — ma si fece incauto sul monte Dingjun e cadde davanti a Huang Zhong.",
       "es_419": "Gran general de Wei. Tan veloz en la marcha que se hablaba de quinientos li en tres días y mil en seis; pero se descuidó en el monte Dingjun y cayó ante Huang Zhong.",
       "mn": "Вэйн нэрт жанжин. Цэрэг хөдөлгөх хурд нь \"гурван хоногт таван зуун газар, зургаан хоногт мянган газар\" гэгдэх төдий байв. Гэвч Динцзюнь ууланд сонор сэрэмжээ алдаж Хуан Чжунд цавчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 219
     }
   },
   {
@@ -9843,6 +10799,10 @@
       "it": "Attendente personale di Cao Cao, cui sarebbe stata affidata la spada Qinggang.",
       "es_419": "Asistente personal de Cao Cao, a quien se habría confiado la espada Qinggang.",
       "mn": "Цао Цаогийн ойрын зарц. Циньган сэлмийг хариуцаж байсан гэж уламжилдаг."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9878,6 +10838,10 @@
       "it": "Ufficiale agli ordini di Lü Bu. Insorse in combutta con Yuan Shu e fu domato.",
       "es_419": "Oficial a las órdenes de Lü Bu. Se sublevó en connivencia con Yuan Shu y fue sometido.",
       "mn": "Люй Бугийн харьяат жанжин. Юань Шутай нийлж бослого гаргасан боловч дарагдав."
+    },
+    "life": {
+      "born": null,
+      "died": 196
     }
   },
   {
@@ -9925,6 +10889,10 @@
       "it": "Generale di Wei. Trincerato a Chencang con poco più di mille uomini, arrestò le decine di migliaia di Zhuge Liang per oltre venti giorni e lo costrinse a ritirarsi.",
       "es_419": "General de Wei. Atrincherado en Chencang con poco más de mil hombres, detuvo a las decenas de miles de Zhuge Liang por más de veinte días y lo obligó a retirarse.",
       "mn": "Вэйн жанжин. Чэньцан хотод бэхлэн байж, мянга гаруй цэргээр Чжугэ Лянгийн олон түмэн цэргийг хорь гаруй хоног хорьж, эцэст нь ухраав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -9972,6 +10940,10 @@
       "it": "Generale veterano di Wu. Anziano che servì tre generazioni fin dai giorni di Sun Jian, abile con l'arco e a cavallo.",
       "es_419": "General veterano de Wu. Anciano que sirvió a tres generaciones desde los días de Sun Jian, diestro con el arco y a caballo.",
       "mn": "Угийн өтөл жанжин. Сунь Цзяны үеэс гурван үеийг дамжин зүтгэсэн ахмад бөгөөд нум морьд гарамгай байв."
+    },
+    "life": {
+      "born": null,
+      "died": 227
     }
   },
   {
@@ -10007,6 +10979,10 @@
       "it": "Generale agli ordini di Yuan Shao. Incaricato di scortare le granaglie, fu sbaragliato da Xu Huang.",
       "es_419": "General a las órdenes de Yuan Shao. Encargado de escoltar el grano, fue deshecho por Xu Huang.",
       "mn": "Юань Шаогийн харьяат жанжин. Хүнсний нөөц тээвэрлэхийг хариуцсан боловч Сюй Хуанд бут цохигдов."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10042,6 +11018,10 @@
       "it": "Generale di origini fra i briganti dell'Onda Bianca. Si acquistò meriti scortando l'imperatore Xian nel ritorno a Luoyang.",
       "es_419": "General de origen entre los bandidos de la Ola Blanca. Ganó méritos escoltando al emperador Xian en su regreso a Luoyang.",
       "mn": "Цагаан Давалгааны дээрэмчний гаралтай жанжин. Сянь-ди хааныг Лоян руу буцахад нь хамгаалсан гавьяатай."
+    },
+    "life": {
+      "born": null,
+      "died": 197
     }
   },
   {
@@ -10077,6 +11057,10 @@
       "it": "Capo dei briganti nei dintorni di Guangchuan, in Hebei. Teneva unita la banda con la forza, e lasciò le montagne senza esitare quando si presentò una causa più grande.",
       "es_419": "Jefe de los bandidos de los alrededores de Guangchuan, en Hebei. Mantenía unida a su banda por la fuerza, y dejó las montañas sin vacilar cuando apareció una causa mayor.",
       "mn": "Хэбэйн Гуанчуань орчмыг бааз болгосон дээрэмчний ахлагч. Хүчээр бүлгээ удирдаж байсан ч агуу зорилго тохиолдоход эргэлзэлгүй уулаас буув."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10112,6 +11096,10 @@
       "it": "Funzionario civile di Wei. Propose il sistema delle colonie militari che risolse alla radice il problema dei viveri di Cao Cao.",
       "es_419": "Funcionario civil de Wei. Propuso el sistema de colonias militares que resolvió de raíz el problema de víveres de Cao Cao.",
       "mn": "Вэйн иргэний түшмэл. Цэргийн тариалангийн журмыг санал болгож, Цао Цаогийн цэргийн хүнсний асуудлыг үндсээр нь шийдэв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10147,6 +11135,10 @@
       "it": "Amministratore di Changsha. La diffidenza lo spinse ad agire contro Huang Zhong, e Wei Yan gli prese la testa per questo.",
       "es_419": "Administrador de Changsha. La desconfianza lo llevó a actuar contra Huang Zhong, y Wei Yan le tomó la cabeza por ello.",
       "mn": "Чанша хотын захирагч. Сэжигтэй зантай тул Хуан Чжуныг хөнөөх гэж завдсанаар харин ч Вэй Янид толгойгоо тасчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10182,6 +11174,10 @@
       "it": "Figura dell'accampamento di Lü Bu. Fece da tramite nelle trattative matrimoniali con Yuan Shu.",
       "es_419": "Figura del campamento de Lü Bu. Medió en las negociaciones matrimoniales con Yuan Shu.",
       "mn": "Люй Бугийн хуарангийн хүн. Юань Шутай хийх ураг барилдах хэлэлцээрийг зуучлав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10229,6 +11225,10 @@
       "it": "Stratega agli ordini di Yuan Shao. A Guandu passò a Cao Cao e rivelò dove giacevano le granaglie a Wuchao, rovesciando la battaglia; ma montò in superbia per quel merito e fu ucciso da Xu Chu.",
       "es_419": "Estratega a las órdenes de Yuan Shao. En Guandu se pasó a Cao Cao y reveló dónde estaba el grano en Wuchao, dando vuelta la batalla; pero se envaneció por ese mérito y fue muerto por Xu Chu.",
       "mn": "Юань Шаогийн зөвлөх түшмэл. Гуаньдуд Цао Цао руу шилжиж Учао дахь хүнсний нөөцийн байрлалыг хэлж өгснөөр тулааны үр дүнг эргүүлэв. Гэвч гавьяандаа бардамнаж, Сюй Чугийн гарт үрэгдэв."
+    },
+    "life": {
+      "born": null,
+      "died": 204
     }
   },
   {
@@ -10276,6 +11276,10 @@
       "it": "Feroce generale di Wei, detto la Tigre Sciocca per una forza tale da trascinare un bue all'indietro. A Weiqiao portò Cao Cao sulle spalle attraverso una pioggia di frecce.",
       "es_419": "Feroz general de Wei, llamado el Tigre Necio por una fuerza capaz de arrastrar un buey hacia atrás. En Weiqiao llevó a Cao Cao sobre sus espaldas a través de una lluvia de flechas.",
       "mn": "Вэйн догшин жанжин. Үхрийг сүүлнээс нь ухраан чирэх хүчтэй тул Барс Тэнэг хэмээн нэрлэгддэг байв. Вэйцяод Цао Цаог нуруундаа үүрч сумны бороог даран гарав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10323,6 +11327,10 @@
       "it": "Ultimo imperatore degli Han Posteriori. Insediato a nove anni, passò la vita nelle mani di un potente dopo l'altro e finì per cedere il trono a Cao Pi.",
       "es_419": "Último emperador de los Han Posteriores. Entronizado a los nueve años, pasó la vida en manos de un poderoso tras otro y terminó cediendo el trono a Cao Pi.",
       "mn": "Хожуу Хань улсын сүүлчийн эзэн хаан. Есөн настайдаа хаан ширээнд суусан бөгөөд насан туршдаа эрх баригчдын гарт байж, эцэст нь Цао Пид хаан ширээгээ шилжүүлэв."
+    },
+    "life": {
+      "born": 181,
+      "died": 234
     }
   },
   {
@@ -10358,6 +11366,10 @@
       "it": "Generale agli ordini di Liu Du. Feroce guerriero che impugnava un'ascia spaccamontagne.",
       "es_419": "General a las órdenes de Liu Du. Feroz guerrero que empuñaba un hacha partemontañas.",
       "mn": "Лю Дугийн харьяат жанжин. Уул хагалах их сүхийг эргүүлдэг догшин дайчин байв."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10393,6 +11405,10 @@
       "it": "Generale agli ordini di Dong Zhuo. Scese in campo contro la coalizione anti-Dong Zhuo.",
       "es_419": "General a las órdenes de Dong Zhuo. Salió a campo contra la coalición anti-Dong Zhuo.",
       "mn": "Дун Чжогийн харьяат жанжин. Дун Чжогийн эсрэг холбооны цэрэгтэй тулалдав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10428,6 +11444,10 @@
       "it": "Feroce generale agli ordini di Dong Zhuo. Abbatté uno dopo l'altro i campioni della coalizione al passo di Sishui, finché Guan Yu non gli prese la testa.",
       "es_419": "Feroz general a las órdenes de Dong Zhuo. Abatió uno tras otro a los campeones de la coalición en el paso de Sishui, hasta que Guan Yu le tomó la cabeza.",
       "mn": "Дун Чжогийн харьяат догшин жанжин. Сышуйн боомтод холбоотны жанждыг нэг нэгээр нь цавчиж унагасан ч Гуань Юйд толгойгоо тасчуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 191
     }
   },
   {
@@ -10475,6 +11495,10 @@
       "it": "Generale veterano di Wu. Alle Scogliere Rosse si fece bastonare per rendere credibile la finta resa, e incendiò la flotta di Cao Cao con navi in fiamme.",
       "es_419": "General veterano de Wu. En los Acantilados Rojos se dejó azotar para dar verosimilitud a la rendición fingida, e incendió la flota de Cao Cao con naves ardiendo.",
       "mn": "Угийн өтөл жанжин. Улаан Хадад өөрийгөө зодуулж хуурамч бууж өгөхөө үнэмшилтэй болгосон бөгөөд галдсан хөлөг онгоцоор Цао Цаогийн флотыг шатаав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10522,6 +11546,10 @@
       "it": "Funzionario civile di Shu. Ammonì Liu Zhang a non invitare Liu Bei; dopo la rotta di Yiling si vide tagliata la ritirata e si arrese a Wei, ma Liu Bei non lo biasimò mai.",
       "es_419": "Funcionario civil de Shu. Advirtió a Liu Zhang que no invitara a Liu Bei; tras la derrota de Yiling se le cortó la retirada y se rindió a Wei, pero Liu Bei nunca lo culpó.",
       "mn": "Шугийн иргэний түшмэл. Лю Чжанд Лю Бэйг битгий урь хэмээн сануулсан. Илин дэх ялагдлын дараа ухрах зам таслагдаж Вэйд бууж өгсөн ч Лю Бэй түүнийг эцэс хүртэл буруутгасангүй."
+    },
+    "life": {
+      "born": null,
+      "died": 240
     }
   },
   {
@@ -10569,6 +11597,10 @@
       "it": "Generale veterano di Shu. Già canuto, si lanciò sul monte Dingjun, abbatté Xiahou Yuan e conquistò il primo merito della campagna di Hanzhong.",
       "es_419": "General veterano de Shu. Ya canoso, se lanzó sobre el monte Dingjun, abatió a Xiahou Yuan y se llevó el primer mérito de la campaña de Hanzhong.",
       "mn": "Шугийн өтөл жанжин. Буурал үсэнтэйдээ Динцзюнь ууланд давхиж гарч Сяхоу Юанийг цавчин, Ханьчжуны аян дайны анхны гавьяаг байгуулав."
+    },
+    "life": {
+      "born": null,
+      "died": 220
     }
   },
   {
@@ -10604,6 +11636,10 @@
       "it": "Generale di un popolo tribale del nord.",
       "es_419": "General de un pueblo tribal del norte.",
       "mn": "Умард зүгийн харь овгийн жанжин."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   },
   {
@@ -10639,6 +11675,10 @@
       "it": "Ufficiale agli ordini di Lü Bu. Punito per aver violato il divieto del vino, si rivoltò contro il signore per quell'episodio.",
       "es_419": "Oficial a las órdenes de Lü Bu. Castigado por quebrantar la prohibición del vino, se volvió contra su señor por ese episodio.",
       "mn": "Люй Бугийн харьяат жанжин. Архины хоригийг зөрчсөн хэргээр зэмлүүлсэн явдлаас болж эзнээсээ нүүр буруулав."
+    },
+    "life": {
+      "born": null,
+      "died": null
     }
   }
 ]

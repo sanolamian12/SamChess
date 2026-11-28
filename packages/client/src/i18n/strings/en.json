@@ -675,6 +675,7 @@
   "ranking.card.head.skill": "Unique Skill",
   "ranking.card.head.story": "Biography",
   "ranking.card.story.more": "(more)",
+  "ranking.card.lifeUnknown": "Unknown",
   "ranking.card.noSkill": "No unique skill",
   "ranking.loadError": "Couldn't load rankings — you can still see your own.",
   "ranking.loading": "Loading…",

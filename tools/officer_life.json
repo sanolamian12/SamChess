@@ -1,0 +1,1302 @@
+{
+ "가후": {
+  "born": 147,
+  "died": 223,
+  "note": "Sanguozhi: died aged 77 in 223"
+ },
+ "간옹": {
+  "born": null,
+  "died": null,
+  "note": "Sanguozhi gives no dates"
+ },
+ "감녕": {
+  "born": null,
+  "died": null,
+  "note": "death disputed: 215 (Jiankang Shilu) vs c.220 (en-wiki)"
+ },
+ "감택": {
+  "born": null,
+  "died": 243,
+  "note": "Sanguozhi: died winter, Chiwu 6 (243)"
+ },
+ "강유": {
+  "born": 202,
+  "died": 264,
+  "note": "Sanguozhi; killed in Zhong Hui's revolt"
+ },
+ "경무": {
+  "born": null,
+  "died": 191,
+  "note": "killed opposing Yuan Shao's takeover of Ji, 191"
+ },
+ "고람": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "고순": {
+  "born": null,
+  "died": 199,
+  "note": "executed with Lü Bu Feb 199 (en-wiki); some give 198"
+ },
+ "고옹": {
+  "born": 168,
+  "died": 243,
+  "note": "Sanguozhi: died aged 76"
+ },
+ "고창": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "고패": {
+  "born": null,
+  "died": 212,
+  "note": "executed Jian'an 17 (212) per Sanguozhi; en-wiki says 213"
+ },
+ "공손월": {
+  "born": null,
+  "died": 191,
+  "note": "killed by stray arrow at Yangcheng, 191"
+ },
+ "공손찬": {
+  "born": null,
+  "died": 199,
+  "note": "died at Yijing, 199"
+ },
+ "공융": {
+  "born": 153,
+  "died": 208,
+  "note": "executed by Cao Cao, 208"
+ },
+ "공지": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "곽가": {
+  "born": 170,
+  "died": 207,
+  "note": "Sanguozhi: died aged 38"
+ },
+ "곽도": {
+  "born": null,
+  "died": 205,
+  "note": "killed at Nanpi with Yuan Tan, 205"
+ },
+ "곽사": {
+  "born": null,
+  "died": 197,
+  "note": "killed by subordinate Wu Xi, 197"
+ },
+ "곽적": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "곽준": {
+  "born": 178,
+  "died": 217,
+  "note": "Sanguozhi: died aged 40"
+ },
+ "민순": {
+  "born": null,
+  "died": 191,
+  "note": "killed with Geng Wu, 191"
+ },
+ "관우": {
+  "born": null,
+  "died": 220,
+  "note": "executed by Wu, early 220 (Jian'an 24, 12th month)"
+ },
+ "관평": {
+  "born": null,
+  "died": 220,
+  "note": "executed with Guan Yu, early 220"
+ },
+ "관해": {
+  "born": null,
+  "died": null,
+  "note": "historical Yellow Turban; no dates recorded"
+ },
+ "관흥": {
+  "born": null,
+  "died": null,
+  "note": "Sanguozhi: died some years after appointment; no year"
+ },
+ "괴월": {
+  "born": null,
+  "died": 214,
+  "note": "died 214 (Jian'an 19)"
+ },
+ "국의": {
+  "born": null,
+  "died": null,
+  "note": "purged by Yuan Shao; year unrecorded"
+ },
+ "김선": {
+  "born": null,
+  "died": null,
+  "note": "209? — 해가 확실치 않음"
+ },
+ "기령": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "냉포": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "노소": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "노숙": {
+  "born": 172,
+  "died": 217,
+  "note": "Sanguozhi: died aged 46"
+ },
+ "뇌동": {
+  "born": null,
+  "died": 218,
+  "note": "killed by Zhang He at Xiabian, 218"
+ },
+ "능통": {
+  "born": 189,
+  "died": 217,
+  "note": "en/zh wiki 189-217; Sanguozhi age implies 237"
+ },
+ "도겸": {
+  "born": 132,
+  "died": 194,
+  "note": "Wu Shu: died aged 63"
+ },
+ "동량": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "동소": {
+  "born": 156,
+  "died": 236,
+  "note": "Sanguozhi: died aged 81"
+ },
+ "동탁": {
+  "born": null,
+  "died": 192,
+  "note": "assassinated 192; birth unrecorded"
+ },
+ "두습": {
+  "born": null,
+  "died": null,
+  "note": "Sanguozhi gives no dates"
+ },
+ "등현": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "마대": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "마등": {
+  "born": null,
+  "died": 212,
+  "note": "executed by Cao Cao, 212"
+ },
+ "마량": {
+  "born": 187,
+  "died": 222,
+  "note": "killed at Yiling, aged 35"
+ },
+ "마속": {
+  "born": 190,
+  "died": 228,
+  "note": "died aged 39 after Jieting"
+ },
+ "마연": {
+  "born": null,
+  "died": null,
+  "note": "historical; no dates recorded"
+ },
+ "마초": {
+  "born": 176,
+  "died": 222,
+  "note": "Sanguozhi: died aged 47"
+ },
+ "마충": {
+  "born": null,
+  "died": null,
+  "note": "historical (Pan Zhang's officer); no dates"
+ },
+ "만총": {
+  "born": null,
+  "died": 242,
+  "note": "died 242 (Zhengshi 3)"
+ },
+ "맹달": {
+  "born": null,
+  "died": 228,
+  "note": "killed by Sima Yi, 228"
+ },
+ "맹숙": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "모개": {
+  "born": null,
+  "died": 216,
+  "note": "Zizhi Tongjian dates death 216; Sanguozhi silent"
+ },
+ "문빙": {
+  "born": null,
+  "died": null,
+  "note": "Sanguozhi gives no dates"
+ },
+ "문추": {
+  "born": null,
+  "died": 200,
+  "note": "killed at Yanjin, 200"
+ },
+ "미방": {
+  "born": null,
+  "died": null,
+  "note": "no dates recorded"
+ },
+ "미축": {
+  "born": null,
+  "died": null,
+  "note": "방이 배반 뒤 한 해 남짓에 죽음 — 해는 기록 없음(c.221)"
+ },
+ "반장": {
+  "born": null,
+  "died": 234,
+  "note": "died Jiahe 3 (234)"
+ },
+ "방덕": {
+  "born": null,
+  "died": 219,
+  "note": "executed by Guan Yu, 219"
+ },
+ "방통": {
+  "born": 179,
+  "died": 214,
+  "note": "killed at Luo aged 36"
+ },
+ "번궁": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "법정": {
+  "born": 176,
+  "died": 220,
+  "note": "Sanguozhi: died aged 45"
+ },
+ "보즐": {
+  "born": null,
+  "died": 247,
+  "note": "died Chiwu 10 (247)"
+ },
+ "봉기": {
+  "born": null,
+  "died": 202,
+  "note": "killed by Yuan Tan's side, 202"
+ },
+ "비관": {
+  "born": null,
+  "died": null,
+  "note": "died aged 37, year unrecorded"
+ },
+ "비위": {
+  "born": null,
+  "died": 253,
+  "note": "assassinated by Guo Xiu, 253"
+ },
+ "사마가": {
+  "born": null,
+  "died": 222,
+  "note": "killed at Yiling, 222"
+ },
+ "사마사": {
+  "born": 208,
+  "died": 255,
+  "note": "Jin Shu; died age 48"
+ },
+ "사마소": {
+  "born": 211,
+  "died": 265,
+  "note": "Jin Shu; died age 55"
+ },
+ "사마의": {
+  "born": 179,
+  "died": 251,
+  "note": "Jin Shu; died age 73"
+ },
+ "사정": {
+  "born": null,
+  "died": null,
+  "note": "Wu officer at Yiling; dates unrecorded"
+ },
+ "서상": {
+  "born": null,
+  "died": null,
+  "note": "Named in Xu Huang's SGZ bio; dates unrecorded"
+ },
+ "서서": {
+  "born": null,
+  "died": null,
+  "note": "Alive c.228 per Weilüe; birth/death unrecorded"
+ },
+ "서성": {
+  "born": null,
+  "died": null,
+  "note": "SGZ: died in Huangwu era (222-229), exact year unknown"
+ },
+ "서영": {
+  "born": null,
+  "died": 192,
+  "note": "Killed fighting Li Jue's forces, 192"
+ },
+ "서황": {
+  "born": null,
+  "died": 227,
+  "note": "SGZ: died Taihe 1 (227)"
+ },
+ "설종": {
+  "born": null,
+  "died": 243,
+  "note": "SGZ: died Chiwu 6 (243)"
+ },
+ "손건": {
+  "born": null,
+  "died": null,
+  "note": "Death only approximate (c.214, de Crespigny)"
+ },
+ "손견": {
+  "born": 155,
+  "died": 191,
+  "note": "zh/en Wikipedia 191; some sources 192"
+ },
+ "손관": {
+  "born": null,
+  "died": null,
+  "note": "Died of wound vs Sun Quan; year unrecorded"
+ },
+ "손권": {
+  "born": 182,
+  "died": 252,
+  "note": "SGZ; died age 71"
+ },
+ "손유": {
+  "born": 177,
+  "died": 215,
+  "note": "SGZ: died 215 aged 39"
+ },
+ "손환": {
+  "born": null,
+  "died": null,
+  "note": "Died aged 25; year uncertain (223/224)"
+ },
+ "송헌": {
+  "born": null,
+  "died": null,
+  "note": "Lü Bu officer in SGZ; dates unrecorded"
+ },
+ "송비": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "송충": {
+  "born": null,
+  "died": null,
+  "note": "Liu Cong's envoy in SGZ; dates unrecorded"
+ },
+ "순상": {
+  "born": 128,
+  "died": 190,
+  "note": "Hou Hanshu; died age 63"
+ },
+ "순우경": {
+  "born": null,
+  "died": 200,
+  "note": "Killed at Wuchao, Guandu 200"
+ },
+ "순욱": {
+  "born": 163,
+  "died": 212,
+  "note": "SGZ; died age 50"
+ },
+ "순유": {
+  "born": 157,
+  "died": 214,
+  "note": "SGZ; died age 58"
+ },
+ "신명": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "심배": {
+  "born": null,
+  "died": 204,
+  "note": "Executed after fall of Ye, 204"
+ },
+ "악진": {
+  "born": null,
+  "died": 218,
+  "note": "SGZ: died Jian'an 23 (218)"
+ },
+ "악취": {
+  "born": null,
+  "died": 197,
+  "note": "Killed by Cao Cao at Kuhe, 197"
+ },
+ "안량": {
+  "born": null,
+  "died": 200,
+  "note": "Killed by Guan Yu at Baima, 200"
+ },
+ "안명": {
+  "born": null,
+  "died": null,
+  "note": "No historical record found; novel/game only"
+ },
+ "양령": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "양망": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "양송": {
+  "born": null,
+  "died": null,
+  "note": "Death in 215 is novel only; dates unrecorded"
+ },
+ "양수": {
+  "born": 175,
+  "died": 219,
+  "note": "Executed by Cao Cao 219, aged 45"
+ },
+ "양안": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "양앙": {
+  "born": null,
+  "died": null,
+  "note": "215 death is novel; SGZ records Yang Ren killed"
+ },
+ "양임": {
+  "born": null,
+  "died": 215,
+  "note": "SGZ Wudi ji: killed at Yangping 215"
+ },
+ "양현": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "양회": {
+  "born": null,
+  "died": 212,
+  "note": "Killed by Liu Bei at Baishui, 212"
+ },
+ "엄강": {
+  "born": null,
+  "died": 191,
+  "note": "Killed at Battle of Jieqiao, 191"
+ },
+ "엄쌍": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "엄안": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "엄준": {
+  "born": null,
+  "died": null,
+  "note": "SGZ: died aged 78, year unrecorded"
+ },
+ "여건": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "여광": {
+  "born": null,
+  "died": null,
+  "note": "Surrendered to Cao 204; dates unrecorded"
+ },
+ "여몽": {
+  "born": 178,
+  "died": 220,
+  "note": "Died aged 42; sources split 219/220, Wikipedia 220"
+ },
+ "여범": {
+  "born": null,
+  "died": 228,
+  "note": "SGZ: died Huangwu 7 (228)"
+ },
+ "여상": {
+  "born": null,
+  "died": null,
+  "note": "Surrendered to Cao 204; dates unrecorded"
+ },
+ "여포": {
+  "born": null,
+  "died": 199,
+  "note": "Executed at Xiapi, early 199 (Jian'an 3 lunar)"
+ },
+ "염포": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "오란": {
+  "born": null,
+  "died": 218,
+  "note": "Killed by Di chief Qiang Duan, 218"
+ },
+ "오반": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "오의": {
+  "born": null,
+  "died": 237,
+  "note": "SGZ: died Jianxing 15 (237)"
+ },
+ "오조": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "왕해": {
+  "born": null,
+  "died": null,
+  "note": "Lü Bu envoy in SGZ; dates unrecorded"
+ },
+ "왕루": {
+  "born": null,
+  "died": null,
+  "note": "History records protest only, not death; novel death"
+ },
+ "왕보": {
+  "born": null,
+  "died": 222,
+  "note": "Ji Han Fuchen Zan: killed at Zigui, 222"
+ },
+ "왕위": {
+  "born": null,
+  "died": null,
+  "note": "Han Jin Chunqiu mention; dates unrecorded"
+ },
+ "왕찬": {
+  "born": 177,
+  "died": 217,
+  "note": "SGZ; died 217 aged 41"
+ },
+ "왕철": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "왕충": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "왕평": {
+  "born": null,
+  "died": 248,
+  "note": "SGZ: died Yanxi 11 (248)"
+ },
+ "요화": {
+  "born": null,
+  "died": 264,
+  "note": "Died en route to Luoyang after Shu fell, 264"
+ },
+ "우금": {
+  "born": null,
+  "died": 221,
+  "note": "Died after return from Wu, 221"
+ },
+ "우번": {
+  "born": 164,
+  "died": 233,
+  "note": "zh Wikipedia 164-233; alt 170-239"
+ },
+ "우칙": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "원소": {
+  "born": null,
+  "died": 202,
+  "note": "SGZ/HHS; birth unrecorded (zh wiki ?–202)"
+ },
+ "원술": {
+  "born": null,
+  "died": 199,
+  "note": "SGZ; died Jian'an 4"
+ },
+ "원윤": {
+  "born": null,
+  "died": null,
+  "note": "Historical (SGZ Yuan Shu notes); dates unrecorded"
+ },
+ "위속": {
+  "born": null,
+  "died": null,
+  "note": "Historical Lü Bu officer; dates unrecorded"
+ },
+ "위연": {
+  "born": null,
+  "died": 234,
+  "note": "SGZ; killed after Zhuge Liang's death"
+ },
+ "유괴": {
+  "born": null,
+  "died": null,
+  "note": "Historical Liu Zhang officer; dates unrecorded"
+ },
+ "유기": {
+  "born": null,
+  "died": 209,
+  "note": "SGZ; died Jian'an 14"
+ },
+ "유대": {
+  "born": null,
+  "died": null,
+  "note": "Historical Cao officer (with Wang Zhong); dates unrecorded"
+ },
+ "유도": {
+  "born": null,
+  "died": null,
+  "note": "Historical Lingling administrator; dates unrecorded"
+ },
+ "유벽": {
+  "born": null,
+  "died": 200,
+  "note": "de Crespigny 200; en wiki mirror c.201 (conflict)"
+ },
+ "유봉": {
+  "born": null,
+  "died": 220,
+  "note": "SGZ; ordered to suicide 220"
+ },
+ "유비": {
+  "born": 161,
+  "died": 223,
+  "note": "SGZ; died aged 63"
+ },
+ "유선": {
+  "born": 207,
+  "died": 271,
+  "note": "SGZ/Jin Shu; died aged 65"
+ },
+ "유순": {
+  "born": null,
+  "died": null,
+  "note": "Historical; dates unrecorded"
+ },
+ "유엽": {
+  "born": null,
+  "died": 234,
+  "note": "Deduced from SGZ (two years after Taihe 6)"
+ },
+ "유장": {
+  "born": null,
+  "died": 219,
+  "note": "en wiki ?–219 (some say 220)"
+ },
+ "유종": {
+  "born": null,
+  "died": null,
+  "note": "Historical; dates unrecorded"
+ },
+ "유표": {
+  "born": 142,
+  "died": 208,
+  "note": "HHS/SGZ; died aged 67"
+ },
+ "유현": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "육손": {
+  "born": 183,
+  "died": 245,
+  "note": "SGZ; died aged 63"
+ },
+ "육적": {
+  "born": 188,
+  "died": 219,
+  "note": "SGZ died aged 32; zh wiki 188–219"
+ },
+ "이각": {
+  "born": null,
+  "died": 198,
+  "note": "HHS/SGZ; executed 198"
+ },
+ "이규": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "이명": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "이숙": {
+  "born": null,
+  "died": 192,
+  "note": "HHS; killed by Lü Bu 192"
+ },
+ "이엄": {
+  "born": null,
+  "died": 234,
+  "note": "SGZ; died on hearing of Zhuge Liang's death"
+ },
+ "이웅": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "이유": {
+  "born": null,
+  "died": null,
+  "note": "Historical (HHS); death year unrecorded, novel's 192 ignored"
+ },
+ "이이": {
+  "born": null,
+  "died": null,
+  "note": "Historical Wu officer; dates unrecorded"
+ },
+ "이적": {
+  "born": null,
+  "died": null,
+  "note": "SGZ; dates unrecorded (zh wiki 生卒年不詳)"
+ },
+ "이전": {
+  "born": null,
+  "died": null,
+  "note": "SGZ: died aged 36, year unrecorded (en wiki c.180–c.217)"
+ },
+ "이풍": {
+  "born": null,
+  "died": 197,
+  "note": "SGZ; killed at Qi 197"
+ },
+ "이회": {
+  "born": null,
+  "died": 231,
+  "note": "SGZ; died Jianxing 9"
+ },
+ "장기": {
+  "born": null,
+  "died": 200,
+  "note": "SGZ; killed at Wuchao 200"
+ },
+ "장남": {
+  "born": null,
+  "died": null,
+  "note": "Historical Yuan officer; dates unrecorded"
+ },
+ "장로": {
+  "born": null,
+  "died": 216,
+  "note": "SGZ; died year after surrender"
+ },
+ "장막": {
+  "born": null,
+  "died": 195,
+  "note": "SGZ; killed by own men 195"
+ },
+ "장무": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "장비": {
+  "born": null,
+  "died": 221,
+  "note": "SGZ; assassinated 221"
+ },
+ "장소": {
+  "born": 156,
+  "died": 236,
+  "note": "SGZ; died aged 81"
+ },
+ "장송": {
+  "born": null,
+  "died": 212,
+  "note": "SGZ; executed by Liu Zhang 212"
+ },
+ "장수": {
+  "born": null,
+  "died": 207,
+  "note": "SGZ; died on Wuhuan campaign 207"
+ },
+ "장연": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "장완": {
+  "born": null,
+  "died": 246,
+  "note": "SGZ; died Yanxi 9"
+ },
+ "장료": {
+  "born": 169,
+  "died": 222,
+  "note": "SGZ; died aged 54 sui"
+ },
+ "장위": {
+  "born": null,
+  "died": null,
+  "note": "Historical; dates unrecorded"
+ },
+ "장윤": {
+  "born": null,
+  "died": null,
+  "note": "Historical Liu Biao kinsman; death only in novel"
+ },
+ "장임": {
+  "born": null,
+  "died": 213,
+  "note": "en wiki 213; ja sources 214 (conflict)"
+ },
+ "장포": {
+  "born": null,
+  "died": null,
+  "note": "SGZ: died young, year unrecorded"
+ },
+ "장합": {
+  "born": null,
+  "died": 231,
+  "note": "SGZ; killed at Mumen 231"
+ },
+ "장획": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "장흠": {
+  "born": null,
+  "died": 219,
+  "note": "SGZ; died returning from Jing campaign 219"
+ },
+ "저수": {
+  "born": null,
+  "died": 200,
+  "note": "SGZ; executed after Guandu"
+ },
+ "전풍": {
+  "born": null,
+  "died": 200,
+  "note": "SGZ/HHS; executed after Guandu"
+ },
+ "정덕": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only (game character)"
+ },
+ "정보": {
+  "born": null,
+  "died": null,
+  "note": "SGZ; died after 210, year unrecorded"
+ },
+ "정봉": {
+  "born": null,
+  "died": 271,
+  "note": "SGZ; died Jianheng 3"
+ },
+ "정욱": {
+  "born": 141,
+  "died": 220,
+  "note": "SGZ; died aged 80"
+ },
+ "제갈근": {
+  "born": 174,
+  "died": 241,
+  "note": "SGZ; died aged 68"
+ },
+ "제갈량": {
+  "born": 181,
+  "died": 234,
+  "note": "SGZ; died aged 54"
+ },
+ "조루": {
+  "born": null,
+  "died": 220,
+  "note": "Captured/killed with Guan Yu, Jian'an 24 12th month"
+ },
+ "조범": {
+  "born": null,
+  "died": null,
+  "note": "Historical Guiyang administrator; dates unrecorded"
+ },
+ "조비": {
+  "born": 187,
+  "died": 226,
+  "note": "SGZ; died aged 40"
+ },
+ "조성": {
+  "born": null,
+  "died": null,
+  "note": "Historical Lü Bu officer; dates unrecorded"
+ },
+ "조순": {
+  "born": null,
+  "died": 210,
+  "note": "SGZ died Jian'an 15; birth 170 only approximate"
+ },
+ "조식": {
+  "born": 192,
+  "died": 232,
+  "note": "Sanguozhi; died aged 41"
+ },
+ "조운": {
+  "born": null,
+  "died": 229,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "조인": {
+  "born": 168,
+  "died": 223,
+  "note": "Sanguozhi; died aged 56"
+ },
+ "조잠": {
+  "born": null,
+  "died": null,
+  "note": "Dong Zhuo officer, dates unrecorded"
+ },
+ "조조": {
+  "born": 155,
+  "died": 220,
+  "note": "Sanguozhi Wudi ji"
+ },
+ "조진": {
+  "born": null,
+  "died": 231,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "조창": {
+  "born": null,
+  "died": 223,
+  "note": "Sanguozhi; birth only estimated (189?)"
+ },
+ "조표": {
+  "born": null,
+  "died": 196,
+  "note": "Killed by Zhang Fei at Xiapi, 196 (Zizhi Tongjian)"
+ },
+ "조하": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "조홍": {
+  "born": null,
+  "died": 232,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "조휴": {
+  "born": null,
+  "died": 228,
+  "note": "Sanguozhi; died after Shiting"
+ },
+ "주강": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "주비": {
+  "born": null,
+  "died": null,
+  "note": "Obscure Han official, no dates recorded"
+ },
+ "주연": {
+  "born": 182,
+  "died": 249,
+  "note": "Sanguozhi; died aged 68"
+ },
+ "주령": {
+  "born": null,
+  "died": null,
+  "note": "Wei general, dates unrecorded"
+ },
+ "주유": {
+  "born": 175,
+  "died": 210,
+  "note": "Sanguozhi; died aged 36"
+ },
+ "주창": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "주태": {
+  "born": null,
+  "died": null,
+  "note": "Died Huangwu era; year disputed (c.223/225)"
+ },
+ "진교": {
+  "born": null,
+  "died": 237,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "진궁": {
+  "born": null,
+  "died": 199,
+  "note": "Executed with Lü Bu at Xiapi, 199"
+ },
+ "진기": {
+  "born": null,
+  "died": null,
+  "note": "Yuan Shu officer, dates unrecorded"
+ },
+ "진등": {
+  "born": null,
+  "died": null,
+  "note": "Died aged 39; year unrecorded (est. c.209)"
+ },
+ "진림": {
+  "born": null,
+  "died": 217,
+  "note": "Died in 217 epidemic"
+ },
+ "진무": {
+  "born": null,
+  "died": 215,
+  "note": "Killed at Hefei, 215"
+ },
+ "진손": {
+  "born": null,
+  "died": null,
+  "note": "Jiangxia rebel, dates unrecorded"
+ },
+ "진식": {
+  "born": null,
+  "died": null,
+  "note": "Shu officer, dates unrecorded"
+ },
+ "진응": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "진장": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "진진": {
+  "born": null,
+  "died": null,
+  "note": "원소 쪽 인물 — 촉의 진진(陳震)과 다른 사람, 기록 없음"
+ },
+ "차주": {
+  "born": null,
+  "died": 199,
+  "note": "Killed by Guan Yu at Xu province, 199"
+ },
+ "채모": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "채양": {
+  "born": null,
+  "died": 201,
+  "note": "Wudi ji: defeated and killed by Liu Bei, Runan 201"
+ },
+ "채중": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "채훈": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "초촉": {
+  "born": null,
+  "died": null,
+  "note": "Yuan officer, dates unrecorded"
+ },
+ "축융": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "태사자": {
+  "born": 166,
+  "died": 206,
+  "note": "Sanguozhi; died aged 41"
+ },
+ "포륭": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "하후걸": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "하후덕": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "하후돈": {
+  "born": null,
+  "died": 220,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "하후란": {
+  "born": null,
+  "died": null,
+  "note": "Zhao Yun Biezhuan; dates unrecorded"
+ },
+ "하후상": {
+  "born": null,
+  "died": 226,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "하후연": {
+  "born": null,
+  "died": 219,
+  "note": "Killed at Dingjun Mountain, 219"
+ },
+ "하후은": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "학맹": {
+  "born": null,
+  "died": 196,
+  "note": "Rebelled against Lü Bu, beheaded 196"
+ },
+ "학소": {
+  "born": null,
+  "died": null,
+  "note": "Died soon after Chencang (229); year not recorded"
+ },
+ "한당": {
+  "born": null,
+  "died": 227,
+  "note": "Sanguozhi/Zizhi Tongjian; birth unknown"
+ },
+ "한맹": {
+  "born": null,
+  "died": null,
+  "note": "Yuan Shao officer, dates unrecorded"
+ },
+ "한섬": {
+  "born": null,
+  "died": 197,
+  "note": "Killed by Zhang Xuan, 197"
+ },
+ "한영": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "한호": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "한현": {
+  "born": null,
+  "died": null,
+  "note": "Historical name only; death is novel"
+ },
+ "허사": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "허유": {
+  "born": null,
+  "died": 204,
+  "note": "Executed by Cao Cao after Ye, 204"
+ },
+ "허저": {
+  "born": null,
+  "died": null,
+  "note": "Died Cao Rui era; year unrecorded"
+ },
+ "헌제": {
+  "born": 181,
+  "died": 234,
+  "note": "Hou Hanshu"
+ },
+ "형도영": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "호진": {
+  "born": null,
+  "died": null,
+  "note": "Died of illness under Li Jue; year unrecorded"
+ },
+ "화웅": {
+  "born": null,
+  "died": 191,
+  "note": "Killed by Sun Jian at Yangren, 191"
+ },
+ "황개": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ },
+ "황권": {
+  "born": null,
+  "died": 240,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "황충": {
+  "born": null,
+  "died": 220,
+  "note": "Sanguozhi; birth unknown"
+ },
+ "후루": {
+  "born": null,
+  "died": null,
+  "note": "fictional/novel only"
+ },
+ "후성": {
+  "born": null,
+  "died": null,
+  "note": "Dates unrecorded"
+ }
+}

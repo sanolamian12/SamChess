@@ -7744,6 +7744,8 @@ button.rk-clickable:hover { background: #232730; border-color: #4a5260; }
 @keyframes lore-in { from { opacity: 0; scale: .94; } to { opacity: 1; scale: 1; } }
 .lore-title { margin: 0 0 .8rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 .5rem; font-size: 1.5rem; font-weight: 800; color: #f0d48a; letter-spacing: .03em; }
 .lore-courtesy { font-size: 1.17rem; font-weight: 700; color: #d9c9a8; }
+/* 생몰년(2026-11-28) — 한 덩어리(nowrap)라 이름 옆에 안 들면 통째로 다음 줄로 간다(.lore-title이 flex-wrap). 자보다 한 단 옅게 */
+.lore-life { white-space: nowrap; font-size: 1.17rem; font-weight: 700; color: #bfae8c; }
 .lore-text { margin: 0; font-size: var(--lore-fs); line-height: 1.65; text-align: left; word-break: keep-all; overflow-wrap: anywhere; }
 :root:is([data-lang="ja"], [data-lang="zh_Hans"], [data-lang="zh_Hant"]) .lore-text { word-break: normal; }
 .lore-okrow { display: flex; justify-content: flex-end; margin-top: .6rem; }

@@ -675,6 +675,7 @@
   "ranking.card.head.skill": "固有技",
   "ranking.card.head.story": "武将列伝",
   "ranking.card.story.more": "（続きを読む）",
+  "ranking.card.lifeUnknown": "不詳",
   "ranking.card.noSkill": "固有技能なし",
   "ranking.loadError": "ランキングを読み込めなかった — 自分のランキングはそのまま見られる。",
   "ranking.loading": "読み込み中…",

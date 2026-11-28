@@ -675,6 +675,7 @@
   "ranking.card.head.skill": "Habilidade única",
   "ranking.card.head.story": "Biografia",
   "ranking.card.story.more": "(ver mais)",
+  "ranking.card.lifeUnknown": "Desconhecido",
   "ranking.card.noSkill": "Sem habilidade única",
   "ranking.loadError": "Não foi possível carregar a classificação — a sua continua visível.",
   "ranking.loading": "A carregar…",

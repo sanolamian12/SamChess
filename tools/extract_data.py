@@ -1791,6 +1791,35 @@ PLAIN_KO = TOOLS / "plain_ko.json"
 LORE_FIXES = TOOLS / "lore_fixes.json"
 
 
+# 생몰년 (2026-11-28 기획자) — 펼친 열전 판의 제목 옆 「(155 ~ 220 AD)」. 정사(『삼국지』 · 배송지 주 · 『후한서』 · 『진서』)로 확인되는
+# 해만 적고 모르는 쪽은 null이다(연의 · 게임에만 있는 인물은 둘 다 null → 화면은 「Unknown」). 장수의 한국어 이름이 열쇠이고
+# `note`는 근거를 적어 둔 것(화면에는 안 쓴다). 260명 전원이 있어야 한다 — 장수가 늘면 여기에도 더한다.
+OFFICER_LIFE = TOOLS / "officer_life.json"
+
+
+def attach_life(officers: list[dict]) -> None:
+    """`officers[].life = {born, died}`를 `tools/officer_life.json`에서 붙인다."""
+    if not OFFICER_LIFE.exists():
+        note(f"[생몰년] {OFFICER_LIFE} 가 없어 건너뛴다")
+        return
+    table = json.loads(OFFICER_LIFE.read_text(encoding="utf-8"))
+    names = {o["name"] for o in officers}
+    for extra in sorted(set(table) - names):
+        fail(f"[생몰년] '{extra}'에 대응하는 장수가 없다")
+    known = 0
+    for o in officers:
+        row = table.get(o["name"])
+        if row is None:
+            fail(f"[생몰년] '{o['name']}'의 생몰년이 없다(모르면 null로 적는다)")
+            continue
+        born, died = row.get("born"), row.get("died")
+        if born is not None and died is not None and born >= died:
+            fail(f"[생몰년] '{o['name']}' {born} ~ {died}")
+        o["life"] = {"born": born, "died": died}
+        known += born is not None or died is not None
+    note(f"[생몰년] {known}/{len(officers)}명이 한 해라도 확인됨(나머지는 Unknown)")
+
+
 def apply_lore_fixes(officers: list[dict], skills: list[dict]) -> None:
     """`story` · `origin`의 아홉 언어를 `tools/lore_fixes.json`으로 바로잡는다. `apply_skill_origin_trims()` **뒤**에 부른다
     (줄인 유래가 원문이다)."""
@@ -4052,6 +4081,7 @@ def main() -> int:
     apply_skill_origin_trims(skills)
     apply_lore_fixes(officers, skills)
     apply_plain_ko(officers, skills)
+    attach_life(officers)
     pieces = build_pieces()
     tactics = build_tactics()
     attach_tactic_lore(tactics)

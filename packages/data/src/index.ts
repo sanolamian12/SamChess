@@ -76,6 +76,12 @@ export interface OfficerData {
    * `courtesyName`과 같은 규약 — 여기서 안 고르고 맵을 그대로 낸다.
    */
   story?: Partial<Record<StoryLang, string>>;
+  /**
+   * 생몰년(서기) — 펼친 열전 판의 제목 옆 「(155 ~ 220 AD)」 (2026-11-28 기획자). 정사(『삼국지』 · 『후한서』 · 『진서』)로 확인되는
+   * 해만 적고, 모르는 쪽은 `null`이다(연의 · 게임에만 있는 인물은 둘 다 `null` → 화면은 「Unknown」). 출처는
+   * `tools/officer_life.json`. 판에는 안 쓰인다 — 리플레이 해시에서 뺀다(`replayVersion.ts`의 `TEXT_KEYS`).
+   */
+  life?: { born: number | null; died: number | null };
 }
 
 /**

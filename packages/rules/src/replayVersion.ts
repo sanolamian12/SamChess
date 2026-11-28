@@ -44,7 +44,7 @@ export const ENGINE_REVISION = 7;
 /** 판에 영향이 없는 글자 칸 — 해시에서 뺀다(번역 · 설명을 고쳐도 옛 기록을 살린다) */
 const TEXT_KEYS = new Set([
   'name', 'hanja', 'text', 'nameI18n', 'textI18n', 'lore', 'loreI18n', 'imagePrompt', 'story', 'courtesyName', 'portrait', 'art',
-  'faction', 'banditNames', 'origin', 'title', 'titleI18n', 'desc', 'descI18n', 'detail', 'detailI18n', 'effectText',
+  'faction', 'banditNames', 'origin', 'life', 'title', 'titleI18n', 'desc', 'descI18n', 'detail', 'detailI18n', 'effectText',
 ]);
 
 /** 키를 정렬해 적는다 — 같은 값이면 언제나 같은 글자 */

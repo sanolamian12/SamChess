@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { skillById, tacticById } from '@samchess/data';
+import { officerById, skillById, tacticById } from '@samchess/data';
 import type { EquipmentData } from '@samchess/data';
 import { BATTLE_RANK_MODES, INJURY_PENALTY, RANK_TOP, injuredStat } from '@samchess/meta';
 import type { BattleRankMode, OfficerRankRow, RankBoard } from '@samchess/meta';
@@ -34,6 +34,7 @@ import { GameIcon } from './GameIcon.tsx';
 import { BlinkGlow, STAND_GLOW } from './BlinkGlow.tsx';
 import { LevelBadge } from './LevelBadge.tsx';
 import { loreTeaser } from './loreTeaser.ts';
+import { lifeSpanText } from './lifeSpan.ts';
 import { playSfx } from '../audio/sfx.ts';
 
 /**
@@ -461,7 +462,7 @@ export function OfficerCardModal({ row, onClose, onLevels, onItems, itemsLook, l
       {skillOpen && skill && <SkillModal skill={skill} onClose={() => setSkillOpen(false)} />}
       {tactic && <TacticModal tactic={tactic} onClose={() => setTacticOpen(null)} />}
       {loreOpen && story && (
-        <LoreModal story={story} name={pickOfficerNameById(row.officer, row.name)} courtesy={pickStory(row.courtesyName)} onClose={() => setLoreOpen(false)} />
+        <LoreModal story={story} name={pickOfficerNameById(row.officer, row.name)} courtesy={pickStory(row.courtesyName)} life={officerById.get(row.officer)?.life} onClose={() => setLoreOpen(false)} />
       )}
     </div>
   );
@@ -736,16 +737,20 @@ function OfficerCard({ row, onClose, onLevels, onItems, itemsLook, levelsEligibl
 
 /**
  * 장수 열전 — 펼친 판 (2026-11-27 기획자). 접힌 판과 같은 가죽 판(`ui/panel-battle-officer.png`)이 화면 가로 · 세로 80%로 커져 한가운데에 뜨고
- * 뒤는 어두워진다. 첫 줄은 제목(이름 + 자), 그 밑에 열전 전부를 시원한 글자로(`--lore-fs` — 열 언어 × 260명 가운데 가장 긴 열전이 드는 크기,
+ * 뒤는 어두워진다. 첫 줄은 제목(이름 + 자 + 생몰년), 그 밑에 열전 전부를 시원한 글자로(`--lore-fs` — 열 언어 × 260명 가운데 가장 긴 열전이 드는 크기,
  * `tools/lore_popup_fit.ts`가 잰다). 글이 끝난 다음 줄 오른쪽에 붉은 체크(장수 상세와 같은 크기 · 같은 움직임) — 누르면 닫힌다(가리개를 눌러도)
  */
-function LoreModal({ story, name, courtesy, onClose }: { story: string; name: string; courtesy?: string | undefined; onClose: () => void }): React.JSX.Element {
+function LoreModal({ story, name, courtesy, life, onClose }: {
+  story: string; name: string; courtesy?: string | undefined; life?: { born: number | null; died: number | null } | undefined; onClose: () => void;
+}): React.JSX.Element {
   return (
     <div className="modal-back lore-back" data-modal="lore" onClick={(e) => { e.stopPropagation(); onClose(); }}>
       <div className="lore-modal" onClick={(e) => e.stopPropagation()}>
         <h3 className="lore-title" data-field="loreTitle">
           <span className="lore-name">{name}</span>
           {courtesy && <span className="lore-courtesy">{courtesy}</span>}
+          {/* 생몰년 — 한 덩어리라 이름 옆에 안 들면 통째로 다음 줄을 차지한다(2026-11-28 기획자) */}
+          <span className="lore-life" data-field="loreLife">{lifeSpanText(life, t('ranking.card.lifeUnknown'))}</span>
         </h3>
         <p className="lore-text" data-field="loreText">{story}</p>
         <div className="lore-okrow">

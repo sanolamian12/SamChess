@@ -675,6 +675,7 @@
   "ranking.card.head.skill": "固有技",
   "ranking.card.head.story": "武将列传",
   "ranking.card.story.more": "（更多）",
+  "ranking.card.lifeUnknown": "不详",
   "ranking.card.noSkill": "无固有技能",
   "ranking.loadError": "未能加载排行榜 — 仍可查看自己的排名。",
   "ranking.loading": "加载中…",

@@ -825,6 +825,7 @@
   "ranking.card.head.skill": "고유 기술",
   "ranking.card.head.story": "장수 열전",
   "ranking.card.story.more": "(더보기)",
+  "ranking.card.lifeUnknown": "Unknown",
   "ranking.card.noSkill": "고유 기술 없음",
 
   "ranking.loadError": "랭킹을 불러오지 못했다 — 내 랭킹은 그대로 볼 수 있다.",

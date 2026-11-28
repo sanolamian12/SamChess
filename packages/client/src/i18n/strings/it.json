@@ -675,6 +675,7 @@
   "ranking.card.head.skill": "Abilità unica",
   "ranking.card.head.story": "Biografia",
   "ranking.card.story.more": "(continua)",
+  "ranking.card.lifeUnknown": "Sconosciuto",
   "ranking.card.noSkill": "Nessuna abilità unica",
   "ranking.loadError": "Impossibile caricare la classifica — può comunque vedere la sua.",
   "ranking.loading": "Caricamento…",
