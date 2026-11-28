@@ -3787,7 +3787,7 @@ button.mkt-pack.mkt-good[data-locked] { filter: grayscale(1) drop-shadow(0 2px 3
 }
 /* 카드 — 그림(두 줄 높이) | 이름 · 가격 띠 / 효과(그림 오른쪽 종이 폭 전부) */
 button.mkt-pack.mkt-item-card {
-  display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+  display: grid; grid-template-columns: 4rem minmax(0, 1fr) auto;
   grid-template-areas: "art nm pr" "art fx fx"; grid-template-rows: auto auto;
   align-content: center; align-items: center; column-gap: .6rem; row-gap: .2rem; text-align: left;
   min-height: var(--row-h, auto); padding: .6rem .7rem .65rem .75rem;
@@ -3805,15 +3805,17 @@ button.mkt-pack.mkt-item-card {
 }
 /* 재는 사본은 제 높이(내용)대로 — 박힌 `--row-h`를 읽으면 다음 재기에 그 값이 바닥이 된다 */
 .mkt-item-measure > button.mkt-pack.mkt-item-card { min-height: 0; }
-/* 아이템 그림 — 검정 바탕 + 금빛 밧줄 액자(목록 줄 `.mkt-irow > .c-art`와 같은 값) */
-.mkt-item-card > .c-art, .mkt-item-ask-art > .c-art {
-  position: relative; display: block; flex: none; width: 3.4rem; height: 3.4rem; overflow: hidden;
-  background: #000; border-radius: .15rem;
+/* 아이템 그림 — **둥근 금테**(2026-11-28 기획자 — 옛 금빛 밧줄 사각 액자 `frame-gold-2`에서). 건물 한 장의 둥근 배지(`.cty-peek-badge`)와 같은
+   금빛 고리 + 검은 원. 원은 같은 그림을 담으려면 사각형보다 커야 해서 지름을 3.4 → 4rem으로 키웠다(그림은 안쪽 원의 92% — 귀퉁이만 조금 가린다) */
+.mkt-item-card > .c-art, .mkt-item-ask-art > .c-art, .mkt-irow > .c-art {
+  position: relative; display: grid; place-items: center; flex: none; width: 4rem; height: 4rem; overflow: hidden;
+  box-sizing: border-box; border: .17rem solid transparent; border-radius: 50%;
+  background: radial-gradient(circle, #2a2218 0%, #0b0906 75%) padding-box,
+    linear-gradient(145deg, #fff2b8 0%, #e2b64e 30%, #9a6a1c 55%, #f3d27a 80%, #8a5a14 100%) border-box;
+  box-shadow: 0 .06rem .2rem #0009, inset 0 0 .25rem #000;
 }
-.mkt-item-card > .c-art img, .mkt-item-ask-art > .c-art img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
-.mkt-item-card > .c-art::after, .mkt-item-ask-art > .c-art::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
+.mkt-item-card > .c-art img, .mkt-item-ask-art > .c-art img, .mkt-irow > .c-art img {
+  position: relative; display: block; width: 92%; height: 92%; object-fit: contain; border-radius: 50%;
 }
 .mkt-item-nm { font-size: 1.05rem; font-weight: 800; color: #3a2210; letter-spacing: .03em; overflow-wrap: anywhere; line-height: 1.2; }
 .mkt-item-fx { font-size: .9rem; color: #5a3d22; line-height: 1.28; word-break: keep-all; overflow-wrap: anywhere; }
@@ -3879,7 +3881,7 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 
 /* 「구매할까요?」 판의 그림 — 가운데 크게 */
 .mkt-item-ask-art { display: flex; justify-content: center; }
-.mkt-item-ask-art > .c-art { width: 4.4rem; height: 4.4rem; }
+.mkt-item-ask-art > .c-art { width: 5.2rem; height: 5.2rem; }
 .mkt-item-ask-art .mkt-item-glow { --blink-w: 2.2; }
 
 /* 결과 칸의 표 — 새 장수(옥색) · 잉여 카드(잿빛 붉은) */
@@ -3908,18 +3910,10 @@ button.mkt-pack.mkt-item-card[data-locked]:not(:disabled):hover { filter: graysc
 .mkt-irow.pick { grid-template-columns: 2.6rem minmax(0, 1fr) 3.3rem 1.8rem 1.8rem 2.4rem; cursor: pointer; }
 /* 아이템 그림 — 크기는 그대로 두고 바탕을 검정으로 칠한 뒤 금빛 밧줄 액자(`frame-gold-2.png`)를
    **통째로 위에 씌운다**(2026-09-24 지정). 액자가 그림보다 위라 `::after`다 */
-.mkt-irow > .c-art {
-  grid-area: art; width: 2.6rem; height: 2.6rem; position: relative;
-  background: #000; border-radius: .15rem;
-}
-.mkt-irow > .c-art img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.mkt-irow > .c-art { grid-area: art; width: 2.6rem; height: 2.6rem; border-width: .13rem; }
 /* 아이템 뒤 섬광(`BlinkGlow`, 정지) — 검은 칸 안에서만. 별빛이 줄 글자 위로 번지지 않게 칸이 자른다 */
 .mkt-irow > .c-art { overflow: hidden; }
 .mkt-item-glow { inset: 0; --blink-w: 1.7; }
-.mkt-irow > .c-art::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: url(ui/frame-gold-2.png) center / 100% 100% no-repeat;
-}
 .mkt-irow > .c-nm { grid-area: nm; font-size: .9rem; font-weight: 700; color: #221407; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mkt-irow > .c-kd { grid-area: kd; text-align: center; }
 .mkt-irow > .c-n1 { grid-area: n1; }
