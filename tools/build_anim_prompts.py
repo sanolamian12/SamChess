@@ -51,6 +51,10 @@ OUT = ROOT / "assets" / "CharsAnim"
 # 메뉴 꼬마의 장수별 크기 보정표(Design/꼬마그림_크기보정_전달.md) — 정본은 화면 코드, 여기서는 읽기만 한다
 STAND_SCALE_SRC = ROOT / "packages" / "client" / "src" / "screens" / "OfficerArt.tsx"
 PAGE = ROOT / "tools" / "anim_prompts_page.html"   # → OUT/index.html
+# 명단(260명) 밖의 꼬마 — 작업판 맨 끝에 붙는다. 그림은 `actions-hd/{id}.webp`, 표(anim_idle.tsv)에는 이름으로 한 줄
+# (황건적 = 도적떼 방어전의 도적 다섯이 함께 쓰는 `bandit` 그림, 2026-11-28 기획자)
+EXTRA = [{"id": "bandit", "name": "황건적", "nameI18n": {"en": "a Yellow Turban bandit"}, "grade": "D",
+          "role": "a nameless rank-and-file rebel soldier of the Three Kingdoms era"}]
 
 REF_SCALE = 2       # 참고 그림은 두 배로 키워 준다(Gemini가 작은 그림의 무늬를 뭉갠다)
 
@@ -89,7 +93,7 @@ def style(o: dict, row: dict) -> str:
         gear = f"Key props and features: {holds}."
     return (
         "Pixel-art chibi sprite frames of the SAME character as in the reference sheet: "
-        f"{o['nameI18n']['en']}, a Three Kingdoms era officer. {gear} "
+        f"{o['nameI18n']['en']}, {o.get('role', 'a Three Kingdoms era officer')}. {gear} "
         "Keep exactly the same character design: same face, hairstyle, headwear, outfit, armor, colors and palette, "
         "same weapon, same outline thickness, same pixel-art rendering and the same big-head chibi proportions. "
         "The attached reference picture is the only source of how this character looks: if anything written here "
@@ -216,6 +220,47 @@ def s_magic(o, row):
 
 SECTIONS = {"평상": s_idle, "피격": s_hit, "이동": s_walk, "공격": s_attack, "마법": s_magic}
 
+
+# 장수 하나만 다르게 — 헌제(2026-11-28 기획자): 맨손 황제라 공격은 갑자기 튀어나온 내시가 몸통 박치기를 하고(3칸 — 셋째 칸이
+# 공격 자세를 대신한다, build_anim_frames.py의 `GRID_FOR`), 쓰러질 때는 뒤에 놓인 의자에 털썩 주저앉는다
+def s_attack_heonje(o, row):
+    return 3, (
+        "ATTACK (3 frames) — the young emperor cannot fight, so a palace EUNUCH does it for him: the newly attached "
+        "image shows pose 1 (idle, left) and pose 3 (attack, right) of the emperor. Idle plays before frame 1, and "
+        "frame 3 REPLACES pose 3 as the final attack pose. "
+        "The eunuch: a chubby middle-aged palace eunuch in a plain dark court robe and small black cap, beardless, "
+        "drawn in the SAME pixel-art chibi style and at the SAME scale as the emperor (a little shorter than him). "
+        "Frame 1: the emperor points forward (toward the right) with an alarmed, commanding face; the eunuch suddenly "
+        "pops out from behind the emperor, only half visible at his back, wide-eyed and eager. "
+        "Frame 2: the eunuch dashes forward past the emperor, head lowered, both arms tucked in, a short dust trail "
+        "behind his feet. "
+        "Frame 3 (final attack pose): the eunuch is in a full flying shoulder BODY SLAM to the right, leaving the "
+        "ground with a motion-blur arc, while the emperor stands just behind him cheering him on with one fist raised. "
+        "Both figures stay together inside each cell, the emperor's head and body the same size as in the reference. "
+        "No pained expression and no hit sparks from pose 5. Facing: both face right, exactly as pose 3 (attack)."
+    )
+
+
+def s_hit_heonje(o, row):
+    return 3, (
+        "GOING DOWN (3 frames) — what happens right AFTER pose 5 (hit), which plays just before frame 1 (do not "
+        "draw pose 5 itself, and do not draw the idle pose). A simple imperial wooden chair (a small throne-like "
+        "armchair) stands just behind the emperor, drawn in the same pixel-art style. "
+        "Frame 1: staggering back from the blow toward the chair, arms flailing, the chair visible behind him. "
+        "Frame 2: losing his balance and dropping backward, his seat just above the chair. "
+        "Frame 3 (final pose): he has plopped down SITTING in the chair, slumped back, dazed and exhausted, crown "
+        "slightly askew, arms hanging over the armrests — his head clearly lower than standing height. "
+        "The chair stays in the same place in all 3 frames and fits inside each cell. "
+        "Facing: exactly as pose 5 (hit) in all 3 frames; he falls back away from the blow without turning around."
+    )
+
+
+SPECIAL = {"헌제": {"공격": s_attack_heonje, "피격": s_hit_heonje}}
+# 작업판의 요청 설명 · 쓰러짐 줄 (SPECIAL과 함께 고친다)
+SPECIAL_WHAT = {"헌제": {"B": "<b>피격 다음 3칸</b> — 피격 → 새 3칸, 마지막은 <b>뒤의 의자에 털썩 앉음</b>",
+                         "D": "<b>공격 3칸</b> — 평상 → 새 3칸, 내시가 튀어나와 몸통 박치기 · <b>셋째 칸이 공격 자세를 대신한다</b>"}}
+SPECIAL_FALL = {"헌제": "의자에 털썩 앉음(전용)"}
+
 # 요청 = 생성 한 번. 장수 하나 = 새 대화 하나에서 A → E.
 # 그림: A에 다섯 자세 띠 전체, C · D · E에 그 동작의 자세만 크게 한 장 더(11-16 가후 — 이동 · 공격을 한 장에 묶었더니
 # 이동 줄이 평상 · 이동 자세를 베꼈고 공격 칸에 피격 표정이 섞였다. 띠가 대화 앞쪽에 멀어지면 자세 번호를 헷갈린다).
@@ -235,7 +280,7 @@ IMG_KO = {"sheet": "다섯 자세 띠", "walk": "이동 자세", "attack": "평�
 
 
 def request_text(o, row, part: str, img: str | None) -> str:
-    n, body = SECTIONS[part](o, row)
+    n, body = SPECIAL.get(o["name"], {}).get(part, SECTIONS[part])(o, row)
     rows, cols = (2, 2) if part == "마법" else (1, n)
     if img == "sheet":
         head = f"Attached image: the reference sheet — {POSES}.\n\n"
@@ -287,7 +332,7 @@ def main() -> int:
     ap.add_argument("--no-ref", action="store_true", help="참고 그림을 다시 굽지 않는다")
     a = ap.parse_args()
 
-    officers = json.loads(OFFICERS.read_text(encoding="utf-8"))
+    officers = json.loads(OFFICERS.read_text(encoding="utf-8")) + EXTRA
     scale = stand_scale()
     with TABLE.open(encoding="utf-8", newline="") as f:
         rd = csv.reader(f, delimiter="\t")
@@ -306,10 +351,12 @@ def main() -> int:
     for o in officers:
         row = table[o["name"]]
         reqs = [{"key": k, "save": f"{o['name']}_{tag}", "parts": [part], "img": img,
-                 "imgLabel": IMG_KO.get(img or ""), "text": request_text(o, row, part, img), "single": []}
+                 "imgLabel": IMG_KO.get(img or ""), "text": request_text(o, row, part, img), "single": [],
+                 **({"what": w} if (w := SPECIAL_WHAT.get(o["name"], {}).get(k)) else {})}
                 for k, tag, part, img in REQUESTS]
         data.append({"name": o["name"], "en": o["nameI18n"]["en"], "grade": o["grade"], "scale": scale.get(o["id"]),
-                     "idle": row["idle_ko"], "holdsKo": row["holds_ko"], "fall": FALL_KO[fall_kind(o["grade"])], "req": reqs})
+                     "idle": row["idle_ko"], "holdsKo": row["holds_ko"],
+                     "fall": SPECIAL_FALL.get(o["name"], FALL_KO[fall_kind(o["grade"])]), "req": reqs})
         if a.no_ref or (a.only and o["name"] != a.only):
             continue
         for k, im in ref_images(o["id"]).items():

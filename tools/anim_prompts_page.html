@@ -192,7 +192,7 @@ function card(o, r, i) {
   <section class="card ${done[k] ? "done" : ""}">
     <h3><span class="k">요청 ${r.key}</span> ${r.img ? `그림(${r.imgLabel}) + 프롬프트` : "프롬프트만 (그림 안 붙임)"}
       ${note ? `<span class="note">${esc(note)}</span>` : ""}</h3>
-    <div class="what">${WHAT[r.key]}</div>
+    <div class="what">${r.what || WHAT[r.key]}</div>
     <div class="acts">
       ${r.img ? `<img class="mini" src="${imgUrl(o.name, r.img)}" data-img="${r.key}" alt="${r.imgLabel}" title="눌러도 복사됩니다">
         <button data-img="${r.key}">① ${r.imgLabel} 그림 복사</button>` : ""}

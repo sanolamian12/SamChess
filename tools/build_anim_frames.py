@@ -101,6 +101,13 @@ ANIM = [
     ("fall1", "피격", 0, 4), ("fall2", "피격", 1, 4), ("fall3", "피격", 2, 4),
 ]
 GRID = {"평상": (1, 3), "이동": (1, 2), "공격": (1, 2), "마법": (2, 2), "피격": (1, 3)}
+# 칸 수가 다른 장(이름, 동작) → (줄, 칸). 공격이 3칸이면 셋째 칸이 공격 자세(`attack`)를 대신한다
+# (헌제: 내시가 튀어나와 몸통 박치기 — 지금 공격 자세에는 내시가 없다, 2026-11-28 기획자 · build_anim_prompts.py의 SPECIAL)
+GRID_FOR: dict[tuple[str, str], tuple[int, int]] = {("헌제", "공격"): (1, 3)}
+# 둘이 함께 나오는 장 — 몸 덩어리 전체의 무게 중심으로 놓으면 튀어나간 내시 때문에 주인공이 뒤로 밀려 보인다.
+# 칸마다 주인공의 꼭대기(헌제의 면류관 — 내시보다 늘 위에 있다)를 평상 자세의 꼭대기 자리에 놓는다 — 주인공은 서 있고
+# 내시만 나간다(헌제, 2026-11-28 기획자). 머리 특징점으로 찾아 보니 Gemini의 얼굴이 평상 자세와 달라 세 칸 다 못 찾았다
+ANCHOR_HEAD: set[tuple[str, str]] = {("헌제", "공격")}
 FIX = ROOT / "tools" / "anim_frames_fix.tsv"
 BASE = {"평상": 0, "이동": 1, "공격": 2, "마법": 3, "피격": 4}   # 크기 · 방향의 기준 자세(지금 시트의 칸)
 
@@ -130,7 +137,9 @@ ORDER: dict[tuple[str, str], tuple[int, ...]] = {
 
 # 방향 자동 판정이 틀리는 장 — 뒤집지 않는다(동탁 평상: 받은 칸이 기준 자세와 같은 쪽인데 반전 쪽이 더 닮게 재여
 # 세 칸이 반대쪽을 봤다 — 2026-11-17 기획자)
-NO_FLIP: set[tuple[str, str]] = {("동탁", "평상")}
+# 명단 밖 그림의 작업 이름(원본/의 파일 이름) — build_anim_prompts.py의 EXTRA와 같은 이름
+EXTRA_NAMES = {"bandit": "황건적"}
+NO_FLIP: set[tuple[str, str]] = {("동탁", "평상"), ("헌제", "공격")}   # 헌제 공격: 둘이 함께라 방향 판정이 흔들린다
 
 # ───────────────────────────── 지금 자세 ─────────────────────────────
 
@@ -303,6 +312,19 @@ def head_ratio(head: np.ndarray, frame: np.ndarray) -> tuple[float | None, int]:
     return (float(np.hypot(M[0, 0], M[1, 0])) if n >= HEAD_INLIERS else None), n
 
 
+TOP_BAND = 0.06   # 꼭대기 띠의 두께(몸 키에 대한 비) — 면류관 판만 들어오게
+
+
+def top_of(alpha: np.ndarray) -> tuple[float, float]:
+    """몸의 꼭대기 — (꼭대기 띠의 가로 가운데, 꼭대기 줄). `ANCHOR_HEAD`가 주인공 자리를 잡는다."""
+    m = body_of(alpha)
+    ys = np.nonzero(m.any(1))[0]
+    top, bot = int(ys.min()), int(ys.max())
+    band = m[top:top + max(2, round((bot - top) * TOP_BAND))]
+    xs = np.nonzero(band.any(0))[0]
+    return (float(xs.min() + xs.max()) / 2, float(top))
+
+
 def resized(cell: np.ndarray, scale: float) -> Image.Image:
     h, w = cell.shape[:2]
     nw, nh = max(1, round(w * scale)), max(1, round(h * scale))
@@ -310,7 +332,7 @@ def resized(cell: np.ndarray, scale: float) -> Image.Image:
 
 
 def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note: list[str], tag: str,
-          shadow_w: float) -> np.ndarray:
+          shadow_w: float, anchor: tuple[float, float] | None = None) -> np.ndarray:
     """원본 칸을 배율대로 줄여 240² 칸에 — 몸 바닥은 발 자리, 무게 중심은 기준 자세의 것.
     칸(여백 포함) 밖으로 나가는 것은 잘린다 — 줄이지 않는다(머리 크기를 지킨다, 2026-11-25)."""
     im = resized(cell, scale)
@@ -326,6 +348,10 @@ def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note
     ox = round(base[1] - cx)
     foot = base[2]   # 기준 자세의 몸 바닥 — 발이 그림자 위에 뜬 만큼까지 같게
     oy = round(foot - bottom)
+    if anchor is not None:   # `ANCHOR_HEAD` — 주인공 꼭대기를 (평상 자세의) 그 자리에
+        hx, hy = anchor
+        tx, ty = top_of(a[..., 3])
+        ox, oy = round(hx - tx), round(hy - ty)
     total = float(a[..., 3].sum())
     x0, y0 = max(0, -ox), max(0, -oy)
     x1, y1 = min(im.width, CELL_W - ox), min(im.height, CELL_H - oy)
@@ -347,19 +373,21 @@ def place(cell: np.ndarray, scale: float, base: tuple[float, float, float], note
     c = np.asarray(canvas).astype(np.float32)
     a = c[..., 3] / 255.0
     # 그림자는 정사각 칸에서 낸다(높이에 비례해 띄우므로) — 지금 시트와 같은 자리
-    sh = np.pad(shadow_layer((CELL, CELL_W), base[1], FOOT_SQ, shadow_w), ((HEAD, 0), (0, 0)))
+    sx = anchor[0] if anchor is not None else base[1]   # 주인공 머리로 놓은 장은 그림자도 주인공 밑에
+    sh = np.pad(shadow_layer((CELL, CELL_W), sx, FOOT_SQ, shadow_w), ((HEAD, 0), (0, 0)))
     out_a = a + sh * (1.0 - a)
     rgb = c[..., :3] * a[..., None] / np.maximum(out_a, 1e-5)[..., None]
     return np.dstack([rgb, out_a * 255.0]).round().clip(0, 255).astype(np.uint8)
 
 
 def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str], shadow_w: float,
-                  refs: list[tuple[np.ndarray, float]] | None = None) -> list[np.ndarray] | None:
+                  refs: list[tuple[np.ndarray, float]] | None = None,
+                  anchor: tuple[float, float] | None = None) -> list[np.ndarray] | None:
     """refs — 머리를 찾을 기준 머리들(머리 그림, 이 동작 기준 자세 머리에 대한 크기 비). 없으면 기준 자세의 머리 하나."""
     path = next((p for d in (SRC, DONE) for p in (d / f"{name}_{motion}.{e}" for e in EXTS) if p.exists()), None)
     if path is None:
         return None
-    rows, cols = GRID[motion]
+    rows, cols = GRID_FOR.get((name, motion), GRID[motion])
     cells = split_cells(path, rows, cols)
     base_m = body_of(base_rgba[..., 3])
     # 평상만 몸통 키로 잰다 — 무기 · 부채를 치켜드는 동작이라. 옆모습(이동 · 공격)은 몸이 좁아 몸통 키가 몸을 자른다
@@ -398,7 +426,10 @@ def motion_frames(name: str, motion: str, base_rgba: np.ndarray, note: list[str]
             scale *= mul
         how = f"몸 키{f' · 손 보정 ×{mul}' if mul else ''}"
     note.append(f"{motion}: {len(cells)}칸 · 배율 {scale:.3f} · {how}{' · 좌우 뒤집음' if flip else ''}")
-    return [place(c, scale, base, note, f"{motion}{i + 1}", shadow_w) for i, c in enumerate(cells)]
+    if anchor is not None:
+        how += " · 주인공 꼭대기로 자리 고정"
+        note[-1] = f"{motion}: {len(cells)}칸 · 배율 {scale:.3f} · {how}{' · 좌우 뒤집음' if flip else ''}"
+    return [place(c, scale, base, note, f"{motion}{i + 1}", shadow_w, anchor) for i, c in enumerate(cells)]
 
 # ───────────────────────────── 장수 하나 ─────────────────────────────
 
@@ -422,7 +453,10 @@ def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
                     r, _ = head_ratio(heads[b], poses[k])   # 자세 k 속 머리 ÷ 기준 자세 머리
                     if r is not None and 0.6 < r < 1.6:
                         refs.append((heads[k], r))
-            got[m] = motion_frames(o["name"], m, poses[b], note, shadow_w, refs)
+            anchor = None
+            if (o["name"], m) in ANCHOR_HEAD:   # 평상 자세의 꼭대기 자리
+                anchor = top_of(poses[0][..., 3])
+            got[m] = motion_frames(o["name"], m, poses[b], note, shadow_w, refs, anchor)
             order = ORDER.get((o["name"], m))
             if got[m] and order:
                 got[m] = [got[m][j] for j in order]
@@ -432,7 +466,10 @@ def build(o: dict) -> tuple[np.ndarray, list[str], list[str]]:
             got[m] = None
     frames, real = [], []
     for key, m, i, fallback in ANIM:
-        if m and got.get(m):
+        if key == "attack" and got.get("공격") and len(got["공격"]) == 3:
+            frames.append(got["공격"][2])
+            real.append("공격")
+        elif m and got.get(m):
             frames.append(got[m][i])
             real.append(m)
         else:
@@ -503,7 +540,7 @@ def main() -> int:
     previews, done = [], []
     # 지금 시트가 있는 것 전부 — 장수 260명 + 명단 밖의 그림(도적 `bandit`)도 stub으로 채운다(화면이 18칸만 읽게)
     sheets = sorted(p.stem for p in HD.glob("*.webp"))
-    todo = [by_id.get(k, {"id": k, "name": k}) for k in sheets]
+    todo = [by_id.get(k, {"id": k, "name": EXTRA_NAMES.get(k, k)}) for k in sheets]
     for o in todo:
         if a.only and o["name"] not in a.only:
             continue
