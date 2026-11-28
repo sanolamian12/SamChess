@@ -258,40 +258,13 @@ export interface PlayerProfile {
    */
   surplusCards?: number;
   /**
-   * 대장간에서 만든 장비 — 키는 **자루**(`{EquipmentData.id}#{n}`, 저장 형식 v6). **키가 있으면
-   * 그 자루를 보유**하고, 종류당 개수는 대장간 레벨이 정한다(피라미드 — `forgeCopiesAllowed()`).
-   * 값은 지급된 장수이고 `null`이면 미지급이다 (`forge.ts` 참조). v5까지는 키가 종류였고
-   * 계정당 1개였다 — `migrateProfile()`이 `#1`로 되접는다.
+   * **대장간 — 병기 연구** (2026-11-28, `forge.ts`). 없으면 한 번도 연구하지 않았다. 연구한 병기는 장터
+   * 진열대에 오르고, 산 것은 장터 아이템과 같은 `marketOwned`에 낱개로 든다(1회용). 옛 자루 · 제작일 · 제조
+   * 주문(`forgeOwned` · `forgeMadeAt` · `forgeOrder`)은 이 개편으로 없어졌다 — 남은 자루는 되접기가 보관함으로 옮긴다.
    *
-   * **존재 여부(키)는 서버 소유, 지급 대상(값)은 클라이언트가 자유롭게 바꾼다** —
-   * `guardServerOwned()`가 새 키 추가는 막지만 기존 키의 값 변경은 통과시킨다.
-   * 지급을 바꾸는 것은 이미 만든 것을 이 장수 저 장수로 옮길 뿐이라 총량이
-   * 늘지 않기 때문이다.
+   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 진열대가 곧 「무엇을 살 수 있나」다.
    */
-  forgeOwned: Record<string, OfficerId | null>;
-  /**
-   * 만들어진 시각 — `{병기 id: ms}`. 화면의 「제작일」 열 하나가 쓴다
-   * (2026-09-11).
-   *
-   * **`forgeOwned`와 한 덩어리로 두지 않았다** — 그쪽은 값이 「지금 누가
-   * 끼고 있나」라 지급·해제 때마다 바뀌는데, 제작일은 **한 번 찍히고 다시는
-   * 안 바뀐다.** 같은 칸에 두면 지급할 때마다 함께 되쓰게 되고, 한 번이라도
-   * 빠뜨리면 날짜가 조용히 사라진다.
-   *
-   * **서버 소유다**(`SERVER_OWNED_FIELDS`) — 찍는 자리가 `collectForgeOrder()`
-   * 하나이고, 그 함수를 시각과 함께 부르는 것은 서버의 `getProfile()`이다.
-   * 옛 계정에는 없다(그 전에 만든 병기) — 그때는 화면이 「—」로 비운다.
-   */
-  forgeMadeAt?: Record<string, number>;
-  /**
-   * 진행 중인 제조 주문. 슬롯은 계정당 **하나** — 동시에 여러 병기를 만들 수 없다.
-   * 없으면 유휴 상태.
-   *
-   * **서버 전용 필드다.** 끝나는 시각이 아니라 **시작 시각**을 저장한다 —
-   * `injuredAt`·`grainAt`과 같은 결로, 기간 규칙(레벨당 1주)이 바뀌어도 이미
-   * 저장된 주문이 옛 규칙으로 계산되지 않게 매번 다시 잰다.
-   */
-  forgeOrder?: { equipmentId: string; startedAt: number };
+  forge?: ForgeState;
   /**
    * 농지의 **파수꾼** (GDD §5.11, 2026-09-21). 기물 하나에 장수 하나 — 부대의 `picks`와
    * 같은 모양이고, 부대처럼 레벨을 들지 않는다.
@@ -315,7 +288,7 @@ export interface PlayerProfile {
    *
    * 보관함이 대장간 지급 관리처럼 **한 개에 한 줄**을 그리며 「구매일」 칸을 채운다.
    * `marketOwned`(수량)가 정본이고 이 표는 그 곁의 표시값이다 — 옛 계정이나 날짜 없이
-   * 들어온 것은 모자랄 수 있고, 그 줄은 「—」로 그린다(`forgeMadeAt`과 같은 결 — 0을
+   * 들어온 것은 모자랄 수 있고, 그 줄은 「—」로 그린다(0을
    * 채우면 1970년이 뜬다). 들려 보내 소모되는 것은 **가장 오래된 것**부터 빠진다.
    *
    * **서버 소유다** — 사는 경로가 서버다.
@@ -438,6 +411,27 @@ export interface AcademyState {
    * (`isInstantResearch`, 2026-09-22 둘째 지정). 되돌리기(`applyResetAcademy`)만 적는다.
    */
   instantUntil?: number;
+}
+
+/** 대장간 레벨 하나에서 끝낸 연구 — 그 레벨의 몫(Lv*L*이면 *L*개)을 한 번에 고른다 */
+export interface ForgeDone {
+  /** 이 몫을 연 대장간 레벨(1~5) — 레벨마다 하나뿐이라 사실상 키다 */
+  level: number;
+  /** 연구한 병기 id들 — 진열 순서대로 */
+  items: string[];
+  /** **끝난 시각 = 시작 + 연구 시간** (태학 `AcademyDone.doneAt`과 같은 결) */
+  doneAt: number;
+}
+
+export interface ForgeState {
+  done: ForgeDone[];
+  /** 진행 중인 연구 — **동시에 하나.** 시작 시각을 저장한다 */
+  research?: { level: number; items: string[]; startedAt: number };
+  /**
+   * **아직 축하 화면을 안 본** 병기들 — 서버가 거둘 때 넣고 `POST /forge/ack`가 비운다.
+   * 여기 든 병기는 장터에 아직 진열되지 않는다(기획자 — 축하를 본 뒤부터 진열).
+   */
+  notice?: string[];
 }
 
 /** 도적떼의 걸음. 앞의 둘이 「살아 있는」 상태다 (`raidActive()`) */

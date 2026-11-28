@@ -9,9 +9,8 @@
  *    그때 점수와 효과가 생긴다(부분 등록은 아무것도 없다).
  * 2. **장수 카드는 여분이 1장이라도 있으면** 낼 수 있고 **여분만** 쓴다 — 본체는 빠지지 않는다.
  *    카드는 풀에 있는 장수의 것뿐이라 「여분」은 `cards` 그대로다(장수 보관함은 2026-11-24에 없어졌다).
- * 3. **병기는 미지급 자루만** 낸다. 낸 자루는 `forgeOwned`에서 빠지므로 대장간의 종류당 상한
- *    (`forgeCopiesOwned`)이 저절로 「만든 수 − 낸 수」가 된다 — 따로 세는 칸이 없다.
- * 4. **아이템은 이번 판에 들려 보낼 것(`marketCarry`)을 뺀 수량**만 낸다. 가장 오래 산 것부터 빠진다.
+ * 3. **병기 · 아이템은 이번 판에 들려 보낼 것(`marketCarry`)을 뺀 수량**만 낸다. 가장 오래 산 것부터 빠진다.
+ *    병기도 장터 보관함의 낱개다(2026-11-28 대장간 연구 개편 — 그 전에는 대장간의 미지급 자루였다).
  *
  * ────────────────────────────────────────────────────────────────
  * 개인 값은 계정에, 집계 값은 서버에
@@ -25,11 +24,10 @@
  * 필드라 `PUT`으로 올리면 버려진다. 이 파일의 함수는 순수하고 시계는 밖에서 받는다.
  */
 
-import { COLLECTIONS, collectionById, equipmentById, marketItemById, officerById } from '@samchess/data';
+import { COLLECTIONS, collectionById, itemById, officerById } from '@samchess/data';
 import type { CollectionData, CollectionSlotData } from '@samchess/data';
 import type { OfficerId, RosterBonus } from '@samchess/rules';
 import { syncCity } from './city.ts';
-import { equipmentIdOfKey } from './forge.ts';
 import { carriedCount, marketHeldCount } from './market.ts';
 import type { CollectionProgress, MetaResult, PlayerProfile } from './types.ts';
 import { rejectWith } from './reject.ts';
@@ -55,15 +53,7 @@ export function spareCards(profile: PlayerProfile, officer: string): number {
   return profile.roster[officer as OfficerId] ? profile.cards[officer as OfficerId] ?? 0 : 0;
 }
 
-/** 그 병기의 **미지급** 자루 키 — 번호가 큰 것부터(먼저 만든 자루가 남는다) */
-export function spareWeaponKeys(profile: PlayerProfile, equipmentId: string): string[] {
-  return Object.entries(profile.forgeOwned)
-    .filter(([key, holder]) => holder === null && equipmentIdOfKey(key) === equipmentId)
-    .map(([key]) => key)
-    .sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
-}
-
-/** 그 아이템 중 낼 수 있는 수 — 들려 보낼 예약을 뺀다 */
+/** 그 아이템(병기 포함) 중 낼 수 있는 수 — 들려 보낼 예약을 뺀다 */
 export const spareItems = (profile: PlayerProfile, item: string): number =>
   Math.max(0, marketHeldCount(profile, item) - carriedCount(profile, item));
 
@@ -72,7 +62,7 @@ export const spareItems = (profile: PlayerProfile, item: string): number =>
  *  - `done` 등록됨 · `ready` 지금 낼 수 있음 · `blocked` 못 냄(`reason`이 이유)
  *  - `have`는 홀더에 적는 「여분 / 보유」 수
  */
-export type SlotBlock = 'noSpare' | 'notOwned' | 'equipped' | 'carried';
+export type SlotBlock = 'noSpare' | 'notOwned' | 'carried';
 export interface SlotState {
   state: 'done' | 'ready' | 'blocked';
   reason?: SlotBlock;
@@ -88,13 +78,6 @@ export function slotState(profile: PlayerProfile, c: CollectionData, index: numb
     if (have > 0) return { state: 'ready', have };
     const owned = !!profile.roster[slot.id as OfficerId];
     return { state: 'blocked', reason: owned ? 'noSpare' : 'notOwned', have };
-  }
-  if (slot.kind === 'weapon') {
-    const have = spareWeaponKeys(profile, slot.id).length;
-    if (done) return { state: 'done', have };
-    if (have > 0) return { state: 'ready', have };
-    const owned = Object.keys(profile.forgeOwned).some((k) => equipmentIdOfKey(k) === slot.id);
-    return { state: 'blocked', reason: owned ? 'equipped' : 'notOwned', have };
   }
   const have = spareItems(profile, slot.id);
   if (done) return { state: 'done', have };
@@ -169,8 +152,7 @@ export function searchCollections(
 /** 칸의 한국어 이름 — 장수 · 병기 · 아이템 */
 export function slotName(slot: CollectionSlotData): string {
   if (slot.kind === 'card') return officerById.get(slot.id)?.name ?? slot.id;
-  if (slot.kind === 'weapon') return equipmentById.get(slot.id)?.name ?? slot.id;
-  return marketItemById.get(slot.id)?.name ?? slot.id;
+  return itemById.get(slot.id)?.name ?? slot.id;
 }
 
 /** 요건을 종류별로 센다 — 목록 첫 줄의 「🂠×2 ✦×1」 */
@@ -265,7 +247,6 @@ export function canRegisterSlot(profile: PlayerProfile, id: string, index: numbe
     const why: Record<SlotBlock, string> = {
       noSpare: `${name}의 여분 카드가 없습니다`,
       notOwned: `${name}을(를) 가지고 계시지 않습니다`,
-      equipped: `${name}이(가) 모두 장수에게 지급되어 있습니다 — 대장간에서 해제해 주십시오`,
       carried: `${name}이(가) 이번 판에 들려 보낼 예정입니다`,
     };
     const slot = c.slots[index]!;
@@ -295,14 +276,6 @@ export function applyRegisterSlot(profile: PlayerProfile, id: string, index: num
     const left = (cards[slot.id as OfficerId] ?? 0) - 1;
     if (left > 0) cards[slot.id as OfficerId] = left; else delete cards[slot.id as OfficerId];
     next.cards = cards;
-  } else if (slot.kind === 'weapon') {
-    const key = spareWeaponKeys(profile, slot.id)[0]!;
-    const { [key]: _owned, ...forgeOwned } = profile.forgeOwned;
-    next.forgeOwned = forgeOwned;
-    if (profile.forgeMadeAt && key in profile.forgeMadeAt) {
-      const { [key]: _made, ...forgeMadeAt } = profile.forgeMadeAt;
-      next.forgeMadeAt = forgeMadeAt;
-    }
   } else {
     const owned = { ...profile.marketOwned };
     const left = (owned[slot.id] ?? 0) - 1;

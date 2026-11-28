@@ -41,7 +41,7 @@ import type {
   AiBattleState, BattleOutcome, BattleResult, BattleRewards, GuideChapter, GuideContext, GuideScreen, MatchOpponent, PlayerProfile, RosterPick, Squad, TutorialId, WarView, RankBoard,
 } from '@samchess/meta';
 import {
-  PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs, forgeOrderRemainingMs,
+  PRESENCE_PING_MS, aiOpponentOf, spendGrain, applyAckResearch, fightingAi, hasEmperor, researchRemainingMs, forgeResearchRemainingMs,
   raidDeadline, buildingLevel, guardsTakenBy, raidDay, raidLastCall, sortieGate,
   raidAbandonRemainingMs, raidAbandoned, raidRemainingMs, squadById, squadSlot, syncCity, pendingGuide,
 } from '@samchess/meta';
@@ -794,26 +794,26 @@ export function App(): React.JSX.Element {
   }, [research?.startedAt, research?.tactic]);
 
   /*
-   * ── 병기 제작 (2026-11-23 기획자) ─────────────────────────────────
+   * ── 대장간 연구 (2026-11-23 기획자 · 2026-11-28 연구로) ─────────────────
    *
-   * 연구와 같이 **끝나는 순간에 한 번 더 정산한다** — 1분 시계만 믿으면 대장간 밖에 있는 동안 완성이 최대 1분 늦게 잡혀,
-   * 메인의 [병기구 제작] 단추가 0:00에 멈춰 있고 대장장이도 늦게 온다. 정산은 여전히 `syncCity()` 하나다.
+   * 태학과 같이 **끝나는 순간에 한 번 더 정산한다** — 1분 시계만 믿으면 대장간 밖에 있는 동안 완료가 최대 1분 늦게 잡혀,
+   * 메인의 [병기 연구] 단추가 0:00에 멈춰 있고 대장장이도 늦게 온다. 정산은 여전히 `syncCity()` 하나다.
    * 메인에 있는 동안만 1초마다 다시 그린다(남은 시간 단추).
    */
-  const forgeOrder = profile?.forgeOrder;
+  const forgeResearch = profile?.forge?.research;
   useEffect(() => {
-    if (!forgeOrder) return;
-    const left = profile ? forgeOrderRemainingMs(profile, Date.now()) : 0;
+    if (!forgeResearch) return;
+    const left = profile ? forgeResearchRemainingMs(profile, Date.now()) : 0;
     const id = setTimeout(() => setProfileState((p) => (p ? syncCity(p, Date.now()) : p)), left + 300);
     return () => clearTimeout(id);
-  }, [forgeOrder?.startedAt, forgeOrder?.equipmentId]);
+  }, [forgeResearch?.startedAt, forgeResearch?.level]);
   const [forgeNow, setForgeNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!forgeOrder || screen.name !== 'main') return;
+    if (!forgeResearch || screen.name !== 'main') return;
     setForgeNow(Date.now());
     const id = setInterval(() => setForgeNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [forgeOrder?.startedAt, screen.name]);
+  }, [forgeResearch?.startedAt, screen.name]);
 
   const academyNotice = (profile?.academy?.notice?.length ?? 0) > 0;
   /** [확인] — 서버의 `notice`를 비운다. 못 닿으면 **화면에서만** 비운다(다음 접속에 한 번 더 뜬다) */
@@ -885,9 +885,9 @@ export function App(): React.JSX.Element {
             busy: raidBusy,
             onFight: fightRaid,
           } : null}
-          // 병기 제작 — 만드는 중이면 남은 시간, 다 됐는데 대장간에서 축하를 못 봤으면 [제작 완료]. 누르면 대장간으로(거기서 7초 축하가 뜬다)
-          forge={profile.forgeOrder
-            ? { status: 'crafting', remainingMs: forgeOrderRemainingMs(profile, forgeNow), onGo: () => setScreen({ name: 'building', building: 'forge' }) }
+          // 대장간 연구 — 연구 중이면 남은 시간, 다 됐는데 대장간에서 축하를 못 봤으면 [연구 완료]. 누르면 대장간으로(거기서 축하가 뜬다)
+          forge={profile.forge?.research
+            ? { status: 'crafting', remainingMs: forgeResearchRemainingMs(profile, forgeNow), onGo: () => setScreen({ name: 'building', building: 'forge' }) }
             : hasUnseenForged(profile) ? { status: 'done', remainingMs: 0, onGo: () => setScreen({ name: 'building', building: 'forge' }) } : null}
           onReset={() => { setProfileState(null); setScreen({ name: 'title' }); }}
           onDeleteCity={() => {

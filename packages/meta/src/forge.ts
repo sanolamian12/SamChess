@@ -1,259 +1,219 @@
 /**
- * 대장간 — 제조 · 지급 관리 (트랙 11h 이어서, 2026-09-09).
+ * 대장간 — 병기 연구 (2026-11-28 기획자 확정, `history/2026-11-28d_대장간연구개편_2_연구.md`).
  *
  * ────────────────────────────────────────────────────────────────
- * 세 가지는 이미 굳어 있다 ★
+ * 규칙 여섯
  * ────────────────────────────────────────────────────────────────
  *
- * 1. **종류당 개수는 대장간 레벨이 정한다 — 피라미드** (2026-09-14 기획 확정).
- *    종류당 최대 = `대장간 Lv − 해금 Lv + 1` — 대장간 Lv5에서 해금 Lv1 병기는 다섯 자루,
- *    … 해금 Lv5 병기는 한 자루다. 예전엔 **계정당 1개**였고 15종 가격 합 750금화가 매출
- *    상한이었다. 피라미드면 상한이 **1,495금화**로 두 배가 되지만 **최상위(해금 Lv5) 병기는
- *    종류당 1자루 그대로**라 전투력 천장은 움직이지 않는다. 황궁(도시 Lv11) 보상으로 더 여는
- *    안은 **기각했다(Lv5 동결)**. 근거는 `history/2026-09-14_도시증축조건_보관함이관_패배카드.md` §5.
- * 2. **장수 한 명은 병기 하나만 낀다** — `equipOfficer()`가 기존 것을 자동으로
- *    풀어 준다(2026-09-09 기획 확정).
- * 3. **금화를 내고 아이템을 받는 거래라 서버가 판정한다** — 이 파일의 함수들은
- *    다른 meta 함수와 똑같이 순수하지만, **부르는 자리는 클라이언트가 아니라
- *    `packages/server-api`다**(`MarketScreen.buyMaterials`와 같은 결). 지급/해제
- *    (`equipOfficer`/`unequipOfficer`)만은 총량을 안 바꾸므로 클라이언트가 직접
- *    부르고 `PUT`으로 올린다.
+ * | | |
+ * |---|---|
+ * | 단위 | **계정.** 연구한 병기는 장터 진열대에 영구히 오른다 — 사는 것 · 두는 것 · 들려 보내는 것은 장터 아이템과 같다(1회용) |
+ * | 몫 | 대장간 Lv*L*에서 **병기 *L*개**를 한 번에 고른다 — 1 + 2 + 3 + 4 + 5 = 15, Lv5면 전부 (`forgeQuota`) |
+ * | 후보 | 해금 레벨 ≤ *L*이고 아직 연구 안 한 것 — 아래 레벨에서 안 고른 것은 위 레벨에도 남는다 (`forgeCandidates`) |
+ * | 차례 | **Lv1부터 차례로** — 레벨 *L*은 1~*L*−1을 끝내고 대장간 Lv ≥ *L*일 때(태학과 같은 결) |
+ * | 진행 | **동시에 하나** · 실제 1시간 · 무료 · 취소 가능 · **되돌리기 없음** |
+ * | 진열 | 끝나면 `notice`에 들고, 대장간의 축하 화면을 **본 뒤**(`POST /forge/ack`) 장터에 진열된다 (`forgeShelf`) |
  *
- * ────────────────────────────────────────────────────────────────
- * 보유 목록의 키는 「종류」가 아니라 「자루」다 (저장 형식 v6, 2026-09-14) ★
- * ────────────────────────────────────────────────────────────────
+ * 옛 대장간(제조 · 자루 · 지급 · 종류당 피라미드)은 이 개편으로 걷었다. 옛 계정에 남은 자루는
+ * `migrateProfile()`이 장터 보관함의 낱개로 옮긴다.
  *
- * `forgeOwned`·`forgeMadeAt`의 키가 `EquipmentData.id`에서 **`{id}#{n}`**으로 바뀌었다 —
- * 같은 병기를 여러 자루 가지면 지급 대상도 제작일도 자루마다 달라야 해서다. 지급·해제·
- * 요약·서버 소유 경계(`guardServerOwned`)는 **키를 그대로 들고 다니므로 뜻이 안 바뀌었고**,
- * 키에서 병기를 찾는 자리만 `equipmentIdOfKey()`를 지난다. v5까지의 맨 id는
- * `migrateProfile()`이 `#1`로 되접는다.
- *
- * ────────────────────────────────────────────────────────────────
- * 제조 기간은 실제 경과 시간이다 ★
- * ────────────────────────────────────────────────────────────────
- *
- * Lv*n* 장비는 실제 *n*분이 걸린다 — `syncGrain`과 같은 벽시계 방식이라 시계는
- * 밖에서 넣는다(`city.ts` 머리말과 같은 이유). **끝나는 시각이 아니라 시작
- * 시각을 저장한다** — `injuredAt`과 같은 결로, 기간 상수가 나중에 바뀌어도 이미
- * 저장된 주문이 옛 규칙에 갇히지 않는다.
- *
- * **처음엔 「실제 *n*주」였다**(2026-09-09 기획 확정) — 그때는 이 저장소에 게임
- * 내 시간 개념이 없다고 보고 벽시계 주 단위로 잡았는데, 실제로는 GDD §6이
- * **「실시간 1초 = 게임 내 1일 = `time 100`」**을 이미 정해 두고 있었다. 그
- * 환산대로면 게임 내 1주가 실제 7초라 제조 대기가 아예 없어져서, 2026-09-10에
- * **게임 표기까지 「분」으로 통일**하는 쪽으로 다시 정했다 — Lv1 = 1분 … Lv5 =
- * 5분이고, 화면 글자(`forge.detail.minutesSuffix`)도 같이 바뀌었다.
+ * 순수 함수다 — 시계는 `nowMs`로 받는다(「meta에 시계를 들이지 않는다」). 부르는 자리는 서버다 —
+ * `forge`는 서버 소유 필드라(`SERVER_OWNED_FIELDS`) `PUT`으로 올리면 버려진다.
  */
 
-import { buildingById, equipmentById, equipmentForForge } from '@samchess/data';
-import type { EquipmentData } from '@samchess/data';
-import type { OfficerId } from '@samchess/rules';
+import { EQUIPMENT, buildingById, equipmentById } from '@samchess/data';
+import type { ItemData } from '@samchess/data';
 import { buildingLevel } from './city.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
-import type { MetaResult, PlayerProfile } from './types.ts';
+import type { ForgeState, MetaResult, PlayerProfile, ReasonParams } from './types.ts';
 import { rejectWith } from './reject.ts';
 
-const ONE_MINUTE_MS = 60 * 1000;
-
-/** Lv*n* 장비의 제조 기간. Lv1 = 1분, Lv2 = 2분 … (위 머리말 ★) */
-export const craftDurationMs = (unlockLevel: number): number => unlockLevel * ONE_MINUTE_MS;
+/** 한 번 연구에 드는 실제 시간 — 태학과 같은 1시간(기획자 지정). 규칙 상수는 코드에 둔다 */
+export const FORGE_RESEARCH_MINUTES = 60;
+export const FORGE_RESEARCH_MS: number = FORGE_RESEARCH_MINUTES * 60_000;
 
 /**
- * 이 계정이 `atMs`에 주문하면 걸리는 제조 기간 — 컬렉션(`forge`, −n%)을 건다 (2026-10-15).
- * 판정 시각은 **주문한 때**다(`cityBonus.ts`) — 제조 중에 완성한 컬렉션이 끝 시각을 바꾸지 않는다.
+ * 이 계정이 `startedAt`에 시작한 연구가 걸리는 시간 — 컬렉션(`forge`, −n%)을 건다. 판정 시각은
+ * **시작한 때**다(`cityBonus.ts`). 끝 시각을 묻는 자리(남은 시간 · 거두기 · `doneAt`)가 전부 이것을 지난다.
  */
-export const forgeDurationMs = (profile: PlayerProfile, unlockLevel: number, atMs: number): number =>
-  shortenMs(craftDurationMs(unlockLevel), cityBonus(profile, 'forge', atMs));
+export const forgeResearchMs = (profile: PlayerProfile, startedAt: number): number =>
+  shortenMs(FORGE_RESEARCH_MS, cityBonus(profile, 'forge', startedAt));
 
-/** 대장간 레벨. 안 지었으면 0 — `equipmentForForge(0)`이 빈 배열을 낸다 */
+/** 대장간의 최대 레벨 — 데이터가 정한다 */
+export const FORGE_MAX_LEVEL: number = buildingById.get('forge')?.maxLevel ?? 5;
+
+/** 대장간 레벨 Lv*L*에서 고르는 병기 수 — *L*개 (기획자 지정: 1 · 2 · 3 · 4 · 5 = 15 전부) */
+export const forgeQuota = (level: number): number => Math.max(0, Math.min(level, FORGE_MAX_LEVEL));
+
+/** 이 파일의 규칙이 낼 수 있는 이유 코드 — 화면 번역(`reason.{code}`)이 빠지면 테스트가 깨진다 */
+export const FORGE_REASONS = [
+  'forge.unknown', 'forge.notBuilt', 'forge.locked', 'forge.levelDone', 'forge.busy',
+  'forge.count', 'forge.notCandidate', 'forge.idle', 'forge.ended',
+] as const;
+
+const EMPTY: ForgeState = { done: [] };
+
+/** 계정의 연구 상태. **없으면 빈 상태** */
+export const forgeOf = (profile: PlayerProfile): ForgeState => profile.forge ?? EMPTY;
+
+/** 대장간 레벨. 안 지었으면 0 */
 export const forgeLevel = (profile: PlayerProfile): number => buildingLevel(profile, 'forge');
 
-// ── 자루 키 (v6) ────────────────────────────────────────────────
-
-const COPY_SEP = '#';
-
-/** 자루 키 → 병기 id. `dae-gam-do#2` → `dae-gam-do`. v5의 맨 id도 그대로 받는다 */
-export function equipmentIdOfKey(key: string): string {
-  const at = key.lastIndexOf(COPY_SEP);
-  return at < 0 ? key : key.slice(0, at);
-}
-
-/** 자루 키의 번호. 맨 id거나 번호가 이상하면 1 */
-export function copyNumberOfKey(key: string): number {
-  const at = key.lastIndexOf(COPY_SEP);
-  if (at < 0) return 1;
-  const n = Number(key.slice(at + 1));
-  return Number.isInteger(n) && n > 0 ? n : 1;
-}
-
-/** 병기 id와 번호로 자루 키를 짓는다 — 키를 짓는 자리는 이 함수 하나다 */
-export const forgeItemKey = (equipmentId: string, copy: number): string => `${equipmentId}${COPY_SEP}${copy}`;
-
-// ── 종류당 개수 (피라미드) ──────────────────────────────────────
-
-/**
- * 종류당 최대 자루 수 — `대장간 Lv − 해금 Lv + 1`, 아직 해금 전이면 0 (위 머리말 ★1).
- * 대장간 레벨 상한(5)과 해금 레벨 상한(5)이 같아 **해금 Lv5 병기는 언제나 1자루까지**다.
- */
-export const forgeCopiesAllowed = (forgeLv: number, unlockLevel: number): number =>
-  Math.max(0, forgeLv - unlockLevel + 1);
-
-/** 이미 가진 자루 수 — 진행 중인 주문은 세지 않는다(그건 `forgeOrder`가 따로 본다) */
-export function forgeCopiesOwned(profile: PlayerProfile, equipmentId: string): number {
-  return Object.keys(profile.forgeOwned).filter((k) => equipmentIdOfKey(k) === equipmentId).length;
+/** 연구를 끝낸 병기 id 전부 — 축하를 아직 안 본 것까지 */
+export function researchedWeapons(profile: PlayerProfile): Set<string> {
+  return new Set(forgeOf(profile).done.flatMap((d) => d.items));
 }
 
 /**
- * 지금 살 수 있는 병기 — 해금됐고 **종류당 상한에 아직 안 닿은** 것만. 진행 중인 주문도
- * 한 자루로 센다 — 주문이 끝나 들어올 자루까지 합쳐 상한을 넘으면 목록에 뜨면 안 된다.
+ * **장터 진열대에 오른 병기** — 연구를 끝내고 축하 화면까지 본 것. 해금 레벨 · 진열 순서대로.
+ * 장터 레벨과는 무관하다(기획자 확정 — 장터 레벨은 장터 자체 아이템만 막는다).
  */
-export function craftableEquipment(profile: PlayerProfile): EquipmentData[] {
-  const lv = forgeLevel(profile);
-  return equipmentForForge(lv).filter((e) => {
-    const pending = profile.forgeOrder?.equipmentId === e.id ? 1 : 0;
-    return forgeCopiesOwned(profile, e.id) + pending < forgeCopiesAllowed(lv, e.unlockLevel);
-  });
+export function forgeShelf(profile: PlayerProfile): ItemData[] {
+  const f = forgeOf(profile);
+  const unseen = new Set(f.notice ?? []);
+  const done = new Set(f.done.flatMap((d) => d.items));
+  return EQUIPMENT.filter((e) => done.has(e.id) && !unseen.has(e.id))
+    .sort((a, b) => a.unlockLevel - b.unlockLevel || a.order - b.order);
 }
 
-/** 보유 자루 / 지급된 수 / 미지급 수 — 화면이 직접 세지 않는다 */
-export function forgeSummary(profile: PlayerProfile): { owned: number; assigned: number; spare: number } {
-  const owned = Object.keys(profile.forgeOwned).length;
-  const assigned = Object.values(profile.forgeOwned).filter((v) => v !== null).length;
-  return { owned, assigned, spare: owned - assigned };
+/** 진열대에 올랐나 — 장터 구매 판정이 부른다 */
+export const onForgeShelf = (profile: PlayerProfile, item: string): boolean =>
+  forgeShelf(profile).some((e) => e.id === item);
+
+/** 아직 안 끝낸 가장 낮은 레벨. 다 끝냈으면 `FORGE_MAX_LEVEL + 1` */
+function firstUndone(f: ForgeState): number {
+  let level = 1;
+  while (level <= FORGE_MAX_LEVEL && f.done.some((d) => d.level === level)) level++;
+  return level;
 }
 
-export function canStartForgeOrder(profile: PlayerProfile, equipmentId: string): MetaResult {
-  const item = equipmentById.get(equipmentId);
-  if (!item) return { ok: false, reason: `알 수 없는 장비입니다 — ${equipmentId}` };
-  const lv = forgeLevel(profile);
-  if (item.unlockLevel > lv) {
-    return { ok: false, reason: `대장간 Lv${item.unlockLevel}이 필요합니다 — 지금 Lv${lv}`, code: 'forge.locked', params: { need: item.unlockLevel, have: lv } };
+/**
+ * 대장간 Lv`level`에서 고를 수 있는 병기 — 해금 레벨이 그 이하이고 **아직 연구 안 한 것**
+ * (진행 중인 것도 뺀다). 해금 레벨 · 진열 순서대로.
+ */
+export function forgeCandidates(profile: PlayerProfile, level: number): ItemData[] {
+  const f = forgeOf(profile);
+  const taken = new Set([...f.done.flatMap((d) => d.items), ...(f.research?.items ?? [])]);
+  return EQUIPMENT.filter((e) => e.unlockLevel <= level && !taken.has(e.id))
+    .sort((a, b) => a.unlockLevel - b.unlockLevel || a.order - b.order);
+}
+
+/**
+ * **[연구하기]가 열 레벨.**
+ *
+ * | `state` | 뜻 |
+ * |---|---|
+ * | `open` | 이 레벨의 몫을 고를 수 있다 |
+ * | `researching` | 이 레벨을 연구 중이다 |
+ * | `locked` | 앞은 다 끝냈는데 대장간이 이 레벨이 아니다 |
+ * | `allDone` | 다섯 레벨을 다 끝냈다(병기 열다섯 전부) |
+ * | `notBuilt` | 대장간이 없다 |
+ */
+export type ForgeNext =
+  | { state: 'open' | 'locked'; level: number }
+  | { state: 'researching'; level: number; items: string[] }
+  | { state: 'allDone' | 'notBuilt' };
+
+export function nextForgeResearch(profile: PlayerProfile): ForgeNext {
+  const have = forgeLevel(profile);
+  if (have < 1) return { state: 'notBuilt' };
+  const f = forgeOf(profile);
+  if (f.research) return { state: 'researching', level: f.research.level, items: [...f.research.items] };
+  const level = firstUndone(f);
+  if (level > FORGE_MAX_LEVEL) return { state: 'allDone' };
+  return { state: level <= have ? 'open' : 'locked', level };
+}
+
+/** 진행 중인 연구의 남은 시간(ms). 끝났거나 없으면 0 */
+export function forgeResearchRemainingMs(profile: PlayerProfile, nowMs: number): number {
+  const r = forgeOf(profile).research;
+  return r ? Math.max(0, r.startedAt + forgeResearchMs(profile, r.startedAt) - nowMs) : 0;
+}
+
+/**
+ * 고른 병기들로 연구를 시작할 수 있나 — **그 레벨의 몫과 정확히 같은 수**, 겹침 없이, 전부 후보여야 한다.
+ * 레벨은 고른 것에서 짐작하지 않고 `nextForgeResearch()`가 정한 레벨이다(화면이 다음 레벨 하나만 보여 준다).
+ */
+export function canStartForgeResearch(profile: PlayerProfile, items: readonly string[]): MetaResult {
+  const have = forgeLevel(profile);
+  if (have < 1) return no('대장간을 아직 짓지 않으셨습니다', 'notBuilt');
+  const f = forgeOf(profile);
+  if (f.research) return no('이미 다른 연구가 진행 중입니다', 'busy');
+  const level = firstUndone(f);
+  if (level > FORGE_MAX_LEVEL) return no('모든 병기의 연구를 마치셨습니다', 'levelDone', { level: FORGE_MAX_LEVEL });
+  if (level > have) return no(`대장간 Lv${level}이 필요합니다 — 지금 Lv${have}`, 'locked', { need: level, have });
+  for (const id of items) {
+    if (!equipmentById.has(id)) return no(`알 수 없는 병기입니다 — ${id}`, 'unknown');
   }
-  const allowed = forgeCopiesAllowed(lv, item.unlockLevel);
-  if (forgeCopiesOwned(profile, equipmentId) >= allowed) {
-    const maxed = lv >= (buildingById.get('forge')?.maxLevel ?? lv);
-    return {
-      ok: false,
-      reason: maxed
-        ? `${item.name}은 ${allowed}자루까지만 만드실 수 있습니다`
-        : `${item.name}은 대장간 Lv${lv}에서 ${allowed}자루까지입니다 — 대장간을 올리시면 더 만드실 수 있습니다`,
-      code: maxed ? 'forge.maxCopies' : 'forge.moreCopies',
-      params: { equipment: equipmentId, n: allowed, lv },
-    };
+  const quota = forgeQuota(level);
+  if (new Set(items).size !== items.length || items.length !== quota) {
+    return no(`대장간 Lv${level}에서는 병기 ${quota}개를 고르셔야 합니다`, 'count', { level, n: quota });
   }
-  if (profile.forgeOrder) return { ok: false, reason: '이미 다른 병기를 제조 중입니다', code: 'forge.busy' };
-  if (profile.gold < item.gold) return { ok: false, reason: `금화가 모자랍니다 — ${profile.gold}/${item.gold}`, code: 'market.notEnoughGold', params: { have: profile.gold, need: item.gold } };
+  const open = new Set(forgeCandidates(profile, level).map((e) => e.id));
+  const bad = items.find((id) => !open.has(id));
+  if (bad) return no(`지금 고를 수 없는 병기입니다 — ${bad}`, 'notCandidate', { equipment: bad });
   return { ok: true };
 }
 
-/**
- * 주문을 시작한다 — 금화를 내고 시작 시각을 찍는다. **부르는 자리는 서버다**(위 §3).
- *
- * **확정이 곧 결제이고 되돌리는 길은 없다** (2026-09-25 기획자 확정). 예전엔 완성 전
- * 언제든 취소하면 전액 환불했는데(`applyCancelForgeOrder`, `POST /forge/cancel`) 통째로
- * 걷어 냈다. 「금화는 오직 결제로만 생긴다」와 같은 날 정한 것이다 — 금화를 **돌려주는**
- * 길이 하나라도 있으면 그 길마다 「어디서 냈던 금화인가」를 따져야 하고, 「마지막 1분만
- * 취소 불가」 같은 중간안은 예치 상태를 금화를 쓰는 자리 전부에 퍼뜨린다. 대신 화면이
- * **확정 전에 한 번 묻고 「취소·환불되지 않는다」고 알린다**(`ForgeScreen`의 주문 확인).
- */
-export function applyStartForgeOrder(profile: PlayerProfile, equipmentId: string, nowMs: number): PlayerProfile {
-  const check = canStartForgeOrder(profile, equipmentId);
+/** 연구를 시작한다 — 시작 시각을 찍는다. 무료다. **부르는 자리는 서버다**(`POST /forge/research`) */
+export function applyStartForgeResearch(profile: PlayerProfile, items: readonly string[], nowMs: number): PlayerProfile {
+  const check = canStartForgeResearch(profile, items);
   if (!check.ok) rejectWith(check);
-  const item = equipmentById.get(equipmentId)!;
+  const f = forgeOf(profile);
+  // 진열 순서로 적는다 — 고른 순서는 뜻이 없고, 같은 고름이 늘 같은 값이어야 되접기 · 비교가 곧다
+  const order = forgeCandidates(profile, firstUndone(f)).map((e) => e.id);
+  const sorted = [...items].sort((a, b) => order.indexOf(a) - order.indexOf(b));
   return {
     ...profile,
-    gold: profile.gold - item.gold,
-    forgeOrder: { equipmentId, startedAt: nowMs },
+    forge: { ...f, research: { level: firstUndone(f), items: sorted, startedAt: Math.floor(nowMs) } },
   };
 }
 
-/** 진행 중인 주문이 끝나기까지 남은 시간(ms). 주문이 없거나 이미 끝났으면 0 — 난수 없는 표시 전용 값 */
-export function forgeOrderRemainingMs(profile: PlayerProfile, nowMs: number): number {
-  const order = profile.forgeOrder;
-  const item = order && equipmentById.get(order.equipmentId);
-  if (!order || !item) return 0;
-  return Math.max(0, order.startedAt + forgeDurationMs(profile, item.unlockLevel, order.startedAt) - nowMs);
+export function canCancelForgeResearch(profile: PlayerProfile): MetaResult {
+  return forgeOf(profile).research ? { ok: true } : no('진행 중인 연구가 없습니다', 'idle');
 }
 
 /**
- * 제작일이 없는 보유 병기에 **지금 시각을 찍는다** (2026-09-11).
- *
- * 제작일(`forgeMadeAt`)은 이 필드가 생기기 전에 만든 병기에는 없다. 진짜
- * 제작일은 **아무 데도 안 남아 있어 되살릴 수 없고**, 그렇다고 지어낸 과거를
- * 적으면 화면이 거짓을 말한다 — 「기록을 시작한 시각」을 적는 쪽이 정직하다.
- * 한 번 찍히면 다시는 안 바뀐다(이미 있는 값은 안 건드린다).
- *
- * `syncCity()`가 부르는 자리 하나이고, 그래서 시각을 인자로 받는다
- * (`collectForgeOrder()`와 같은 규약).
+ * 진행 중인 연구를 그만둔다 — **무료라 잃는 것이 없다**. 그 레벨은 다시 `open`이 되어 다른 병기를 고를 수 있다.
+ * 이미 끝난 연구는 취소가 아니다(`syncCity()`가 먼저 거둔다 — 서버 경로는 `getProfile()`이 늘 먼저 정산한다).
  */
-export function stampForgeDates(profile: PlayerProfile, nowMs: number): PlayerProfile {
-  const made = profile.forgeMadeAt ?? {};
-  const missing = Object.keys(profile.forgeOwned).filter((key) => !made[key]);
-  if (missing.length === 0) return profile;
-  const next = { ...made };
-  for (const key of missing) next[key] = nowMs;
-  return { ...profile, forgeMadeAt: next };
-}
-
-/** 이 병기의 비어 있는 가장 작은 번호 — 되접기로 번호가 비어도 새 자루가 그 자리를 채운다 */
-function nextCopy(profile: PlayerProfile, equipmentId: string): number {
-  let n = 1;
-  while (forgeItemKey(equipmentId, n) in profile.forgeOwned) n += 1;
-  return n;
+export function applyCancelForgeResearch(profile: PlayerProfile, nowMs: number): PlayerProfile {
+  const check = canCancelForgeResearch(profile);
+  if (!check.ok) rejectWith(check);
+  if (forgeResearchRemainingMs(profile, nowMs) <= 0) rejectWith({ reason: '이미 끝난 연구는 취소하실 수 없습니다', code: 'forge.ended' });
+  const { research: _drop, ...rest } = forgeOf(profile);
+  return { ...profile, forge: rest };
 }
 
 /**
- * 끝난 주문을 거둔다 — 완성됐으면 **새 자루 키로** 미지급 상태로 `forgeOwned`에 넣고 주문을
- * 지운다. 아직이면 그대로 돌려준다(같은 참조 — `syncCity()`가 「바뀐 게 없으면 같은
- * 객체」를 지키는 것과 같은 결). **`city.ts`의 `syncCity()`가 이 함수를 부르는
- * 하나의 자리다** — 서버(`getProfile()`)도 클라이언트(로컬 폴백)도 따로 부르지
- * 않는다.
+ * 끝난 연구를 거둔다 — `done`으로 옮기고 `notice`에 넣는다. 아직이면 **같은 객체**를 돌려준다
+ * (`syncCity()`의 「바뀐 게 없으면 같은 참조」 규약). **`syncCity()`가 이 함수를 부르는 하나의 자리다.**
+ * `doneAt`은 정산 시각이 아니라 **시작 + 연구 시간**이다(태학과 같은 결).
  */
-export function collectForgeOrder(profile: PlayerProfile, nowMs: number): PlayerProfile {
-  const order = profile.forgeOrder;
-  if (!order) return profile;
-  if (forgeOrderRemainingMs(profile, nowMs) > 0) return profile;
-  const key = forgeItemKey(order.equipmentId, nextCopy(profile, order.equipmentId));
-  const item = equipmentById.get(order.equipmentId);
-  // 제작일은 **거둔 시각이 아니라 다 된 시각**(시작 + 제작 기간)이다 (2026-11-23). 거둔 시각을 적으면 화면(로컬 정산)과 서버가 각자 「지금」을 찍어
-  // 같은 자루의 제작일이 갈렸다 — 대장간 완성 알림의 「봤다」 열쇠가 그 값을 쓰므로(`client/forgeSeen.ts`) 대장장이가 같은 자루를 두 번 불렀다
-  const madeAt = item ? order.startedAt + forgeDurationMs(profile, item.unlockLevel, order.startedAt) : nowMs;
-  const { forgeOrder: _drop, ...rest } = profile;
+export function collectForgeResearch(profile: PlayerProfile, nowMs: number): PlayerProfile {
+  const f = profile.forge;
+  const r = f?.research;
+  if (!f || !r) return profile;
+  const doneAt = r.startedAt + forgeResearchMs(profile, r.startedAt);
+  if (doneAt > nowMs) return profile;
+  const { research: _drop, ...rest } = f;
   return {
-    ...rest,
-    forgeOwned: { ...profile.forgeOwned, [key]: null },
-    // 제작일은 **여기 한 번만** 찍힌다 — 지급·해제는 이 값을 안 건드린다
-    forgeMadeAt: { ...profile.forgeMadeAt, [key]: madeAt },
+    ...profile,
+    forge: {
+      ...rest,
+      done: [...f.done.filter((d) => d.level !== r.level), { level: r.level, items: [...r.items], doneAt }],
+      notice: [...new Set([...(f.notice ?? []), ...r.items])],
+    },
   };
 }
 
-/**
- * 장수에게 병기 한 자루를 지급한다. **대상 장수가 이미 다른 것을 끼고 있으면 자동으로
- * 풀어 준다**(2026-09-09 기획 확정 — 장수당 슬롯 하나). `itemKey`는 자루 키다.
- */
-export function equipOfficer(profile: PlayerProfile, itemKey: string, officer: OfficerId): PlayerProfile {
-  const forgeOwned = { ...profile.forgeOwned };
-  for (const [key, holder] of Object.entries(forgeOwned)) {
-    if (holder === officer) forgeOwned[key] = null;
-  }
-  forgeOwned[itemKey] = officer;
-  return { ...profile, forgeOwned };
+/** 축하 화면을 봤다 — `notice`를 비운다. 그때부터 장터에 진열된다. 비어 있으면 같은 객체 */
+export function applyAckForge(profile: PlayerProfile): PlayerProfile {
+  const f = profile.forge;
+  if (!f?.notice?.length) return profile;
+  const { notice: _drop, ...rest } = f;
+  return { ...profile, forge: rest };
 }
 
-/** 지급을 해제한다 — 그 자루만 미지급으로 되돌린다 */
-export function unequipOfficer(profile: PlayerProfile, itemKey: string): PlayerProfile {
-  if (!(itemKey in profile.forgeOwned)) return profile;
-  return { ...profile, forgeOwned: { ...profile.forgeOwned, [itemKey]: null } };
-}
-
-/** 장수 하나가 지금 낀 자루의 키. 없으면 `undefined` */
-export function equippedKey(profile: PlayerProfile, officer: OfficerId): string | undefined {
-  return Object.entries(profile.forgeOwned).find(([, holder]) => holder === officer)?.[0];
-}
-
-/** 장수 하나가 지금 낀 병기. 없으면 `undefined` — 장수 카드·일람 등에서 쓴다 */
-export function equippedBy(profile: PlayerProfile, officer: OfficerId): EquipmentData | undefined {
-  const key = equippedKey(profile, officer);
-  return key ? equipmentById.get(equipmentIdOfKey(key)) : undefined;
-}
+const no = (reason: string, code: string, params?: ReasonParams): MetaResult =>
+  ({ ok: false, reason, code: `forge.${code}`, ...(params ? { params } : {}) });

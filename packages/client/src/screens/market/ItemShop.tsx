@@ -17,31 +17,29 @@
  * **사는 것은 한 요청이다**(`POST /market/items`) — 장바구니가 한 칸일 뿐 길은 같다.
  *
  * ────────────────────────────────────────────────────────────────
- * 지급은 「병기 또는 아이템 하나」다 — 되묻는 이유
+ * 진열대는 장터 품목 + 대장간이 연구한 병기다 — 되묻는 이유
  * ────────────────────────────────────────────────────────────────
  *
- * 장수 한 명은 하나만 든다(GDD §6.5). 이미 병기를 받았거나 다른 아이템을 든 장수에게
- * 주면 **병기는 대장간으로, 아이템은 보관함으로** 돌아간다(85쪽 — 기획자 지정). 조용히
- * 벗기면 「병기가 어디 갔지」가 남으므로 한 번 묻는다(대장간의 교체 확인과 같은 결).
- * `marketCarry`·`forgeOwned`의 지급 칸은 클라이언트 소유라 로컬로 바꾸고 `PUT`으로 올린다
- * (대장간 지급과 같은 길).
+ * 진열대는 `shelfOf()`(장터 레벨이 여는 품목 + 연구하고 축하까지 본 병기, 2026-11-28). 사고 나면 둘 다 보관함의 1회용 낱개다.
+ * 장수 한 명은 하나만 든다(GDD §6.5). 이미 다른 것을 든 장수에게 주면 든 것은 보관함으로 돌아간다 — 조용히
+ * 바꾸면 「어디 갔지」가 남으므로 한 번 묻는다. `marketCarry`는 클라이언트 소유라 로컬로 바꾸고 `PUT`으로 올린다.
  */
 
 import { useRef, useState } from 'react';
-import { marketItemById } from '@samchess/data';
-import type { MarketItemData } from '@samchess/data';
+import { itemById } from '@samchess/data';
+import type { ItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canBuyMarketBasket, canCarryItem, carryItem, equippedBy, equippedKey,
-  marketCapacity, marketItemsOf, marketOwnedCount, marketUnits, uncarryItem, unequipOfficer,
+  canBuyMarketBasket, canCarryItem, carryItem,
+  marketCapacity, marketOwnedCount, marketUnits, shelfOf, uncarryItem,
 } from '@samchess/meta';
 import type { MarketBasket, PlayerProfile } from '@samchess/meta';
 import { Say } from '../Steward.tsx';
 import { buyMarketItemsOnServer } from '../../meta/city.ts';
 import { t } from '../../i18n/index.ts';
 import { reasonText } from '../../i18n/reason.ts';
-import { pickEquipName, pickMarketItemName, pickMarketItemText, pickOfficerNameById } from '../../i18n/story.ts';
-import { formatMade } from '../ForgeScreen.tsx';
+import { pickOfficerNameById } from '../../i18n/story.ts';
+import { formatMade, isForged, itemImage, itemName, itemText } from '../itemText.ts';
 import { OfficerPickModal } from '../OfficerListScreen.tsx';
 import { Pager } from '../PagerButton.tsx';
 import { PageArrow } from '../PageArrow.tsx';
@@ -49,7 +47,7 @@ import { useSteadyPage } from '../useSteadyPage.ts';
 import { useAllLangLayout } from '../useAllLangLayout.ts';
 import { ConfirmModal, GoldCost, Layer } from './parts.tsx';
 import { Celebrate } from '../Celebrate.tsx';
-import { BlinkGlow, itemBlink } from '../BlinkGlow.tsx';
+import { BlinkGlow, equipBlink, itemBlink } from '../BlinkGlow.tsx';
 import type { ServerCall } from './parts.tsx';
 import { GameIcon } from '../GameIcon.tsx';
 
@@ -57,12 +55,12 @@ import { GameIcon } from '../GameIcon.tsx';
 const PAGE = 3;
 
 /** 아이템 그림 — 검정 바탕 위에 원래 크기 그대로, 금빛 밧줄 액자(`ui/frame-gold-2.png`)를 씌운다 */
-function ItemArt({ item }: { item: MarketItemData }): React.JSX.Element {
+function ItemArt({ item }: { item: ItemData }): React.JSX.Element {
   return (
     <span className="c-art">
-      {/* 섬광 — 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛 (2026-10-23) */}
-      <BlinkGlow tone={itemBlink(item.unlockLevel)} className="mkt-item-glow" />
-      <img src={`market-items/${item.id}.png`} alt="" />
+      {/* 섬광 — 최고 레벨 금 · 그 아래 자주 · 나머지 흰 별빛 (2026-10-23). 병기는 대장간의 섬광 */}
+      <BlinkGlow tone={isForged(item) ? equipBlink(item.unlockLevel) : itemBlink(item.unlockLevel)} className="mkt-item-glow" />
+      <img src={itemImage(item)} alt="" />
     </span>
   );
 }
@@ -77,7 +75,7 @@ function BuyLabel({ gold }: { gold: number }): React.JSX.Element {
 }
 
 /** 타입 칩 — 사용(액티브) / 지속(패시브). 금빛 두루마리 판 위에 글자색으로 가른다 */
-function KindChip({ item }: { item: MarketItemData }): React.JSX.Element {
+function KindChip({ item }: { item: ItemData }): React.JSX.Element {
   return (
     <span className="mkt-item-kind" data-kind={item.kind}>
       {/* 좁은 칩 — 아이콘이 글자를 대신한다(사용 = 폭약, 지속 = 부적. 이름은 올리면) */}
@@ -120,7 +118,7 @@ const strokeOf = (gold: number): number => (gold >= 16 ? 8 : gold >= 8 ? 6 : gol
  * 나란히, 그 밑 효과는 그림 오른쪽 종이 폭 전부를 쓴다 (2026-11-27 기획자 — 가격 띠가 오른쪽 칸을 따로 먹던 것을 걷었다)
  */
 function ItemCard({ item, locked, busy, onClick, measure }: {
-  item: MarketItemData; locked: boolean; busy: boolean; onClick?: () => void;
+  item: ItemData; locked: boolean; busy: boolean; onClick?: () => void;
   /** 다국어 높이를 재는 숨은 사본 — 누를 수 없고 검사 · 안내가 고르지 않게 `data-action`을 안 단다 */
   measure?: boolean;
 }): React.JSX.Element {
@@ -136,9 +134,9 @@ function ItemCard({ item, locked, busy, onClick, measure }: {
       onClick={onClick}
     >
       <ItemArt item={item} />
-      <span className="mkt-item-nm">{pickMarketItemName(item)}</span>
+      <span className="mkt-item-nm">{itemName(item)}</span>
       <span className="mkt-pack-price" data-stroke={strokeOf(item.gold)} data-field="price"><GoldCost gold={item.gold} times /></span>
-      <span className="mkt-item-fx">{pickMarketItemText(item)}</span>
+      <span className="mkt-item-fx">{itemText(item)}</span>
     </button>
   );
 }
@@ -152,13 +150,13 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
 }): React.JSX.Element {
   const [page, setPage] = useState(0);
   /** 누른 카드 — 곧장 「구매할까요?」 판이 뜬다(2026-11-27 기획자 — 체크 · [결제하기]를 걷었다) */
-  const [asking, setAsking] = useState<MarketItemData | null>(null);
+  const [asking, setAsking] = useState<ItemData | null>(null);
   /** 막힌 카드를 눌렀을 때 내관이 하는 말 — 누를 때마다 다시 선다(용병 시장 · 도시 물자와 같은 몸짓) */
   const [why, setWhy] = useState<{ text: string; code: string } | null>(null);
   /** 막 산 아이템 — 금화 분수 → 금테 메달 무대(`ItemBoughtDone`, 2026-11-27 기획자) */
-  const [bought, setBought] = useState<MarketItemData | null>(null);
+  const [bought, setBought] = useState<ItemData | null>(null);
   const now = Date.now();
-  const items = marketItemsOf(profile);
+  const items = shelfOf(profile);
   const pageCount = Math.max(1, Math.ceil(items.length / PAGE));
   const cur = Math.min(page, pageCount - 1);
   const rows = items.slice(cur * PAGE, cur * PAGE + PAGE);
@@ -178,9 +176,9 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
   const storeEmpty = marketOwnedCount(profile) === 0;
 
   /** 한 개짜리 주문 — 사는 길은 그대로 한 요청(`POST /market/items`)이고 장바구니가 한 칸일 뿐이다 */
-  const one = (item: MarketItemData): MarketBasket => ({ [item.id]: 1 });
+  const one = (item: ItemData): MarketBasket => ({ [item.id]: 1 });
 
-  const ask = (item: MarketItemData): void => {
+  const ask = (item: ItemData): void => {
     if (busy) return;
     const can = canBuyMarketBasket(profile, one(item), now);
     if (!can.ok) { setWhy({ text: reasonText(can), code: can.code ?? 'refused' }); return; }
@@ -188,7 +186,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
     setAsking(item);
   };
 
-  const pay = (item: MarketItemData): void => {
+  const pay = (item: ItemData): void => {
     const order = one(item);
     run(() => buyMarketItemsOnServer(order), () => {
       setAsking(null);
@@ -243,7 +241,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
       {/* 「구매할까요?」 — 그림 · 이름 · 효과, 값은 [구매 (🪙 × n)] 단추 안에 (도시 물자의 확인 판과 같은 짜임) */}
       {asking && (
         <ConfirmModal
-          title={pickMarketItemName(asking)}
+          title={itemName(asking)}
           field="itemAsk"
           className="mkt-item-ask"
           okLabel={<BuyLabel gold={asking.gold} />}
@@ -252,7 +250,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
           onClose={() => setAsking(null)}
         >
           <span className="mkt-item-ask-art"><ItemArt item={asking} /></span>
-          <p className="mkt-confirm-lead" data-field="itemAskWhat">{pickMarketItemText(asking)}</p>
+          <p className="mkt-confirm-lead" data-field="itemAskWhat">{itemText(asking)}</p>
           <p className="mkt-confirm-ask">{t('market.confirm.ask')}</p>
           <Say text={askCan && !askCan.ok ? reasonText(askCan) : null} level={profile.cityLevel} name="itemAskWhy" />
         </ConfirmModal>
@@ -271,7 +269,7 @@ export function ItemShop({ profile, busy, run, onStorage, onBack }: {
  * 작은 메달 + 이름(획의 색은 해금 레벨). 단추 없이 아무 데나 누르면 닫힌다 — 보관함은 판 밑 [보관함으로]가 맡는다.
  * 검사가 거는 이름 — `data-modal="bought"` · 줄 `data-field="doneItem"` · 누름 칸 `data-action="boughtClose"`.
  */
-function ItemBoughtDone({ item, onClose }: { item: MarketItemData; onClose: () => void }): React.JSX.Element {
+function ItemBoughtDone({ item, onClose }: { item: ItemData; onClose: () => void }): React.JSX.Element {
   return (
     <Celebrate modal="bought" intro="coins" tier="small" className="itm-done" title={t('market.bought.title')}
       art={<img className="cel-art-img" src="ui/cel-stock.png" alt="" />}
@@ -279,7 +277,7 @@ function ItemBoughtDone({ item, onClose }: { item: MarketItemData; onClose: () =
       tone={itemBlink(item.unlockLevel)} okAction="boughtClose" onClose={onClose}>
       <p className="lvd-row itm-done-row" data-field="doneItem" data-item={item.id} data-level={item.unlockLevel}>
         <img className="frg-done-medal" src={`market-items/medal-${item.id}.png`} alt="" />
-        <b>{pickMarketItemName(item)}</b>
+        <b>{itemName(item)}</b>
       </p>
       <p className="row dim">{t('market.bought.hint')}</p>
     </Celebrate>
@@ -321,37 +319,33 @@ export function ItemStorage({ profile, onChange, onBack }: {
   const cur = Math.min(page, pageCount - 1);
   const shown = useSteadyPage(listRef, cur, pageCount, [JSON.stringify(units)]);
   const rows = units.slice(shown * STORAGE_PAGE, shown * STORAGE_PAGE + STORAGE_PAGE);
-  const pickedItem = picked ? marketItemById.get(picked) : undefined;
+  const pickedItem = picked ? itemById.get(picked) : undefined;
 
-  /** 실제로 준다 — 들고 있던 병기는 대장간으로(지급 해제), 아이템은 갈아 끼우면 저절로 보관함으로 */
+  /** 실제로 준다 — 들고 있던 것은 갈아 끼우면 저절로 보관함으로 */
   const give = (officer: OfficerId): void => {
     if (!picked) return;
     const can = canCarryItem(profile, officer, picked);
     if (!can.ok) { setNote(reasonText(can)); setPicked(null); setSwap(null); return; }
-    const key = equippedKey(profile, officer);
-    const next = carryItem(key ? unequipOfficer(profile, key) : profile, officer, picked);
-    onChange(next);
-    setNote(t('market.storage.given', { officer: pickOfficerNameById(officer, officer), item: pickMarketItemName(pickedItem!) }));
+    onChange(carryItem(profile, officer, picked));
+    setNote(t('market.storage.given', { officer: pickOfficerNameById(officer, officer), item: itemName(pickedItem!) }));
     setSwap(null);
     setPicked(null);
   };
 
   const pickOfficer = (officer: OfficerId): void => {
-    const hasWeapon = !!equippedBy(profile, officer);
     const carrying = profile.marketCarry?.[officer];
     // 들고 있는 것이 없거나 **바로 그 아이템**이면 안 묻는다 — 잃는 것이 없다
-    if (!hasWeapon && (!carrying || carrying === picked)) { give(officer); return; }
+    if (!carrying || carrying === picked) { give(officer); return; }
     setSwap(officer);
   };
 
   const swapWhat = swap ? (() => {
-    const weapon = equippedBy(profile, swap);
     const item = profile.marketCarry?.[swap];
-    const itemData = item ? marketItemById.get(item) : undefined;
-    return weapon ? pickEquipName(weapon) : itemData ? pickMarketItemName(itemData) : '';
+    const itemData = item ? itemById.get(item) : undefined;
+    return itemData ? itemName(itemData) : '';
   })() : '';
 
-  const revokingItem = revoking ? marketItemById.get(profile.marketCarry?.[revoking] ?? '') : undefined;
+  const revokingItem = revoking ? itemById.get(profile.marketCarry?.[revoking] ?? '') : undefined;
 
   return (
     <>
@@ -370,7 +364,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
             </div>
             <div className="mkt-irows">
               {rows.map((u, i) => {
-                const item = marketItemById.get(u.item)!;
+                const item = itemById.get(u.item)!;
                 return (
                   <div
                     className="mkt-irow mkt-srow"
@@ -380,7 +374,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
                     data-holder={u.holder ?? undefined}
                   >
                     <ItemArt item={item} />
-                    <span className="c-nm">{pickMarketItemName(item)}</span>
+                    <span className="c-nm">{itemName(item)}</span>
                     <span className="c-kd"><KindChip item={item} /></span>
                     <span className="c-made" data-field="bought">{formatMade(u.boughtAt)}</span>
                     <span className="c-hold" data-field="holder" data-state={u.holder ? 'assigned' : 'idle'}>
@@ -397,7 +391,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
                         </button>
                       )}
                     </span>
-                    <span className="c-fx">{pickMarketItemText(item)}</span>
+                    <span className="c-fx">{itemText(item)}</span>
                   </div>
                 );
               })}
@@ -421,7 +415,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
         <OfficerPickModal
           profile={profile}
           onChange={onChange}
-          title={t('market.storage.pickTitle', { item: pickMarketItemName(pickedItem) })}
+          title={t('market.storage.pickTitle', { item: itemName(pickedItem) })}
           onPick={pickOfficer}
           onClose={() => setPicked(null)}
           pageSize={6}
@@ -455,7 +449,7 @@ export function ItemStorage({ profile, onChange, onBack }: {
           <p className="mkt-confirm-lead">
             {t('market.storage.revokeAsk', {
               officer: pickOfficerNameById(revoking, revoking),
-              item: revokingItem ? pickMarketItemName(revokingItem) : '',
+              item: revokingItem ? itemName(revokingItem) : '',
             })}
           </p>
         </ConfirmModal>

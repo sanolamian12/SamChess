@@ -354,8 +354,6 @@ export function guideLines(id: GuideId, profile: PlayerProfile): GuideLine[] {
         { text: t('guide.market.merc.1'), spot: 'pullDoor' },
         { text: t('guide.market.merc.2'), spot: 'surplusDoor' },
       ];
-    case 'market.open':
-      return [{ text: t('guide.market.open.1', { honor }), spot: 'itemsDoor' }];
     case 'market.storage':
       return [
         { text: t('guide.market.storage.1') },

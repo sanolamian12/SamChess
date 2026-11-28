@@ -1,7 +1,7 @@
 /**
  * 시장 아이템 낱개 추적표의 **계획** — 순수 함수(DB · 시계 없음). 설명과 쓰는 자리는 `marketItems.ts`.
  */
-import { marketItemById } from '@samchess/data';
+import { itemById } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 
 export type UnitStatus = 'held' | 'inPlay' | 'used' | 'removed';
@@ -146,7 +146,7 @@ export function planUnits(
       const added: string[] = [];
       for (let i = held.length; i < wantHeld; i++) {
         if (origin === 'buy') {
-          const price = marketItemById.get(item)?.gold ?? 0;
+          const price = itemById.get(item)?.gold ?? 0;
           const row = mint(item, 'held', 'buy', { price, goldBefore: gold, goldAfter: gold - price, boughtAt: dates.at(-(wantHeld - i)) ?? null });
           gold -= price;
           bought += price;

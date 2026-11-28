@@ -1,260 +1,174 @@
 /**
- * 대장간 회귀 — 제조 · 지급 · 서버 소유 경계 (2026-09-09, 피라미드·자루 키 2026-09-14).
+ * 대장간 연구 회귀 (2026-11-28 기획자 확정 — `history/2026-11-28d_대장간연구개편_2_연구.md`).
  *
  * 여기서 고정하는 것.
- *  - **종류당 개수 = 대장간 Lv − 해금 Lv + 1** — 상한에 닿으면 목록에서 빠지고 주문을 거부한다.
- *    **해금 Lv5 병기는 대장간 Lv5에서도 한 자루**다(Lv5 동결, 기획 확정)
- *  - **제조 슬롯은 하나** — 진행 중에는 다른 주문을 못 넣고, 진행 중인 주문도 한 자루로 센다
- *  - **완성된 자루는 새 번호로 들어온다** — 같은 병기 두 자루가 따로 지급된다
- *  - **장수당 슬롯은 하나** — 다른 병기를 낀 장수를 고르면 자동으로 갈아 끼운다
- *  - **v5의 맨 id는 `#1`로 되접히고 두 번 지나도 같다** (저장 형식 v6)
- *  - **`forgeOwned`는 키(보유)만 서버가 지키고 값(지급)은 클라이언트가 바꾼다**,
- *    `forgeOrder`는 통째로 서버가 지킨다 — `guardServerOwned()`가 그 경계다
+ *  - **몫은 대장간 레벨 수** — Lv1 1 · 2 · 3 · 4 · 5 = 15, Lv5를 다 끝내면 병기 열다섯 전부
+ *  - **후보는 해금 레벨 ≤ L이고 아직 안 한 것** — 아래 레벨에서 안 고른 것이 위 레벨에도 남는다
+ *  - **차례로** — 앞 레벨을 끝내야 다음, 대장간 레벨이 모자라면 잠긴다
+ *  - **동시에 하나 · 1시간 · 취소 가능 · 무료** — 취소하면 그 레벨을 다시 고른다
+ *  - **진열은 축하를 본 뒤** — 거두면 `notice`, `applyAckForge`가 비우면 `forgeShelf`에 오른다
+ *  - **되접기** — 옛 자루 · 주문은 보관함의 낱개로, 연구 상태는 모양이 어긋난 줄만 버린다, 두 번 지나도 같다
+ *  - **`forge`는 서버 소유** — `PUT`으로 「끝났다」를 적어도 서버 값이 남는다
  */
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { EQUIPMENT } from '@samchess/data';
-import type { OfficerId } from '@samchess/rules';
 import {
-  applyStartForgeOrder, canStartForgeOrder,
-  collectForgeOrder, craftDurationMs, craftableEquipment, createProfile, equipOfficer,
-  equippedBy, equippedKey, forgeCopiesAllowed, forgeItemKey, forgeSummary, guardServerOwned,
-  migrateProfile, toRosterEntries, unequipOfficer,
+  FORGE_MAX_LEVEL, FORGE_RESEARCH_MS, applyAckForge, applyCancelForgeResearch, applyStartForgeResearch,
+  canStartForgeResearch, collectForgeResearch, createProfile, forgeCandidates, forgeQuota, forgeResearchRemainingMs,
+  forgeShelf, guardServerOwned, migrateProfile, nextForgeResearch, researchedWeapons, syncCity,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
 
 const T0 = 1_700_000_000_000;
+const H = FORGE_RESEARCH_MS;
 
-function forge(over: Partial<PlayerProfile> = {}): PlayerProfile {
+function smith(forgeLv = 5, over: Partial<PlayerProfile> = {}): PlayerProfile {
   const p = createProfile('대장간성', 3);
-  return { ...p, gold: 1000, buildings: { ...p.buildings, forge: 5 }, ...over };
+  return { ...p, buildings: { ...p.buildings, forge: forgeLv }, ...over };
 }
 
-const LV1_WEAPON = EQUIPMENT.find((e) => e.group === 'weapon' && e.unlockLevel === 1)!;
-const LV2_WEAPON = EQUIPMENT.find((e) => e.group === 'weapon' && e.unlockLevel === 2)!;
-const LV4_ITEM = EQUIPMENT.find((e) => e.unlockLevel === 4)!;
-const LV5_ITEM = EQUIPMENT.find((e) => e.unlockLevel === 5)!;
-const K1 = forgeItemKey(LV1_WEAPON.id, 1);
-const K1B = forgeItemKey(LV1_WEAPON.id, 2);
-const K2 = forgeItemKey(LV2_WEAPON.id, 1);
+/** 다음 레벨의 후보 앞에서부터 몫만큼 골라 연구하고 끝까지 거둔 뒤 축하를 본다 */
+function finishNext(p: PlayerProfile, at: number): PlayerProfile {
+  const next = nextForgeResearch(p);
+  assert.equal(next.state, 'open');
+  const level = (next as { level: number }).level;
+  const pick = forgeCandidates(p, level).slice(0, forgeQuota(level)).map((e) => e.id);
+  return applyAckForge(collectForgeResearch(applyStartForgeResearch(p, pick, at), at + H));
+}
 
-describe('가격 총량과 종류당 개수 (2026-09-14 피라미드)', () => {
-  // ⚠ 피라미드는 대장간 연구 개편(2026-11-28)에서 걷힌다 — 병기가 1회용 장터 상품이 되어 가격 합이 87이 됐다
-  it('15종 가격 합은 87이고, 대장간 Lv5의 피라미드 매출 상한은 176금화다', () => {
-    assert.equal(EQUIPMENT.reduce((n, e) => n + e.gold, 0), 87);
-    const cap = EQUIPMENT.reduce((n, e) => n + e.gold * forgeCopiesAllowed(5, e.unlockLevel), 0);
-    assert.equal(cap, 176);
+describe('몫과 후보', () => {
+  it('몫은 1 · 2 · 3 · 4 · 5 — 합이 병기 수(15)와 같다', () => {
+    assert.deepEqual([1, 2, 3, 4, 5].map(forgeQuota), [1, 2, 3, 4, 5]);
+    assert.equal([1, 2, 3, 4, 5].reduce((n, l) => n + forgeQuota(l), 0), EQUIPMENT.length);
+    assert.equal(FORGE_MAX_LEVEL, 5);
   });
 
-  it('종류당 개수 = 대장간 Lv − 해금 Lv + 1 — 해금 Lv5는 대장간 Lv5에서도 한 자루다(동결) ★', () => {
-    assert.equal(forgeCopiesAllowed(5, 1), 5);
-    assert.equal(forgeCopiesAllowed(5, 5), 1);
-    assert.equal(forgeCopiesAllowed(3, 1), 3);
-    assert.equal(forgeCopiesAllowed(3, 4), 0, '아직 해금 전이면 0');
-  });
-});
-
-describe('제조 (대장간)', () => {
-  it('대장간 레벨이 낮으면 목록에 안 뜨고 주문도 거부한다', () => {
-    const p = forge({ buildings: { ...forge().buildings, forge: 0 } });
-    assert.equal(craftableEquipment(p).length, 0);
-    assert.equal(canStartForgeOrder(p, LV1_WEAPON.id).ok, false);
-  });
-
-  it('상한 전까지는 같은 병기를 또 만들고, 닿으면 목록에서 빠지고 거부한다 ★', () => {
-    // 대장간 Lv5에서 해금 Lv4는 두 자루
-    const one = forge({ forgeOwned: { [forgeItemKey(LV4_ITEM.id, 1)]: null } });
-    assert.ok(craftableEquipment(one).some((e) => e.id === LV4_ITEM.id), '한 자루면 아직 뜬다');
-    assert.equal(canStartForgeOrder(one, LV4_ITEM.id).ok, true);
-
-    const two = forge({
-      forgeOwned: { [forgeItemKey(LV4_ITEM.id, 1)]: null, [forgeItemKey(LV4_ITEM.id, 2)]: null },
-    });
-    assert.ok(!craftableEquipment(two).some((e) => e.id === LV4_ITEM.id), '두 자루면 빠진다');
-    assert.equal(canStartForgeOrder(two, LV4_ITEM.id).ok, false);
+  it('후보 수는 3 · 5 · 6 · 6 · 5 — 앞 레벨에서 안 고른 것이 남는다', () => {
+    let p = smith();
+    const counts: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const level = (nextForgeResearch(p) as { level: number }).level;
+      counts.push(forgeCandidates(p, level).length);
+      p = finishNext(p, T0 + i * 2 * H);
+    }
+    assert.deepEqual(counts, [3, 5, 6, 6, 5]);
+    assert.equal(researchedWeapons(p).size, 15, 'Lv5까지 끝내면 열다섯 전부');
+    assert.equal(nextForgeResearch(p).state, 'allDone');
+    assert.equal(forgeShelf(p).length, 15);
   });
 
-  it('해금 Lv5 병기는 한 자루면 끝이다 — 대장간이 만렙이라 「올리면 더」를 말하지 않는다', () => {
-    const owned = forge({ forgeOwned: { [forgeItemKey(LV5_ITEM.id, 1)]: null } });
-    const check = canStartForgeOrder(owned, LV5_ITEM.id);
-    if (check.ok) assert.fail('해금 Lv5 두 번째 자루는 거부해야 한다');
-    assert.ok(!check.reason.includes('올리시면'), `만렙인데 더 올리라고 한다: "${check.reason}"`);
-  });
-
-  it('대장간이 낮으면 상한도 낮다 — 올리면 더 만들 수 있다고 말한다', () => {
-    const low = forge({ buildings: { ...forge().buildings, forge: 1 }, forgeOwned: { [K1]: null } });
-    const check = canStartForgeOrder(low, LV1_WEAPON.id);
-    if (check.ok) assert.fail('대장간 Lv1에서 해금 Lv1은 한 자루까지다');
-    assert.ok(check.reason.includes('올리시면'), `이유가 다음 길을 안 알려 준다: "${check.reason}"`);
-  });
-
-  it('진행 중인 주문도 한 자루로 센다 — 끝나 들어올 것까지 합쳐 상한을 넘지 않는다', () => {
-    const p = forge({
-      forgeOwned: { [forgeItemKey(LV4_ITEM.id, 1)]: null },
-      forgeOrder: { equipmentId: LV4_ITEM.id, startedAt: T0 },
-    });
-    assert.ok(!craftableEquipment(p).some((e) => e.id === LV4_ITEM.id));
-  });
-
-  it('금화가 모자라면 거부하고, 충분하면 정확히 그만큼 깎고 주문을 찍는다', () => {
-    const poor = forge({ gold: LV1_WEAPON.gold - 1 });
-    assert.equal(canStartForgeOrder(poor, LV1_WEAPON.id).ok, false);
-
-    const rich = forge({ gold: 100 });
-    const started = applyStartForgeOrder(rich, LV1_WEAPON.id, T0);
-    assert.equal(started.gold, 100 - LV1_WEAPON.gold);
-    assert.deepEqual(started.forgeOrder, { equipmentId: LV1_WEAPON.id, startedAt: T0 });
-  });
-
-  it('제조 슬롯은 하나 — 진행 중에 다른 주문을 못 넣는다', () => {
-    const started = applyStartForgeOrder(forge(), LV1_WEAPON.id, T0);
-    assert.equal(canStartForgeOrder(started, LV2_WEAPON.id).ok, false);
-  });
-
-  it('확정하면 금화는 끝이다 — 완성으로 거둘 때도 금화는 한 푼도 안 돌아온다 ★', () => {
-    // 취소·환불 경로는 2026-09-25에 없앴다(`applyStartForgeOrder` 머리말). 남은 길은
-    // 「기다려서 병기를 받는다」 하나라, 그 길이 금화를 되돌리지 않는지를 고정한다
-    const started = applyStartForgeOrder(forge({ gold: 100 }), LV1_WEAPON.id, T0);
-    const done = collectForgeOrder(started, T0 + craftDurationMs(LV1_WEAPON.unlockLevel));
-    assert.equal(started.gold, 100 - LV1_WEAPON.gold);
-    assert.equal(done.gold, started.gold);
-  });
-
-  it('기간 전엔 같은 객체, 기간 후엔 **새 번호로** 정확히 한 번만 거둔다 ★', () => {
-    const started = applyStartForgeOrder(forge({ forgeOwned: { [K1]: null } }), LV1_WEAPON.id, T0);
-    const dur = craftDurationMs(LV1_WEAPON.unlockLevel);
-    assert.equal(dur, 60 * 1000, 'Lv1 = 실제 1분');
-
-    const early = collectForgeOrder(started, T0 + dur - 1);
-    assert.equal(early, started, '아직이면 같은 참조를 돌려준다');
-
-    const done = collectForgeOrder(started, T0 + dur);
-    assert.equal(done.forgeOrder, undefined);
-    assert.equal(done.forgeOwned[K1B], null, '두 번째 자루는 #2로, 미지급 상태로 들어간다');
-    assert.equal(done.forgeMadeAt?.[K1B], T0 + dur, '제작일도 그 자루에 붙는다');
-    assert.equal(Object.keys(done.forgeOwned).length, 2, '첫 자루를 덮어쓰지 않는다');
-
-    const again = collectForgeOrder(done, T0 + dur + 1);
-    assert.equal(again, done, '주문이 없으면 다시 거둬도 그대로다(멱등)');
+  it('고른 수가 몫과 다르거나 겹치거나 후보가 아니면 거부한다', () => {
+    const p = smith();
+    const [a, b] = forgeCandidates(p, 1);
+    const code = (r: ReturnType<typeof canStartForgeResearch>) => (r.ok ? 'ok' : r.code);
+    assert.equal(code(canStartForgeResearch(p, [])), 'forge.count');
+    assert.equal(code(canStartForgeResearch(p, [a!.id, b!.id])), 'forge.count');
+    const lv2 = EQUIPMENT.find((e) => e.unlockLevel === 2)!;
+    assert.equal(code(canStartForgeResearch(p, [lv2.id])), 'forge.notCandidate', 'Lv1 몫에 Lv2 병기');
+    assert.equal(code(canStartForgeResearch(p, ['no-such'])), 'forge.unknown');
+    assert.equal(code(canStartForgeResearch(p, [a!.id])), 'ok');
+    const two = finishNext(p, T0);
+    const left = forgeCandidates(two, 2).map((e) => e.id);
+    assert.equal(code(canStartForgeResearch(two, [left[0]!, left[0]!])), 'forge.count', '겹침');
   });
 });
 
-describe('지급 · 해제', () => {
-  it('장수당 슬롯 하나 — 이미 낀 병기가 있으면 자동으로 갈아 끼운다', () => {
-    const p = forge();
-    const [a, b] = Object.keys(p.roster) as OfficerId[];
-    assert.ok(a && b && a !== b);
-
-    const withOwned = { ...p, forgeOwned: { [K1]: null, [K2]: null } };
-    const first = equipOfficer(withOwned, K1, a!);
-    assert.equal(first.forgeOwned[K1], a);
-
-    const swapped = equipOfficer(first, K2, a!);
-    assert.equal(swapped.forgeOwned[K2], a, '새 병기가 그 장수에게 붙는다');
-    assert.equal(swapped.forgeOwned[K1], null, '옛 병기는 자동으로 풀린다');
-    assert.equal(equippedBy(swapped, a!)?.id, LV2_WEAPON.id);
+describe('차례 · 진행 · 취소', () => {
+  it('대장간이 없으면 notBuilt, 레벨이 모자라면 locked', () => {
+    assert.equal(nextForgeResearch(smith(0)).state, 'notBuilt');
+    const p = finishNext(smith(1), T0);
+    assert.deepEqual(nextForgeResearch(p), { state: 'locked', level: 2 });
+    const pick = forgeCandidates(p, 2).slice(0, 2).map((e) => e.id);
+    const r = canStartForgeResearch(p, pick);
+    assert.equal(r.ok === false && r.code, 'forge.locked');
   });
 
-  it('같은 병기 두 자루를 서로 다른 장수에게 따로 준다 ★', () => {
-    const p = forge();
-    const [a, b] = Object.keys(p.roster) as OfficerId[];
-    const withTwo = { ...p, forgeOwned: { [K1]: null, [K1B]: null } };
-    const both = equipOfficer(equipOfficer(withTwo, K1, a!), K1B, b!);
-    assert.equal(both.forgeOwned[K1], a, '첫 자루는 그대로다');
-    assert.equal(both.forgeOwned[K1B], b);
-    assert.equal(equippedBy(both, b!)?.id, LV1_WEAPON.id, '키에서 병기를 찾는다');
-    assert.equal(equippedKey(both, b!), K1B);
+  it('동시에 하나 — 1시간 뒤 거두고, 그 전에는 같은 객체', () => {
+    const p = smith();
+    const id = forgeCandidates(p, 1)[0]!.id;
+    const going = applyStartForgeResearch(p, [id], T0);
+    assert.deepEqual(nextForgeResearch(going), { state: 'researching', level: 1, items: [id] });
+    const busy = canStartForgeResearch(going, [id]);
+    assert.equal(busy.ok === false && busy.code, 'forge.busy');
+    assert.equal(forgeResearchRemainingMs(going, T0 + 1000), H - 1000);
+    assert.equal(collectForgeResearch(going, T0 + H - 1), going);
+    const done = syncCity(going, T0 + H + 5);
+    assert.deepEqual(done.forge, { done: [{ level: 1, items: [id], doneAt: T0 + H }], notice: [id] });
   });
 
-  it('해제는 그 자루만 미지급으로 되돌린다', () => {
-    const p = forge();
-    const [a] = Object.keys(p.roster) as OfficerId[];
-    const withOwned = { ...p, forgeOwned: { [K1]: null } };
-    const equipped = equipOfficer(withOwned, K1, a!);
-    const unequipped = unequipOfficer(equipped, K1);
-    assert.equal(unequipped.forgeOwned[K1], null);
+  it('취소는 무료이고 그 레벨을 다시 고른다 — 끝난 연구는 취소가 아니다', () => {
+    const p = smith();
+    const [a, b] = forgeCandidates(p, 1);
+    const going = applyStartForgeResearch(p, [a!.id], T0);
+    const back = applyCancelForgeResearch(going, T0 + 10);
+    assert.deepEqual(nextForgeResearch(back), { state: 'open', level: 1 });
+    assert.equal(back.gold, p.gold);
+    assert.equal(canStartForgeResearch(back, [b!.id]).ok, true);
+    assert.throws(() => applyCancelForgeResearch(going, T0 + H), /이미 끝난/);
+    assert.throws(() => applyCancelForgeResearch(p, T0), /진행 중인 연구가 없/);
   });
 
-  it('forgeSummary가 보유 자루·지급·여유를 화면 대신 센다', () => {
-    const p = forge();
-    const [a] = Object.keys(p.roster) as OfficerId[];
-    const withOwned = { ...p, forgeOwned: { [K1]: null, [K1B]: null, [K2]: null } };
-    const one = equipOfficer(withOwned, K1, a!);
-    assert.deepEqual(forgeSummary(one), { owned: 3, assigned: 1, spare: 2 });
+  it('고른 순서와 상관없이 진열 순서로 적는다', () => {
+    const p = finishNext(smith(), T0);
+    const c = forgeCandidates(p, 2).map((e) => e.id);
+    const a = applyStartForgeResearch(p, [c[3]!, c[1]!], T0);
+    assert.deepEqual(a.forge?.research?.items, [c[1], c[3]]);
   });
 });
 
-describe('되접기 (저장 형식 v6)', () => {
-  it('v5의 맨 id는 #1로 되접고 지급·제작일도 따라온다 — 두 번 지나도 같다 ★', () => {
-    const p = forge();
-    const [a] = Object.keys(p.roster) as OfficerId[];
-    const v5 = JSON.parse(JSON.stringify(p)) as Record<string, unknown>;
-    v5['version'] = 5;
-    v5['forgeOwned'] = { [LV1_WEAPON.id]: a, [LV2_WEAPON.id]: null };
-    v5['forgeMadeAt'] = { [LV1_WEAPON.id]: T0 };
-
-    const once = migrateProfile(v5)!;
-    assert.deepEqual(once.forgeOwned, { [K1]: a, [K2]: null });
-    assert.deepEqual(once.forgeMadeAt, { [K1]: T0 });
-
-    const twice = migrateProfile(JSON.parse(JSON.stringify(once)))!;
-    assert.deepEqual(twice.forgeOwned, once.forgeOwned);
-    assert.deepEqual(twice.forgeMadeAt, once.forgeMadeAt);
+describe('진열 — 축하를 본 뒤부터', () => {
+  it('거둔 병기는 notice에 있고 진열대에 없다. 축하를 보면 오른다', () => {
+    const p = smith();
+    const id = forgeCandidates(p, 1)[0]!.id;
+    const done = collectForgeResearch(applyStartForgeResearch(p, [id], T0), T0 + H);
+    assert.ok(researchedWeapons(done).has(id));
+    assert.deepEqual(forgeShelf(done), []);
+    const seen = applyAckForge(done);
+    assert.deepEqual(forgeShelf(seen).map((e) => e.id), [id]);
+    assert.equal(applyAckForge(seen), seen, '볼 것이 없으면 같은 객체');
   });
 });
 
-describe('서버 소유 경계 (`guardServerOwned`)', () => {
-  it('forgeOrder는 통째로 서버 값을 지킨다 — 클라이언트가 지어내도 사라진다', () => {
-    const current = forge({ forgeOrder: { equipmentId: LV1_WEAPON.id, startedAt: T0 } });
-    const incoming = { ...current, forgeOrder: { equipmentId: LV2_WEAPON.id, startedAt: T0 + 1 } };
-    const guarded = guardServerOwned(incoming, current);
-    assert.deepEqual(guarded.forgeOrder, current.forgeOrder);
+describe('되접기 · 서버 소유', () => {
+  it('옛 자루 · 진행 중이던 제조는 보관함의 낱개가 되고 두 번 지나도 같다', () => {
+    const raw = {
+      ...smith(),
+      forgeOwned: { 'dae-gam-do#1': 'gwan-u', 'dae-gam-do#2': null, 'su-geuk': null, 'no-such#1': null },
+      forgeOrder: { equipmentId: 'du-mu', startedAt: T0 },
+      marketOwned: { 'dae-gam-do': 1 },
+    };
+    const once = migrateProfile(JSON.parse(JSON.stringify(raw)))!;
+    assert.deepEqual(once.marketOwned, { 'dae-gam-do': 3, 'su-geuk': 1, 'du-mu': 1 });
+    assert.equal('forgeOwned' in once, false);
+    assert.equal('forgeOrder' in once, false);
+    assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(once))), once);
   });
 
-  it('forgeOwned는 키(보유 자루)만 지키고 값(지급 대상)은 클라이언트 것을 받는다', () => {
-    const [a, b] = Object.keys(forge().roster) as OfficerId[];
-    const current = forge({ forgeOwned: { [K1]: null } });
-    // 클라이언트가 지급을 바꾸고(정당), 없던 자루를 하나 지어냈다(부정 — 같은 병기 둘째 자루)
-    const incoming = { ...current, forgeOwned: { [K1]: a!, [K1B]: b! } };
-    const guarded = guardServerOwned(incoming, current);
-    assert.equal(guarded.forgeOwned[K1], a, '지급 변경은 통과한다');
-    assert.equal(K1B in guarded.forgeOwned, false, '없던 자루는 되살지 않는다');
-  });
-});
+  it('연구 상태는 JSON 왕복을 지나도 남고, 모양이 어긋난 줄만 버린다', () => {
+    const p = finishNext(finishNext(smith(), T0), T0 + 2 * H);
+    const going = applyStartForgeResearch(p, forgeCandidates(p, 3).slice(0, 3).map((e) => e.id), T0 + 4 * H);
+    assert.deepEqual(migrateProfile(JSON.parse(JSON.stringify(going)))!.forge, going.forge);
 
-describe('지급한 병기가 전투로 실린다 — `RosterEntry.held` (2026-09-23) ★', () => {
-  // **2026-09-23 이전에는 안 실렸다.** `toRosterEntries()`가 `equippedBy()`를
-  // 안 불러, 금화를 내고 만들어 지급한 병기가 화면에만 뜨고 전투에서 아무 일도
-  // 안 했다. 시장 아이템이 같은 칸을 다투는 사이라 길을 하나로 놓으며 닫았다.
-  const withOfficer = (): { profile: PlayerProfile; officer: OfficerId } => {
-    const p = forge();
-    const officer = Object.keys(p.roster)[0] as OfficerId;
-    return { profile: p, officer };
-  };
-
-  it('안 지급했으면 `held`가 없고, 지급하면 병기 id가 실린다', () => {
-    const { profile, officer } = withOfficer();
-    const picks = [{ piece: 'King' as const, officer }];
-
-    const bare = toRosterEntries(profile, picks);
-    assert.equal(bare[0]!.held, undefined, '맨손이면 키째로 없다');
-
-    const armed = equipOfficer({ ...profile, forgeOwned: { [K1]: null } }, K1, officer);
-    assert.equal(toRosterEntries(armed, picks)[0]!.held, LV1_WEAPON.id,
-      '자루 키(`{id}#{n}`)가 아니라 **병기 id**가 실린다');
+    const lv5 = EQUIPMENT.find((e) => e.unlockLevel === 5)!.id;
+    const broken = migrateProfile({
+      ...JSON.parse(JSON.stringify(smith())),
+      forge: {
+        done: [
+          { level: 1, items: ['dae-gam-do'], doneAt: T0 },
+          { level: 2, items: [lv5, 'su-geuk'], doneAt: T0 },          // Lv2 몫에 Lv5 병기 — 버린다
+          { level: 3, items: ['dae-gam-do', 'su-geuk', 'du-mu'], doneAt: T0 },   // 앞 줄과 겹친다 — 버린다
+        ],
+        notice: ['dae-gam-do', lv5],
+      },
+    })!;
+    assert.deepEqual(broken.forge, { done: [{ level: 1, items: ['dae-gam-do'], doneAt: T0 }], notice: ['dae-gam-do'] });
   });
 
-  it('갈아 끼우면 실리는 것도 따라 바뀌고, 해제하면 사라진다', () => {
-    const { profile, officer } = withOfficer();
-    const picks = [{ piece: 'King' as const, officer }];
-    const p1 = equipOfficer({ ...profile, forgeOwned: { [K1]: null, [K2]: null } }, K1, officer);
-    assert.equal(toRosterEntries(p1, picks)[0]!.held, LV1_WEAPON.id);
-
-    const p2 = equipOfficer(p1, K2, officer);
-    assert.equal(toRosterEntries(p2, picks)[0]!.held, LV2_WEAPON.id, '장수당 칸은 하나다');
-
-    const p3 = unequipOfficer(p2, K2);
-    assert.equal(toRosterEntries(p3, picks)[0]!.held, undefined);
+  it('PUT으로 「끝났다」를 적어도 서버 값이 남는다', () => {
+    const current = smith();
+    const greedy: PlayerProfile = { ...current, forge: { done: [{ level: 1, items: ['bang-cheon-hwa-geuk'], doneAt: 0 }] } };
+    assert.equal(guardServerOwned(greedy, current).forge, undefined);
   });
 });

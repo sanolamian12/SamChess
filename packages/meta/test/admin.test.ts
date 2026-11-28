@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   ADJUST_BATCH_MAX, ADJUST_LIMITS, BUILD_CITY_LEVEL, addCard, adjustPermission, adjustmentsOfAudit, batchPermissions, buildingLevel,
-  grantUsage, isGrant, parseMailDraft, poolCap, poolUsed, syncCity, applyAdjustment, carryItem, changedProfileFields, createProfile, equipOfficer, forgeItemKey, grainCap,
+  grantUsage, isGrant, parseMailDraft, poolCap, poolUsed, syncCity, applyAdjustment, carryItem, changedProfileFields, createProfile, grainCap,
   parseAdjustment, parseAdjustmentBatch, AI_BATTLES_MAX, battleWinsOf, upgradeChecklist,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -89,27 +89,19 @@ describe('시장 아이템', () => {
   });
 });
 
-describe('병기', () => {
-  it('비어 있는 가장 작은 번호로 들어오고 제작일이 찍힌다', () => {
+describe('병기 (2026-11-28 — 장터 보관함의 낱개)', () => {
+  it('지급은 보관함에 낱개로 들고 지급 시각이 구매일 자리에 찍힌다', () => {
     const p = applyAdjustment(fresh(), { kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 2 }, NOW);
-    const k1 = forgeItemKey('dae-gam-do', 1);
-    const k2 = forgeItemKey('dae-gam-do', 2);
-    assert.deepEqual(Object.keys(p.forgeOwned).sort(), [k1, k2]);
-    assert.equal(p.forgeMadeAt?.[k1], NOW);
-    // 1번을 거두면 다음 지급이 1번 자리를 채운다
-    const holed = applyAdjustment(p, { kind: 'equipmentRevoke', key: k1 }, NOW);
-    assert.equal(k1 in holed.forgeOwned, false);
-    assert.equal(k1 in (holed.forgeMadeAt ?? {}), false);
-    const refilled = applyAdjustment(holed, { kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 1 }, NOW + 5);
-    assert.equal(refilled.forgeMadeAt?.[k1], NOW + 5);
+    assert.equal(p.marketOwned?.['dae-gam-do'], 2);
+    assert.deepEqual(p.marketBoughtAt?.['dae-gam-do'], [NOW, NOW]);
   });
 
-  it('장수가 끼고 있으면 못 거둔다', () => {
+  it('거두는 것은 아이템의 음수와 같다 — 들려 보낼 예정인 것은 못 거둔다', () => {
     const base = applyAdjustment(fresh(), { kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 1 }, NOW);
-    const key = forgeItemKey('dae-gam-do', 1);
-    const p = equipOfficer(base, key, firstOfficer(base));
-    assert.throws(() => applyAdjustment(p, { kind: 'equipmentRevoke', key }, NOW), /끼고 있다/);
-    assert.throws(() => applyAdjustment(p, { kind: 'equipmentRevoke', key: 'no-such#1' }, NOW), /그런 자루가 없다/);
+    const p = carryItem(base, firstOfficer(base), 'dae-gam-do');
+    assert.throws(() => applyAdjustment(p, { kind: 'item', item: 'dae-gam-do', delta: -1 }, NOW), /들려 보낼/);
+    const back = applyAdjustment(base, { kind: 'item', item: 'dae-gam-do', delta: -1 }, NOW);
+    assert.equal(back.marketOwned?.['dae-gam-do'], undefined);
   });
 });
 

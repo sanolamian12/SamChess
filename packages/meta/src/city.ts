@@ -38,7 +38,7 @@ import { BUILDINGS, CITY_LEVELS, CITY_RULES, ECONOMY, buildingById, officerById 
 import type { BuildingId } from '@samchess/data';
 import { battleWinsOf } from './wins.ts';
 import type { OfficerId } from '@samchess/rules';
-import { collectForgeOrder, stampForgeDates } from './forge.ts';
+import { collectForgeResearch } from './forge.ts';
 import { collectResearch } from './academy.ts';
 import { cityBonus, shortenMs } from './cityBonus.ts';
 import { ownedOfficers } from './profile.ts';
@@ -484,13 +484,8 @@ export function syncCity(profile: PlayerProfile, nowMs: number): PlayerProfile {
   const busy = (next.hospitalBusy ?? []).filter((t) => t > now);
   if (busy.length !== (next.hospitalBusy ?? []).length) next = { ...next, hospitalBusy: busy };
 
-  // 끝난 대장간 주문을 거둔다 — 군량·부상·병원과 같은 자리(`forge.ts`의
-  // `collectForgeOrder()` 참조). 여기 말고는 아무도 이 함수를 안 부른다.
-  next = collectForgeOrder(next, now);
-  // 제작일이 없는 옛 병기에 「기록을 시작한 시각」을 찍는다(`stampForgeDates`
-  // 주석 참조) — 거둔 **뒤**라, 방금 거둔 것은 이미 제 시각을 갖고 있다
-  next = stampForgeDates(next, now);
-  // 끝난 태학 연구를 거둔다 — 대장간 주문과 같은 자리(`academy.ts`의 `collectResearch()`)
+  // 끝난 대장간 · 태학 연구를 거둔다 — 군량·부상·병원과 같은 자리. 여기 말고는 아무도 이 두 함수를 안 부른다
+  next = collectForgeResearch(next, now);
   next = collectResearch(next, now);
 
   return next;

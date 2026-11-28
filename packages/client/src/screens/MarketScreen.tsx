@@ -243,7 +243,7 @@ function MarketStatus({ profile }: { profile: PlayerProfile }): React.JSX.Elemen
       </span>
       <span className="mkt-cur mkt-stock" data-field="items">
         <GameIcon name="mk-storage" label={t('market.status.items')} />
-        <b className="v">{lv < 2 ? <span className="mkt-merc-cards">{t('market.status.items.none')}</span> : `${marketOwnedCount(profile)}/${marketCapacity(profile)}`}</b>
+        <b className="v">{lv < MARKET_ITEM_MIN_LEVEL ? <span className="mkt-merc-cards">{t('market.status.items.none')}</span> : `${marketOwnedCount(profile)}/${marketCapacity(profile)}`}</b>
       </span>
     </section>
   );

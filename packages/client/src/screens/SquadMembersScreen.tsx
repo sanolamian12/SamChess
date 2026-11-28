@@ -39,11 +39,12 @@
  */
 
 import { useMemo, useState } from 'react';
-import { equipmentById, marketItemById, officerById } from '@samchess/data';
+import { itemById, officerById } from '@samchess/data';
+import type { ItemData } from '@samchess/data';
 import {
-  PIECE_TYPES, canCarryItem, carriedCount, carryItem, equipOfficer, equipmentIdOfKey, equippedKey, firstSquadPending,
+  PIECE_TYPES, canCarryItem, carriedCount, carryItem, firstSquadPending,
   garrisonMissionPending, heldFor, isInjured, marketHeldCount, marketUnits, officerRankRows, pendingGuide, remapDeployment, saveSquadSlot,
-  squadById, squadSlot, teamSize, uncarryItem, unequipOfficer, validateSquad,
+  squadById, squadSlot, teamSize, uncarryItem, validateSquad,
 } from '@samchess/meta';
 import { Say } from './Steward.tsx';
 import { guidesEnabled } from './guideScript.ts';
@@ -111,12 +112,11 @@ function slotsOf(squad: Squad): Slot[] {
 }
 
 /**
- * 지닌 것 바꾸기 — **고른 차례대로** 쌓는다(병기 한 자루가 이 장수에서 저 장수로 옮겨 가므로 차례가 뜻을 갖는다).
- * `none`은 회수(병기 · 아이템 둘 다), `weapon`은 자루 키(`forgeOwned`의 키), `item`은 장터 아이템 id
+ * 지닌 것 바꾸기 — **고른 차례대로** 쌓는다(보관함의 남은 수가 차례에 따라 달라진다).
+ * `none`은 회수, `item`은 보관함의 아이템 id — 병기도 보관함의 1회용 아이템이다(2026-11-28 대장간 연구 개편)
  */
 export type HeldOp =
   | { officer: OfficerId; kind: 'none' }
-  | { officer: OfficerId; kind: 'weapon'; key: string }
   | { officer: OfficerId; kind: 'item'; item: string };
 
 /** 초안 — 부대원 · 배치(만들 때의 부대원과 함께) · 방침 · 아이템 */
@@ -134,16 +134,17 @@ const picksOf = (slots: readonly Slot[]): RosterPick[] =>
 
 /**
  * **초안을 계정에 얹는다** — 화면이 보는 「저장하면 이렇게 된다」(`work`)와 [저장]이 같은 함수다.
- * 부대 칸은 `saveSquadSlot`(덜 찬 부대도 · 부대원이 없으면 비운다). 지닌 것은 **한 장수에 하나**(GDD §6.5) — 병기를 주면 든 아이템은 보관함으로,
- * 아이템을 주면 낀 병기는 대장간으로(장터 보관함 · 대장간 지급과 같은 규칙). 병기는 그 자루를 쥔 다른 장수에게서 옮겨 온다(`equipOfficer`)
+ * 부대 칸은 `saveSquadSlot`(덜 찬 부대도 · 부대원이 없으면 비운다). 지닌 것은 **한 장수에 하나**(GDD §6.5) — 다른 것을 주면 든 것은 보관함으로 돌아간다
  */
 export function applyHeld(profile: PlayerProfile, op: HeldOp): PlayerProfile {
-  const key = equippedKey(profile, op.officer);
-  if (op.kind === 'none') return uncarryItem(key ? unequipOfficer(profile, key) : profile, op.officer);
-  if (op.kind === 'weapon') return op.key in profile.forgeOwned ? equipOfficer(uncarryItem(profile, op.officer), op.key, op.officer) : profile;
+  if (op.kind === 'none') return uncarryItem(profile, op.officer);
   if (profile.marketCarry?.[op.officer] === op.item || !canCarryItem(profile, op.officer, op.item).ok) return profile;
-  return carryItem(key ? unequipOfficer(profile, key) : profile, op.officer, op.item);
+  return carryItem(profile, op.officer, op.item);
 }
+
+/** 아이템의 이름 · 효과 — 장터 품목이든 병기든 같은 규약(`nameI18n?.[lang] ?? name`)이라 갈래를 안 가른다 */
+const itemName = (item: ItemData): string => (item.source === 'forge' ? pickEquipName(item) : pickMarketItemName(item));
+const itemText = (item: ItemData): string => (item.source === 'forge' ? pickEquipText(item) : pickMarketItemText(item));
 
 function applyDraft(profile: PlayerProfile, squad: Squad, draft: Draft, nowMs?: number): PlayerProfile {
   const picks = picksOf(draft.slots);
@@ -482,16 +483,15 @@ function PieceArt({ piece, side }: { piece: PieceType; side: SquadRole }): React
   return <img className="frm-piece" src={pieceArtUrl(piece, side === 'attack')} alt={piece} title={piece} draggable={false} data-field="piece" />;
 }
 
-/** 들고 가는 것 — 아이템이 있으면 아이템, 없으면 병기구(`heldFor`, 판에 실리는 것과 같은 셈) */
+/** 들고 가는 것(`heldFor`, 판에 실리는 것과 같은 셈) — 병기도 아이템이다 */
 function HeldThumb({ profile, officer }: { profile: PlayerProfile; officer: OfficerId }): React.JSX.Element {
   const id = heldFor(profile, officer);
-  const item = id ? marketItemById.get(id) : undefined;
-  const equip = !item && id ? equipmentById.get(id) : undefined;
+  const item = id ? itemById.get(id) : undefined;
   // 병기도 아이템과 같은 정사각 칸 + 후광 — 대장간의 3:1 목록 그림은 안 쓴다(2026-11-17 기획자)
-  if (item || equip) {
+  if (item) {
     return (
-      <span className="sqe-item" data-item={id} title={item ? pickMarketItemName(item) : pickEquipName(equip!)}>
-        <HeldArt id={id!} />
+      <span className="sqe-item" data-item={id} title={itemName(item)}>
+        <HeldArt id={item.id} />
       </span>
     );
   }
@@ -507,22 +507,21 @@ function HeldThumb({ profile, officer }: { profile: PlayerProfile; officer: Offi
  * 부대원 줄 · 고르기 팝업의 칸 · 고정 칸이 같은 것을 쓴다. 상자(`.sqe-item` · `.sqh-tile`)가 크기 · 자르기를 정한다.
  */
 export function HeldArt({ id }: { id: string }): React.JSX.Element | null {
-  const item = marketItemById.get(id);
-  const equip = item ? undefined : equipmentById.get(id);
-  if (!item && !equip) return null;
+  const item = itemById.get(id);
+  if (!item) return null;
+  const forged = item.source === 'forge';
   return (
     <>
-      <BlinkGlow tone={item ? itemBlink(item.unlockLevel) : equipBlink(equip!.unlockLevel)} className="held-glow" />
-      <img src={item ? `market-items/${id}.png` : `blacksmith/${id}.png`} alt="" />
+      <BlinkGlow tone={forged ? equipBlink(item.unlockLevel) : itemBlink(item.unlockLevel)} className="held-glow" />
+      <img src={forged ? `blacksmith/${id}.png` : `market-items/${id}.png`} alt="" />
     </>
   );
 }
 
 function HeldTile({ profile, officer }: { profile: PlayerProfile; officer: OfficerId }): React.JSX.Element {
   const id = heldFor(profile, officer);
-  const item = id ? marketItemById.get(id) : undefined;
-  const equip = !item && id ? equipmentById.get(id) : undefined;
-  if (!item && !equip) {
+  const item = id ? itemById.get(id) : undefined;
+  if (!item) {
     return (
       <span className="sqh-tile sqh-empty" data-field="heldTile" data-held="" title={t('squad.held.empty')}>
         <GameIcon name="equip-give" label={t('squad.held.empty')} />
@@ -530,8 +529,8 @@ function HeldTile({ profile, officer }: { profile: PlayerProfile; officer: Offic
     );
   }
   return (
-    <span className="sqh-tile" data-field="heldTile" data-held={id} title={item ? pickMarketItemName(item) : pickEquipName(equip!)}>
-      <HeldArt id={id!} />
+    <span className="sqh-tile" data-field="heldTile" data-held={id} title={itemName(item)}>
+      <HeldArt id={item.id} />
     </span>
   );
 }
@@ -564,16 +563,13 @@ export function HeldPicker({ profile, officer, onPick, onClose }: {
 }): React.JSX.Element {
   useLang();
   const carrying = profile.marketCarry?.[officer];
-  const myKey = equippedKey(profile, officer);
-  const [tab, setTab] = useState<'weapon' | 'item'>(carrying ? 'item' : 'weapon');
-  // 병기는 종류마다 한 칸 — 「n개」는 아무도 안 낀 자루 수(아이템의 「남은 수」와 같은 뜻, 2026-11-17 기획자: 표기 통일).
-  // 누르면 안 낀 자루 하나를 준다 — 남이 낀 것을 빼앗아 오는 길은 없다(빼려면 그 장수의 카드에서 회수).
-  const weaponKeys = Object.keys(profile.forgeOwned).filter((k) => equipmentById.has(equipmentIdOfKey(k))).sort();
-  const weapons = [...new Set(weaponKeys.map(equipmentIdOfKey))];
-  const freeKeys = (equipId: string): string[] =>
-    weaponKeys.filter((k) => equipmentIdOfKey(k) === equipId && !profile.forgeOwned[k]);
-  const myWeapon = !carrying && myKey ? equipmentIdOfKey(myKey) : null;
-  const items = [...new Set(marketUnits(profile).map((u) => u.item))];
+  // 병기 | 아이템 탭은 **보관함의 갈래**다 — 둘 다 보관함의 1회용 낱개이고 같은 길(`marketCarry`)로 든다(2026-11-28 대장간 연구 개편).
+  // 종류마다 한 칸 · 「n개」는 아무도 안 든 남은 수
+  const owned = [...new Set(marketUnits(profile).map((u) => u.item))];
+  const weapons = owned.filter((id) => itemById.get(id)?.source === 'forge');
+  const items = owned.filter((id) => itemById.get(id)?.source !== 'forge');
+  const [tab, setTab] = useState<'weapon' | 'item'>(carrying && itemById.get(carrying)?.source === 'forge' ? 'weapon' : carrying ? 'item' : 'weapon');
+  const myWeapon = carrying && weapons.includes(carrying) ? carrying : null;
   const left = (item: string): number =>
     marketHeldCount(profile, item) - carriedCount(profile, item) + (carrying === item ? 1 : 0);
   // 한 쪽에 넷 × 두 줄 = 8 — 장터 아이템 16종 · 병기 15종이 두 쪽에 든다(2026-11-17 기획자: 두 줄 + 쪽 줄 = 세 줄).
@@ -590,15 +586,14 @@ export function HeldPicker({ profile, officer, onPick, onClose }: {
   const heldId = heldFor(profile, officer);
   // [설정 완료] — 연 때와 지닌 것이 달라졌으면 「저장되었습니다」 미니 팝업 → [확인]으로 카드에, 그대로면 곧장 카드에 (2026-11-17 기획자).
   // 비교는 「무엇을 쥐었나」(병기는 자루까지) — 바꿨다 되돌린 것은 바뀐 것이 아니다
-  const nowKey = carrying ?? myKey ?? '';
+  const nowKey = carrying ?? '';
   const [openedKey] = useState(nowKey);
   const [savedNote, setSavedNote] = useState(false);
   const finish = (): void => (nowKey !== openedKey ? setSavedNote(true) : onClose());
-  const heldItem = heldId ? marketItemById.get(heldId) : undefined;
-  const heldEquip = heldId && !heldItem ? equipmentById.get(heldId) : undefined;
+  const heldItem = heldId ? itemById.get(heldId) : undefined;
   // 이름 밑 줄 — 효과 설명(2026-11-17 기획자: 「병기」 · 「아이템」 대신)
-  const heldText = heldItem ? pickMarketItemText(heldItem) : heldEquip ? pickEquipText(heldEquip) : null;
-  const heldName = heldId ? (marketItemById.get(heldId) ? pickMarketItemName(marketItemById.get(heldId)!) : pickEquipName(equipmentById.get(heldId)!)) : null;
+  const heldText = heldItem ? itemText(heldItem) : null;
+  const heldName = heldItem ? itemName(heldItem) : null;
 
   return (
     <div className="modal-back" data-modal="heldPick" onClick={finish}>
@@ -634,23 +629,23 @@ export function HeldPicker({ profile, officer, onPick, onClose }: {
         </div>
         <div className="sqh-grid" data-tab={tab}>
           {tab === 'weapon' && (weapons.length === 0 ? <p className="sqh-none">{t('squad.held.noWeapon')}</p> : onPage(weapons).map((id) => {
-            const equip = equipmentById.get(id)!;
-            const free = freeKeys(id);
+            const equip = itemById.get(id)!;
+            const n = left(id);
             const mine = myWeapon === id;
             return (
-              <button key={id} className="sqh-cell" data-equip={id} data-on={mine ? '1' : '0'} disabled={!mine && free.length === 0} title={pickEquipName(equip)}
-                onClick={() => (mine || !free[0] ? undefined : onPick({ officer, kind: 'weapon', key: free[0] }))}>
+              <button key={id} className="sqh-cell" data-equip={id} data-on={mine ? '1' : '0'} disabled={!mine && n <= 0} title={itemName(equip)}
+                onClick={() => (mine ? undefined : onPick({ officer, kind: 'item', item: id }))}>
                 <span className="sqh-tile"><HeldArt id={id} /></span>
-                <span className="sqh-cap">{t('squad.items.left', { n: free.length })}</span>
+                <span className="sqh-cap">{t('squad.items.left', { n: Math.max(0, n) })}</span>
               </button>
             );
           }))}
           {tab === 'item' && (items.length === 0 ? <p className="sqh-none">{t('squad.held.noItem')}</p> : onPage(items).map((id) => {
-            const item = marketItemById.get(id)!;
+            const item = itemById.get(id)!;
             const n = left(id);
             const mine = carrying === id;
             return (
-              <button key={id} className="sqh-cell" data-item={id} data-on={mine ? '1' : '0'} disabled={!mine && n <= 0} title={pickMarketItemName(item)}
+              <button key={id} className="sqh-cell" data-item={id} data-on={mine ? '1' : '0'} disabled={!mine && n <= 0} title={itemName(item)}
                 onClick={() => (mine ? undefined : onPick({ officer, kind: 'item', item: id }))}>
                 <span className="sqh-tile"><HeldArt id={id} /></span>
                 <span className="sqh-cap">{t('squad.items.left', { n: Math.max(0, n) })}</span>

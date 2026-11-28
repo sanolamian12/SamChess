@@ -100,10 +100,10 @@ try {
   await saveProfileTrusted(uid, {
     ...stored!, cityLevel: 11, buildings: { ...stored!.buildings, palace: 11 },
     roster, squads,
-    // 병기 15종 전부(2026-11-17) — 고르기 팝업에 다섯 칸 × 세 줄이 굴리지 않고 드는지 잰다. 대감도는 둘째 자루(안 낌)까지
-    forgeOwned: { ...Object.fromEntries(EQUIPMENT.map((e) => [`${e.id}#1`, null])), 'dae-gam-do#1': own[0]!, 'dae-gam-do#2': null },
+    // 병기 15종 전부(2026-11-17) — 고르기 팝업에 칸이 굴리지 않고 드는지 잰다. 대감도는 그 장수가 든다. 병기도 보관함의 낱개다(2026-11-28)
     // 아이템 들리기(2026-11-17) — 보관함에 탕약 둘
-    marketOwned: { 'tang-yak': 2 },
+    marketOwned: { ...Object.fromEntries(EQUIPMENT.map((e) => [e.id, 1])), 'tang-yak': 2 },
+    marketCarry: { [own[0]!]: 'dae-gam-do' },
     // 3v3 공격대가 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
     matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: 'atk-3v3', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
     matchSeq: 2,
@@ -336,9 +336,9 @@ try {
   await shot('09-card');
   await page.click('.ofcard [data-action="heldOpen"]');
   await page.waitForSelector('[data-modal="heldPick"]');
-  // 처음 탭은 병기(아이템을 안 들었다) — 낀 자루가 금빛 네온
+  // 처음 탭은 병기(병기를 들었다) — 든 병기가 금빛 네온
   if (await page.getAttribute('[data-modal="heldPick"] .sqh-cell[data-equip="dae-gam-do"]', 'data-on') !== '1') fail('고르기 팝업의 병기 탭에서 낀 병기가 안 빛난다');
-  // 한 쪽에 넷 × 두 줄 = 8, 병기 15종은 두 쪽(2026-11-17 기획자). 「n개」 — 대감도는 두 자루 중 안 낀 한 자루, 나머지는 한 자루씩
+  // 한 쪽에 넷 × 두 줄 = 8, 병기 15종은 두 쪽(2026-11-17 기획자). 「n개」 — 전부 하나씩(대감도는 이 장수가 든 그 하나)
   const cellsOf = () => page.$$eval('[data-modal="heldPick"] .sqh-cell', (els) => els.map((e) => (e.querySelector('.sqh-cap') as HTMLElement).textContent ?? ''));
   const pg = await page.$eval('[data-modal="heldPick"] [data-field="heldPager"]', (e) => `${(e as HTMLElement).dataset.page}/${(e as HTMLElement).dataset.pages}`);
   if (pg === '2/2') await page.click('[data-modal="heldPick"] [data-action="heldPrevPage"]');   // 낀 병기가 둘째 쪽이면 거기서 열린다
@@ -466,11 +466,10 @@ try {
   await page.waitForSelector('[data-screen="squads"]');
   const saved = await page.evaluate(() => {
     const p = (window as any).__profile.current;
-    return { sq: p.squads.find((s: any) => s.id === 'atk-3v3'), carry: p.marketCarry, forge: p.forgeOwned };
+    return { sq: p.squads.find((s: any) => s.id === 'atk-3v3'), carry: p.marketCarry };
   });
   if (saved.sq.picks.length !== 2 || saved.sq.picks[1].piece !== 'Knight') fail(`저장된 부대가 ${JSON.stringify(saved.sq.picks)}다`);
   if (saved.carry?.[own[0]!] !== 'tang-yak') fail('탕약이 저장되지 않았다');
-  if (saved.forge['dae-gam-do#1'] !== null) fail('탕약을 든 장수의 병기가 대장간으로 돌아가지 않았다');
   if (await page.getAttribute('.sql-row[data-slot="atk-3v3"] [data-field="mark"]', 'data-state') !== 'partial') fail('목록의 덜 찬 줄이 경고 표지가 아니다');
   // 서버도 덜 찬 부대를 버리지 않는다 — 되접기(`migrateProfile`)가 읽을 때마다 지난다.
   // 저장 큐가 PUT을 보내는 동안을 고정 시간으로 기다리면 흔들린다(1.5초로 한 번 떨어졌다) — 올 때까지 본다

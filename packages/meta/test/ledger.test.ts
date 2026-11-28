@@ -139,11 +139,11 @@ describe('불변식', () => {
 });
 
 describe('지급 대조 — 약속한 양과 실제로 바뀐 양 (2026-11-12)', () => {
-  it('칸을 접는다 — 풀에 든 장수 본체는 카드 한 장, 병기 자루는 그 병기', () => {
+  it('칸을 접는다 — 풀에 든 장수 본체는 카드 한 장, 옛 병기 자루는 그 병기', () => {
     assert.deepEqual(grantActual({ 'pool.jo-un': 1, 'cards.jo-un': 2, 'forge.dae-gam-do#3': 1, 'forge.dae-gam-do#4': 1, 'level.jo-un': 1, gold: -5 }),
       { 'cards.jo-un': 3, 'forge.dae-gam-do': 2, gold: -5 });
     assert.deepEqual(grantExpected([{ kind: 'cards', officer: 'jo-un', delta: 3 }, { kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 2 }, { kind: 'gold', delta: -5 }]),
-      { 'cards.jo-un': 3, 'forge.dae-gam-do': 2, gold: -5 });
+      { 'cards.jo-un': 3, 'market.dae-gam-do': 2, gold: -5 });
   });
 
   it('같으면 ok, 군량만 덜 들어갔으면 capped, 장부가 없으면 missing, 다르면 mismatch', () => {
@@ -155,8 +155,10 @@ describe('지급 대조 — 약속한 양과 실제로 바뀐 양 (2026-11-12)',
     assert.equal(grantStatus(e, { 'market.tang-yak': 2, grain: 100, gold: 10 }), 'mismatch', '약속에 없는 칸이 바뀌었다');
   });
 
-  it('회수도 같은 셈이다 — 병기 자루 하나 거두기', () => {
-    const e = grantExpected([{ kind: 'equipmentRevoke', key: 'dae-gam-do#2' }]);
-    assert.equal(grantStatus(e, grantActual({ 'forge.dae-gam-do#2': -1 })), 'ok');
+  it('병기 지급도 보관함의 낱개다 — 회수는 아이템의 음수 (2026-11-28)', () => {
+    const e = grantExpected([{ kind: 'equipmentGrant', equipmentId: 'dae-gam-do', count: 2 }]);
+    assert.equal(grantStatus(e, grantActual({ 'market.dae-gam-do': 2 })), 'ok');
+    const r = grantExpected([{ kind: 'item', item: 'dae-gam-do', delta: -1 }]);
+    assert.equal(grantStatus(r, grantActual({ 'market.dae-gam-do': -1 })), 'ok');
   });
 });

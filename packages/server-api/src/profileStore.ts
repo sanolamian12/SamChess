@@ -18,7 +18,7 @@ import {
   collectResearch,
   addCard, applyBuyMaterials, applyCityUpgrade, applyHeal, applyInjuries,
   applyBuyGrain, applyBuyMarketItem, applyLevelUp, applyRenameCity, applyRespec, carriedFor, consumeCarried,
-  applyRegisterSlot, applyStartForgeOrder, buyGacha, exchangeSurplus, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
+  applyRegisterSlot, applyStartForgeResearch, applyCancelForgeResearch, applyAckForge, collectForgeResearch, FORGE_RESEARCH_MS, buyGacha, exchangeSurplus, canBuyGrain, canBuyMarketItem, applyBuyMarketBasket, canBuyMarketBasket,
   declineMatch, fitCarry, guardServerOwned, migrateProfile, normalizeCityName, refundGrain, sortieGate, spendGrain, starterProfile,
   settleCarried, syncAiBattle, syncCity, syncRaid, completeTutorial as completeTutorialRules,
 } from '@samchess/meta';
@@ -26,7 +26,7 @@ import { RuleRejected, rejection } from '@samchess/meta';
 import type { Rejection } from '@samchess/meta';
 import type { BattleRewards, GachaFate, GachaPullKind, MarketBasket, PlayerProfile, StatPick, SurplusGrade, TutorialId } from '@samchess/meta';
 import type { BattleMode, OfficerId } from '@samchess/rules';
-import { marketItemById } from '@samchess/data';
+import { itemById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 
 /**
@@ -216,7 +216,7 @@ export async function saveProfile(uid: string, raw: unknown): Promise<PlayerProf
 function carryCount(raw: unknown, profile: PlayerProfile): number {
   const carry = (raw as { marketCarry?: unknown } | null)?.marketCarry;
   if (!carry || typeof carry !== 'object') return 0;
-  return Object.entries(carry).filter(([o, it]) => profile.roster[o as OfficerId] && typeof it === 'string' && marketItemById.has(it)).length;
+  return Object.entries(carry).filter(([o, it]) => profile.roster[o as OfficerId] && typeof it === 'string' && itemById.has(it)).length;
 }
 
 export type GrainAction = 'spend' | 'decline' | 'refund' | 'items';
@@ -321,24 +321,29 @@ export async function applyCityAction(uid: string, action: CityAction): Promise<
   });
 }
 
-// ── 대장간 (2026-09-09) ────────────────────────────────────────
+// ── 대장간 연구 (2026-11-28, `meta/forge.ts`) ─────────────────────────────
 //
-// 금화(클라이언트 소유)를 내고 아이템(서버 소유 `forgeOrder`/`forgeOwned`의 키)을
-// 받는 거래라 `/city/*`·`/market/materials`와 같은 기계를 탄다 — 로컬로 계산해
-// `PUT`으로 올리면 `forgeOrder`가 조용히 삼켜지고 금화만 준다(§5-54와 같은 결).
+// `forge`는 서버 소유다(진열대가 곧 「무엇을 살 수 있나」) — `PUT`이 버리므로 바꾸는 길이 여기 셋뿐이다.
+// 무료라 금화가 안 움직인다. 끝난 연구를 거두는 것은 경로가 아니라 `syncCity()`다(태학과 같은 결) —
+// `mutateProfile()`이 매번 먼저 정산하므로 취소가 이미 끝난 연구를 지우는 일이 없다.
 
-// **취소는 없다** (2026-09-25) — 확정이 곧 결제다(`applyStartForgeOrder` 머리말).
-export type ForgeAction = { kind: 'start'; equipmentId: string };
+export type ForgeAction =
+  | { kind: 'research'; items: string[] }
+  | { kind: 'cancel' }
+  /** 축하 화면을 봤다 — 그때부터 장터에 진열된다 */
+  | { kind: 'ack' };
 
 export async function applyForgeAction(uid: string, action: ForgeAction): Promise<CityActionResult> {
   const now = Date.now();
   return mutateProfile<CityActionResult>(uid, (profile) => {
     if (!profile) return { next: null, value: { ok: false, status: 404, reason: 'no profile' } };
     try {
-      const next = applyStartForgeOrder(profile, action.equipmentId, now);
+      const next = action.kind === 'research' ? applyStartForgeResearch(profile, action.items, now)
+        : action.kind === 'cancel' ? applyCancelForgeResearch(profile, now)
+        : applyAckForge(profile);
       return { next, value: { ok: true, profile: next } };
     } catch (e) {
-      // `canStartForgeOrder`가 던진 사람 말이다. 400으로 그대로 돌린다
+      // `canStartForgeResearch` · `canCancelForgeResearch`가 던진 사람 말이다
       return { next: null, value: { ok: false, status: 400, ...rejection(e, 'invalid action') } };
     }
   });
@@ -528,6 +533,12 @@ async function accountAction(uid: string, action: AccountAction): Promise<CityAc
           // 개발용이 끝난 연구를 직접 적으면 `doneAt`·`notice`를 따로 지어내게 된다
           next = { ...next, academy: { ...next.academy!, research: { ...r, startedAt: now - ACADEMY_RESEARCH_MS } } };
           next = collectResearch(next, now);
+        }
+        // 대장간 연구도 같은 스위치로 민다(2026-11-28) — 정상 경로(`collectForgeResearch`)로 거둔다
+        const fr = next.forge?.research;
+        if (action.finishResearch && fr) {
+          next = { ...next, forge: { ...next.forge!, research: { ...fr, startedAt: now - FORGE_RESEARCH_MS } } };
+          next = collectForgeResearch(next, now);
         }
       }
       return { next, value: { ok: true, profile: next } };

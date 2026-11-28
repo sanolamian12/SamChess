@@ -6,13 +6,13 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { marketItemById } from '@samchess/data';
+import { itemById } from '@samchess/data';
 import type { PlayerProfile } from '@samchess/meta';
 import { planUnits } from '../src/marketUnitsPlan.ts';
 import type { LiveUnit, Plan, PlanContext } from '../src/marketUnitsPlan.ts';
 
 const TANG = 'tang-yak';
-const PRICE = marketItemById.get(TANG)!.gold;
+const PRICE = itemById.get(TANG)!.gold;
 const prof = (m: object): PlayerProfile => m as PlayerProfile;
 const ctx = (source: string, goldBefore = 1000, goldAfter = goldBefore): PlanContext => ({ source, goldBefore, goldAfter });
 

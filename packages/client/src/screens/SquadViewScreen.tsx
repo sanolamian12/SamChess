@@ -33,13 +33,13 @@
  * 서야 화면을 오갈 때 판이 들썩이지 않는다.
  *
  * 줄의 상태·병기는 **규칙이 낸다** — 부상은 `isInjured()`(낫는 시각이 지났는데
- * 필드가 남은 경우를 거기서 거른다), 병기는 `equippedBy()`. 등급 배지와 `Lv` 표기는
+ * 필드가 남은 경우를 거기서 거른다), 병기는 `heldItemOf()`. 등급 배지와 `Lv` 표기는
  * 장수 일람(`OfficerListScreen`)과 같은 모양이다(67쪽 「마크 통일」).
  */
 
 import { useState } from 'react';
 import { officerById } from '@samchess/data';
-import { equippedBy, garrisonMissionPending, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
+import { heldItemOf, garrisonMissionPending, isGarrison, isInjured, squadPower, teamSize } from '@samchess/meta';
 import { roleText } from './squadText.ts';
 import { guidesEnabled } from './guideScript.ts';
 import type { PlayerProfile, Squad } from '@samchess/meta';
@@ -144,7 +144,7 @@ export function SquadViewScreen({ profile, squad, onBack, onManage, onDelete, on
  * 상태 판정이 바뀔 때 **한쪽만 낡는데, 화면은 아무 말도 안 한다** — 부대 현황이
  * 두 벌이 되는 것이라 판때기(`.place-panel`)만 부르는 쪽이 정하고 속은 여기 하나다.
  *
- * 줄의 상태·병기는 **규칙이 낸다** — 부상은 `isInjured()`, 병기는 `equippedBy()`.
+ * 줄의 상태·병기는 **규칙이 낸다** — 부상은 `isInjured()`, 병기는 `heldItemOf()`.
  */
 export function SquadRoster({ profile, squad }: {
   profile: PlayerProfile;
@@ -183,7 +183,7 @@ export function SquadRoster({ profile, squad }: {
             );
           }
           const hurt = isInjured(inst, now);
-          const eq = equippedBy(profile, pick.officer);
+          const eq = heldItemOf(profile, pick.officer);
           return (
             <div key={i} className="sqv-row" data-piece={pick.piece} data-officer={pick.officer}>
               <span className="pc"><PieceArt piece={pick.piece} /></span>

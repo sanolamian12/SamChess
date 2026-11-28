@@ -16,7 +16,7 @@
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright';
 import { COLLECTIONS } from '@samchess/data';
-import { forgeItemKey, newInstance } from '@samchess/meta';
+import { newInstance } from '@samchess/meta';
 import type { OfficerId } from '@samchess/rules';
 import { getProfile, saveProfileTrusted } from '../packages/server-api/src/profileStore.ts';
 import { shotDir } from './shotDir.ts';
@@ -94,8 +94,8 @@ try {
     roster,
     cards: { ...stored.cards, ['yu-bi' as OfficerId]: 1, ['gwan-u' as OfficerId]: 1, ['jang-bi' as OfficerId]: 1,
       ['yeo-po' as OfficerId]: 1, ['jin-gung' as OfficerId]: 2, [MOST.slots[3]!.id as OfficerId]: 2 },
-    forgeOwned: { ...stored.forgeOwned, [forgeItemKey('bang-cheon-hwa-geuk', 1)]: null },
-    marketOwned: { ...stored.marketOwned, 'jeok-to-ma': 1 },
+    // 병기도 보관함의 낱개다(2026-11-28)
+    marketOwned: { ...stored.marketOwned, 'jeok-to-ma': 1, 'bang-cheon-hwa-geuk': 1 },
     collection: {
       slots: {
         [done1.id]: done1.slots.map((_, i) => i), [done2.id]: done2.slots.map((_, i) => i),

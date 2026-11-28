@@ -72,7 +72,7 @@ import { collectionRows } from './collection.ts';
 import { allOfficersMilestone, fanOfficerEligible } from './milestone.ts';
 import { canLevelUp } from './profile.ts';
 import { garrisonOf } from './garrison.ts';
-import { MARKET_ITEM_MIN_LEVEL, marketOwnedCount } from './market.ts';
+import { marketOwnedCount } from './market.ts';
 import { attackSquadOf } from './squads.ts';
 import { S_TUTORIAL_OFFICERS, sTutorialId, sortieGate, sortieTutorialsDone, tutorialStatus } from './tutorial.ts';
 import type { PlayerProfile } from './types.ts';
@@ -133,8 +133,7 @@ export const GUIDE_IDS = [
   'officer.injury',
   'market.merc',
   'market.items',
-  // 증축 조건 · 장터 Lv2 · 장수 일람 (2026-11-14 둘째 지정)
-  'market.open',
+  // 증축 조건 · 장수 일람 (2026-11-14 둘째 지정 — 「장터 Lv2」(`market.open`)는 2026-11-28에 없어졌다. 아이템을 Lv1부터 판다)
   'market.storage',
   'officers.intro',
   'officer.card',
@@ -174,7 +173,7 @@ export const GUIDE_SCREEN_OF: Record<GuideId, GuideScreen> = {
   'garrison.intro': 'garrison', 'garrison.save': 'garrison', 'garrison.done': 'garrison',
   'city.intro': 'city', 'barracks.sortieReady': 'barracks', 'barracks.sTutorial': 'barracks', 'siege.intro': 'siege',
   'officer.injury': 'officers', 'market.merc': 'marketMerc', 'market.items': 'marketItems',
-  'market.open': 'market', 'market.storage': 'marketStorage', 'officers.intro': 'officers', 'officer.card': 'officerCard',
+  'market.storage': 'marketStorage', 'officers.intro': 'officers', 'officer.card': 'officerCard',
 };
 
 /**
@@ -296,9 +295,8 @@ export function pendingGuide(profile: PlayerProfile, screen: GuideScreen, ctx: G
     case 'officerCard': return once(profile, 'officer.card');
     case 'tutorial': return once(profile, 'tutorial.list');
     case 'market': {
-      if (!guideSeen(profile, 'market.intro')) return 'market.intro';
-      // 장터가 Lv2가 되어 전투 아이템 · 보관함이 열렸다 — 한 번 (2026-11-14 기획자)
-      return buildingLevel(profile, 'market') >= MARKET_ITEM_MIN_LEVEL ? once(profile, 'market.open') : null;
+      // 「장터가 Lv2가 되어 전투 아이템이 열렸다」(2026-11-14)는 2026-11-28에 걷었다 — 아이템을 Lv1부터 판다
+      return guideSeen(profile, 'market.intro') ? null : 'market.intro';
     }
     case 'board': {
       if (!guideSeen(profile, 'board.intro')) return 'board.intro';
@@ -528,7 +526,7 @@ export const GUIDE_PLACE: Record<GuideId, GuidePlace> = {
   'city.intro': { chapter: 'palace' }, 'officer.injury': { chapter: 'palace' },
   'barracks.sortieReady': { chapter: 'barracks' }, 'barracks.sTutorial': { chapter: 'barracks' }, 'siege.intro': { chapter: 'barracks' },
   'market.merc': { chapter: 'market' }, 'market.items': { chapter: 'market' },
-  'market.open': { chapter: 'market' }, 'market.storage': { chapter: 'market' },
+  'market.storage': { chapter: 'market' },
   'officers.intro': { chapter: 'palace' }, 'officer.card': { chapter: 'palace' },
 };
 

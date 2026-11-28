@@ -45,7 +45,7 @@ describe('본문을 보고 권한을 정한다', () => {
       [{ kind: 'gold', delta: 1 }, 'grant'], [{ kind: 'gold', delta: -1 }, 'revoke'],
       [{ kind: 'cards', officer: 'gwan-u', delta: 3 }, 'grant'], [{ kind: 'cards', officer: 'gwan-u', delta: -3 }, 'revoke'],
       [{ kind: 'item', item: 'tang-yak', delta: -1 }, 'revoke'],
-      [{ kind: 'equipmentGrant', equipmentId: 'x', count: 1 }, 'grant'], [{ kind: 'equipmentRevoke', key: 'x#1' }, 'revoke'],
+      [{ kind: 'equipmentGrant', equipmentId: 'x', count: 1 }, 'grant'], [{ kind: 'item', item: 'dae-gam-do', delta: -1 }, 'revoke'],
     ];
     for (const [adj, perm] of cases) assert.equal(adjustPermission(adj), perm, JSON.stringify(adj));
   });
@@ -98,7 +98,7 @@ describe('CS 상한', () => {
   });
 
   it('거두는 쪽은 상한에 안 들어간다', () => {
-    assert.deepEqual(grantUsage([{ kind: 'gold', delta: -100_000 }, { kind: 'equipmentRevoke', key: 'x#1' }]), none);
+    assert.deepEqual(grantUsage([{ kind: 'gold', delta: -100_000 }, { kind: 'item', item: 'dae-gam-do', delta: -1 }]), none);
   });
 
   it('한 요청 안의 같은 종류는 합쳐서 잰다 — 장수를 바꿔 줄을 나눠도 한 번 상한을 못 넘는다', () => {

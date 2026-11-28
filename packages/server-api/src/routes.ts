@@ -361,24 +361,40 @@ export function registerRoutes(app: FastifyInstance): void {
     return r.profile;
   });
 
-  /**
-   * 대장간 제조 (2026-09-09). 금화를 내고 시작 시각을 찍는 것이 `/city/*`와
-   * 같은 「서버 소유 필드를 바꾸는 행위」라 같은 기계를 탄다 — `forgeOrder`는
-   * `PUT`이 통째로 버리므로(§authority.ts) 이 경로가 없으면 「제조했는데 주문이
-   * 안 생긴다」로 조용히 삼킨다.
-   */
-  app.post('/forge/order', async (req, reply) => {
+  // ── 대장간 — 병기 연구 (2026-11-28, `meta/forge.ts`) ─────────────────────
+  //
+  // `forge`가 서버 소유라(`PUT`이 버린다) 바꾸는 길이 이 셋뿐이다. 보내는 것은 「무엇을」뿐이고 시각은 서버가 찍는다.
+  // 옛 `POST /forge/order`(금화를 내고 자루 하나 제조)는 이 개편으로 없어졌다 — 옛 클라이언트는 404로 멈춘다.
+
+  /** 연구 시작 — 그 레벨의 몫만큼 병기 id. 몫 · 후보 · 차례 · 동시 진행은 `canStartForgeResearch()`가 본다 */
+  app.post('/forge/research', async (req, reply) => {
     const user = await verifyToken(req.headers.authorization);
     if (!user) return reply.code(401).send({ error: 'unauthorized' });
-    const b = req.body as Partial<{ equipmentId: string }>;
-    if (!b.equipmentId) return reply.code(400).send({ error: 'invalid body' });
-    const r = await applyForgeAction(user.uid, { kind: 'start', equipmentId: b.equipmentId });
+    const b = req.body as Partial<{ items: unknown }>;
+    const items = Array.isArray(b.items) && b.items.length <= 5 && b.items.every((x) => typeof x === 'string') ? b.items as string[] : null;
+    if (!items) return reply.code(400).send({ error: 'invalid body' });
+    const r = await applyForgeAction(user.uid, { kind: 'research', items });
     if (!r.ok) return reply.code(r.status).send(refusal(r));
     return r.profile;
   });
 
-  // `POST /forge/cancel`은 2026-09-25에 없앴다 — 확정이 곧 결제이고 취소·환불이 없다
-  // (`applyStartForgeOrder` 머리말). 옛 클라이언트가 부르면 404로 멈춘다(`client/src/meta/city.ts`의 `post()`)
+  /** 진행 중인 연구 취소 — 무료라 돌려줄 것이 없다. 그 레벨은 다시 고를 수 있다 */
+  app.post('/forge/cancel', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyForgeAction(user.uid, { kind: 'cancel' });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
+    return r.profile;
+  });
+
+  /** 축하 화면을 봤다 — `notice`를 비운다(그때부터 장터에 진열된다). 비어 있어도 200 */
+  app.post('/forge/ack', async (req, reply) => {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return reply.code(401).send({ error: 'unauthorized' });
+    const r = await applyForgeAction(user.uid, { kind: 'ack' });
+    if (!r.ok) return reply.code(r.status).send(refusal(r));
+    return r.profile;
+  });
 
   // ── 컬렉션 — 칸 하나 채우기 (2026-10-13) ─────────────────────────────
   //
@@ -459,7 +475,7 @@ export function registerRoutes(app: FastifyInstance): void {
   //
   // **`gold`·`gachaPool`이 서버 소유가 되었다**(`meta/authority.ts`) — 그전에는 가챠·도시
   // 이름·재설계가 로컬로 계산해 `PUT`으로 올렸고, API를 직접 부르면 금화를 마음대로
-  // 적을 수 있었다. `/market/materials`·`/forge/*`와 같은 결로, 보내는 것은 「무엇을」뿐이다.
+  // 적을 수 있었다. `/market/materials`·`/academy/*`와 같은 결로, 보내는 것은 「무엇을」뿐이다.
 
   /**
    * 가챠 한 판. **시드는 서버가 만든다** — 첫 가챠에서만 쓰이고(`drawGacha()`), 클라이언트가

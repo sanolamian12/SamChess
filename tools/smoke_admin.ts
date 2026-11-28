@@ -598,7 +598,7 @@ try {
   };
   const csMail = (rewards: object[]) => ({ targetUid: target.uid, title: { ko: 'CS 스모크' }, body: { ko: 'CS 보상' }, rewards, reason: 'CS 스모크 우편' });
   await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'gold', delta: -1, reason: 'CS 회수' }, 'revoke');
-  await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'equipmentRevoke', key: 'x#1', reason: 'CS 회수' }, 'revoke');
+  await roleForbidden(`/admin/users/${target.uid}/adjust`, { kind: 'item', item: 'dae-gam-do', delta: -1, reason: 'CS 회수' }, 'revoke');
   await roleForbidden('/admin/mail', { ...csMail([]), targetUid: null }, 'mail.all');
   await roleForbidden(`/admin/mail/${m1.id}/revoke`, { reason: 'CS 우편 회수' }, 'mail.revoke');
   await roleForbidden(`/admin/users/${target.uid}/unban`, { reason: 'CS 해제' }, 'unban');

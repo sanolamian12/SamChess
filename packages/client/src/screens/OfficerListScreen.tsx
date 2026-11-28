@@ -96,7 +96,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OfficerId } from '@samchess/rules';
 import {
-  canLevelUp, equippedBy, gradeTally, guideSeen, isInjured, officerRows, poolCap, poolUsed, statsOf,
+  canLevelUp, heldItemOf, gradeTally, guideSeen, isInjured, officerRows, poolCap, poolUsed, statsOf,
 } from '@samchess/meta';
 import type { OfficerRow, PlayerProfile } from '@samchess/meta';
 import { SortHead, useColumnSort } from './SortHead.tsx';
@@ -430,7 +430,7 @@ function OfficerListPanel({ profile, onChange, equipPick, chrome, openOfficer, o
           >
             {pageRows.map((r) => {
               // 지급 모드에서만 쓴다 — 평소엔 O(장수 수)만큼 매 렌더 훑을 이유가 없다
-              const held = equipPick ? equippedBy(profile, r.officer) : undefined;
+              const held = equipPick ? heldItemOf(profile, r.officer) : undefined;
               const blocked = equipPick?.blocked?.(r.officer) ?? null;
               // 지급 모드는 [선택] 버튼을 줄 안에 또 넣어야 해서 `<button>`을
               // 못 쓴다(버튼 안 버튼은 무효 HTML — 브라우저가 태그를 조용히

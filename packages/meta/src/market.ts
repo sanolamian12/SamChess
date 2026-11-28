@@ -1,16 +1,17 @@
 /**
- * 시장 아이템 — 보유·지참 (2026-09-23, GDD §6.5).
+ * 장터 아이템 — 진열 · 보유 · 지참 (2026-09-23, GDD §6.5 · 2026-11-28 대장간 연구 개편).
  *
  * ────────────────────────────────────────────────────────────────
- * 대장간과 다른 두 가지 ★
+ * 진열대는 둘이 모인다 ★
  * ────────────────────────────────────────────────────────────────
  *
- * 1. **1회용이라 총량에 천장이 없다.** 대장간은 종류당 보유 상한이 있어 전부
- *    만들면 1,495금화에서 끝나는데, 시장은 계속 사고 계속 쓴다. 조이는 것은
- *    **보유 총량**(`marketCapacity`) 하나다 — 하루 매물(재고)은 2026-11-27에 걷었다(기획자 —
- *    물량은 보관함 상한이 이미 막고, 재고는 사람만 불편하게 했다. 「오늘 산 수」 `marketTaken`도 함께 없어졌다).
- * 2. **자루가 아니라 개수다.** 대장간은 자루마다 키가 있고(`{id}#{n}`) 값이
- *    「지금 누가 끼고 있나」인데, 시장은 같은 것이 여러 개라 **수량**으로 센다.
+ * 장터 자체 아이템(레벨마다 셋, 장터 Lv1부터 — 장터 레벨이 연다)과 **대장간이 연구한 병기**(`forgeShelf`,
+ * 장터 레벨과 무관)가 같은 진열대에 오른다(`shelfOf`). 사고 나면 둘은 구별되지 않는다 — 전부 1회용이고
+ * 같은 보관함(`marketOwned`, 상한 `marketCapacity`)에 낱개로 들고, 같은 길(`marketCarry`)로 들려 보낸다.
+ * 옛 대장간의 자루 · 지급(`forgeOwned`)은 2026-11-28에 없어졌다.
+ *
+ * **1회용이라 총량에 천장이 없다** — 조이는 것은 **보유 총량**(`marketCapacity`) 하나다.
+ * **자루가 아니라 개수다** — 같은 것이 여러 개라 **수량**으로 센다.
  *
  * ────────────────────────────────────────────────────────────────
  * 서버 것과 클라이언트 것이 갈린다
@@ -19,32 +20,22 @@
  * | 필드 | 임자 | 왜 |
  * |---|---|---|
  * | `marketOwned` (보유 수량) | **서버** | 금화로 산다 |
- * | `marketCarry` (누가 들고 갈지) | **클라이언트** | 총량을 안 바꾼다 — 대장간 지급·농지 파수꾼과 같은 결 |
+ * | `marketCarry` (누가 들고 갈지) | **클라이언트** | 총량을 안 바꾼다 — 농지 파수꾼과 같은 결 |
  *
- * ────────────────────────────────────────────────────────────────
- * 병기와 **같은 칸**이다
- * ────────────────────────────────────────────────────────────────
- *
- * 장수 하나는 병기 **또는** 아이템 하나만 든다. 그래서 `marketCarry`에 든 장수는
- * 지급받은 병기가 있어도 **아이템을 든다** — 가르는 자리는 `heldFor()` 하나이고
- * `toRosterEntries()`가 그것만 부른다.
- *
- * **지급을 지우지 않는다** — 아이템이 소모되면 병기가 그대로 돌아와야 한다.
- * 「이번 판만 병기 대신 아이템을 든다」가 규칙이고, 지우면 판마다 다섯 명의
- * 병기를 다시 끼우는 잡일이 생긴다.
+ * 장수 하나는 아이템 하나만 든다 — 가르는 자리는 `heldFor()` 하나이고 `toRosterEntries()`가 그것만 부른다.
  */
 
-import { MARKET_ITEMS, itemById, marketItemById, marketItemsForMarket } from '@samchess/data';
-import type { MarketItemData } from '@samchess/data';
+import { ITEMS, itemById, marketItemsForMarket } from '@samchess/data';
+import type { ItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
-import { equippedBy } from './forge.ts';
+import { forgeShelf, onForgeShelf } from './forge.ts';
 import type { CarriedBattle, InPlayItem, MetaResult, PlayerProfile, ReasonParams } from './types.ts';
 
-/** 아이템을 파는 최소 시장 레벨 — Lv1 시장은 아이템을 안 판다 (GDD §6.5) */
-export const MARKET_ITEM_MIN_LEVEL = 2;
-/** 보유 총량 한 칸 — `(시장 Lv − 1) × 20` */
-const CAPACITY_PER_LEVEL = 20;
+/** 아이템을 파는 최소 장터 레벨 — Lv1부터 판다 (2026-11-28 기획자 — 그 전에는 Lv2) */
+export const MARKET_ITEM_MIN_LEVEL = 1;
+/** 보관함 한 칸 — `장터 Lv × 12` (Lv1 12 · 24 · 36 · 48 · 60, 한 화면 3×4 — 2026-11-28 기획자) */
+const CAPACITY_PER_LEVEL = 12;
 
 const fail = (reason: string, code: string, params?: ReasonParams): MetaResult =>
   ({ ok: false, reason, code, ...(params ? { params } : {}) });
@@ -54,13 +45,20 @@ const fail = (reason: string, code: string, params?: ReasonParams): MetaResult =
 /** 이 도시의 시장 레벨 */
 export const marketLevel = (profile: PlayerProfile): number => buildingLevel(profile, 'market');
 
-/** 지금 살 수 있는 품목 — **누적이다.** Lv4 시장은 Lv2·Lv3 것도 판다 */
-export const marketItemsOf = (profile: PlayerProfile): MarketItemData[] =>
+/** 장터 자체 품목 중 지금 파는 것 — **누적이다.** Lv4 장터는 Lv1~3 것도 판다 */
+export const marketItemsOf = (profile: PlayerProfile): ItemData[] =>
   marketItemsForMarket(marketLevel(profile));
 
-/** 보유 총량 상한 — `(시장 Lv − 1) × 20`. Lv1 이하는 0이다 */
+/**
+ * **진열대 전부** — 장터 자체 품목(장터 레벨) + 대장간이 연구하고 축하까지 본 병기(`forgeShelf`).
+ * 장터가 없으면 아무것도 안 판다(병기도 장터에서 판다).
+ */
+export const shelfOf = (profile: PlayerProfile): ItemData[] =>
+  marketLevel(profile) < MARKET_ITEM_MIN_LEVEL ? [] : [...marketItemsOf(profile), ...forgeShelf(profile)];
+
+/** 보유 총량 상한 — `장터 Lv × 12`. 장터가 없으면 0이다 */
 export const marketCapacity = (profile: PlayerProfile): number =>
-  Math.max(0, marketLevel(profile) - 1) * CAPACITY_PER_LEVEL;
+  Math.max(0, marketLevel(profile)) * CAPACITY_PER_LEVEL;
 
 /** 지금 가진 아이템 수 (종류가 아니라 **낱개**를 센다) */
 export const marketOwnedCount = (profile: PlayerProfile): number =>
@@ -80,7 +78,7 @@ export const marketHeldCount = (profile: PlayerProfile, item: string): number =>
 export function canBuyMarketItem(
   profile: PlayerProfile, item: string, _nowMs: number,
 ): MetaResult {
-  const def = marketItemById.get(item);
+  const def = itemById.get(item);
   if (!def) return fail(`모르는 아이템이다 — ${item}`, 'market.unknownItem');
 
   const lv = marketLevel(profile);
@@ -88,7 +86,12 @@ export function canBuyMarketItem(
     return fail(`시장 Lv${MARKET_ITEM_MIN_LEVEL}부터 아이템을 팝니다 (지금 Lv${lv})`,
       'market.notBuilt', { need: MARKET_ITEM_MIN_LEVEL, have: lv });
   }
-  if (def.unlockLevel > lv) {
+  // 병기는 장터 레벨이 아니라 **대장간 연구 + 축하를 본 것**이 연다(2026-11-28 기획자)
+  if (def.source === 'forge') {
+    if (!onForgeShelf(profile, item)) {
+      return fail(`대장간에서 연구한 병기만 팝니다 — ${def.name}`, 'market.unresearched', { equipment: item });
+    }
+  } else if (def.unlockLevel > lv) {
     return fail(`시장 Lv${def.unlockLevel}이 필요합니다 — 지금 Lv${lv}`,
       'market.locked', { need: def.unlockLevel, have: lv });
   }
@@ -112,7 +115,7 @@ export function canBuyMarketItem(
 export function applyBuyMarketItem(
   profile: PlayerProfile, item: string, nowMs: number,
 ): PlayerProfile {
-  const def = marketItemById.get(item);
+  const def = itemById.get(item);
   if (!def) throw new Error(`모르는 아이템이다: ${item}`);
   return {
     ...profile,
@@ -131,7 +134,7 @@ export type MarketBasket = Partial<Record<string, number>>;
 export function marketBasketGold(basket: MarketBasket): number {
   let gold = 0;
   for (const [item, n] of Object.entries(basket)) {
-    if (n) gold += (marketItemById.get(item)?.gold ?? 0) * n;
+    if (n) gold += (itemById.get(item)?.gold ?? 0) * n;
   }
   return gold;
 }
@@ -175,15 +178,20 @@ export function applyBuyMarketBasket(
 // ── 들려 보내기 ────────────────────────────────────────────────
 
 /**
- * **이 장수가 이번 판에 들고 갈 것** — 아이템이 있으면 아이템, 없으면 병기.
+ * **이 장수가 이번 판에 들고 갈 것** — 들려 보낸 아이템(병기 포함). 없으면 `undefined`.
  *
- * 가르는 자리는 여기 하나다. `toRosterEntries()`가 이것만 부르고, 엔진 쪽에서
- * 두 표를 가르는 것은 `rules`의 `heldEffectOf()` 하나다.
+ * 가르는 자리는 여기 하나다. `toRosterEntries()`가 이것만 부르고, 엔진 쪽에서 효과를 읽는 것은
+ * `rules`의 `heldEffectOf()` · `usableItemOf()`다.
  */
 export function heldFor(profile: PlayerProfile, officer: OfficerId): string | undefined {
   const carried = profile.marketCarry?.[officer];
-  if (carried && marketItemById.has(carried)) return carried;
-  return equippedBy(profile, officer)?.id;
+  return carried && itemById.has(carried) ? carried : undefined;
+}
+
+/** `heldFor()`의 데이터 — 장수 일람 · 부대 · 농지의 「아이템」 칸이 그린다 */
+export function heldItemOf(profile: PlayerProfile, officer: OfficerId): ItemData | undefined {
+  const id = heldFor(profile, officer);
+  return id ? itemById.get(id) : undefined;
 }
 
 /** 지금 아이템을 들려 보낸 장수 수 — 보유보다 많이 들려 보낼 수 없다 */
@@ -199,7 +207,7 @@ export const carriedCount = (profile: PlayerProfile, item: string): number =>
 export function canCarryItem(
   profile: PlayerProfile, officer: OfficerId, item: string,
 ): MetaResult {
-  if (!marketItemById.has(item)) return fail(`모르는 아이템이다 — ${item}`, 'market.unknownItem');
+  if (!itemById.has(item)) return fail(`모르는 아이템이다 — ${item}`, 'market.unknownItem');
   if (!profile.roster[officer]) return fail('거느리지 않으신 장수입니다', 'market.noOfficer');
   const already = profile.marketCarry?.[officer] === item ? 1 : 0;
   if (carriedCount(profile, item) - already >= marketHeldCount(profile, item)) {
@@ -274,7 +282,7 @@ export interface MarketUnit {
  */
 export function marketUnits(profile: PlayerProfile): MarketUnit[] {
   const out: MarketUnit[] = [];
-  for (const def of MARKET_ITEMS) {
+  for (const def of ITEMS) {
     const n = marketHeldCount(profile, def.id);
     if (n === 0) continue;
     const dates = [...(profile.marketBoughtAt?.[def.id] ?? [])].sort((a, b) => a - b);
@@ -303,7 +311,7 @@ export function carriedFor(
   const out: Partial<Record<OfficerId, string>> = {};
   for (const officer of officers) {
     const item = profile.marketCarry?.[officer];
-    if (item && marketItemById.has(item)) out[officer] = item;
+    if (item && itemById.has(item)) out[officer] = item;
   }
   return out;
 }
@@ -315,13 +323,11 @@ export function carriedFor(
  * 판을 열어 둔 채 다른 탭에서 도적떼 방어전에 같은 탕약을 다시 들려 보낸다.
  *
  * 들려 보낸 것은 **함께 내려놓고**(`marketCarry`) 판이 도는 동안 **`marketInPlay`에
- * 옮겨 둔다.** 지급받은 병기는 그대로 남아 있어 **저절로 돌아온다**
- * (`heldFor()`가 아이템이 없으면 병기를 본다).
+ * 옮겨 둔다.**
  *
  * ★ **옮겨 두지 않으면 환불을 할 수 없다.** 판이 끝났을 때 `marketCarry`는 이미
  * 비어 있고, 「내가 무엇을 들었다」를 클라이언트에게 물으면 **아이템을 찍어 낼 수
- * 있다**(환불은 보유를 늘린다). 그래서 서버가 기억한다 — `forgeOrder`·
- * `hospitalBusy`와 같은 자리의 서버 소유 필드다.
+ * 있다**(환불은 보유를 늘린다). 그래서 서버가 기억한다 — `hospitalBusy`와 같은 자리의 서버 소유 필드다.
  *
  * **이미 도는 판이 있으면 덮어쓰지 않는다** — 두 판이 겹치면 앞 판의 환불이
  * 사라진다. 그래서 줄마다 **어느 판의 것인지**(`battle`) 적고 다른 판의 줄은 건드리지
@@ -413,7 +419,7 @@ function restoreBoughtAt(
 ): PlayerProfile {
   const bought = { ...profile.marketBoughtAt };
   for (const { item, boughtAt } of back) {
-    if (boughtAt === undefined || !marketItemById.has(item)) continue;
+    if (boughtAt === undefined || !itemById.has(item)) continue;
     bought[item] = [...(bought[item] ?? []), boughtAt].sort((a, b) => a - b);
   }
   return withBoughtAt(profile, bought);
@@ -431,7 +437,7 @@ export function refundItems(
   if (items.length === 0) return profile;
   const owned = { ...profile.marketOwned };
   for (const item of items) {
-    if (!marketItemById.has(item)) continue;
+    if (!itemById.has(item)) continue;
     owned[item] = (owned[item] ?? 0) + 1;
   }
   return { ...profile, marketOwned: owned };
@@ -459,5 +465,5 @@ export const fallenAfterShield = (
   profile: PlayerProfile, battle: CarriedBattle, fallen: readonly OfficerId[],
 ): OfficerId[] => (injuryShielded(profile, battle) ? [] : [...fallen]);
 
-/** 데이터에 있는 모든 아이템 id — 되접기가 모르는 키를 거를 때 쓴다 */
-export const MARKET_ITEM_IDS: ReadonlySet<string> = new Set(MARKET_ITEMS.map((m) => m.id));
+/** 데이터에 있는 모든 아이템 id(장터 품목 + 병기) — 되접기가 모르는 키를 거를 때 쓴다 */
+export const MARKET_ITEM_IDS: ReadonlySet<string> = new Set(ITEMS.map((m) => m.id));

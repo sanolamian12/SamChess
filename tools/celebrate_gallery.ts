@@ -39,10 +39,10 @@ const LANG_NAMES: Record<string, string> = {
 const SHOTS: [string, string][] = [
   ['pick-support', '레벨업 고르기 — 지원'], ['pick-illusion', '레벨업 고르기 — 환술 · MP'], ['levelup', '강화 완료'],
   ['city', '도시 증축 완료 (대장간 · 장터 · 농지 함께)'],
-  ['forge', '제작 완료'], ['academy', '연구 완료'], ['gold', '금화 구매 완료'],
+  ['forge', '연구 완료'], ['academy', '연구 완료'], ['gold', '금화 구매 완료'],
 ];
 
-/** 증축 조건이 찬 Lv1 도시 + 장수 넉넉히(카드 300) + 미지급 병기 한 자루 */
+/** 증축 조건이 찬 Lv1 도시 + 장수 넉넉히(카드 300) + 축하를 기다리는 대장간 연구 하나(2026-11-28 — 연구로) */
 const seed = (): PlayerProfile => {
   const p = { ...createProfile(`사진첩-${randomUUID().slice(0, 4)}`, 5), tutorial: { done: [...SORTIE_TUTORIALS] } } as PlayerProfile;
   const first = Object.values(p.roster)[0]!;
@@ -51,7 +51,7 @@ const seed = (): PlayerProfile => {
   return withGarrisons({
     ...p, roster, materials: 99, battleWins: 99, grainAt: Date.now(), gold: 1000,
     cards: Object.fromEntries(Object.keys(roster).map((id) => [id, 300])) as PlayerProfile['cards'],
-    forgeOwned: { 'cheong-ryong-eon-wol-do#1': null },
+    forge: { done: [{ level: 1, items: ['dae-gam-do'], doneAt: Date.now() - 1000 }], notice: ['dae-gam-do'] },
   } as PlayerProfile) as PlayerProfile;
 };
 
@@ -98,7 +98,7 @@ try {
   for (const lang of LANGS) {
     console.log(`▶ ${lang}`);
     await saveProfileTrusted(u.uid, seed());
-    await page.evaluate((l) => { localStorage.setItem('samchess.lang', l); localStorage.removeItem('samchess.forge.celebrated'); }, lang);
+    await page.evaluate((l) => { localStorage.setItem('samchess.lang', l); localStorage.removeItem('samchess.forge.called'); }, lang);
 
     // 도시 증축 — 대장간 짓기 · 장터 증축 · 농지 짓기를 함께 고른다(2026-11-23 — 증축이 건물 셋을 함께 올린다. 건물 완료 팝업은 없어졌다)
     await home(page);
@@ -134,7 +134,7 @@ try {
     await home(page);
     await page.click('.city-gate rect', { force: true });   // 배경이 떠다녀 「안정」을 안 기다린다
     await page.click('[data-place="forge"]', { force: true });
-    await celebrate(lang, 'forgeDone', 'forge', 'ackDone');
+    await celebrate(lang, 'forgeNotice', 'forge', 'ackDone');
 
     // 8. 금화 구매 완료
     await home(page);

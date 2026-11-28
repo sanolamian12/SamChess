@@ -47,9 +47,9 @@ import { PIECE_TYPES, toRosterEntries, validateRoster } from './roster.ts';
 import { SQUAD_SLOTS, slotOf, squadSlot } from './squads.ts';
 import { battlePower } from './power.ts';
 import { normalizePolicy } from './garrisonPolicy.ts';
-import { copyNumberOfKey, equipmentIdOfKey, forgeItemKey } from './forge.ts';
+import { FORGE_MAX_LEVEL, forgeQuota } from './forge.ts';
 import type {
-  AcademyDone, AcademyState, AiBattleState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
+  AcademyDone, AcademyState, AiBattleState, ForgeDone, ForgeState, AiBattleStatus, BattleResult, CarriedBattle, CollectionProgress, GrowthStep, InPlayItem, MailboxEntry,
   MatchPick, MatchRow,
   OfficerInstance, OpponentKind,
   PlayerProfile, RaidState, RaidStatus, RecordTally, RosterPick, SiegeDefender, Squad, SquadCell, StatPick, TutorialProgress,
@@ -81,7 +81,6 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   const buildings = cityLv >= MAX_CITY_LEVEL
     ? Object.fromEntries(BUILDINGS.map((b) => [b.id, b.maxLevel])) as Record<BuildingId, number>
     : read;
-  const forgeOrder = readForgeOrder(raw.forgeOrder);
   const profile: PlayerProfile = {
     version: PROFILE_VERSION,
     cityName: typeof raw.cityName === 'string' && raw.cityName.trim() ? raw.cityName : '무명성',
@@ -112,8 +111,6 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     ...(typeof raw.cityNameChangedAt === 'number' && Number.isFinite(raw.cityNameChangedAt)
       ? { cityNameChangedAt: Math.max(0, Math.floor(raw.cityNameChangedAt)) }
       : {}),
-    forgeOwned: {},
-    ...(forgeOrder ? { forgeOrder } : {}),
   };
 
   const roster = isRecord(raw.roster) ? raw.roster : {};
@@ -132,20 +129,15 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
     if (n > 0) profile.cards[id as OfficerId] = n;
   }
 
-  // 대장간 지급도 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수에게 지급된
-  // 채로 남은 기록을 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다
-  profile.forgeOwned = readForgeOwned(raw.forgeOwned, profile);
-  // 옛 계정에는 제작일이 없다 — 병기마다 있을 수도 없을 수도 있어 **빈 칸을
-  // 지어내지 않는다**(0을 채우면 1970년이 뜬다). 화면이 없는 것을 「—」로 그린다.
-  const forgeMadeAt = readForgeMadeAt(raw.forgeMadeAt, profile.forgeOwned);
-  if (Object.keys(forgeMadeAt).length > 0) profile.forgeMadeAt = forgeMadeAt;
-
   // 시장 아이템도 **장수를 다 읽은 뒤에** 읽는다 — 계정에서 빠진 장수가
   // 들고 있던 기록을 걸러 내려면 `profile.roster`가 이미 채워져 있어야 한다.
   // 셋 다 **없으면 키째로 없다**: 빈 표를 지어내면 「아무것도 없다」와
   // 「아직 시장에 안 갔다」가 구별되지 않는다(필드가 더해지기만 하므로 버전은
   // 그대로다 — §5의 「뜻이 바뀔 때만 올린다」).
   const marketOwned = readMarketOwned(raw.marketOwned);
+  // 옛 대장간의 자루 · 진행 중이던 제조(2026-11-28에 없어졌다)는 **보관함의 낱개로** 옮긴다 — 금화를 내고 얻은 것이라
+  // 버리지 않는다. 지급받던 장수는 풀린다(병기도 이제 판마다 들려 보내는 1회용이다). 버전은 그대로 — 모양으로 가른다
+  for (const id of legacyForgeItems(raw.forgeOwned, raw.forgeOrder)) marketOwned[id] = (marketOwned[id] ?? 0) + 1;
   if (Object.keys(marketOwned).length > 0) profile.marketOwned = marketOwned;
   // 옛 `marketTaken`(하루 매물의 「오늘 산 수」)은 읽지 않는다 — 재고를 걷어 뜻이 없어졌다(2026-11-27). 버전은 그대로(필드가 빠질 뿐)
   // 보유보다 많이 들려 보낸 것은 걷는다(`fitCarry`, 2026-11-12) — 읽는 자리마다(서버의 판 시작 · 명단) 가진 만큼만 실린다
@@ -182,6 +174,9 @@ export function migrateProfile(raw: unknown): PlayerProfile | null {
   // 태학 연구(2026-09-22) — 필드가 더해지기만 해서 버전을 안 올린다. 없으면 키도 안 만든다
   const academy = readAcademy(raw.academy);
   if (academy) profile.academy = academy;
+  // 대장간 연구(2026-11-28) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려져 진열대가 빈다**
+  const forge = readForge(raw.forge);
+  if (forge) profile.forge = forge;
   // 컬렉션(2026-10-13) — 같은 결로 버전을 안 올린다. **여기 없으면 읽을 때마다 버려진다** —
   // 되접기는 아는 필드만 담는다(화면 확인이 「완성이 안 보인다」로 잡았다)
   const collection = readCollection(raw.collection);
@@ -508,30 +503,6 @@ function readBusy(raw: unknown): number[] {
 }
 
 /**
- * 대장간에서 만든 장비. **모르는 id는 버린다**(장비 목록이 정정되면 `equipmentById`가
- * 갈린다 — 장수 id 정정과 같은 결). 지급 대상이 계정에 없는 장수를 가리키면
- * 「지급 해제」로 되접는다 — 장수가 없어졌다고 장비까지 함께 지울 이유는 없다.
- */
-/** 제작일 — 보유 중인 병기의 것만, 양수인 것만 남긴다 */
-function readForgeMadeAt(raw: unknown, owned: Record<string, OfficerId | null>): Record<string, number> {
-  const out: Record<string, number> = {};
-  if (!isRecord(raw)) return out;
-  for (const [key, value] of Object.entries(raw)) {
-    // 보유 목록과 **같은 키로** 되접는다 — v5의 맨 id는 `#1`이다(아래 `readForgeOwned`)
-    const itemKey = forgeItemKey(equipmentIdOfKey(key), copyNumberOfKey(key));
-    if (!(itemKey in owned)) continue;
-    if (typeof value === 'number' && Number.isFinite(value) && value > 0) out[itemKey] = Math.floor(value);
-  }
-  return out;
-}
-
-/**
- * ★ **v6 — 키가 종류에서 자루로** (2026-09-14). v5까지는 `dae-gam-do` 하나가 곧 「그 병기를
- * 가졌다」였다(계정당 1개). 이제 `dae-gam-do#1`처럼 자루마다 키가 있다. 맨 id는 `#1`로,
- * 이미 자루 키면 그대로 둔다 — **버전으로 가르지 않고 모양으로 가른다**. 그래서 두 번
- * 지나도 같다(되접기는 멱등해야 한다).
- */
-/**
  * 시장 아이템 보유 수량 — **모르는 id와 0 이하는 버린다**(GDD §6.5).
  * 0을 남기면 「가졌는데 없다」가 목록에 뜬다.
  */
@@ -593,7 +564,7 @@ function readMarketInPlay(raw: unknown, profile: PlayerProfile): InPlayItem[] {
 /**
  * 낱개마다의 구매 시각 (2026-09-24). **보유한 품목만**, 시각은 양수·유한만, 오래된 것부터 —
  * 보유보다 많으면 **최근 것**만 남긴다(빠져나가는 것은 오래된 쪽부터다). 모자라도 채우지
- * 않는다 — 화면이 「—」로 그린다(`forgeMadeAt`과 같은 결).
+ * 않는다 — 화면이 「—」로 그린다.
  */
 function readMarketBoughtAt(
   raw: unknown, owned: Partial<Record<string, number>>,
@@ -612,31 +583,58 @@ function readMarketBoughtAt(
   return out;
 }
 
-function readForgeOwned(raw: unknown, profile: PlayerProfile): Record<string, OfficerId | null> {
-  const out: Record<string, OfficerId | null> = {};
-  if (!isRecord(raw)) return out;
-  for (const [key, value] of Object.entries(raw)) {
-    const id = equipmentIdOfKey(key);
-    if (!equipmentById.has(id)) continue;
-    const itemKey = forgeItemKey(id, copyNumberOfKey(key));
-    if (itemKey in out) continue;
-    out[itemKey] = typeof value === 'string' && profile.roster[value as OfficerId] ? (value as OfficerId) : null;
+/**
+ * 옛 대장간의 병기(2026-11-28에 없어졌다) — 자루 키(`{id}#{n}` · v5의 맨 id)마다 하나, 진행 중이던 제조 주문도 하나.
+ * 모르는 id는 버린다. 되접은 계정에는 이 필드가 없으므로 두 번 지나도 같다(멱등).
+ */
+function legacyForgeItems(owned: unknown, order: unknown): string[] {
+  const out: string[] = [];
+  if (isRecord(owned)) {
+    for (const key of Object.keys(owned)) {
+      const at = key.lastIndexOf('#');
+      const id = at < 0 ? key : key.slice(0, at);
+      if (equipmentById.has(id)) out.push(id);
+    }
   }
+  if (isRecord(order) && typeof order.equipmentId === 'string' && equipmentById.has(order.equipmentId)) out.push(order.equipmentId);
   return out;
 }
 
 /**
- * 진행 중인 제조 주문. 알 수 없는 id·시각이면 통째로 버린다(=유휴로 되접는다) —
- * 반쪽만 남기면 「무엇을 얼마나 기다려야 하는지」를 화면이 지어내야 한다.
+ * 대장간 연구 — 줄 단위로 거른다. 한 레벨의 줄은 **그 레벨의 몫만큼**, 해금 레벨이 그 이하인 병기로, 다른 레벨과
+ * 겹치지 않게 — 하나라도 어긋나면 그 줄을 버린다(그 레벨은 다시 고르면 된다). 진행 중인 연구도 같은 잣대이고
+ * 이미 끝낸 레벨이면 버린다. 남는 것이 없으면 `undefined` — 키를 안 만든다.
  */
-function readForgeOrder(raw: unknown): PlayerProfile['forgeOrder'] {
+function readForge(raw: unknown): ForgeState | undefined {
   if (!isRecord(raw)) return undefined;
-  const id = raw.equipmentId;
-  const startedAt = num(raw.startedAt, NaN);
-  if (typeof id !== 'string' || !equipmentById.has(id) || !Number.isFinite(startedAt) || startedAt <= 0) {
-    return undefined;
+  const used = new Set<string>();
+  const itemsOk = (items: unknown, level: number): items is string[] =>
+    Array.isArray(items) && Number.isInteger(level) && level >= 1 && level <= FORGE_MAX_LEVEL
+    && items.length === forgeQuota(level) && new Set(items).size === items.length
+    && items.every((id) => typeof id === 'string' && (equipmentById.get(id)?.unlockLevel ?? Infinity) <= level && !used.has(id));
+  const done: ForgeDone[] = [];
+  for (const d of Array.isArray(raw.done) ? raw.done : []) {
+    if (!isRecord(d)) continue;
+    const level = num(d.level, NaN);
+    const doneAt = num(d.doneAt, NaN);
+    if (done.some((x) => x.level === level) || !itemsOk(d.items, level) || !Number.isFinite(doneAt) || doneAt <= 0) continue;
+    for (const id of d.items) used.add(id);
+    done.push({ level, items: [...d.items], doneAt: Math.floor(doneAt) });
   }
-  return { equipmentId: id, startedAt: Math.floor(startedAt) };
+  done.sort((a, b) => a.level - b.level);
+  const out: ForgeState = { done };
+  const r = raw.research;
+  if (isRecord(r)) {
+    const level = num(r.level, NaN);
+    const startedAt = num(r.startedAt, NaN);
+    if (!done.some((x) => x.level === level) && itemsOk(r.items, level) && Number.isFinite(startedAt) && startedAt > 0) {
+      out.research = { level, items: [...r.items], startedAt: Math.floor(startedAt) };
+    }
+  }
+  const notice = (Array.isArray(raw.notice) ? raw.notice : [])
+    .filter((id): id is string => typeof id === 'string' && done.some((d) => d.items.includes(id)));
+  if (notice.length > 0) out.notice = [...new Set(notice)];
+  return done.length > 0 || out.research ? out : undefined;
 }
 
 /**
@@ -805,7 +803,7 @@ function readAiBattle(raw: unknown): AiBattleState | undefined {
 const RAID_STATUSES: readonly RaidStatus[] = ['pending', 'fighting', 'won', 'lost', 'drawn', 'surrendered'];
 
 /**
- * 오늘의 도적떼. 알아볼 수 없으면 **통째로 버린다**(`readForgeOrder`와 같은 규약) —
+ * 오늘의 도적떼. 알아볼 수 없으면 **통째로 버린다** —
  * 반쪽만 남기면 마감이나 약탈 기준을 화면이 지어내야 한다. 버려지면 그날은 다시
  * 출몰할 수 있다(서버 소유라 이 길은 수동 SQL 같은 사고에서만 탄다).
  */

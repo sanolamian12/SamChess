@@ -36,9 +36,8 @@ import type { PlayerProfile } from './types.ts';
  * | `materials` | 전투 보상(승리 1) · `POST /city/upgrade` |
  * | `buildings` | `POST /city/upgrade` (증축이 고른 건물을 함께 올린다, 2026-11-23) |
  * | `hospitalBusy` | `POST /city/heal` |
- * | `forgeOrder` | `POST /forge/order` (취소는 없다 — 2026-09-25) |
- * | `forgeMadeAt` | `collectForgeOrder()` — 서버 시계로 찍는 제작일 |
- * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/forge/*` · `/academy/reset` · `/dev/grant` |
+ * | `forge` | `POST /forge/research` · `/forge/cancel` · `/forge/ack` · 거두기는 `syncCity()` (2026-11-28 대장간 연구) |
+ * | `gold` | `POST /market/gacha` · `/city/rename` · `/officer/respec` · `/market/materials` · `/market/item` · `/academy/reset` · `/dev/grant` |
  * | `gachaPool` | `POST /market/gacha` — 유한 배열의 시드·소비 수 |
  * | `surplusCards` | 가챠 · 전투 정산 · 레벨업(Lv9의 남은 몫)이 쌓고 `POST /market/surplus`가 쓴다 (2026-11-24) |
  * | `cityName` · `cityNameChangedAt` | 첫 저장(도시 생성) · `POST /city/rename` |
@@ -63,8 +62,7 @@ import type { PlayerProfile } from './types.ts';
  * 지급뿐이다 — 금화팩 결제가 붙으면 그것도 서버 경로여야 한다.
  */
 export const SERVER_OWNED_FIELDS = [
-  'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forgeOrder',
-  'forgeMadeAt', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
+  'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forge', 'gold', 'gachaPool', 'roster', 'cards', 'cityName', 'cityNameChangedAt',
   // 잉여 카드 — 가챠 · 정산 · 레벨업이 쌓고 `POST /market/surplus`만 쓴다 (2026-11-24)
   'surplusCards',
   // 도적떼 — 출몰·정산이 서버 시계로만 일어난다 (GDD §5.11). `farmGuards`는 클라이언트 것이다
@@ -112,16 +110,6 @@ export function guardServerOwned(incoming: PlayerProfile, current: PlayerProfile
   const next: PlayerProfile = { ...incoming };
   // 키를 하나씩 옮긴다 — 뭉쳐서 스프레드하면 오타 난 키가 타입 검사를 그냥 지나간다
   for (const key of SERVER_OWNED_FIELDS) Object.assign(next, { [key]: current[key] });
-
-  // `forgeOwned`는 통째로 지키면 지급/해제(§ 클라이언트가 정당하게 바꾸는 것)가
-  // 저장되지 않는다 — `roster`의 부상 자국과 반대 방향: **키(보유 여부)만** 서버
-  // 것을 지키고 **값(지급 대상)**은 클라이언트가 보낸 것을 받는다. 클라이언트가
-  // 새 키를 얹어 보내도(총량을 스스로 늘리려는 시도) 여기서 사라진다.
-  const forgeOwned: PlayerProfile['forgeOwned'] = {};
-  for (const id of Object.keys(current.forgeOwned)) {
-    forgeOwned[id] = id in incoming.forgeOwned ? incoming.forgeOwned[id]! : current.forgeOwned[id]!;
-  }
-  next.forgeOwned = forgeOwned;
 
   // `roster`·`cards`는 위 목록이 통째로 옮겼다 — 장수마다 부상만 골라 지키던 분기는
   // 2026-09-14(A2)에 지웠다(위 머리말 ★)

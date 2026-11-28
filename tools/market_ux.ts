@@ -147,7 +147,8 @@ try {
   const topic = academyTopics(1)[0]!;
   await saveProfileTrusted(uid, {
     ...seeded,
-    forgeOwned: { [`${WEAPON.id}#1`]: X! },
+    // 병기도 보관함의 1회용 낱개 — X가 들고 있다(2026-11-28)
+    marketOwned: { ...seeded.marketOwned, [WEAPON.id]: 1 }, marketCarry: { [X!]: WEAPON.id },
     academy: { done: [{ level: 1, tactic: topic.id as never, doneAt: Date.now() - 3_600_000 }] },
   });
   await page.reload({ waitUntil: 'networkidle' });
@@ -661,8 +662,8 @@ try {
   };
   if (!await serverSees((p) => p?.marketCarry?.[X!] === ITEM_A.id)) fail('서버에 지급이 안 남았다');
   const afterGive = (await getProfile(uid))!;
-  if (afterGive.forgeOwned[`${WEAPON.id}#1`] !== null) fail('병기가 대장간으로 안 돌아갔다');
-  ok('지급 — 그 줄에 장수 이름 · [아이템 회수]로 바뀌고, 병기는 대장간으로');
+  if ((afterGive.marketOwned?.[WEAPON.id] ?? 0) !== 1 || Object.values(afterGive.marketCarry ?? {}).includes(WEAPON.id)) fail('들고 있던 병기가 보관함으로 안 돌아갔다');
+  ok('지급 — 그 줄에 장수 이름 · [아이템 회수]로 바뀌고, 들고 있던 병기는 보관함으로');
 
   // [아이템 회수] — 되묻고, 그 줄이 다시 미지급이 된다
   await page.click(`${heldRow} [data-action="revokeItem"]`);

@@ -33,7 +33,7 @@ import { claimMailOnServer, readMailOnServer } from '../meta/mail.ts';
 import type { MailView } from '../meta/mail.ts';
 import { currentLang, t } from '../i18n/index.ts';
 import { pickEquipName, pickMarketItemName, pickOfficerNameById } from '../i18n/story.ts';
-import { formatMade } from './ForgeScreen.tsx';
+import { formatMade } from './itemText.ts';
 import { Pager } from './PagerButton.tsx';
 import { useSteadyPage } from './useSteadyPage.ts';
 import { useFitText } from './useFitText.ts';

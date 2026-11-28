@@ -102,7 +102,8 @@ try {
     }))],
     // 출정 화면은 기본 튜토리얼 셋을 끝내야 열린다
     tutorial: { done: ['basic-1', 'basic-2', 'basic-3'] },
-    forgeOwned: { 'dae-gam-do#1': own[0]! },
+    // 병기도 보관함의 1회용 낱개 — 들려 보낸다(2026-11-28)
+    marketOwned: { 'dae-gam-do': 1 }, marketCarry: { [own[0]!]: 'dae-gam-do' },
     // 3v3 공격대가 가장 최근에 싸웠다 — 가장 먼저 만든 부대가 맨 위로 올라와야 한다
     matches: [{ seq: 1, at: now, mode: '3v3', opponent: 'siege', opponentId: null, mySquad: 'atk-3v3', theirSquad: null, myPower: 0, theirPower: 0, chance: 0.5, result: 'win', picks: [] }],
     matchSeq: 2,

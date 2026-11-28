@@ -9,7 +9,7 @@
  *
  * meta에 둔 까닭은 다른 규칙과 같다 — 시계 · DB 없이 `npm test`가 판정을 고정한다. 장부를 적고 점검을 돌리는 것은 서버다.
  */
-import { GROWTH, OFFICERS, buildingById, equipmentById, marketItemById, officerById } from '@samchess/data';
+import { GROWTH, OFFICERS, buildingById, itemById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { BUILD_CITY_LEVEL, MAX_CITY_LEVEL, initialBuildings } from './city.ts';
@@ -33,7 +33,7 @@ import type { Adjustment } from './admin.ts';
  * | `level` | `level.{장수}` — 풀에 있는 장수가 **Lv1 위로 올린 수**(새로 든 Lv1 장수는 0 — 풀에 드는 것과 레벨이 오르는 것을 가른다) |
  * | `buildings` | `buildings.{건물}` — 레벨 |
  * | `market` | `market.{아이템}` — 가진 것 + 들고 나간 것(들고 나가는 것은 옮김이라 합으로 본다) |
- * | `forge` | `forge.{병기 키}` — 있으면 1 |
+ * | `forge` | 옛 대장간 자루(`forge.{병기 키}`) — **2026-11-28에 없어졌다**(병기도 `market.*`의 낱개). 옛 장부 줄을 읽으려고 이름만 남긴다 |
  * | `collection` | `collection.{컬렉션}` — 채운 칸 수 |
  * | `surplus` | 잉여 카드 수 (2026-11-24) |
  * | `record` | `record.{갈래}/{모드}` — 계정 전적의 **승점**(랭킹의 정렬 값, 2026-11-12 — 저장 하나로 위조할 수 있었다) |
@@ -75,7 +75,6 @@ export function ledgerValues(p: PlayerProfile): LedgerValues {
   for (const [id, lv] of Object.entries(p.buildings ?? {})) put(`buildings.${id}`, lv);
   for (const [id, n] of Object.entries(p.marketOwned ?? {})) put(`market.${id}`, n);
   for (const c of p.marketInPlay ?? []) put(`market.${c.item}`, 1);
-  for (const key of Object.keys(p.forgeOwned ?? {})) put(`forge.${key}`, 1);
   for (const [id, slots] of Object.entries(p.collection?.slots ?? {})) put(`collection.${id}`, slots.length);
   for (const [key, tally] of Object.entries(p.record ?? {})) put(`record.${key}`, tally.points);
   return out;
@@ -155,7 +154,10 @@ export const ACTION_SOURCES: Readonly<Record<string, readonly LedgerGroup[]>> = 
   'POST /city/upgrade': ['cityLevel', 'buildings', 'pool'],
   'POST /city/heal': [],
   'POST /city/rename': [],
-  'POST /forge/order': [],
+  // 대장간 연구 — 진열대를 열 뿐 보유를 늘리지 않는다(사는 것은 `/market/item`)
+  'POST /forge/research': [],
+  'POST /forge/cancel': [],
+  'POST /forge/ack': [],
   'POST /collection/register': ['collection'],
   'POST /academy/research': [],
   'POST /academy/cancel': [],
@@ -202,12 +204,10 @@ export const DEV_SOURCES: readonly string[] = ['POST /dev/grant'];
 /**
  * **읽는 순간의 정산(`sync`)으로 늘 수 있는 묶음** — 길이 아니라 **무엇이 정산됐나**로 본다(`syncAtServer`).
  *  · 군량은 시간으로 늘 찬다
- *  · 병기는 제조가 끝나면 들어온다(제조 주문이 있었어야 한다)
  *  · 전투 보상은 AI 대전 · 도적떼가 그 순간 정산됐을 때만(60분 방치 패배 · 도적떼 자동 항복)
  */
 export function syncAllowed(before: PlayerProfile, after: PlayerProfile): Set<LedgerGroup> {
   const ok = new Set<LedgerGroup>(['grain']);
-  if (before.forgeOrder && !after.forgeOrder) ok.add('forge');
   const aiSettled = before.aiBattle?.status === 'fighting' && after.aiBattle?.status !== 'fighting';
   const raidSettled = JSON.stringify(before.raid ?? null) !== JSON.stringify(after.raid ?? null);
   if (aiSettled || raidSettled) for (const g of [...BATTLE, 'market'] as LedgerGroup[]) ok.add(g);
@@ -306,11 +306,8 @@ export function profileInvariants(p: PlayerProfile): InvariantBreak[] {
   }
   // 아이템 · 병기
   for (const [id, n] of Object.entries(p.marketOwned ?? {})) {
-    if (!marketItemById.has(id)) add('unknownId', `market.${id}`);
+    if (!itemById.has(id)) add('unknownId', `market.${id}`);
     else if (!isCount(n)) add('negative', `market.${id}`, String(n));
-  }
-  for (const key of Object.keys(p.forgeOwned ?? {})) {
-    if (!equipmentById.has(key.split('#')[0]!)) add('unknownId', `forge.${key}`);
   }
   // 가챠 — 뽑은 수가 덱보다 클 수 없다
   const drawn = p.gachaPool?.drawn ?? 0;
@@ -366,8 +363,8 @@ export function grantExpected(adjs: readonly Adjustment[]): Record<string, numbe
       case 'gold': case 'grain': case 'materials': add(a.kind, a.delta); break;
       case 'cards': add(`cards.${a.officer}`, a.delta); break;
       case 'item': add(`market.${a.item}`, a.delta); break;
-      case 'equipmentGrant': add(`forge.${a.equipmentId}`, a.count); break;
-      case 'equipmentRevoke': add(`forge.${a.key.split('#')[0]}`, -1); break;
+      // 병기도 보관함의 낱개다(2026-11-28)
+      case 'equipmentGrant': add(`market.${a.equipmentId}`, a.count); break;
       case 'building': break; // 재화가 아니다 — 지급 대조는 건물을 안 견준다(`grants.ts`가 그 줄을 뺀다)
     }
   }

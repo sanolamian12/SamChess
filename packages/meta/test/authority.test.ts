@@ -24,7 +24,7 @@ const server = (): PlayerProfile => ({
   grain: 10, grainAt: T0, materials: 4, cityLevel: 3,
   buildings: { ...initialBuildings(), farm: 2 },
   hospitalBusy: [T0 + 60_000],
-  forgeOrder: { equipmentId: 'dae-gam-do', startedAt: T0 },
+  forge: { done: [], research: { level: 1, items: ['dae-gam-do'], startedAt: T0 } },
 });
 
 describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼다', () => {
@@ -38,10 +38,9 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
    * 더하면 아래 두 줄이 함께 깨지면서 「전용 경로는 만들었나」를 묻게 된다.
    */
   const EXPECTED = [
-    'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy', 'forgeOrder',
-    // 제작일(2026-09-11) — 찍는 자리가 `collectForgeOrder()` 하나이고, 그 함수를
-    // 시각과 함께 부르는 것은 서버의 `getProfile()`이다
-    'forgeMadeAt',
+    'grain', 'grainAt', 'materials', 'buildings', 'hospitalBusy',
+    // 대장간 연구(2026-11-28) — 연구 · 취소 · 축하 확인이 서버 경로다. 진열대가 곧 「무엇을 살 수 있나」다
+    'forge',
     // 금화와 가챠 배열(2026-09-14, A1) — 로컬 가챠·도시 이름·재설계가 `PUT`으로 금화를 적을 수 있었다
     'gold', 'gachaPool', 'surplusCards',
     // 장수 명단과 카드(2026-09-14, A2) — 레벨업·재설계·카드 정리가 서버 경로로 옮겨 오며
@@ -98,8 +97,8 @@ describe('PUT /profile — 서버 소유 필드는 클라이언트가 못 바꾼
       grain: 9999, grainAt: 0, materials: 9999,
       buildings: { ...initialBuildings(), palace: 5, barracks: 5, farm: 5, hospital: 5 },
       hospitalBusy: [],
-      forgeOrder: { equipmentId: 'su-geuk', startedAt: 0 },
-      forgeMadeAt: { 'su-geuk': 1 },
+      // 대장간 연구를 1시간 기다리지 않고 「끝났다 · 축하도 봤다」로 적는다 — 장터에 병기가 진열된다
+      forge: { done: [{ level: 1, items: ['su-geuk'], doneAt: 0 }] },
       // 금화를 불리고, 가챠 배열을 처음으로 되감아 좋은 줄을 다시 뽑으려 한다
       gold: 999_999, gachaPool: { seed: 11, drawn: 0 }, surplusCards: 999,
       // 카드를 불리고 장수를 Lv9로 적는다 — 도시 레벨 상한도 증축의 보유 조건도 이걸 본다

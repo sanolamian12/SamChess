@@ -58,7 +58,6 @@ const SORT_KEY: Record<CollectionSort, StringKey> = {
 const BLOCK_KEY: Record<SlotBlock, StringKey> = {
   noSpare: 'collection.slot.noSpare',
   notOwned: 'collection.slot.notOwned',
-  equipped: 'collection.slot.equipped',
   carried: 'collection.slot.carried',
 };
 

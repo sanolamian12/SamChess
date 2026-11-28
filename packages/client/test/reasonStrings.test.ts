@@ -75,7 +75,7 @@ test('meta가 거절에 싣는 코드마다 reason.{code} 문구가 있다 (2026
     }
   }
   // 컬렉션은 막힌 까닭을 그대로 잇는다(`collection.${reason}`)
-  for (const b of ['noSpare', 'notOwned', 'equipped', 'carried']) codes.add(`collection.${b}`);
+  for (const b of ['noSpare', 'notOwned', 'carried']) codes.add(`collection.${b}`);
   const missing = [...codes].filter((c) => !OWN.some((p) => c.startsWith(p)) && !(ko as Record<string, string>)[`reason.${c}`]);
   assert.deepEqual(missing, []);
 });

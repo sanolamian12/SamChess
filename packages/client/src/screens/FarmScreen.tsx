@@ -30,7 +30,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { officerById } from '@samchess/data';
 import {
-  buildingLevel, equippedBy, grainPerHour, guardSlots, guardsOf, isInjured, officerDuty, officerRankRows,
+  buildingLevel, heldItemOf, grainPerHour, guardSlots, guardsOf, isInjured, officerDuty, officerRankRows,
   setGuards, validateGuards,
 } from '@samchess/meta';
 import type { PlayerProfile, RosterPick } from '@samchess/meta';
@@ -306,7 +306,7 @@ export function FarmScreen({ profile, onBack, onChange, onFight, fightBusy }: {
                   );
                 }
                 const hurt = isInjured(inst, now);
-                const eq = equippedBy(profile, officer);
+                const eq = heldItemOf(profile, officer);
                 const glow = STAND_GLOW[data.grade];
                 return (
                   <div

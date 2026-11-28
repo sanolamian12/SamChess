@@ -35,8 +35,9 @@
  */
 
 import {
-  academyOf, forgeSummary, grainCap, grainPerHour, hospitalRooms, poolCap, poolUsed, researchTopics,
+  academyOf, forgeQuota, grainCap, researchedWeapons, grainPerHour, hospitalRooms, poolCap, poolUsed, researchTopics,
 } from '@samchess/meta';
+import { EQUIPMENT } from '@samchess/data';
 import type { BuildingId, CollectionCityKey } from '@samchess/data';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import { t } from '../i18n/index.ts';
@@ -108,8 +109,9 @@ export function buildingCanText(row: BuildingRow): string {
   const n = row.effect?.now ?? 0;
   const lv = row.level;
   switch (row.id) {
-    case 'market': return lv <= 1 ? t('city.bld.market') : t('city.bld.can.market', { lv });
-    case 'forge': return t('city.bld.can.forge', { lv });
+    // 아이템은 Lv1부터 판다(2026-11-28)
+    case 'market': return lv < 1 ? t('city.bld.market') : t('city.bld.can.market', { lv });
+    case 'forge': return t('city.bld.can.forge', { lv, n: forgeQuota(lv) });
     case 'palace': case 'barracks': case 'academy': case 'farm': case 'hospital':
       return t(`city.bld.can.${row.id}`, { n });
     default: return row.purpose;
@@ -132,11 +134,9 @@ export function buildingStatusText(profile: PlayerProfile, row: BuildingRow): st
       // 끝낸 연구 / 열린 주제(= 태학 레벨) — 「몇 개를 더 고를 수 있나」가 한눈에 (2026-09-22)
       return t('city.bld.academy', { done: academyOf(profile).done.length, n: researchTopics(profile) });
     case 'forge': {
-      // 지었으면 실제 형편(보유·지급)을, 안 지었으면 「무엇을 하는 곳인가」를 —
-      // `farm`·`hospital`처럼 값이 있는 건물로 승격했다(2026-09-09, `ForgeScreen` 신설).
+      // 지었으면 연구한 병기 수 / 열다섯을, 안 지었으면 「무엇을 하는 곳인가」를 (2026-11-28 연구로)
       if (row.level <= 0) return t('city.bld.forge.what');
-      const { owned, assigned } = forgeSummary(profile);
-      return t('city.bld.forge.summary', { owned, assigned });
+      return t('city.bld.forge.summary', { done: researchedWeapons(profile).size, max: EQUIPMENT.length });
     }
     default:
       // 규칙이 낸 줄 그대로. 값이 없는 건물이면 쓰임을 적는다

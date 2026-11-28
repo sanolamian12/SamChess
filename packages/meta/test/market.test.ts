@@ -16,8 +16,9 @@ import type { OfficerId } from '@samchess/rules';
 import {
   GRAIN_BUY_MIN_ROOM, GRAIN_PACK, applyBattleResult, applyBuyGrain, applyBuyMarketBasket, applyBuyMarketItem, canBuyGrain,
   canBuyMarketBasket, marketBasketGold,
-  canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile, equipOfficer,
-  fallenAfterShield, forgeItemKey, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
+  applyAckForge, applyStartForgeResearch, collectForgeResearch, shelfOf,
+  canBuyMarketItem, canCarryItem, carryItem, consumeCarried, createProfile,
+  fallenAfterShield, grainCap, grainPackCost, heldFor, isInjured, marketCapacity,
   marketHeldCount, marketOwnedCount, marketUnits, migrateProfile,
   fitCarry, refundItems, settleCarried, syncGrain, toRosterEntries, uncarryItem,
 } from '../src/index.ts';
@@ -37,14 +38,28 @@ const someone = (p: PlayerProfile): OfficerId => Object.keys(p.roster)[0] as Off
 const TANG = 'tang-yak', YEONG = 'yeong-gi', TO = 'jeok-to-ma', NANG = 'cheong-nang-seo';
 
 describe('사기 — 금화 · 보유 총량 둘 (하루 매물은 2026-11-27에 걷었다)', () => {
-  it('보유 총량은 (시장 Lv − 1) × 20이고 Lv1은 아예 안 판다', () => {
-    assert.equal(marketCapacity(shop()), 80);
-    const lv2 = shop({ buildings: { ...shop().buildings, market: 2 } });
-    assert.equal(marketCapacity(lv2), 20);
-
+  it('보관함은 장터 Lv × 12이고 Lv1부터 판다 — 장터가 없으면 안 판다 (2026-11-28)', () => {
+    assert.equal(marketCapacity(shop()), 60);
     const lv1 = shop({ buildings: { ...shop().buildings, market: 1 } });
-    const no = canBuyMarketItem(lv1, TANG, T0);
+    assert.equal(marketCapacity(lv1), 12);
+    assert.equal(canBuyMarketItem(lv1, TANG, T0).ok, true);
+
+    const none = shop({ buildings: { ...shop().buildings, market: 0 } });
+    const no = canBuyMarketItem(none, TANG, T0);
     assert.equal(no.ok === false && no.code, 'market.notBuilt');
+  });
+
+  it('병기는 대장간이 연구하고 축하를 본 뒤에만 판다 — 장터 레벨과 무관하다 (2026-11-28)', () => {
+    const W = 'dae-gam-do';
+    const p0 = shop({ buildings: { ...shop().buildings, market: 1, forge: 1 } });
+    const no = canBuyMarketItem(p0, W, T0);
+    assert.equal(no.ok === false && no.code, 'market.unresearched');
+    const done = collectForgeResearch(applyStartForgeResearch(p0, [W], T0), T0 + 3_600_000);
+    assert.equal(canBuyMarketItem(done, W, T0).ok, false, '축하를 보기 전에는 진열되지 않는다');
+    assert.ok(!shelfOf(done).some((e) => e.id === W));
+    const seen = applyAckForge(done);
+    assert.equal(canBuyMarketItem(seen, W, T0).ok, true);
+    assert.ok(shelfOf(seen).some((e) => e.id === W));
   });
 
   it('아직 안 열린 품목은 거부한다', () => {
@@ -61,7 +76,7 @@ describe('사기 — 금화 · 보유 총량 둘 (하루 매물은 2026-11-27에
 
   it('둘 곳이 없으면 거부한다', () => {
     const full = shop({ marketOwned: { [TANG]: marketCapacity(shop()) } });
-    assert.equal(marketOwnedCount(full), 80);
+    assert.equal(marketOwnedCount(full), 60);
     const no = canBuyMarketItem(full, TANG, T0);
     assert.equal(no.ok === false && no.code, 'market.full');
   });
@@ -135,19 +150,15 @@ describe('들려 보내기 — 병기와 같은 칸', () => {
     assert.equal(no.ok === false && no.code, 'market.noneLeft');
   });
 
-  it('★ 아이템을 들면 병기 대신 아이템이 실리고, **지급은 안 지운다**', () => {
-    const p0 = shop();
+  it('병기도 아이템처럼 들려 보낸다 — 한 장수에 하나, 내려놓으면 아무것도 안 든다 (2026-11-28)', () => {
+    const p0 = shop({ marketOwned: { 'dae-gam-do': 1, [TO]: 1 } });
     const who = someone(p0);
-    const key = forgeItemKey('dae-gam-do', 1);
-    const armed = equipOfficer({ ...p0, forgeOwned: { [key]: null } }, key, who);
+    assert.equal(heldFor(p0, who), undefined);
+    const armed = carryItem(p0, who, 'dae-gam-do');
     assert.equal(heldFor(armed, who), 'dae-gam-do');
-
-    const carried = carryItem({ ...armed, marketOwned: { [TO]: 1 } }, who, TO);
-    assert.equal(heldFor(carried, who), TO, '아이템이 이긴다');
-    assert.equal(carried.forgeOwned[key], who, '지급은 그대로 남는다');
-
-    // 내려놓으면 병기가 **저절로** 돌아온다
-    assert.equal(heldFor(uncarryItem(carried, who), who), 'dae-gam-do');
+    const swapped = carryItem(armed, who, TO);
+    assert.equal(heldFor(swapped, who), TO, '덮어쓴다');
+    assert.equal(heldFor(uncarryItem(swapped, who), who), undefined);
   });
 
   it('전투 로스터에 그대로 실린다', () => {

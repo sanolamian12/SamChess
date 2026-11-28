@@ -73,7 +73,7 @@ const FOREVER_MS = 50 * 365 * 24 * 3600_000;
 
 /**
  * 안내의 기간 줄 — `forever` · `until`(풀리는 시각) · `unknown`.
- * 시각은 `YYYY.MM.DD HH:mm`로 **언어와 무관한 꼴**이다(`ForgeScreen`의 `formatMade`와 같은 까닭).
+ * 시각은 `YYYY.MM.DD HH:mm`로 **언어와 무관한 꼴**이다(`itemText.ts`의 `formatMade`와 같은 까닭).
  */
 export function banTerm(n: BanNotice, nowMs: number): { kind: 'forever' } | { kind: 'until'; at: string } | { kind: 'unknown' } {
   const ms = n.until ? Date.parse(n.until) : NaN;

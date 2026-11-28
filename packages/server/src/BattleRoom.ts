@@ -39,7 +39,7 @@ import { countEvent } from './traffic.ts';
 import { verifyAccessToken } from './auth.ts';
 import type { AuthedUser } from './auth.ts';
 import { chargeGrain, consumeItems, openWar, settleBattleResult } from './economy.ts';
-import { marketItemById } from '@samchess/data';
+import { itemById } from '@samchess/data';
 import type { WarSeats } from './economy.ts';
 
 /** 방을 만들 때 넘기는 것 — 대전 규모, 그리고 선전포고 방이면 그 id */
@@ -291,13 +291,13 @@ export class BattleRoom extends Room {
 
 /**
  * 명단의 시장 아이템을 **서버가 실제로 뺀 것**으로 갈아 끼운다 (2026-11-12). 뺀 것이 있으면 그것, 명단이 아이템을 적었는데 안 뺐으면 지운다.
- * 병기(아이템이 아닌 `held`)는 손대지 않는다. `carried`가 `null`(게임 API에 못 닿음)이면 아이템을 하나도 안 싣는다.
+ * 병기도 아이템이다(2026-11-28 — 장터 보관함의 1회용). `carried`가 `null`(게임 API에 못 닿음)이면 아이템을 하나도 안 싣는다.
  */
 function withCarried(e: Enlist, carried: Partial<Record<string, string>> | null): Enlist {
   const entries = e.entries.map((r) => {
     const item = carried?.[r.officer];
     if (item) return { ...r, held: item };
-    if (r.held && marketItemById.has(r.held)) { const { held: _drop, ...rest } = r; return rest; }
+    if (r.held && itemById.has(r.held)) { const { held: _drop, ...rest } = r; return rest; }
     return r;
   });
   return { ...e, entries };

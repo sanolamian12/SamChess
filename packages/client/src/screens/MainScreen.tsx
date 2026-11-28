@@ -517,7 +517,7 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
           {forge && (
             <button className="city-forge-btn" data-field="forgeTimer" data-forge={forge.status}
               data-action={forge.status === 'done' ? 'forgeGo' : 'forgeTimer'} onClick={forge.onGo}>
-              <span className="lbl">{t(forge.status === 'done' ? 'forge.done.title' : 'forge.craft')}</span>
+              <span className="lbl">{t(forge.status === 'done' ? 'forge.done.title' : 'forge.research')}</span>
               {forge.status === 'crafting' && <span className="sub" data-field="forgeLeft">{formatCountdown(forge.remainingMs)}</span>}
             </button>
           )}
@@ -574,8 +574,8 @@ export function MainScreen({ profile, onChange, onGo, onBuilding, onRanking, onR
 /**
  * **대장간 완성 부름** (2026-11-22 기획자 · 2026-11-23 — 메인만이 아니라 **어느 화면에서든**. `App.tsx`가 전투 · 대장간 밖의 화면에 세운다) — 병기 제작이 끝났는데 아직 대장간에서 축하를 못 봤으면, 메인(성 안이든 산 너머든)에서
  * 대장장이가 오른쪽 아래로 나와 「제작이 완료되었습니다. 대장간으로 와 주세요.」라고 **자루마다 한 번** 부른다.
- * 메인에 있는 동안 끝나도 부른다 — 정산은 `App.tsx`의 분 단위 tick이 하고, 그때 `forgeOwned`가 바뀌어 여기 잡힌다.
- * 「불렀다」는 말풍선이 펴지는 순간 적는다(`forgeSeen.ts` — 화면 편의값이라 `localStorage`). 대장간에서 축하를 보면 그 자루는 아예 안 부른다.
+ * 메인에 있는 동안 끝나도 부른다 — 정산은 `App.tsx`가 끝나는 순간에 하고, 그때 `forge.notice`가 차서 여기 잡힌다.
+ * 「불렀다」는 말풍선이 펴지는 순간 적는다(`forgeSeen.ts` — 화면 편의값이라 `localStorage`). 대장간에서 축하를 보면 아예 안 부른다.
  * 도적떼 · 연구 완료 팝업이 떠 있으면 걷힐 때까지 기다린다(`waitPopups`).
  */
 export function ForgeCall({ profile }: { profile: PlayerProfile }): React.JSX.Element | null {

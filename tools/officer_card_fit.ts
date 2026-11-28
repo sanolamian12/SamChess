@@ -49,17 +49,17 @@ try {
   await page.click('[data-action="openingEnter"]', { timeout: 40_000 });
   await page.waitForSelector('#frame:not([data-arrive]) .scr-main', { timeout: 20_000 });
 
-  // 가장 무거운 꼴 — 260명 전부 · 모두 부상 · 모두 병기 한 자루
+  // 가장 무거운 꼴 — 260명 전부 · 모두 부상 · 모두 병기 하나를 든다(병기도 보관함의 1회용 낱개, 2026-11-28)
   const stored = (await getProfile(uid))!;
   const now = Date.now();
   const roster: Record<string, ReturnType<typeof newInstance>> = {};
-  const forgeOwned: Record<string, string | null> = {};
+  const marketCarry: Record<string, string> = {};
   const weapon = EQUIPMENT[0]!.id;
-  OFFICERS.forEach((o, i) => {
+  OFFICERS.forEach((o) => {
     roster[o.id] = { ...newInstance(o.id as OfficerId), injuredAt: now };
-    forgeOwned[`${weapon}#${i + 1}`] = o.id;
+    marketCarry[o.id] = weapon;
   });
-  await saveProfileTrusted(uid, { ...stored, roster, forgeOwned } as Parameters<typeof saveProfileTrusted>[1]);
+  await saveProfileTrusted(uid, { ...stored, roster, marketOwned: { [weapon]: OFFICERS.length }, marketCarry } as Parameters<typeof saveProfileTrusted>[1]);
 
   const worst: { lang: string; officer: string; rem: number }[] = [];
   const titles: number[] = [];

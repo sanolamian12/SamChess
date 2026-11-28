@@ -229,13 +229,19 @@ export const buyMarketItemOnServer = (item: string): Promise<PlayerProfile | nul
 export const buyMarketItemsOnServer = (basket: import('@samchess/meta').MarketBasket): Promise<PlayerProfile | null> =>
   post('/market/items', { basket });
 
-/**
- * 대장간 제조를 시작한다 (2026-09-09). `buyMaterials`와 같은 결 —
- * `gold`(클라이언트 소유)를 내고 `forgeOrder`(서버 소유)를 받는 거래라
- * **못 닿으면 로컬로 물러나지 않는다**(부르는 화면이 `null`을 그렇게 다룬다).
- */
-export const startForgeOrderOnServer = (equipmentId: string): Promise<PlayerProfile | null> =>
-  post('/forge/order', { equipmentId });
+// ── 대장간 — 병기 연구 (2026-11-28) ─────────────────────────────────────
+//
+// `forge`가 서버 소유라 셋 다 **못 닿으면 로컬로 물러나지 않는다**(태학과 같은 결). 무료라 금화가 안 움직인다.
+
+/** 연구를 시작한다 — 그 레벨의 몫만큼 병기 id */
+export const startForgeResearchOnServer = (items: readonly string[]): Promise<PlayerProfile | null> =>
+  post('/forge/research', { items });
+
+/** 진행 중인 연구를 그만둔다 — 무료라 돌려받을 것이 없다 */
+export const cancelForgeResearchOnServer = (): Promise<PlayerProfile | null> => post('/forge/cancel', {});
+
+/** 축하 화면을 봤다 — 서버의 `notice`를 비운다. 그때부터 장터에 진열된다 */
+export const ackForgeOnServer = (): Promise<PlayerProfile | null> => post('/forge/ack', {});
 
 // ── 태학 — 책략 개량 연구 (2026-09-22, GDD §5.12) ─────────────────────
 //

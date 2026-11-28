@@ -4,9 +4,9 @@
  */
 
 import {
-  academyOf, academyTopics, buildingRows, forgeSummary, grainPerHour, hospitalRooms, poolUsed, researchTopics,
+  academyOf, academyTopics, buildingRows, forgeQuota, forgeShelf, grainPerHour, researchedWeapons, hospitalRooms, poolUsed, researchTopics,
 } from '@samchess/meta';
-import { equipmentForForge, marketItemsForMarket } from '@samchess/data';
+import { EQUIPMENT, marketItemsForMarket } from '@samchess/data';
 import type { BuildingRow, PlayerProfile } from '@samchess/meta';
 import type { BuildingId } from '@samchess/data';
 import { BUILDING_BONUS_KEYS, buildingCanText, buildingNameText, buildingStatusText } from './buildingText.ts';
@@ -49,9 +49,9 @@ function PeekBadge({ src, name, kind, id }: { src: string; name: string; kind: s
  * |---|---|---|
  * | 궁궐 | 장수 n명까지 등용 가능 | 현원 n [장수] — 최대는 첫 줄이 말한다 |
  * | 병영 | 군량 n까지 비축 가능 | 현재 n [군량] |
- * | 장터 | 구매 가능: [금화][자재][장수 카드] — 살 것 · 만들 것은 둥근 금테 배지(`PeekBadge`) | (Lv2부터) 아이템 구매 가능: 그 레벨까지 열린 아이템 그림 — Lv1은 아이템을 아예 못 산다 |
+ * | 장터 | 구매 가능: [금화][자재][장수 카드] — 살 것 · 만들 것은 둥근 금테 배지(`PeekBadge`) | 아이템 구매 가능: 그 레벨까지 열린 아이템 그림(Lv1부터, 2026-11-28) |
  * | 병원 | [부상] n명 치료 가능, [치료실] n — 한 줄 | |
- * | 대장간 | 제작 가능: 그 레벨까지 열린 병기구 그림 | 제작 n개, 재고 n개(만든 것 · 장수에게 안 준 것) |
+ * | 대장간 | 연구 가능: 그 레벨까지의 병기 그림(아직 연구 안 한 것은 흑백) | 연구 n개 · 진열 n개(축하까지 봐 장터에 오른 것) — 2026-11-28 연구로 |
  * | 태학 | 연구 가능: 그 레벨이 여는 개량 책략 셋(끝냈으면 고르지 않은 둘을 흑백으로) | 끝냈으면 연구: [고른 엠블럼], 아니면 연구: 끝낸 수/열린 수 |
  * | 농지 | 시간당 군량 n 생산 | (컬렉션으로 요율이 달라졌을 때만) 지금 요율 |
  */
@@ -93,11 +93,18 @@ function peekLinesAll(profile: PlayerProfile, row: BuildingRow, future: boolean)
         <GameIcon name="hosp-ward" label={t('city.bld.label.hospital')} />{n}</> }];
     }
     case 'forge': {
-      const { owned, spare } = forgeSummary(profile);
+      // 그 레벨까지 고를 수 있는 병기 — 증축 고르기의 한 장(`future`)은 새로 열리는 셋만. 지금 한 장은 연구한 것만 또렷이(2026-11-28)
+      const done = researchedWeapons(profile);
+      const shown = EQUIPMENT.filter((e) => (future ? e.unlockLevel === lv : e.unlockLevel <= lv))
+        .sort((a, b) => a.unlockLevel - b.unlockLevel || a.order - b.order);
       return [
-        { field: 'craft', body: <>{t(future ? 'city.peek.newCraft' : 'city.peek.craft')}
-          {equipmentForForge(lv).filter((e) => !future || e.unlockLevel === lv).map((e) => <PeekBadge key={e.id} src={`blacksmith/${e.id}.png`} name={pickEquipName(e)} kind="equip" id={e.id} />)}</> },
-        { field: 'status', body: t('city.peek.forgeCount', { made: owned, spare }) },
+        { field: 'craft', body: <>{t(future ? 'city.peek.newCraft' : 'city.peek.craft', { n: forgeQuota(lv) })}
+          {shown.map((e) => (
+            <span key={e.id} className={!future && !done.has(e.id) ? 'cty-peek-off' : undefined}>
+              <PeekBadge src={`blacksmith/${e.id}.png`} name={pickEquipName(e)} kind="equip" id={e.id} />
+            </span>
+          ))}</> },
+        { field: 'status', body: t('city.peek.forgeCount', { done: done.size, shelf: forgeShelf(profile).length }) },
       ];
     }
     case 'academy': {

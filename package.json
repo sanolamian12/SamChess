@@ -52,10 +52,9 @@
     "db:check": "node --experimental-strip-types --env-file=.env tools/db_check.ts",
     "db:check:prod": "node --experimental-strip-types --env-file=.env.production tools/db_check.ts",
     "smoke:account": "node --experimental-strip-types --env-file=.env tools/smoke_account.ts",
-    "smoke:forge": "node --experimental-strip-types --env-file=.env tools/forge_play.ts",
     "smoke:raid": "node --experimental-strip-types --env-file=.env tools/raid_play.ts",
     "look:online": "node --experimental-strip-types --env-file=.env tools/online_look.ts",
-    "smoke:forge-ux": "node --experimental-strip-types --env-file=.env tools/forge_ux.ts",
+    "look:forge": "node --experimental-strip-types --env-file=.env tools/forge_research_ux.ts",
     "smoke:academy-ux": "node --experimental-strip-types --env-file=.env tools/academy_ux.ts",
     "smoke:settings-ux": "node --experimental-strip-types tools/settings_ux.ts",
     "smoke:market-ux": "node --experimental-strip-types --env-file=.env tools/market_ux.ts",
@@ -71,8 +70,7 @@
     "look:gacha": "node --experimental-strip-types --env-file=.env tools/gacha_ux.ts",
     "look:battles": "node --experimental-strip-types --env-file=.env tools/battles_ux.ts",
     "look:system": "node --experimental-strip-types --env-file=.env tools/system_ux.ts",
-    "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts",
-    "seed:forge": "node --experimental-strip-types --env-file=.env tools/forge_seed.ts"
+    "smoke:admin": "node --experimental-strip-types --env-file=.env tools/smoke_admin.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

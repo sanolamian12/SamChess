@@ -3174,6 +3174,8 @@ button.lv-tactic-row {
 .cty-peek-badge-in .held-glow { inset: 0; }
 /* 태학 — 이 레벨에서 고르지 않은 주제(셋 가운데 하나만 연구한다) */
 .cty-peek-line .cty-peek-off > img { filter: grayscale(1); opacity: .6; }
+/* 대장간 한 장 — 아직 연구 안 한 병기(2026-11-28) */
+.cty-peek-line .cty-peek-off > .cty-peek-badge { filter: grayscale(1); opacity: .6; }
 .cty-peek-line .tac-icon.cty-peek-tac { width: 2rem; height: 2rem; }
 /* 「+」 표지는 글자 하한(.8rem)까지 — 작은 엠블럼에서 .55rem으로 줄었다 */
 .cty-peek-line .cty-peek-tac .tac-icon-plus { font-size: .9rem; }
@@ -8776,6 +8778,45 @@ button.lvp-tactic:hover .tac-icon > img, button.lvp-tactic[aria-expanded="true"]
 .frg-done .frg-done-row[data-level="4"] { --lvd-stroke: url(ui/era-stroke-b-6.png); }
 .frg-done .frg-done-row[data-level="5"] { --lvd-stroke: url(ui/era-stroke-b-8.png); }
 .frg-done-medal { flex: none; width: 2.8rem; height: 2.8rem; object-fit: contain; filter: drop-shadow(0 .15rem .3rem #000b); }
+/* 연구 완료 — 병기 여럿의 배치 (2026-11-28 기획자): 1 가운데 · 2 좌우 · 3+ 두 줄 삼각형(위 줄이 적다). 병기가 늘면 한 자루가 작아진다 */
+.cel-badge .frg-cel-set { display: flex; flex-direction: column; align-items: center; gap: .2rem; }
+.frg-cel-setrow { display: flex; justify-content: center; align-items: center; gap: .4rem; }
+.cel-badge .frg-cel-set[data-n="2"] .frg-cel-weapon { width: min(10rem, 42vw); }
+.cel-badge .frg-cel-set[data-n="2"] .frg-cel-weapon:last-child { rotate: 14deg; }
+.cel-badge .frg-cel-set[data-n="3"] .frg-cel-weapon,
+.cel-badge .frg-cel-set[data-n="4"] .frg-cel-weapon,
+.cel-badge .frg-cel-set[data-n="5"] .frg-cel-weapon { width: min(7rem, 28vw); translate: 0; }
+.cel-badge .frg-cel-set[data-n="4"] .frg-cel-setrow + .frg-cel-setrow .frg-cel-weapon,
+.cel-badge .frg-cel-set[data-n="5"] .frg-cel-setrow + .frg-cel-setrow .frg-cel-weapon { width: min(6rem, 24vw); }
+/* 병기가 다섯이면 붓선 줄도 다섯 — 줄 높이를 줄여 판에 든다 */
+.frg-done .frg-done-row + .frg-done-row { margin-top: -.15rem; }
+
+/* ── 대장간 연구 (2026-11-28) — 태학의 틀(`acd-*`)을 빌리고 병기 그림 · 고르기 줄만 더한다 ── */
+.scr-building-forge .place-panel.frg-rs-status { padding: .3rem .6rem; margin: 0 .75rem; }
+.frg-rs-chips { gap: .25rem; }
+.frg-rs-chip { flex: none; width: 2.1rem; height: 2.1rem; padding: .1rem; border: 1px solid #b08a4a; border-radius: 50%;
+  background: radial-gradient(circle, #2a2118 60%, #120d08); cursor: pointer; line-height: 0; }
+.frg-rs-chip img { width: 100%; height: 100%; object-fit: contain; }
+.frg-rs-chip[aria-expanded="true"], .frg-rs-chip:hover { box-shadow: 0 0 .35rem #f0c674; }
+/* 고르기 판 — 줄마다 그림 · 이름 줄(Lv · 이름 · 사용/지속 · 체크) · 효과 한 줄 */
+.frg-rs-list { display: flex; flex-direction: column; gap: .3rem; }
+button.lv-tactic-row.frg-rs-row, .frg-rs-row { flex-direction: row; align-items: center; gap: .45rem; }
+.frg-rs-art { position: relative; flex: none; width: 2.9rem; height: 2.9rem; border-radius: .35rem; overflow: hidden;
+  background: radial-gradient(circle, #2a2118 55%, #0e0a06); }
+.frg-rs-art img { position: relative; width: 100%; height: 100%; object-fit: contain; }
+.frg-rs-art .frg-rs-glow { position: absolute; inset: -20%; }
+.frg-rs-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: .05rem; }
+.frg-rs-head { display: flex; align-items: center; gap: .4rem; width: 100%; }
+.frg-rs-label { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .1rem .35rem; font-size: .95rem; font-weight: 700; color: #2c2013; }
+.frg-rs-name { font-weight: 700; }
+.frg-rs-kind .gic { width: 1.25rem; height: 1.25rem; vertical-align: middle; }
+.frg-rs-fx { font-size: .9rem; line-height: 1.3; color: #4a3826; }
+.frg-rs-lore { font-size: .9rem; line-height: 1.35; color: #5a4632; margin-top: .2rem; }
+.frg-rs-row:disabled { opacity: .55; }
+.frg-rs-row.on:disabled { opacity: 1; }
+/* 연구한 병기 한 장 — 책략 한 장(`tac-modal`)과 같은 두루마리, 그림이 왼쪽에 */
+.frg-rs-peek { max-width: min(30rem, 92vw); }
+
 
 /* ── 전투 아이템 구매 완료 (2026-11-27 기획자) — 금화 분수 도입부(`Celebrate`의 `coins`, 1.8초) → 물자 상자 위에 금테 아이템 메달이 튀어나온다 ──
    도입부: 화면이 어두워지고(`cel-dim`) 바닥에서 금화 스물넷이 물결로 터져 오르다(약한 분수 — 높이 화면의 절반 남짓, 꼭대기에서 살짝 처지며 사라진다)

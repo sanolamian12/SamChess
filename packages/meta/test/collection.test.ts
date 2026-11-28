@@ -16,7 +16,7 @@ import { createBattle } from '@samchess/rules';
 import type { OfficerId, UnitId } from '@samchess/rules';
 import {
   applyRegisterSlot, canRegisterSlot, collectionRankRows, collectionRows, collectionStatus, collectionSummary, createProfile,
-  battlePower, forgeCopiesOwned, forgeItemKey, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
+  battlePower, migrateProfile, searchCollections, slotState, sortCollections, spareCards,
   toRosterEntries,
 } from '../src/index.ts';
 import type { PlayerProfile } from '../src/index.ts';
@@ -27,7 +27,7 @@ const LUBU = COLLECTIONS.find((c) => c.title === '인중여포 마중적토')!; 
 
 function base(over: Partial<PlayerProfile> = {}): PlayerProfile {
   const p = createProfile('수집성', 7);
-  return { ...p, roster: {}, cards: {}, forgeOwned: {}, marketOwned: {}, ...over };
+  return { ...p, roster: {}, cards: {}, marketOwned: {}, ...over };
 }
 const inst = (id: string) => ({ [id]: { officer: id as OfficerId, level: 1, growth: [] } }) as unknown as PlayerProfile['roster'];
 
@@ -64,19 +64,19 @@ describe('칸 판정 — 여분만 낸다', () => {
   });
 });
 
-describe('병기 — 미지급 자루만 · 상한이 다시 열린다', () => {
+describe('병기 — 장터 보관함의 낱개 (2026-11-28 — 들려 보낼 예약을 뺀다)', () => {
   const W = 'bang-cheon-hwa-geuk';
   const wIdx = LUBU.slots.findIndex((s) => s.kind === 'weapon');
-  it('지급된 자루뿐이면 「지급 중」으로 막힌다', () => {
-    const p = base({ forgeOwned: { [forgeItemKey(W, 1)]: 'yeo-po' as OfficerId } });
-    assert.deepEqual(slotState(p, LUBU, wIdx), { state: 'blocked', reason: 'equipped', have: 0 });
+  it('하나뿐인데 들려 보낼 예정이면 막히고, 없으면 「미보유」', () => {
+    const p = base({ marketOwned: { [W]: 1 }, marketCarry: { ['yeo-po' as OfficerId]: W } });
+    assert.deepEqual(slotState(p, LUBU, wIdx), { state: 'blocked', reason: 'carried', have: 0 });
+    assert.equal(slotState(base(), LUBU, wIdx).reason, 'notOwned');
   });
-  it('낸 자루는 보유에서 빠지고 제작일도 함께 지워진다', () => {
-    const key = forgeItemKey(W, 1);
-    const p = base({ forgeOwned: { [key]: null }, forgeMadeAt: { [key]: T - 1000 } });
+  it('낸 것은 보관함에서 빠지고 구매일도 가장 오래된 것이 함께 빠진다', () => {
+    const p = base({ marketOwned: { [W]: 2 }, marketBoughtAt: { [W]: [T - 2000, T - 1000] } });
     const next = applyRegisterSlot(p, LUBU.id, wIdx, T);
-    assert.equal(forgeCopiesOwned(next, W), 0);
-    assert.ok(!(key in (next.forgeMadeAt ?? {})));
+    assert.equal(next.marketOwned?.[W], 1);
+    assert.deepEqual(next.marketBoughtAt?.[W], [T - 1000]);
   });
 });
 

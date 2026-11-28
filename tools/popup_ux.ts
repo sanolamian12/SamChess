@@ -35,7 +35,7 @@ const page = await browser.newPage({ viewport: { width: 700, height: 1200 } });
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) errors.push(m.text()); });
-// 브라우저 대화상자는 받아 넘기지 않고 오류로 센다 — 받아 넘기면 팝업이 죽어도 통과한다(`forge_play.ts`가 밟은 자리)
+// 브라우저 대화상자는 받아 넘기지 않고 오류로 센다 — 받아 넘기면 팝업이 죽어도 통과한다(옛 대장간 스모크가 밟은 자리)
 page.on('dialog', (d) => { errors.push(`브라우저 대화상자가 떴다 — ${d.message()}`); void d.dismiss(); });
 const shot = (name: string) => page.screenshot({ path: `${SHOTS}/${name}.png` });
 const art = (sel: string) => page.$eval(sel, (e) => getComputedStyle(e).borderImageSource);

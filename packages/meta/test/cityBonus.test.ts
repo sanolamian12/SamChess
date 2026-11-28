@@ -11,12 +11,12 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { COLLECTIONS, EQUIPMENT, RAID } from '@samchess/data';
+import { COLLECTIONS, RAID } from '@samchess/data';
 import type { CollectionCityKey, CollectionData } from '@samchess/data';
 import type { OfficerId, TacticId } from '@samchess/rules';
 import {
   HEAL_MS, MS_PER_HOUR, ROOM_CYCLE_MS, applyHeal, applyInjuries, applyRegisterSlot, cityBonus, cityBonusSources,
-  collectResearch, createProfile, craftDurationMs, forgeOrderRemainingMs, grainCap, grainPerHour, grainStepMs,
+  collectForgeResearch, collectResearch, createProfile, FORGE_RESEARCH_MS, forgeResearchRemainingMs, grainCap, grainPerHour, grainStepMs,
   healMsFor, hospitalWards, injuryHealsAt, isInjured, migrateProfile, raidDeadline, raidLoot, raidLootPct,
   researchRemainingMs, ACADEMY_RESEARCH_MS, RAID_RESPONSE_MS, syncCity, syncGrain, syncRaid,
 } from '../src/index.ts';
@@ -103,16 +103,17 @@ describe('군량 — 상한 · 충전 요율', () => {
 });
 
 describe('대장간 · 태학 — 시작한 때 판정', () => {
-  const LV4 = EQUIPMENT.find((e) => e.unlockLevel === 4)!;
-
-  it('제조 −10% — 주문 뒤에 완성한 컬렉션은 그 주문을 안 줄인다', () => {
-    const order = { equipmentId: LV4.id, startedAt: T0 };
-    const full = craftDurationMs(4);
-    assert.equal(forgeOrderRemainingMs(base({ forgeOrder: order }), T0), full);
-    const before = done(base({ forgeOrder: order }), [one('forge')], T0 - 1);
-    assert.equal(forgeOrderRemainingMs(before, T0), full * 0.9);
-    const after = done(base({ forgeOrder: order }), [one('forge')], T0 + 1);
-    assert.equal(forgeOrderRemainingMs(after, T0 + 1), full - 1, '주문 뒤 완성은 안 걸린다');
+  it('대장간 연구 −10% — 시작 뒤에 완성한 컬렉션은 그 연구를 안 줄이고, 거두기 · doneAt이 같은 끝 시각을 본다', () => {
+    const forge = { done: [], research: { level: 1, items: ['dae-gam-do'], startedAt: T0 } };
+    const full = FORGE_RESEARCH_MS;
+    assert.equal(forgeResearchRemainingMs(base({ forge }), T0), full);
+    const before = done(base({ forge }), [one('forge')], T0 - 1);
+    const ms = full * 0.9;
+    assert.equal(forgeResearchRemainingMs(before, T0), ms);
+    assert.equal(collectForgeResearch(before, T0 + ms - 1), before, '아직');
+    assert.deepEqual(collectForgeResearch(before, T0 + ms).forge!.done, [{ level: 1, items: ['dae-gam-do'], doneAt: T0 + ms }]);
+    const after = done(base({ forge }), [one('forge')], T0 + 1);
+    assert.equal(forgeResearchRemainingMs(after, T0 + 1), full - 1, '시작 뒤 완성은 안 걸린다');
   });
 
   it('연구 −5% — 남은 시간 · 거두기 · doneAt이 같은 끝 시각을 본다', () => {

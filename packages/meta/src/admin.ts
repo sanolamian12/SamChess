@@ -18,12 +18,11 @@
  * **계정의 권위 자리(meta)에 둔다** — 서버(`server-api/src/admin/`)는 이 함수를 잠긴 행 위에서 부를 뿐이다.
  * 처음(2026-10-20)에는 기존 파일을 못 고치는 사정으로 server-api 안에 있었다.
  */
-import { EQUIPMENT, MARKET_ITEMS, RAID, buildingById, officerById } from '@samchess/data';
+import { EQUIPMENT, ITEMS, RAID, buildingById, officerById } from '@samchess/data';
 import type { BuildingId } from '@samchess/data';
 import { academyOf } from './academy.ts';
 import { fightingAi, forfeitAiBattle } from './aiBattle.ts';
 import { BUILD_CITY_LEVEL, HEAL_MS, ROOM_CYCLE_MS, buildingLevel, grainCap, healMsOf, injuryHealsAt, isInjured, syncCity } from './city.ts';
-import { forgeItemKey } from './forge.ts';
 import { carriedCount, inPlayOf, isCarriedBattle, marketHeldCount, settleCarried } from './market.ts';
 import { raidActive, raidDay, surrenderRaid } from './raid.ts';
 import { addCard } from './profile.ts';
@@ -38,8 +37,11 @@ export type Adjustment =
   | { kind: 'gold' | 'grain' | 'materials'; delta: number }
   | { kind: 'cards'; officer: string; delta: number }
   | { kind: 'item'; item: string; delta: number }
+  /**
+   * 병기를 장터 보관함에 `count`개 넣는다 (2026-11-28 대장간 연구 개편 — 그 전에는 대장간의 자루). 거두는 것은 `item`의 음수다
+   * (병기도 보관함의 낱개라 같은 길 — 옛 `equipmentRevoke`(자루 하나)는 없어졌다)
+   */
   | { kind: 'equipmentGrant'; equipmentId: string; count: number }
-  | { kind: 'equipmentRevoke'; key: string }
   /** 건물을 `level`까지 **올린다**(신축은 0 → n) — 2026-11-13, 관리자 「도시」 탭. 권한 `city` */
   | { kind: 'building'; building: string; level: number }
   /**
@@ -59,7 +61,8 @@ export const ADJUST_LIMITS = {
 } as const;
 
 const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
-const marketItemIds = new Set(MARKET_ITEMS.map((m) => m.id));
+/** 보관함에 드는 것 전부 — 장터 품목 + 병기(2026-11-28부터 병기도 보관함의 낱개다) */
+const marketItemIds = new Set(ITEMS.map((m) => m.id));
 
 /**
  * 일괄 지급 한 번에 담을 수 있는 줄 수 (2026-11-13) — 장수 탭의 「장수 카드 지급」 표가 여러 장수를 한 번에 준다.
@@ -100,7 +103,7 @@ export function parseAdjustmentBatch(body: unknown): Adjustment[] | string {
 
 const adjustTargetKey = (a: Adjustment): string =>
   a.kind === 'cards' ? `cards.${a.officer}` : a.kind === 'item' ? `item.${a.item}`
-    : a.kind === 'equipmentGrant' ? `equip.${a.equipmentId}` : a.kind === 'equipmentRevoke' ? `revoke.${a.key}`
+    : a.kind === 'equipmentGrant' ? `equip.${a.equipmentId}`
     : a.kind === 'building' ? `building.${a.building}` : a.kind;
 
 /**
@@ -151,8 +154,6 @@ export function parseAdjustment(body: unknown): Adjustment | string {
       if (typeof b['equipmentId'] !== 'string' || !equipmentById.has(b['equipmentId'])) return '모르는 병기다';
       return { kind: 'equipmentGrant', equipmentId: b['equipmentId'], count };
     }
-    case 'equipmentRevoke':
-      return typeof b['key'] === 'string' && b['key'] ? { kind: 'equipmentRevoke', key: b['key'] } : '자루 키(key)가 없다';
     case 'building': {
       const data = typeof b['building'] === 'string' ? buildingById.get(b['building'] as BuildingId) : undefined;
       if (!data) return '모르는 건물이다';
@@ -226,18 +227,9 @@ export function applyAdjustment(profile: PlayerProfile, adj: Adjustment, nowMs: 
         marketBoughtAt: { ...profile.marketBoughtAt, [adj.item]: boughtAt.slice(Math.min(boughtAt.length, -adj.delta)) },
       };
     }
-    case 'equipmentGrant': {
-      const forgeOwned = { ...profile.forgeOwned };
-      const forgeMadeAt = { ...profile.forgeMadeAt };
-      // 번호 짓기는 `collectForgeOrder`의 `nextCopy`와 같다 — 비어 있는 가장 작은 번호
-      for (let i = 0, n = 1; i < adj.count; i += 1) {
-        while (forgeItemKey(adj.equipmentId, n) in forgeOwned) n += 1;
-        const key = forgeItemKey(adj.equipmentId, n);
-        forgeOwned[key] = null;
-        forgeMadeAt[key] = nowMs;
-      }
-      return { ...profile, forgeOwned, forgeMadeAt };
-    }
+    case 'equipmentGrant':
+      // 보관함의 낱개 — `item`의 양수와 같은 자리(병기를 장터에서 산 것과 구별되지 않는다)
+      return applyAdjustment(profile, { kind: 'item', item: adj.equipmentId, delta: adj.count }, nowMs);
     case 'building': {
       // **올리기만 한다** — 낮추면 궁궐 풀이 넘치고(보관함으로 내릴 길이 없다) 진행 중인 연구 · 제조 · 치료가 자리를 잃는다
       const id = adj.building as BuildingId;
@@ -255,14 +247,6 @@ export function applyAdjustment(profile: PlayerProfile, adj: Adjustment, nowMs: 
     case 'aiBattles':
       // `applyBattleResult`의 `opponent: 'ai'`와 같다 — 이긴 판만 누적 승리에. 무 · 패는 게임에도 남는 칸이 없다
       return adj.wins > 0 ? { ...profile, battleWins: battleWinsOf(profile) + adj.wins } : profile;
-    case 'equipmentRevoke': {
-      if (!(adj.key in profile.forgeOwned)) throw new Error(`그런 자루가 없다 — ${adj.key}`);
-      const holder = profile.forgeOwned[adj.key];
-      if (holder) throw new Error(`${officerById.get(holder)?.name ?? holder}이(가) 끼고 있다 — 지급을 먼저 풀어야 한다`);
-      const { [adj.key]: _owned, ...forgeOwned } = profile.forgeOwned;
-      const { [adj.key]: _made, ...forgeMadeAt } = profile.forgeMadeAt ?? {};
-      return { ...profile, forgeOwned, forgeMadeAt };
-    }
   }
 }
 
@@ -388,7 +372,7 @@ export function applyResolution(profile: PlayerProfile, res: Resolution, nowMs: 
 // | `view` | 대시보드 · 추이 · 유저 · 계정 상세 · 게임 데이터 · 우편 목록 · 감사 로그(전부) | ✓ | ✓ |
 // | `resolve` | 멈춘 상태 정리 | ✓ | ✓ |
 // | `grant` | 조정 중 주는 쪽 | ✓ | ✓ CS 상한 안에서 |
-// | `revoke` | 조정 중 거두는 쪽(음수 · `equipmentRevoke`) | ✓ | |
+// | `revoke` | 조정 중 거두는 쪽(음수) | ✓ | |
 // | `mail.one` | 한 사람 우편 | ✓ | ✓ 보상은 CS 상한 안에서 |
 // | `mail.all` · `mail.revoke` | 전체 우편 · 우편 회수 | ✓ | |
 // | `ban` | 정지 `CS_BAN_DAYS_MAX`(7)일 이하 | ✓ | ✓ |
@@ -446,7 +430,7 @@ export const roleForbiddenMessage = (perm: AdminPermission): string => `${PERMIS
 export const isGrantCapped = (role: AdminRole): boolean => role === 'cs';
 
 /**
- * 조정 하나가 **재화를 주는 쪽**인가 — 양수 delta · 병기 지급. 음수 · `equipmentRevoke`는 거두는 쪽이다.
+ * 조정 하나가 **재화를 주는 쪽**인가 — 양수 delta · 병기 지급. 음수는 거두는 쪽이다.
  * 건물(`building`)은 어느 쪽도 아니다 — 재화가 아니라 CS 상한에 안 세고, 권한도 따로(`city`)다.
  */
 export const isGrant = (adj: Adjustment): boolean =>

@@ -389,12 +389,11 @@ describe('2026-11-14 둘째 지정', () => {
     assert.equal(pendingGuide(seen(five, 'barracks.intro'), 'barracks'), 'barracks.sortieOpen');
   });
 
-  it('장터 — Lv2가 되면 홈에서 한 번, 보관함은 처음 들어갈 때', () => {
+  it('장터 — 소개 뒤 홈에서는 더 말하지 않고(아이템을 Lv1부터 판다, 2026-11-28), 보관함은 처음 들어갈 때', () => {
     const m = seen(fresh(), 'market.intro');
     assert.equal(pendingGuide(m, 'market'), null);
     const lv2 = { ...m, buildings: { ...m.buildings, market: 2 } } as PlayerProfile;
-    assert.equal(pendingGuide(lv2, 'market'), 'market.open');
-    assert.equal(pendingGuide(seen(lv2, 'market.open'), 'market'), null);
+    assert.equal(pendingGuide(lv2, 'market'), null);
     assert.equal(pendingGuide(m, 'marketStorage'), null, '빈 보관함에서는 가리킬 단추가 없다');
     const owned = { ...m, marketOwned: { [MARKET_ITEMS[0]!.id]: 1 } } as PlayerProfile;
     assert.equal(pendingGuide(owned, 'marketStorage'), 'market.storage');

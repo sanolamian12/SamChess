@@ -142,7 +142,7 @@ describe('보내기 검사 (관리자 API가 부른다)', () => {
 
   it('★ 보상은 주는 것만 — 음수 · 회수 · 모르는 종류는 거절', () => {
     assert.match(String(parseMailDraft({ ...ok, rewards: [{ kind: 'gold', delta: -10 }] })), /주는 것만/);
-    assert.match(String(parseMailDraft({ ...ok, rewards: [{ kind: 'equipmentRevoke', key: 'x#1' }] })), /주는 것만/);
+    assert.match(String(parseMailDraft({ ...ok, rewards: [{ kind: 'equipmentRevoke', key: 'x#1' }] })), /모르는 kind/, '옛 병기 자루 회수는 없어졌다');
     assert.match(String(parseMailDraft({ ...ok, rewards: [{ kind: 'gold', delta: 10_000_000 }] })), /보상:/, '관리자 지급의 상한을 그대로 지난다');
     assert.match(String(parseMailDraft({ ...ok, rewards: Array(MAIL_LIMITS.rewards + 1).fill({ kind: 'gold', delta: 1 }) })), /까지/);
   });
