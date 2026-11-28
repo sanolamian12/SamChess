@@ -10,9 +10,8 @@ import assert from 'node:assert/strict';
 
 import {
   OFFICERS, UNIQUE_SKILLS, PIECES, TACTICS, CITY_LEVELS, BUILDINGS, CITY_RULES, BUILD_REPORT,
-  EQUIPMENT, buildingById, equipmentById, equipmentForForge, officerById, skillById,
+  EQUIPMENT, ITEMS, buildingById, equipmentById, equipmentForForge, itemById, officerById, skillById,
 } from '@samchess/data';
-import type { EquipmentEffect } from '@samchess/data';
 import { threatRange } from '../src/pieces.ts';
 import { FORMULA } from '../src/types.ts';
 
@@ -278,111 +277,70 @@ test('장비의 해금 레벨은 대장간 Lv1~maxLevel 안이다', () => {
   }
 });
 
-test('같은 (종류, 해금 레벨)이면 효과도 가격도 같다', () => {
-  const seen = new Map<string, { effect: string; gold: number; name: string }>();
-  for (const e of EQUIPMENT) {
-    const key = `${e.kind}-${e.unlockLevel}`;
-    const effect = JSON.stringify(e.effect);
-    const first = seen.get(key);
-    if (!first) { seen.set(key, { effect, gold: e.gold, name: e.name }); continue; }
-    assert.equal(effect, first.effect, `${e.name} ≠ ${first.name}: 같은 티어인데 효과가 다르다`);
-    assert.equal(e.gold, first.gold, `${e.name} ≠ ${first.name}: 같은 티어인데 가격이 다르다`);
+/*
+ * **전투 아이템은 레벨마다 셋이다** (2026-11-28 기획자, 대장간 연구 개편) — 장터 아이템은 장터 Lv1~5, 병기는 대장간 Lv1~5.
+ * 2026-11-27까지의 「같은 (종류, 레벨)이면 효과 · 값이 같다」 · 「방어구는 베리어만」은 병기가 영구 장비이던 시절의 규칙이라 걷었다.
+ */
+test('전투 아이템은 장터 · 대장간 각각 레벨마다 셋, 진열 순서 0..2', () => {
+  for (const source of ['market', 'forge'] as const) {
+    for (let lv = 1; lv <= 5; lv += 1) {
+      const at = ITEMS.filter((e) => e.source === source && e.unlockLevel === lv).map((e) => e.order).sort();
+      assert.deepEqual(at, [0, 1, 2], `${source} Lv${lv}`);
+    }
   }
+  assert.equal(itemById.size, ITEMS.length, 'id가 두 표 사이에서 겹친다');
 });
 
-test('방어구는 베리어만, 무기는 베리어를 안 준다', () => {
-  for (const e of EQUIPMENT) {
-    const { barrier, ...offence } = e.effect;
-    if (e.kind === 'armor') {
-      assert.ok((barrier ?? 0) > 0, `${e.name}: 방어구인데 베리어가 없다`);
-      assert.deepEqual(offence, {}, `${e.name}: 방어구인데 공격 효과가 있다`);
+test('Active는 효과(DSL)만, Passive는 값만 — 갈래와 짝이 맞는다', () => {
+  for (const e of ITEMS) {
+    if (e.kind === 'active') {
+      assert.ok((e.effects?.length ?? 0) > 0, `${e.name}: Active인데 효과가 없다`);
+      assert.equal(e.passive, undefined, `${e.name}: Active인데 Passive 값이 있다`);
     } else {
-      assert.equal(barrier, undefined, `${e.name}: 무기인데 베리어가 있다`);
-      assert.ok(Object.values(offence).some((v) => v > 0), `${e.name}: 무기인데 효과가 없다`);
+      assert.ok(Object.keys(e.passive ?? {}).length > 0, `${e.name}: Passive인데 값이 없다`);
+      assert.equal(e.effects, undefined, `${e.name}: Passive인데 효과가 있다`);
     }
   }
 });
 
-/*
- * **비싼 티어가 반드시 세다** (2026-09-07 밸런스 검토가 두 번 잡은 역전).
- *
- * 「크리티컬 데미지 +1」이 「크리티컬 확률 +10%p」보다 약한 구간이 있었고,
- * 「받는 데미지 −1」이 「최대 HP +50%」보다 약한 구간이 있었다 — 둘 다 상위
- * 티어가 하위 티어와 **다른 종류**의 효과라서 상성이 갈렸기 때문이다. 지금 안은
- * 상위가 하위를 포함하도록 짜여 있고, 그 포함 관계를 여기서 고정한다.
- *
- * ★ **키 하나씩 비교하면 안 된다.** Lv5(평타 +1)에는 Lv4의 `criticalDamage`가
- * 없는데, 크리티컬이 평타의 2배라 **평타 +1이 크리티컬 +2가 되어 그것을
- * 삼킨다.** 키로 재면 「Lv5가 Lv4보다 약하다」는 거짓 경보가 뜬다 — 실제로
- * 처음 이 검사를 그렇게 적었다가 걸렸다. 그래서 **기대 데미지로 잰다.**
- */
-test('무기는 상위 티어가 어떤 AT·크리율에서도 더 세다', () => {
-  const byLevel = new Map<number, EquipmentEffect>();
-  for (const e of EQUIPMENT) if (e.kind === 'weapon') byLevel.set(e.unlockLevel, e.effect);
+test('병기의 갈래는 무기 · 방어구, 장터 아이템은 약 · 책 · 말 · 도구', () => {
+  for (const e of EQUIPMENT) assert.ok(e.group === 'weapon' || e.group === 'armor', e.name);
+  for (const e of ITEMS.filter((x) => x.source === 'market')) {
+    assert.ok(['potion', 'book', 'horse', 'tool'].includes(e.group), e.name);
+  }
+});
 
-  /** 장비를 낀 1회 공격의 기대 데미지 */
-  const expected = (at: number, rate: number, fx: EquipmentEffect): number => {
-    const p = Math.min(100, rate + (fx.criticalRate ?? 0)) / 100;
-    const normal = FORMULA.damage(at + (fx.attack ?? 0), false, false, false);
-    const crit = FORMULA.damage(at + (fx.attack ?? 0), true, false, false) + (fx.criticalDamage ?? 0);
-    return normal * (1 - p) + crit * p;
-  };
-
-  const levels = [...byLevel.keys()].sort((a, b) => a - b);
-  for (const at of [2, 2.5, 3, 3.5, 4, 5, 6]) {
-    for (const rate of [0, 20, 50, 80, 100]) {
-      const bare = expected(at, rate, {});
-      let prev = bare;
-      for (const lv of levels) {
-        const now = expected(at, rate, byLevel.get(lv)!);
-        assert.ok(now >= prev,
-          `AT ${at}·크리율 ${rate}%: 무기 Lv${lv}(${now.toFixed(2)})가 `
-          + `Lv${lv - 1}(${prev.toFixed(2)})보다 약하다`);
-        prev = now;
-      }
-      assert.ok(prev > bare, `AT ${at}·크리율 ${rate}%: 최상위 무기가 맨손과 같다`);
+test('Passive 결정타 무기 · HP 갑옷은 레벨이 오를수록 세고 비싸다', () => {
+  const ladder = (pick: (e: (typeof EQUIPMENT)[number]) => number | undefined) =>
+    EQUIPMENT.filter((e) => pick(e) !== undefined).sort((a, b) => a.unlockLevel - b.unlockLevel);
+  for (const [name, pick] of [
+    ['결정타', (e: (typeof EQUIPMENT)[number]) => e.passive?.criticalRate],
+    ['HP', (e: (typeof EQUIPMENT)[number]) => e.passive?.hp],
+  ] as const) {
+    const row = ladder(pick);
+    assert.ok(row.length >= 4, `${name} 사다리가 짧다`);
+    for (let i = 1; i < row.length; i += 1) {
+      assert.ok(pick(row[i]!)! > pick(row[i - 1]!)!, `${name}: ${row[i]!.name}가 ${row[i - 1]!.name}보다 약하다`);
+      assert.ok(row[i]!.gold >= row[i - 1]!.gold, `${name}: ${row[i]!.name}가 ${row[i - 1]!.name}보다 싸다`);
     }
   }
 });
 
-test('방어구는 베리어가 티어마다 늘고, 가격은 무기·방어구 각각 단조 증가', () => {
-  for (const kind of ['weapon', 'armor'] as const) {
-    const tiers = [...new Set(EQUIPMENT.filter((e) => e.kind === kind).map((e) => e.unlockLevel))]
-      .sort((a, b) => a - b);
-    const goldAt = (lv: number) => EQUIPMENT.find((e) => e.kind === kind && e.unlockLevel === lv)!.gold;
-    for (let i = 1; i < tiers.length; i += 1) {
-      assert.ok(goldAt(tiers[i]!) > goldAt(tiers[i - 1]!),
-        `${kind} Lv${tiers[i]}의 가격이 Lv${tiers[i - 1]}보다 안 비싸다`);
+test('Passive 값은 데미지를 깎지 않는다 — 평타는 감쇠가 없으면 언제나 1 이상', () => {
+  for (const e of ITEMS) {
+    for (const [key, value] of Object.entries(e.passive ?? {})) {
+      if (typeof value !== 'number') continue;
+      // 받는 데미지 · WT는 줄수록 이롭다 — 「깎는다」가 아니다
+      if (key === 'finalDamageTaken' || key.startsWith('wtDelta')) continue;
+      assert.ok(value > 0, `${e.name}: ${key}가 ${value}다`);
     }
   }
-  const barriers = EQUIPMENT.filter((e) => e.kind === 'armor')
-    .sort((a, b) => a.unlockLevel - b.unlockLevel)
-    .map((e) => e.effect.barrier ?? 0);
-  assert.deepEqual(barriers, [3, 6, 9, 12]);
+  for (const at of [2, 2.5, 3, 4, 6]) assert.ok(FORMULA.damage(at, false, false, false) >= 1);
 });
 
-/*
- * **베리어는 데미지를 깎지 않는다** — 「받는 데미지 −N」안이 남긴 구멍의 회귀.
- *
- * AT 2(레벨 1의 기본값이고 지력형은 만렙에도 흔하다)의 평타가 2라, −2를 주면
- * 데미지가 **0**이 되어 영원히 못 죽인다. 베리어는 데미지를 건드리지 않는
- * **HP 풀**이라 그 경계가 아예 없다 — 그래서 「최소 데미지 1」 같은 하한도
- * 필요 없다. 여기서는 **어떤 장비도 데미지를 깎지 않는다**를 고정한다.
- *
- * (감쇠 둘이 겹치면 — 「반감」 걸린 대상을 「공포」 걸린 AT 2가 치면 — 평타는
- * 지금도 0이다. 그것은 장비와 무관한 엔진의 기존 성질이라 여기서 안 본다.)
- */
-test('장비는 데미지를 깎지 않는다 — 감산 효과가 하나도 없다', () => {
-  for (const e of EQUIPMENT) {
-    for (const [key, value] of Object.entries(e.effect)) {
-      assert.ok(value > 0, `${e.name}: ${key}가 ${value}다 — 장비 효과는 더하기만 한다`);
-    }
-  }
-  // 장비를 껴도 평타 계산에 들어가는 것은 AT뿐이다 (감쇠가 없으면 언제나 1 이상)
-  for (const at of [2, 2.5, 3, 4, 6]) {
-    for (const e of EQUIPMENT) {
-      const normal = FORMULA.damage(at + (e.effect.attack ?? 0), false, false, false);
-      assert.ok(normal >= 1, `${e.name}: AT ${at}에서 평타가 ${normal}이다`);
-    }
-  }
+test('반감은 겹 수로 받는다 — 두 겹이면 1/4 (손자병법서 + 다른 반감)', () => {
+  assert.equal(FORMULA.damage(8, false, 1, false), 4);
+  assert.equal(FORMULA.damage(8, false, 2, false), 2);
+  assert.equal(FORMULA.damage(8, false, true, false), FORMULA.damage(8, false, 1, false));
+  assert.equal(FORMULA.damage(8, false, false, false), FORMULA.damage(8, false, 0, false));
 });

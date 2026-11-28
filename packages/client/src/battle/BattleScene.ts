@@ -12,7 +12,7 @@
 import Phaser from 'phaser';
 import { VISUAL_EFFECTS, collectionById, combatantById } from '@samchess/data';
 import {
-  STATUS_META, SIDES, attackCells, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
+  STATUS_META, SIDES, attackCellsOf, deployCellsFor, supplyDepotOf, deployLimitMs, firedCollections, forecastAttack, legalMovesFor, legalTargetsFor,
 } from '@samchess/rules';
 import { tickKind } from './tickKind.ts';
 import type { TickKind } from './tickKind.ts';
@@ -1769,7 +1769,8 @@ export class BattleScene extends Phaser.Scene {
     }
     if (this.actionMode === 'attack') {
       // 공격이 닿는 칸 전체를 먼저 옅게 — 적이 없어도 "어디까지 닿는가"가 보여야 한다
-      paint(attackCells(unit.piece, unit.pos, state.boardSize), COLOR.attackRange, 0.16, 1);
+      // 유성추(사거리 두 칸)까지 — 판정(`legalTargetsFor`)과 같은 함수를 본다
+      paint(attackCellsOf(state, unit), COLOR.attackRange, 0.16, 1);
       const targets = this.flow.attackTargets(state, active);
       paint(targets.map((id) => state.units[id]!.pos), COLOR.attackHint);
       this.drawOdds(active, targets);

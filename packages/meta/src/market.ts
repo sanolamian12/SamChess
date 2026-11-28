@@ -34,7 +34,7 @@
  * 병기를 다시 끼우는 잡일이 생긴다.
  */
 
-import { MARKET_ITEMS, marketItemById, marketItemsForMarket } from '@samchess/data';
+import { MARKET_ITEMS, itemById, marketItemById, marketItemsForMarket } from '@samchess/data';
 import type { MarketItemData } from '@samchess/data';
 import type { OfficerId } from '@samchess/rules';
 import { buildingLevel } from './city.ts';
@@ -438,8 +438,9 @@ export function refundItems(
 }
 
 /**
- * **이 판에서 부상을 면제받는 장수** — 청낭서를 **이 판(`battle`)에** 들고 나간 사람들 (GDD §6.5).
- * 다른 판에 든 청낭서는 이 판을 지키지 않는다 — 같은 장수가 도적떼와 온라인에 함께 설 수 있다.
+ * **이 판에서 부상을 면제받는가** — 청낭서를 **이 판(`battle`)에** 누군가 들고 나갔으면 **아군 전원**이 면제된다
+ * (2026-11-28 기획자 — 그 전에는 든 장수 한 명만). 다른 판에 든 청낭서는 이 판을 지키지 않는다 — 같은 장수가
+ * 도적떼와 온라인에 함께 설 수 있다.
  *
  * 출처는 `marketInPlay`다 — **판이 열릴 때 무엇이 나갔는지**를 서버가 적어 둔
  * 그 값이고, 정산 순간까지 살아 있다(`settleCarried()`가 그 뒤에 비운다).
@@ -449,21 +450,14 @@ export function refundItems(
  * **거르는 자리는 `applyInjuries()`를 부르는 쪽**이다 — 그 함수 안에서 거르면
  * 병원 시험용 강제 부상(`/dev/grant`)까지 면제된다.
  */
-export function injuryShielded(profile: PlayerProfile, battle: CarriedBattle): Set<OfficerId> {
-  const out = new Set<OfficerId>();
-  for (const { officer, item } of inPlayOf(profile, battle)) {
-    if (marketItemById.get(item)?.passive?.noInjury) out.add(officer);
-  }
-  return out;
+export function injuryShielded(profile: PlayerProfile, battle: CarriedBattle): boolean {
+  return inPlayOf(profile, battle).some(({ item }) => itemById.get(item)?.passive?.noInjury);
 }
 
-/** 부상을 입을 장수만 남긴다 — 청낭서를 든 사람은 빠진다 */
+/** 부상을 입을 장수만 남긴다 — 이 판에 청낭서가 나갔으면 아무도 안 다친다 */
 export const fallenAfterShield = (
   profile: PlayerProfile, battle: CarriedBattle, fallen: readonly OfficerId[],
-): OfficerId[] => {
-  const shielded = injuryShielded(profile, battle);
-  return shielded.size === 0 ? [...fallen] : fallen.filter((o) => !shielded.has(o));
-};
+): OfficerId[] => (injuryShielded(profile, battle) ? [] : [...fallen]);
 
 /** 데이터에 있는 모든 아이템 id — 되접기가 모르는 키를 거를 때 쓴다 */
 export const MARKET_ITEM_IDS: ReadonlySet<string> = new Set(MARKET_ITEMS.map((m) => m.id));

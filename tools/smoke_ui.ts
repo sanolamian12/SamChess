@@ -1853,8 +1853,8 @@ await page.waitForTimeout(50);
 const aimCells = await page.evaluate(() =>
   (window as any).__battle.scene.debugAimCells() as { x: number; y: number }[]);
 if (aimCells.length > 0) {
-  const at = await toScreen(aimCells[0]!.x, aimCells[0]!.y);
-  await page.mouse.click(at.x, at.y);
+  // 카메라가 멎은 뒤에 잰다(`clickCell`) — 조준에 들면 카메라가 판 전체로 물러나는 중이라, 바로 재면 옛 화면의 좌표를 누른다(2026-11-28)
+  await clickCell(aimCells[0]!);
   await page.waitForTimeout(200);
   // 대상을 고르면 확인창이 선다(2026-10-24 기획자 — 「누구에게 무엇을 시전합니다」) — 고유기술 확인창인지 보고 [확인]
   // 조준 중에도 data-kind는 unique다 — 「확인창인가」는 data-view가 말한다(둘을 같이 봐야 헐겁지 않다)
@@ -1979,7 +1979,7 @@ console.log('✓ 연출 종료 → 판 재개');
 // (곽가 「유언계책」이 마침 걸려 있을 때만). 6단계에서 `?status=1`(남군 군주가 버프·디버프 하나씩을 든 채 시작)로
 // **언제나** 돌게 했다 — 「안 도는 갈래」를 흉내 통로로 닫는 같은 처방이다.
 await page.goto(`${BASE}/?demo=1&seed=3&mode=3v3&side=P1&status=1`, { waitUntil: 'networkidle' });
-if ((await wait('awaitingInput'))?.phase !== 'awaitingInput') fail('?status=1 판에서 내 차례가 오지 않았다');
+if ((await wait('awaitingInput', 60_000))?.phase !== 'awaitingInput') fail('?status=1 판에서 내 차례가 오지 않았다');
 await page.evaluate(() => { const sc = (window as any).__battle.scene; sc.resetView(); sc.debugFreeCamera(); });
 await page.waitForFunction(() => (window as any).__battle.scene.cameras.main.worldView.width >= 2390, null, { timeout: 5000 });
 const king = await page.evaluate(() => {
@@ -2223,6 +2223,23 @@ const usedMark = await page.evaluate(() => {
   return Object.values(s.units).filter((u: any) => u.itemUsed).map((u: any) => u.id as string);
 });
 if (usedMark.length !== 1) fail(`「썼다」 표식이 ${usedMark.length}개다 — 하나여야 한다`);
+// ⑤ 차례를 끝내지 않는다(2026-11-28 기획자) — 같은 장수가 그대로 쥐고, [아이템]만 꺼지고 [대기]는 남는다
+// 연출이 도는 동안에는 명령 칸이 꺼져 있다(위 「연출 중에는 명령 칸이 꺼진다」) — [대기]가 다시 켜질 때까지 기다린다
+const afterItem = await page.waitForFunction((who) => {
+  const pb = (window as any).__battle.scene.debugPlayback;
+  const wait = document.querySelector('#cmd button[data-action="endTurn"]') as HTMLButtonElement | null;
+  return pb.phase === 'awaitingInput' && pb.state.activeUnit === who && wait && !wait.disabled ? true : null;
+}, usedMark[0], { timeout: 10_000 }).then(() => probe()).catch(async () => {
+  const pb = await page.evaluate(() => {
+    const p = (window as any).__battle.scene.debugPlayback;
+    return { phase: p.phase, active: p.state.activeUnit, step: (window as any).__battle.scene.debugFlowStep };
+  });
+  fail(`아이템을 쓴 뒤 10초 안에 [대기]가 안 켜진다 — ${JSON.stringify(pb)} · 쓴 장수 ${usedMark[0]}`);
+  return null;
+});
+if (!afterItem) fail('아이템을 쓰자 차례가 넘어갔다 — 아이템은 차례를 끝내지 않는다');
+if (afterItem!.cmd.shown.includes('useItem+')) fail(`아이템을 쓴 뒤에도 [아이템]이 켜져 있다: [${afterItem!.cmd.shown.join(' ')}]`);
+if (!afterItem!.cmd.shown.includes('endTurn+')) fail(`아이템을 쓴 뒤 [대기]가 없다: [${afterItem!.cmd.shown.join(' ')}]`);
 /*
  * **대화창은 줄을 천천히 흘린다**(`systemLog`의 pacing) — 판정이 끝난 그 순간에
  * 읽으면 아직 큐에 있다. 「몇 ms면 되겠지」로 재지 말고 **실제로 나타날 때까지**
@@ -2237,7 +2254,7 @@ await page.waitForFunction(
     (window as any).__battle.scene.debugLogLines() as string[]);
   fail(`대화창에 아이템을 쓴 줄이 없다: ${lines.slice(-3).join(' | ')}`);
 });
-console.log(`✓ 시장 아이템 — [아이템] → 확인창 → 취소 → 확정, SP ${spBefore} → ${spAfter}`);
+console.log(`✓ 시장 아이템 — [아이템] → 확인창 → 취소 → 확정, SP ${spBefore} → ${spAfter} · 차례가 이어진다`);
 
 /*
  * ── 다국어 — 전투 화면을 **일본어로 다시 띄워** 한글이 남았는지 본다 (2026-09-11) ──

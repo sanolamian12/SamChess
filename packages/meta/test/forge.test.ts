@@ -31,8 +31,8 @@ function forge(over: Partial<PlayerProfile> = {}): PlayerProfile {
   return { ...p, gold: 1000, buildings: { ...p.buildings, forge: 5 }, ...over };
 }
 
-const LV1_WEAPON = EQUIPMENT.find((e) => e.kind === 'weapon' && e.unlockLevel === 1)!;
-const LV2_WEAPON = EQUIPMENT.find((e) => e.kind === 'weapon' && e.unlockLevel === 2)!;
+const LV1_WEAPON = EQUIPMENT.find((e) => e.group === 'weapon' && e.unlockLevel === 1)!;
+const LV2_WEAPON = EQUIPMENT.find((e) => e.group === 'weapon' && e.unlockLevel === 2)!;
 const LV4_ITEM = EQUIPMENT.find((e) => e.unlockLevel === 4)!;
 const LV5_ITEM = EQUIPMENT.find((e) => e.unlockLevel === 5)!;
 const K1 = forgeItemKey(LV1_WEAPON.id, 1);
@@ -40,10 +40,11 @@ const K1B = forgeItemKey(LV1_WEAPON.id, 2);
 const K2 = forgeItemKey(LV2_WEAPON.id, 1);
 
 describe('가격 총량과 종류당 개수 (2026-09-14 피라미드)', () => {
-  it('15종 가격 합은 750이고, 대장간 Lv5의 피라미드 매출 상한은 1,495금화다', () => {
-    assert.equal(EQUIPMENT.reduce((n, e) => n + e.gold, 0), 750);
+  // ⚠ 피라미드는 대장간 연구 개편(2026-11-28)에서 걷힌다 — 병기가 1회용 장터 상품이 되어 가격 합이 87이 됐다
+  it('15종 가격 합은 87이고, 대장간 Lv5의 피라미드 매출 상한은 176금화다', () => {
+    assert.equal(EQUIPMENT.reduce((n, e) => n + e.gold, 0), 87);
     const cap = EQUIPMENT.reduce((n, e) => n + e.gold * forgeCopiesAllowed(5, e.unlockLevel), 0);
-    assert.equal(cap, 1495);
+    assert.equal(cap, 176);
   });
 
   it('종류당 개수 = 대장간 Lv − 해금 Lv + 1 — 해금 Lv5는 대장간 Lv5에서도 한 자루다(동결) ★', () => {

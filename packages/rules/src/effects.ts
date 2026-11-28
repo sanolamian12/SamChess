@@ -25,8 +25,9 @@ import {
 } from './types.ts';
 import { heldOf } from './held.ts';
 import { inBounds } from './pieces.ts';
+import { BLOCKING_TERRAIN } from './types.ts';
 import {
-  aliveUnits, byTurnRank, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
+  DIRS_8, aliveUnits, byTurnRank, chebyshev, damageUnit, hasStatus, healUnit, isOver, officerStats, resolveAttack, samePos,
   supplyDepotOf, unitAt, unitsOf,
 } from './state.ts';
 
@@ -62,7 +63,7 @@ export function aimingSpec(effects: readonly Effect[]): TargetSpec | undefined {
 export function tacticMpCost(caster: UnitState, tactic: TacticId): number {
   const def = tacticById.get(tactic);
   if (!def) throw new Error(`알 수 없는 책략: ${tactic}`);
-  if (hasStatus(caster, 'zeroMpCost') || hasStatus(caster, 'debateBoon')) return 0;   // 명경지수 · 설전 효과
+  if (hasStatus(caster, 'zeroMpCost') || hasStatus(caster, 'debateBoon') || hasStatus(caster, 'itemZeroMp')) return 0;   // 명경지수 · 설전 효과 · 태평요술
   return Math.max(0, def.mpCost - (heldOf(caster).tacticMpDiscount ?? 0));
 }
 
@@ -123,6 +124,12 @@ export function resolveTacticTarget(
     if (area.some((pos) => state.terrain.some((t) => samePos(t.pos, pos)))) return { ok: false, reason: '세울 자리에 이미 다른 지형이 있다' };
     // 손권 「수성지주」 — 군량고가 3×3 안에 들면 그 자리에서는 못 세운다(군량고 칸만 빼고 짓지 않는다 — 기획자)
     if (e.t === 'createTerrain' && area.some((pos) => isSupplyDepot(state, pos))) return { ok: false, reason: '군량고에는 지형을 세울 수 없다' };
+  }
+
+  // 아이템 한 대(청룡언월도 · 장팔사모) — 조준이 없는 대신 **닿는 적이 있어야** 쓴다(헛스윙으로 아이템을 날리지 않게)
+  for (const e of effects) {
+    if (e.t !== 'strike' || (e.target.kind !== 'enemiesInRadius' && e.target.kind !== 'enemiesInLines')) continue;
+    if (resolveUnits(state, { caster }, e.target).length === 0) return { ok: false, reason: '닿는 적이 없다' };
   }
 
   const spec = aimingSpec(effects);
@@ -248,6 +255,13 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
       return kingRowTiles(state, caster, spec.radius)
         .map((pos) => unitAt(state, pos))
         .filter((u): u is UnitState => !!u?.alive);
+    case 'enemiesInRadius':
+    case 'enemiesInLines':
+      return strikeArea(state, caster, spec)
+        .map((pos) => unitAt(state, pos))
+        .filter((u): u is UnitState => !!u?.alive && u.side !== caster.side)
+        // 정산 순서는 WT 오름차순 — 「장료지제」와 같다(동시 사망의 승패가 여기서 갈린다)
+        .sort((a, b) => a.wt - b.wt || byTurnRank(a, b));
     case 'selfArea':
       // 'tile'과 같은 규약 — 범위 안 칸에 선 유닛들. 지금은 아무도 안 쓴다
       // (성채는 칸에만 걸린다). switch가 전수라 자리는 비워 둘 수 없다.
@@ -255,6 +269,40 @@ function resolveUnits(state: BattleState, ctx: EffectContext, spec: TargetSpec):
         .map((pos) => unitAt(state, pos))
         .filter((u): u is UnitState => !!u);
   }
+}
+
+/**
+ * 아이템 한 대가 닿는 칸 (2026-11-28) — 청룡언월도(주변 `radius`칸) · 장팔사모(4방향 `length`칸 줄). 판 밖은 잘린다.
+ * 장팔사모는 줄 앞의 유닛을 **지나서** 닿는다(창이 꿰뚫는다). 화면이 범위를 그릴 때도 이것을 부른다.
+ */
+export function strikeArea(
+  state: Pick<BattleState, 'boardSize'>, caster: UnitState,
+  spec: Extract<TargetSpec, { kind: 'enemiesInRadius' | 'enemiesInLines' }>,
+): Vec2[] {
+  if (spec.kind === 'enemiesInRadius') return areaTiles(caster.pos, spec.radius, state.boardSize).slice(1);
+  const out: Vec2[] = [];
+  for (const d of DIRS_8.slice(0, spec.dirs)) {
+    for (let k = 1; k <= spec.length; k++) {
+      const p = { x: caster.pos.x + d.x * k, y: caster.pos.y + d.y * k };
+      if (inBounds(p, state.boardSize)) out.push(p);
+    }
+  }
+  return out;
+}
+
+/**
+ * 개산대부 — 맞은 적을 시전자 반대쪽으로 한 칸 민다. 판 밖 · 다른 유닛 · 막힌 지형(수계 · 바위) · 군량고면 못 민다
+ * (군량고는 밀려 들어간 적이 점령해 버리지 않게). 밀었으면 `true`.
+ */
+function pushAway(state: BattleState, caster: UnitState, target: UnitState, events: BattleEvent[]): boolean {
+  const to = { x: target.pos.x + Math.sign(target.pos.x - caster.pos.x), y: target.pos.y + Math.sign(target.pos.y - caster.pos.y) };
+  if (!inBounds(to, state.boardSize) || unitAt(state, to)) return false;
+  if (state.terrain.some((t) => BLOCKING_TERRAIN.has(t.terrain) && samePos(t.pos, to))) return false;
+  if (isSupplyDepot(state, to)) return false;
+  const from = { ...target.pos };
+  target.pos = to;
+  events.push({ e: 'moved', unit: target.id, from, to: { ...to }, pushed: true });
+  return true;
 }
 
 function tilesOf(state: BattleState, ctx: EffectContext, spec: TargetSpec): Vec2[] {
@@ -445,6 +493,16 @@ function applyEffect(
         if (!u.casting) continue;
         events.push({ e: 'uniqueSkillFizzled', unit: u.id, skill: u.casting, cause: 'sealed' });
         delete u.casting;
+      }
+      return;
+    }
+
+    case 'strike': {
+      for (const t of resolveUnits(state, ctx, effect.target)) {
+        if (isOver(state) || !t.alive || !ctx.caster.alive) break;
+        resolveAttack(state, ctx.caster, t, events, false, effect.critical === true);
+        if (!effect.knockback || !t.alive || isOver(state)) continue;
+        if (!pushAway(state, ctx.caster, t, events)) damageUnit(state, t, effect.knockback.blockedDamage, reason, events);
       }
       return;
     }

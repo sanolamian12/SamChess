@@ -35,7 +35,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildingById, equipmentById } from '@samchess/data';
-import type { EquipmentData, EquipmentKind } from '@samchess/data';
+import type { EquipmentData, ItemGroup } from '@samchess/data';
 import {
   craftDurationMs, craftableEquipment, equipOfficer, equippedBy, forgeDurationMs, forgeLevel, forgeOrderRemainingMs, forgeSummary,
   syncCity, unequipOfficer, copyNumberOfKey, equipmentIdOfKey, equippedKey,
@@ -65,6 +65,9 @@ import { useLang } from '../i18n/useLang.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { buildingNameText } from './buildingText.ts';
 import { BuildingLevel } from './LevelBadge.tsx';
+
+/** 병기의 갈래 — 무기 · 방어구 */
+type EquipmentKind = Extract<ItemGroup, 'weapon' | 'armor'>;
 
 type View = 'home' | 'craft' | 'assign';
 
@@ -859,14 +862,14 @@ function DetailModal({ item, profile, now, onStart, onClose }: {
                 참조). */}
             <img src="blacksmith/frame_item.png" alt="" className="frg-item-frame-art" />
             <GlowLayer level={item.unlockLevel} />
-            <img src={`blacksmith/${item.id}.png`} alt="" className="frg-item-photo" data-kind={item.kind} />
+            <img src={`blacksmith/${item.id}.png`} alt="" className="frg-item-photo" data-kind={item.group} />
           </div>
           {/* 해설과 효과를 한 두루마리 안에 함께 담는다(2026-09-09 네 번째
               팔로업 — 손그림 목업처럼). 종류는 글자 대신 아이콘. */}
           <div className="frg-item-desc">
             <p className="frg-item-lore">{lore}</p>
             <p className="frg-item-effect">
-              <KindIcon kind={item.kind} />
+              <KindIcon kind={item.group as EquipmentKind} />
               {t('forge.detail.effectLine', { effect })}
             </p>
           </div>

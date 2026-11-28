@@ -104,7 +104,8 @@ function buildUnit(
   // 들고 온 것의 WT 몫은 **기준값에 얹는다** — 화면이 `wtBase`를 그대로 그리므로
   // 여기서 얹어야 「왜 빠른지」가 보인다. HP에 따라 바뀌는 몫(절영)만 매 턴
   // 다시 잰다(`wtHeldAdjust()`). 대결에 져서 다칠 때 다시 재는 자리와 같은 식이다(`wtBaseOf`)
-  const held = heldEffectOf(entry.held);
+  // 갑옷(엄심경 · 두무 …)은 최대 HP를 올린다 — HP도 그만큼 차서 시작하고, 회복으로 다시 찬다 (2026-11-28 기획자, 옛 베리어를 걷었다)
+  hp += heldEffectOf(entry.held).hp ?? 0;
   const wtBase = wtBaseOf(leadership, entry.held);
   return {
     id: `${side}-${entry.piece}` as UnitId,
@@ -119,7 +120,6 @@ function buildUnit(
     wt: wtBase,
     wtBase,
     ...(entry.held ? { held: entry.held } : {}),
-    ...(held.barrier ? { barrier: held.barrier } : {}),
     pos,
     tactics: [...entry.tactics],
     statuses: [],
@@ -733,10 +733,11 @@ export function validate(state: BattleState, side: Side, intent: Intent): Valida
       return aim.ok ? ok : no(aim.reason);
     }
     /*
-     * **아이템은 책략과 같은 행동 칸이다** (2026-09-23 기획자 확정, GDD §6.5).
+     * **아이템은 차례를 끝내지 않는다** (2026-11-28 기획자 — 2026-09-23의 「책략과 같은 행동 칸」을 뒤집음).
      *
-     * 이동한 뒤에도 쓸 수 있고 쓰면 그 턴이 끝난다 — 「이동 + 행동 하나」(§3.4)에
-     * 그대로 앉는다. 침묵(`silence`)은 **안 막는다**: 책략·환술을 막는 것이지
+     * 행동(공격 · 책략 · 명상) **전이면** 이동 전이든 뒤든 쓰고, 쓴 뒤에 이동 · 행동을 그대로 한다 — 한 판에 한 번
+     * (`itemUsed`)이라 「아이템으로 한 번 치고 또 공격」이 한 번 가능하다. 시간제 아이템(3일간 WT −10 …)이 차례 하나를
+     * 쓰면 되찾는 것보다 잃는 것이 커서 바꿨다. 침묵(`silence`)은 **안 막는다**: 책략·환술을 막는 것이지
      * 탕약을 삼키는 것까지 막는 상태가 아니다.
      */
     case 'useItem': {
@@ -879,6 +880,9 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
     case 'attack': {
       const unit = s.units[s.activeUnit!]!;
       s.activeTurn!.acted = true;
+      // 유성추(「다음 공격 한 번 사거리 두 칸」) — 겨눈 순간 쓴 것이다. 후보는 이미 `validate`가 그 사거리로 골랐다
+      const reach = findStatus(unit, 'itemRangeTwo');
+      if (reach) consumeCharge(unit, reach, events);
       for (const id of intent.targets) {
         if (isOver(s)) break;
         const target = s.units[id]!;
@@ -992,10 +996,10 @@ export function apply(state: BattleState, side: Side, intent: Intent): { state: 
       if (!aim.ok) throw new Error(`아이템 대상이 잘못됐다: ${aim.reason}`);
 
       unit.itemUsed = true;
-      s.activeTurn!.acted = true;
       events.push({ e: 'itemUsed', unit: unit.id, item: item.id, ...aimedAt(aim.ctx) });
       actingAs(unit, as, () => applyEffects(s, aim.ctx, effects, `item:${item.id}`, events));
-      if (!isOver(s)) endTurn(s, events);
+      // 차례를 끝내지 않는다(위 `validate`의 주석) — 쓴 장수가 아이템의 반격에 쓰러졌으면 그 차례는 끝이다
+      if (!isOver(s) && !unit.alive) endTurn(s, events);
       break;
     }
 

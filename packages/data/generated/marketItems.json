@@ -2,12 +2,14 @@
   {
     "id": "tang-yak",
     "no": 1,
+    "order": 0,
     "name": "탕약",
     "hanja": "湯藥",
+    "source": "market",
     "group": "potion",
     "kind": "active",
-    "unlockLevel": 2,
-    "gold": 2,
+    "unlockLevel": 1,
+    "gold": 1,
     "effects": [
       {
         "t": "heal",
@@ -47,12 +49,14 @@
   {
     "id": "cha",
     "no": 2,
+    "order": 1,
     "name": "차",
     "hanja": "茶",
+    "source": "market",
     "group": "potion",
     "kind": "active",
-    "unlockLevel": 3,
-    "gold": 4,
+    "unlockLevel": 1,
+    "gold": 1,
     "effects": [
       {
         "t": "setMp",
@@ -92,12 +96,14 @@
   {
     "id": "mok-u-yu-ma",
     "no": 3,
+    "order": 2,
     "name": "목우유마",
     "hanja": "木牛流馬",
+    "source": "market",
     "group": "potion",
     "kind": "active",
     "unlockLevel": 4,
-    "gold": 8,
+    "gold": 5,
     "effects": [
       {
         "t": "heal",
@@ -138,34 +144,25 @@
   {
     "id": "ma-bi-san",
     "no": 4,
+    "order": 1,
     "name": "마비산",
     "hanja": "麻沸散",
+    "source": "market",
     "group": "potion",
     "kind": "active",
     "unlockLevel": 5,
-    "gold": 16,
+    "gold": 8,
     "effects": [
       {
-        "t": "applyStatus",
+        "t": "heal",
         "target": {
-          "kind": "self"
+          "kind": "allyOne",
+          "withinRadius": 1
         },
-        "status": "incomingDamageZero",
-        "duration": 90
+        "pctMaxHp": 0.5
       }
     ],
-    "text": "지속 90 동안 받는 데미지 0",
-    "textI18n": {
-      "en": "Damage taken 0 (duration 90)",
-      "ja": "持続90の間、受けるダメージ0",
-      "zh_Hant": "持續90期間受到的傷害為0",
-      "zh_Hans": "持续90期间受到的伤害为0",
-      "pt_BR": "Dano recebido 0 (duração 90)",
-      "pt_PT": "Dano recebido 0 (duração 90)",
-      "it": "Danni subiti 0 (durata 90)",
-      "es_419": "Daño recibido 0 (duración 90)",
-      "mn": "Авах хохирол 0 (үргэлжлэх 90)"
-    },
+    "text": "8방향 내 아군 1명의 HP 50% 회복",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. Hua Tuo's anaesthetic powder, mafeisan: a small lidded white porcelain jar with its wooden stopper set aside, spilling a little pale grey-green powder onto a folded paper packet, next to a worn stone mortar and pestle and a few dried hemp flower heads and datura blossoms. Precious and medicinal, cool pale tones, a faint numbing stillness about it.",
     "lore": "화타의 마취약. 술에 타 마시면 배를 갈라도 아픔을 모른다 했으나, 처방은 그가 죽으며 함께 사라졌다.",
     "nameI18n": {
@@ -183,27 +180,18 @@
   {
     "id": "cheong-nang-seo",
     "no": 5,
+    "order": 0,
     "name": "청낭서",
     "hanja": "靑囊書",
+    "source": "market",
     "group": "book",
     "kind": "passive",
-    "unlockLevel": 2,
-    "gold": 2,
+    "unlockLevel": 3,
+    "gold": 3,
     "passive": {
       "noInjury": true
     },
-    "text": "착용 장수가 이 전투에서 부상을 입지 않음",
-    "textI18n": {
-      "en": "Bearer suffers no injury from this battle",
-      "ja": "装備した武将はこの戦闘で負傷しない",
-      "zh_Hant": "裝備武將在本場戰鬥中不會負傷",
-      "zh_Hans": "装备武将在本场战斗中不会负伤",
-      "pt_BR": "O portador não se fere nesta batalha",
-      "pt_PT": "O portador não se fere nesta batalha",
-      "it": "Il portatore non subisce ferite in questa battaglia",
-      "es_419": "El portador no sufre heridas en esta batalla",
-      "mn": "Эзэмшигч энэ тулалдаанд шархдахгүй"
-    },
+    "text": "아군 전원이 이 전투에서 부상을 입지 않음",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Blue Bag medical manual, qingnang shu: a bundle of narrow bamboo writing slips bound with cord and half rolled open, wrapped in a deep blue-green silk pouch whose drawstring hangs loose. A slim leather roll of bronze acupuncture needles lies open beside it and a sprig of dried medicinal herb rests on top. Faded indigo dye, worn silk nap, no legible lettering.",
     "lore": "화타가 평생의 의술을 적어 푸른 주머니에 넣어 둔 의서. 옥리가 화를 두려워해 받지 않아 불길 속에 사라졌다.",
     "nameI18n": {
@@ -221,27 +209,25 @@
   {
     "id": "tae-pyeong-yo-sul",
     "no": 6,
+    "order": 1,
     "name": "태평요술",
     "hanja": "太平要術",
+    "source": "market",
     "group": "book",
-    "kind": "passive",
-    "unlockLevel": 3,
-    "gold": 4,
-    "passive": {
-      "tacticMpDiscount": 1
-    },
-    "text": "책략 MP 소모 −1 (MP 1은 0)",
-    "textI18n": {
-      "en": "Tactic MP cost −1 (1 MP becomes 0)",
-      "ja": "策略のMP消費 −1（MP1は0）",
-      "zh_Hant": "策略MP消耗 −1（MP1變為0）",
-      "zh_Hans": "策略MP消耗 −1（MP1变为0）",
-      "pt_BR": "Custo de MP das táticas −1 (MP 1 vira 0)",
-      "pt_PT": "Custo de MP das táticas −1 (MP 1 passa a 0)",
-      "it": "Costo MP delle tattiche −1 (MP 1 diventa 0)",
-      "es_419": "Costo de MP de tácticas −1 (MP 1 pasa a 0)",
-      "mn": "Стратегийн MP зардал −1 (MP 1 нь 0)"
-    },
+    "kind": "active",
+    "unlockLevel": 2,
+    "gold": 2,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "itemZeroMp",
+        "duration": 290
+      }
+    ],
+    "text": "사용 후 3일간 책략 MP 소모 0",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Daoist scripture of arcane arts, taiping yaoshu: a scroll of coarse yellow hemp paper partly unrolled over a bundle of bamboo slips, its wooden rollers capped in tarnished bronze, tied with a saffron silk cord. Strips of yellow talisman paper marked with swirling illegible cinnabar-red charm script are tucked into the fold, and a faint pale aura clings to the edges. Ochre and cinnabar, incense-smoked, faintly supernatural.",
     "lore": "장각이 남화노선에게 받았다는 도교 비서. 바람과 비를 부르는 술법이 적혀 있었다 한다.",
     "nameI18n": {
@@ -259,27 +245,25 @@
   {
     "id": "yuk-do-sam-ryak",
     "no": 7,
+    "order": 1,
     "name": "육도삼략",
     "hanja": "六韜三略",
+    "source": "market",
     "group": "book",
-    "kind": "passive",
+    "kind": "active",
     "unlockLevel": 4,
-    "gold": 8,
-    "passive": {
-      "counterChance": 30
-    },
-    "text": "피격 시 30% 확률로 반격",
-    "textI18n": {
-      "en": "30% chance to counter when hit",
-      "ja": "被弾時30%の確率で反撃",
-      "zh_Hant": "受擊時30%機率反擊",
-      "zh_Hans": "受击时30%几率反击",
-      "pt_BR": "30% de chance de contra-atacar ao ser atingido",
-      "pt_PT": "30% de probabilidade de contra-atacar ao ser atingido",
-      "it": "30% di probabilità di contrattaccare se colpito",
-      "es_419": "30% de probabilidad de contraatacar al ser golpeado",
-      "mn": "Цохиулахад 30% магадлалтай сөрөг довтолно"
-    },
+    "gold": 5,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "itemCounter",
+        "duration": 190
+      }
+    ],
+    "text": "사용 후 2일간 피격 시 반격",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Six Secret Teachings and Three Strategies, liutao sanlue: two separate bundles of bamboo writing slips, one lying flat and half unrolled and the other still tightly rolled and tied, bound with plain dark hemp cord, resting on a coarse undyed cloth. Slips darkened with handling, one cracked and re-bound with fresh cord, an ink stone and worn brush set aside. Plain, heavily used, scholarly and unglamorous.",
     "lore": "강태공의 『육도』와 황석공이 장량에게 준 『삼략』을 묶어 부르는 병법서. 읽는 책이 아니라 손에 익히는 책이다.",
     "nameI18n": {
@@ -297,28 +281,25 @@
   {
     "id": "son-ja-byeong-beop-seo",
     "no": 8,
+    "order": 2,
     "name": "손자병법서",
     "hanja": "孫子兵法書",
+    "source": "market",
     "group": "book",
-    "kind": "passive",
+    "kind": "active",
     "unlockLevel": 5,
-    "gold": 16,
-    "passive": {
-      "finalDamageDealt": 1,
-      "finalDamageTaken": -1
-    },
-    "text": "최종 계산 뒤 주는 데미지 +1 · 받는 데미지 −1 (하한 0)",
-    "textI18n": {
-      "en": "After final calc: damage dealt +1 · damage taken −1 (min 0)",
-      "ja": "最終計算後、与ダメージ +1・被ダメージ −1（下限0）",
-      "zh_Hant": "最終計算後 造成傷害 +1 · 受到傷害 −1（下限0）",
-      "zh_Hans": "最终计算后 造成伤害 +1 · 受到伤害 −1（下限0）",
-      "pt_BR": "Após o cálculo final: dano causado +1 · dano recebido −1 (mín. 0)",
-      "pt_PT": "Após o cálculo final: dano causado +1 · dano recebido −1 (mín. 0)",
-      "it": "Dopo il calcolo finale: danni inflitti +1 · danni subiti −1 (min. 0)",
-      "es_419": "Tras el cálculo final: daño infligido +1 · daño recibido −1 (mín. 0)",
-      "mn": "Эцсийн тооцооны дараа: учруулах хохирол +1 · авах хохирол −1 (доод 0)"
-    },
+    "gold": 10,
+    "effects": [
+      {
+        "t": "applyStatus",
+        "target": {
+          "kind": "self"
+        },
+        "status": "itemIncomingHalf",
+        "duration": 290
+      }
+    ],
+    "text": "사용 후 3일간 받는 데미지 반감 (다른 반감과 겹침)",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Art of War, sunzi bingfa: a long bundle of finely finished bamboo slips bound with twisted silk cord, rolled open just enough to show the ranks of slips, weighted at one end by a carved pale jade bar and resting on a square of deep indigo brocade. A lacquered wooden case with bronze clasps lies open behind it. Revered and immaculately kept, warm bamboo gold against indigo, no legible lettering.",
     "lore": "손무가 지은 병법의 고전. 조조가 직접 주를 달아 남긴 『위무주손자』가 오늘날 전하는 판본의 바탕이다.",
     "nameI18n": {
@@ -336,27 +317,25 @@
   {
     "id": "dae-wan-ma",
     "no": 9,
+    "order": 0,
     "name": "대완마",
     "hanja": "大宛馬",
+    "source": "market",
     "group": "horse",
-    "kind": "passive",
+    "kind": "active",
     "unlockLevel": 2,
     "gold": 2,
-    "passive": {
-      "wtDelta": -10
-    },
-    "text": "착용 장수의 WT −10",
-    "textI18n": {
-      "en": "Bearer's WT −10",
-      "ja": "装備した武将のWT −10",
-      "zh_Hant": "裝備武將的WT −10",
-      "zh_Hans": "装备武将的WT −10",
-      "pt_BR": "WT do portador −10",
-      "pt_PT": "WT do portador −10",
-      "it": "WT del portatore −10",
-      "es_419": "WT del portador −10",
-      "mn": "Эзэмшигчийн WT −10"
-    },
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "self"
+        },
+        "delta": -10,
+        "turns": 3
+      }
+    ],
+    "text": "사용 후 3일간 WT −10",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. A Ferghana warhorse, dawan ma, riderless and standing in profile turned slightly toward the viewer: a tall long-legged golden bay with a dark mane, deep chest and dished face, wearing plain military tack of undyed leather, a simple bronze snaffle bit and a low wooden saddle with a coarse felt blanket. A sturdy army mount, dusty coat, no ornament.",
     "lore": "서역 대완에서 나는 큰 말. 피 같은 땀을 흘린다 하여 한혈마라 불렸고, 한 무제가 원정까지 벌여 들여왔다.",
     "nameI18n": {
@@ -374,28 +353,18 @@
   {
     "id": "jeok-ro",
     "no": 10,
+    "order": 2,
     "name": "적로",
     "hanja": "的盧",
+    "source": "market",
     "group": "horse",
     "kind": "passive",
-    "unlockLevel": 3,
-    "gold": 4,
+    "unlockLevel": 2,
+    "gold": 3,
     "passive": {
-      "wtDelta": -10,
-      "surviveOnce": true
+      "wtDeltaLowHp": -20
     },
-    "text": "WT −10, HP가 0이 될 때 한 번 HP 1로 버팀",
-    "textI18n": {
-      "en": "WT −10, once holds at HP 1 when HP would hit 0",
-      "ja": "WT −10、HPが0になる時に一度だけHP1で耐える",
-      "zh_Hant": "WT −10，HP歸0時一次以HP1撐住",
-      "zh_Hans": "WT −10，HP归0时一次以HP1撑住",
-      "pt_BR": "WT −10, uma vez resiste com HP 1 ao chegar a 0",
-      "pt_PT": "WT −10, uma vez resiste com HP 1 ao chegar a 0",
-      "it": "WT −10, una volta resiste con HP 1 quando arriva a 0",
-      "es_419": "WT −10, una vez resiste con HP 1 al llegar a 0",
-      "mn": "WT −10, HP 0 болоход нэг удаа HP 1-ээр тэсэнэ"
-    },
+    "text": "HP가 절반 이하일 때 WT −20",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Dilu, riderless and standing alert in profile turned slightly toward the viewer: a powerful dark bay stallion with a stark white blaze running down its forehead, ears pricked and muscles gathered as if about to leap, wearing plain campaign tack of dark leather with iron fittings. Wet flank, mud-spattered legs, a wary and slightly ill-omened air.",
     "lore": "이마에 흰 점이 박힌 유비의 말. 주인을 해치는 흉마라 했으나, 단계에서 세 길을 뛰어넘어 그를 살렸다.",
     "nameI18n": {
@@ -411,68 +380,27 @@
     }
   },
   {
-    "id": "jeol-yeong",
-    "no": 11,
-    "name": "절영",
-    "hanja": "絶影",
-    "group": "horse",
-    "kind": "passive",
-    "unlockLevel": 4,
-    "gold": 8,
-    "passive": {
-      "wtDelta": -10,
-      "wtDeltaLowHp": -15
-    },
-    "text": "WT −10, 착용자 HP 절반 이하면 −15로 바뀜",
-    "textI18n": {
-      "en": "WT −10, becomes −15 when bearer's HP is half or less",
-      "ja": "WT −10、装備者のHPが半分以下なら −15に変わる",
-      "zh_Hant": "WT −10，裝備者HP一半以下時變為 −15",
-      "zh_Hans": "WT −10，装备者HP一半以下时变为 −15",
-      "pt_BR": "WT −10, vira −15 com o HP do portador pela metade ou menos",
-      "pt_PT": "WT −10, passa a −15 com o HP do portador a metade ou menos",
-      "it": "WT −10, diventa −15 se gli HP del portatore sono a metà o meno",
-      "es_419": "WT −10, pasa a −15 si el HP del portador es la mitad o menos",
-      "mn": "WT −10, эзэмшигчийн HP хагас буюу түүнээс доош бол −15 болно"
-    },
-    "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The horse Jueying, the shadowless, riderless and caught mid-stride in profile turned slightly toward the viewer: a lean jet-black stallion with a long streaming mane and tail, coat so dark it drinks the light, wearing stripped-down blackened leather tack with no bright metal. Blurred hooves and a trail of dust behind it, built purely for speed, night-coloured and stark.",
-    "lore": "그림자조차 따라잡지 못한다는 조조의 말. 완성에서 화살 셋을 맞고도 조조를 태우고 내달렸다.",
-    "nameI18n": {
-      "en": "Jueying",
-      "ja": "絶影",
-      "zh_Hant": "絕影",
-      "zh_Hans": "绝影",
-      "pt_BR": "Jueying",
-      "pt_PT": "Jueying",
-      "it": "Jueying",
-      "es_419": "Jueying",
-      "mn": "Жүэин"
-    }
-  },
-  {
     "id": "jeok-to-ma",
     "no": 12,
+    "order": 0,
     "name": "적토마",
     "hanja": "赤兔馬",
+    "source": "market",
     "group": "horse",
-    "kind": "passive",
+    "kind": "active",
     "unlockLevel": 5,
-    "gold": 16,
-    "passive": {
-      "wtDelta": -20
-    },
-    "text": "WT −20",
-    "textI18n": {
-      "en": "WT −20",
-      "ja": "WT −20",
-      "zh_Hant": "WT −20",
-      "zh_Hans": "WT −20",
-      "pt_BR": "WT −20",
-      "pt_PT": "WT −20",
-      "it": "WT −20",
-      "es_419": "WT −20",
-      "mn": "WT −20"
-    },
+    "gold": 8,
+    "effects": [
+      {
+        "t": "modifyWt",
+        "target": {
+          "kind": "self"
+        },
+        "delta": -30,
+        "turns": 3
+      }
+    ],
+    "text": "사용 후 3일간 WT −30",
     "imagePrompt": "Single game item icon, isolated on a plain neutral background, three-quarter angled view, ancient Chinese Han dynasty and Three Kingdoms era craftsmanship, painterly semi-realistic game art, soft rim lighting, crisp high detail, no text, no watermark, no human figure. The Red Hare, chitu ma, riderless and rearing slightly in profile turned toward the viewer: a magnificent flame-red chestnut stallion with a burning copper coat, flowing crimson mane and tail and fierce intelligent eyes, wearing ornate gilt-bronze tack with a tasselled breast collar, a crimson saddle blanket edged in gold and phoenix-motif cheek pieces. Heat shimmer at its hooves, the most famous horse under heaven, regal and untamable.",
     "lore": "하루에 천 리를 달린다는 명마. 「사람 중에는 여포, 말 중에는 적토」라 불렸고 뒤에 관우에게 넘어갔다.",
     "nameI18n": {
@@ -490,12 +418,14 @@
   {
     "id": "cheok-hu-gi",
     "no": 13,
+    "order": 2,
     "name": "척후기",
     "hanja": "斥候騎",
+    "source": "market",
     "group": "tool",
     "kind": "passive",
-    "unlockLevel": 2,
-    "gold": 2,
+    "unlockLevel": 1,
+    "gold": 1,
     "passive": {
       "revealTactics": true
     },
@@ -528,12 +458,14 @@
   {
     "id": "pok-yak",
     "no": 14,
+    "order": 1,
     "name": "폭약",
     "hanja": "爆藥",
+    "source": "market",
     "group": "tool",
     "kind": "active",
     "unlockLevel": 3,
-    "gold": 4,
+    "gold": 3,
     "effects": [
       {
         "t": "damage",
@@ -573,12 +505,14 @@
   {
     "id": "u-seon",
     "no": 15,
+    "order": 2,
     "name": "우선",
     "hanja": "羽扇",
+    "source": "market",
     "group": "tool",
     "kind": "passive",
-    "unlockLevel": 4,
-    "gold": 8,
+    "unlockLevel": 3,
+    "gold": 4,
     "passive": {
       "tacticChanceBonus": 10
     },
@@ -611,12 +545,14 @@
   {
     "id": "yeong-gi",
     "no": 16,
+    "order": 0,
     "name": "영기",
     "hanja": "令旗",
+    "source": "market",
     "group": "tool",
     "kind": "active",
-    "unlockLevel": 5,
-    "gold": 16,
+    "unlockLevel": 4,
+    "gold": 4,
     "effects": [
       {
         "t": "modifySp",

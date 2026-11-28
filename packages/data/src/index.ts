@@ -276,181 +276,80 @@ export interface BuildingData {
 }
 
 /**
- * 대장간 장비 하나 (2026-09-07 확정, 원본 `docs/대장간 장비.xlsx`).
+ * 전투 아이템 하나 — **장터 아이템과 대장간 병기가 같은 꼴이다** (2026-11-28 기획자, 대장간 연구 개편).
  *
- * **장수 한 명이 무기·방어구 중 하나만 낀다.** 아이템은 계정당 **1개씩만** 만들 수
- * 있어 총량이 750금화에서 막혀 있다 — 카드(무한)와 달리 천장이 있는 상품이다.
+ * 대장간은 연구 시설이 되었다 — 연구한 병기는 장터 진열대에 오르고, 사고 · 보관하고 · 지급하는 길은
+ * 장터 아이템과 **같다**. 그래서 둘 다 **1회용**(참전하면 소모)이고 Active · Passive 둘로 갈린다.
+ * 다른 것은 「무엇이 진열을 여는가」(`source`) 하나다 — 장터 아이템은 장터 레벨, 병기는 대장간 연구.
+ *
+ * **규칙 값(갈래 · 레벨 · 값 · 효과 · 효과 문장)의 정본은 `tools/extract_data.py`의 `ITEM_RULES`**다.
+ * 엑셀(`docs/대장간 장비.xlsx` · `docs/시장 아이템.xlsx`)은 이름 · 한자 · 그림 프롬프트 · 해설 · 다국어 이름만 준다.
  */
-export interface EquipmentData {
-  /** 이름의 로마자 슬러그. **표시명이 바뀌어도 id는 유지된다** */
-  id: string;
-  /** 엑셀의 번호. 화면 정렬 순서이고 1부터 연속이다 */
-  no: number;
-  name: string;
-  /**
-   * 이름의 다른 아홉 언어. **`ko`는 없다** — `name`이 이미 그 값이다
-   * (`loreI18n`과 같은 규약). 원본은 `docs/대장간 장비.xlsx`의 `이름_{lang}` 열이다.
-   *
-   * **이름은 품목마다 다른 값이라 엑셀 행에 붙는다** — 등급이 정하는 효과 문장
-   * (`textI18n`, 위 참조)과 갈리는 자리다.
-   */
-  nameI18n?: Partial<Record<StoryLang, string>>;
-  hanja: string;
-  kind: EquipmentKind;
-  /** 이 상품이 열리는 **대장간 레벨** (도시 레벨이 아니다). 1..대장간 `maxLevel` */
-  unlockLevel: number;
-  gold: number;
-  /**
-   * 엔진이 읽는 값. **정본은 `tools/extract_data.py`의 `EQUIP_EFFECTS`**이고
-   * `text`는 화면 글자다 — 둘이 어긋나면 추출이 실패한다(부저추신 사고의 짝).
-   */
-  effect: EquipmentEffect;
-  /** 화면에 그대로 나가는 효과 한 줄 (한국어). 다른 언어는 `textI18n`에 있다 */
-  text: string;
-  /**
-   * 효과 한 줄의 다른 아홉 언어. **`ko`는 없다** — `text`가 이미 그 값이다
-   * (`loreI18n`과 같은 규약). 화면은 `textI18n?.[lang] ?? text`로 물러난다.
-   *
-   * **원본이 엑셀이 아니라 `tools/extract_data.py`의 `EQUIP_TEXT_I18N`이다**
-   * (2026-09-10) — 해설과 갈리는 자리다. 해설은 품목마다 다른 글이라 엑셀 행에
-   * 붙지만, 효과 문장은 **등급이 정한다**(같은 `(kind, unlockLevel)`이면 15종
-   * 어디서나 같은 문장). 엑셀 열로 두면 같은 문장을 행마다 1~3번 베껴 적게 되고
-   * 한 행만 고치면 조용히 갈라진다. 값의 정본이 이미 코드 쪽(`EQUIP_EFFECTS`)인
-   * 것과도 같은 방향이다.
-   */
-  textI18n?: Partial<Record<StoryLang, string>>;
-  /**
-   * 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다). 게임이
-   * 읽는 값은 아니고 `tools/`의 아트 파이프라인이 쓴다. 엑셀을 안 열고도
-   * 다시 구울 수 있어야 해서 생성물에 함께 담는다.
-   */
-  imagePrompt: string;
-  /** 유래 해설 (한국어). 다른 언어는 `loreI18n`에 있다 */
-  lore: string;
-  /**
-   * 유래 해설의 다른 아홉 언어. **`ko`는 없다** — `lore`가 이미 그 값이다.
-   * 번역이 아직 없는 언어는 키 자체가 없거나 빈 값이고, 화면은
-   * `loreI18n?.[lang] ?? lore`로 물러난다(`[[equipment-lore-i18n-plan]]`).
-   *
-   * **2026-09-10에 아홉 언어가 다 붙었다** — 원본은 `docs/대장간 장비.xlsx`의
-   * `해설_{lang}` 열이고 `extract_equipment()`가 **열 이름으로** 찾아 담는다.
-   * 열이 없는 언어는 키째로 없고, 그것은 실패가 아니다(추출기가 안내만 찍는다).
-   */
-  loreI18n?: Partial<Record<StoryLang, string>>;
-}
-
-export type EquipmentKind = 'weapon' | 'armor';
-
-/**
- * 장비가 주는 효과. **없는 키는 0이다** — `?? 0`으로 읽는다.
- *
- * 최종 데미지는 `(평타·크리티컬 + 무기 보너스) × 감쇠`로 나오고 그렇게 정해진
- * 값을 **방어구의 베리어가 먼저 받아낸다**(초록 HP보다 앞에서). 그래서 방어구는
- * 데미지를 깎지 않는다 — 깎는 방식은 저AT 상대의 데미지를 0으로 만들어 판이
- * 안 끝나는 구멍이 있었다(2026-09-07 검토).
- */
-export interface EquipmentEffect {
-  /** 크리티컬 확률에 더하는 %p. `FORMULA.criticalRate` 결과에 얹고 clamp(0,100) */
-  criticalRate?: number;
-  /** 크리티컬일 때만 더하는 데미지 */
-  criticalDamage?: number;
-  /** 평타에 더하는 데미지. 크리티컬은 평타의 2배라 여기 +1이면 크리티컬은 +2다 */
-  attack?: number;
-  /**
-   * 추가 HP. **회복되지 않고**(「회복」은 `pctMaxHp`라 초록 최대 HP 기준이다)
-   * 데미지를 **먼저** 받아낸다. 화면에서는 회색으로 그린다.
-   */
-  barrier?: number;
-}
-
-
-/**
- * 시장 아이템 하나 (2026-09-23 신설, GDD §6.5 · 원본 `docs/시장 아이템.xlsx`).
- *
- * **대장간 병기와 같은 칸을 다툰다** — 장수 하나는 병기 **또는** 아이템 하나만
- * 든다. 다른 점은 **1회용**이라는 것이다: 패시브는 참전만으로, 액티브는 써야
- * 소모되고 안 쓰면 남는다. 소모되면 원래 병기가 돌아온다.
- *
- * 그래서 대장간과 달리 **총량에 천장이 없다** — 대신 시장 레벨이 하루 매물과
- * 보유 총량을 조인다(GDD §6.5).
- */
-export interface MarketItemData {
+export interface ItemData {
   /** 이름의 로마자 슬러그. **표시명이 바뀌어도 id는 유지된다** */
   id: string;
   /**
-   * 엑셀의 번호. 화면 정렬 순서이고 1부터 연속인데, **그림 시트
-   * (`assets/icons/ui/market_items.png`)의 4×4 자리이기도 하다** —
-   * 행 `(no−1)/4`가 부류, 열 `(no−1)%4`가 Lv2~Lv5다. 추출기가 번호와
-   * (부류, 해금레벨)이 어긋나면 실패시킨다(어긋나면 아이콘이 통째로 밀린다).
+   * 엑셀의 번호 — **그림 자리**다. 장터 아이템은 4×4 그림 시트(`assets/icons/ui/market_items.png`)의 칸이라
+   * 순서를 바꾸면 아이콘이 밀린다(`tools/build_market_items.py`). 진열 순서는 `unlockLevel` → `order`가 정한다.
    */
   no: number;
+  /** 진열 순서 — 같은 해금 레벨 안에서 (0부터) */
+  order: number;
   name: string;
   /** 이름의 다른 아홉 언어. **`ko`는 없다** — `name`이 이미 그 값이다 */
   nameI18n?: Partial<Record<StoryLang, string>>;
   hanja: string;
-  /** 약·책·말·도구. 부류마다 Lv2~Lv5에 하나씩, 모두 16종이다 */
-  group: MarketItemGroup;
-  kind: MarketItemKind;
-  /**
-   * 이 상품이 열리는 **시장 레벨** (도시 레벨이 아니다). **2부터**다 —
-   * Lv1 시장은 아이템을 팔지 않는다.
-   */
+  /** 무엇이 진열을 여는가 — 장터 레벨(`market`) · 대장간 연구(`forge`) */
+  source: ItemSource;
+  group: ItemGroup;
+  kind: ItemKind;
+  /** 장터 아이템은 **장터 레벨**, 병기는 **대장간 레벨**(그 레벨부터 연구할 수 있다). 1..5 */
   unlockLevel: number;
   gold: number;
   /**
-   * 액티브가 **쓰면 실행하는** 효과 — 책략·고유기술과 같은 Effect DSL이고
-   * 해석기는 `packages/rules/src/effects.ts`다. `TacticData.effects`와 같은
-   * 이유로 여기서는 `unknown[]`이다(DSL의 타입은 rules가 갖는다).
-   *
-   * **패시브에는 없다.**
+   * Active가 **쓰면 실행하는** 효과 — 책략 · 고유기술과 같은 Effect DSL이고 해석기는
+   * `packages/rules/src/effects.ts`다(DSL의 타입은 rules가 갖는다). **Passive에는 없다.**
    */
   effects?: unknown[];
-  /**
-   * 패시브가 **참전하는 동안 거는** 값. **없는 키는 0이다** —
-   * `EquipmentEffect`와 같은 규약이다. **액티브에는 없다.**
-   */
-  passive?: MarketItemPassive;
-  /**
-   * 화면에 그대로 나가는 효과 한 줄 (한국어).
-   *
-   * **정본은 `tools/extract_data.py`의 `MARKET_ITEM_TEXT`**이고, 엑셀의 「효과」
-   * 열과 **글자까지 같은지** 추출기가 대조한다 — 효과를 고치고 설명을 안 고치면
-   * 화면이 거짓말을 한다(부저추신 사고의 짝).
-   */
+  /** Passive가 **참전하는 동안 거는** 값. 없는 키는 0이다. **Active에는 없다.** */
+  passive?: ItemPassive;
+  /** 화면에 그대로 나가는 효과 한 줄 (한국어). 다른 언어는 `textI18n`에 있다 */
   text: string;
-  /**
-   * 효과 한 줄의 다른 아홉 언어. **`ko`는 없다** — `text`가 이미 그 값이다.
-   * 정본은 `tools/extract_data.py`의 `MARKET_ITEM_TEXT_I18N`(대장간의 `EQUIP_TEXT_I18N`과 같은 자리)
-   */
+  /** 효과 한 줄의 다른 아홉 언어. **`ko`는 없다.** 없으면 화면이 한국어로 물러난다 */
   textI18n?: Partial<Record<StoryLang, string>>;
   /** 그림을 굽는 프롬프트 — **영어만** (추출기가 한글·한자를 막는다) */
   imagePrompt: string;
   /** 유래 해설 (한국어). 다른 언어는 `loreI18n`에 있다 */
   lore: string;
-  /**
-   * 유래 해설의 다른 아홉 언어. **`ko`는 없다** — `lore`가 이미 그 값이고,
-   * 화면은 `loreI18n?.[lang] ?? lore`로 물러난다. 아직 비어 있다(번역 예정).
-   */
   loreI18n?: Partial<Record<StoryLang, string>>;
 }
 
-export type MarketItemGroup = 'potion' | 'book' | 'horse' | 'tool';
-/** 패시브는 참전으로, 액티브는 사용으로 소모된다 */
-export type MarketItemKind = 'passive' | 'active';
+export type ItemSource = 'market' | 'forge';
+export type ItemGroup = 'potion' | 'book' | 'horse' | 'tool' | 'weapon' | 'armor';
+/** Passive는 참전으로 소모되고 전투 준비에서 자동으로 「쓰인다」. Active는 내 차례에 쓰고, **차례를 끝내지 않는다** */
+export type ItemKind = 'passive' | 'active';
+
+/** 대장간 병기 — 꼴은 `ItemData`와 같다(`source: 'forge'`) */
+export type EquipmentData = ItemData;
+/** 장터 아이템 — 꼴은 `ItemData`와 같다(`source: 'market'`) */
+export type MarketItemData = ItemData;
+export type MarketItemGroup = ItemGroup;
+export type MarketItemKind = ItemKind;
 
 /**
- * 패시브 아이템이 주는 값. **없는 키는 0이다** — `?? 0`으로 읽는다.
- *
- * 정본은 `tools/extract_data.py`의 `MARKET_ITEM_PASSIVES`이고, 읽는 자리는
- * 엔진의 `held.ts`(`heldEffectOf`) 하나다 — 병기의 `EquipmentEffect`와 **같은
- * 합집합**으로 들어간다.
+ * Passive 아이템이 주는 값. **없는 키는 0이다** — `?? 0`으로 읽는다.
+ * 읽는 자리는 엔진의 `held.ts`(`heldEffectOf`) 하나다.
  */
-export interface MarketItemPassive {
+export interface ItemPassive {
+  /** 결정타 확률에 더하는 %p. `FORMULA.criticalRate` 결과에 얹고 clamp(0,100) */
+  criticalRate?: number;
+  /** 최대 HP에 더한다 — 판을 만들 때 한 번(HP도 함께 찬다). 회복으로 다시 찬다 */
+  hp?: number;
   /** `wtBase`에서 빼는 값. 음수 = 빨라진다 */
   wtDelta?: number;
-  /** HP가 절반 이하일 때 `wtDelta` **대신** 쓰는 값 (합산이 아니다 — 절영) */
+  /** HP가 절반 이하일 때 `wtDelta` **대신** 쓰는 값 (합산이 아니다 — 적로) */
   wtDeltaLowHp?: number;
-  /** HP가 0이 될 때 한 번 HP 1로 버틴다 (적로) */
+  /** HP가 0이 될 때 한 번 HP 1로 버틴다 */
   surviveOnce?: boolean;
   /** 피격 시 반격할 확률 %. 시드 PRNG를 거쳐야 한다 — `rngCursor`가 소비를 적는다 */
   counterChance?: number;
@@ -462,11 +361,13 @@ export interface MarketItemPassive {
   finalDamageDealt?: number;
   /** 모든 계산이 **끝난 뒤** 받는 데미지에 더한다. 음수 = 덜 받는다 (하한 0) */
   finalDamageTaken?: number;
-  /** 착용 장수가 이 판에서 부상을 안 당한다 — `applyInjuries()`가 거른다 */
+  /** 이 판에서 **아군 전원**이 부상을 안 당한다(청낭서, 2026-11-28) — `applyInjuries()`가 거른다 */
   noInjury?: boolean;
   /** 정찰 단계에서 상대 책략을 본다 — 온라인은 `toWire(state, side)`가 가른다 */
   revealTactics?: boolean;
 }
+/** 옛 이름 — 꼴은 `ItemPassive`와 같다 */
+export type MarketItemPassive = ItemPassive;
 
 /** 도시 상수 — 엑셀 「도시 건물」 [4] 블록. **코드가 숫자를 다시 적지 않는다** */
 export interface CityConstants {
@@ -548,6 +449,9 @@ export const CITY_RULES = buildingsJson.constants as CityConstants;
 export const TEAM_SCORES = teamScoresJson;
 export const EQUIPMENT = (equipmentJson as unknown) as EquipmentData[];
 export const MARKET_ITEMS = (marketItemsJson as unknown) as MarketItemData[];
+/** 전투 아이템 전부 — 장터 아이템 + 대장간 병기. 진열 순서(해금 레벨 → `order`) */
+export const ITEMS: readonly ItemData[] = [...MARKET_ITEMS, ...EQUIPMENT]
+  .sort((a, b) => a.unlockLevel - b.unlockLevel || Number(a.source === 'forge') - Number(b.source === 'forge') || a.order - b.order);
 export const ECONOMY = economyJson;
 export const BUILD_REPORT = reportJson;
 
@@ -699,6 +603,8 @@ export const tacticById = new Map([...TACTICS, ...TACTIC_UPGRADES].map((t) => [t
 export const upgradeIdOf = new Map(TACTIC_UPGRADES.map((t) => [t.base!, t.id]));
 export const equipmentById = new Map(EQUIPMENT.map((e) => [e.id, e]));
 export const marketItemById = new Map(MARKET_ITEMS.map((m) => [m.id, m]));
+/** 전투 아이템 하나 — 장터 아이템 · 병기를 함께 본다. **엔진이 장수가 든 것을 찾는 자리는 이것이다** */
+export const itemById = new Map(ITEMS.map((m) => [m.id, m]));
 
 /**
  * 대장간 레벨이 연 상품 — **누적이다.** Lv3 대장간은 Lv1·Lv2 상품도 판다.
@@ -714,11 +620,12 @@ export function equipmentForForge(level: number): EquipmentData[] {
 /**
  * 시장 레벨이 연 상품 — **누적이다.** Lv4 시장은 Lv2·Lv3 상품도 판다.
  *
- * **`level`이 2 미만이면 빈 배열**이다 — Lv1 시장은 아이템을 팔지 않는다
- * (GDD §6.5). `equipmentForForge()`가 Lv0을 받아내는 것과 같은 자리다.
+ * **장터 Lv1부터 판다**(2026-11-28 기획자 — 레벨마다 셋). 0이면 빈 배열이다.
+ * 대장간 병기는 여기 없다 — 연구한 병기를 진열에 얹는 것은 meta(`shopItemsOf`)다.
  */
 export function marketItemsForMarket(level: number): MarketItemData[] {
-  return MARKET_ITEMS.filter((m) => m.unlockLevel <= level);
+  return MARKET_ITEMS.filter((m) => m.unlockLevel <= level)
+    .sort((a, b) => a.unlockLevel - b.unlockLevel || a.order - b.order);
 }
 
 /** 해당 레벨에서 선택 가능한 책략 (지원 1개 + 환술 1개, Lv6·7은 생성/제거 쌍) */

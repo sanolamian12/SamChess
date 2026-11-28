@@ -54,7 +54,7 @@ describe('사기 — 금화 · 보유 총량 둘 (하루 매물은 2026-11-27에
   });
 
   it('금화가 모자라면 거부한다', () => {
-    const broke = shop({ gold: 1 });
+    const broke = shop({ gold: 0 });   // 탕약이 1냥이다 (2026-11-28)
     const no = canBuyMarketItem(broke, TANG, T0);
     assert.equal(no.ok === false && no.code, 'market.notEnoughGold');
   });
@@ -270,7 +270,7 @@ describe('청낭서 — 부상 면제 (2026-09-23)', () => {
     const [a, b] = Object.keys(base.roster) as OfficerId[];
     const out = consumeCarried(carryItem(base, a!, NANG), [a!, b!], 'ai');
 
-    assert.deepEqual(fallenAfterShield(out, 'ai', [a!, b!]), [b!], '청낭서를 든 쪽만 빠진다');
+    assert.deepEqual(fallenAfterShield(out, 'ai', [a!, b!]), [], '청낭서가 나갔으면 아군 전원이 빠진다 (2026-11-28)');
     assert.deepEqual(fallenAfterShield(base, 'ai', [a!, b!]), [a!, b!], '안 들었으면 아무도 안 빠진다');
   });
 

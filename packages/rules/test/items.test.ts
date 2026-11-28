@@ -1,8 +1,7 @@
 /**
- * **액티브 아이템 사용** — `{ t: 'useItem' }` (2026-09-23, GDD §6.5).
+ * **Active 아이템 사용** — `{ t: 'useItem' }` (2026-09-23, 2026-11-28 대장간 연구 개편).
  *
- * 열여섯 중 여섯이 액티브다(탕약·차·목우유마·마비산·폭약·영기). 2026-09-23에
- * 데이터·인벤토리·화면까지 붙었는데 **쓸 방법이 없었다** — 그 마지막 한 칸이다.
+ * 장터 아이템 · 대장간 병기가 같은 표이고, **Active는 차례를 끝내지 않는다**(2026-11-28 기획자) — 쓰고 이동 · 공격 · 책략.
  *
  * 여기 있는 검사는 **규칙을 하나씩 일부러 깨면 각각 정확히 그 자리에서 실패한다.**
  */
@@ -10,24 +9,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { marketItemById } from '@samchess/data';
+import { ITEMS, itemById } from '@samchess/data';
 import { apply, createBattle, validate } from '../src/battle.ts';
 import { advanceTime } from '../src/battle.ts';
-import { forecastAttack, hasStatus, resolveAttack } from '../src/state.ts';
+import { findStatus, forecastAttack, hasStatus, legalTargetsFor, resolveAttack } from '../src/state.ts';
+import { tacticMpCost } from '../src/effects.ts';
 import { usableItemOf } from '../src/held.ts';
 import type {
   BattleEvent, BattleState, OfficerId, PieceType, RosterEntry, Side, UnitId,
 } from '../src/types.ts';
-import { U, giveControl } from './fixtures.ts';
+import { T, U, giveControl } from './fixtures.ts';
 
 const TANG = 'tang-yak';            // 액티브 — 8방향 내 아군 1명(자신 포함) HP +5
 const CHA = 'cha';                  // 액티브 — 8방향 내 아군 1명(자신 포함) MP 전량
 const MOK = 'mok-u-yu-ma';          // 액티브 — 반경 1 아군 전원(자신 포함) HP +5
-const MABI = 'ma-bi-san';           // 액티브 — 자신, 지속 90 동안 받는 피해 0
+const MABI = 'ma-bi-san';           // 액티브 — 8방향 내 아군 1명 HP 50% 회복
+const SON = 'son-ja-byeong-beop-seo'; // 액티브 — 3일간 받는 피해 반감(다른 반감과 겹친다)
 const POK = 'pok-yak';              // 액티브 — 8방향 내 적 1명에게 5 (반감 무시)
 const YEONG = 'yeong-gi';           // 액티브 — 진영 SP +3
 const CHEONG = 'cheong-nang-seo';   // 패시브 — 부상 면제
-const DAEGAM = 'dae-gam-do';        // 병기
+const DAEGAM = 'dae-gam-do';        // Passive 병기 (결정타 +5%p)
 
 const H = (officer: string, piece: PieceType, held?: string): RosterEntry => ({
   officer: officer as OfficerId, piece, level: 1, statPicks: [], tactics: [],
@@ -70,7 +71,7 @@ const reason = (s: BattleState, side: Side, target?: UnitId): string => {
 test('들고 온 것이 액티브 아이템일 때만 쓸 수 있다', () => {
   assert.ok(usableItemOf(fight(TANG).units[U('P1-King')]!), '액티브');
   assert.equal(usableItemOf(fight(CHEONG).units[U('P1-King')]!), undefined, '패시브는 쓸 것이 없다');
-  assert.equal(usableItemOf(fight(DAEGAM).units[U('P1-King')]!), undefined, '병기는 영구 효과다');
+  assert.equal(usableItemOf(fight(DAEGAM).units[U('P1-King')]!), undefined, 'Passive 병기도 쓸 것이 없다');
   assert.equal(usableItemOf(fight().units[U('P1-King')]!), undefined, '안 들었다');
 });
 
@@ -99,8 +100,8 @@ test('★ 폭약: 8방향 내 **적 1명** — 먼 적도 아군도 거부된다
   assert.equal(reason(s, 'P1', U('P2-Bishop')), '1칸 이내여야 한다', '판 반대편의 적');
 });
 
-test('마비산·영기는 조준이 없다 — 대상 없이 그대로 선다', () => {
-  for (const held of [MABI, YEONG]) {
+test('영기 · 손자병법서 · 대완마는 조준이 없다 — 대상 없이 그대로 선다', () => {
+  for (const held of [YEONG, SON, 'dae-wan-ma']) {
     const s = giveControl(fight(held), U('P1-King'));
     assert.equal(reason(s, 'P1'), '', held);
   }
@@ -143,7 +144,7 @@ test('★ 탕약 · 차는 **자기 자신에게도** 쓴다 (2026-10-15 기획�
 
   // 차는 설명이 규칙을 그대로 말한다. 탕약은 「아군이면 자신도 든다」를 맥락에 맡긴다(2026-11-27 기획자)
   for (const id of [TANG, CHA, MOK]) {
-    assert.ok(!marketItemById.get(id)!.text.includes('(자신 포함)'), `${id} 설명은 「(자신 포함)」을 뺐다 — 「아군」에 자신이 든다`);
+    assert.ok(!itemById.get(id)!.text.includes('(자신 포함)'), `${id} 설명은 「(자신 포함)」을 뺐다 — 「아군」에 자신이 든다`);
   }
 });
 
@@ -177,59 +178,150 @@ test('★ 폭약은 반감을 무시한다 — `damage`는 `resolveAttack`을 �
   assert.equal(s.state.units[U('P2-King')]!.hp, hp - 5, '반감이 걸려 있어도 5가 그대로 들어간다');
 });
 
-// ── 마비산 — `incomingDamageZero` ──────────────────────────────
+// ── 회복 · 버프 (2026-11-28) ───────────────────────────────────
 
-test('마비산 — 공격 피해가 0이 되고 확인창도 0을 보여 준다', () => {
-  const s = use(MABI).state;
+test('마비산 — 8방향 내 아군 1명의 HP를 최대 HP의 50%만큼', () => {
+  const hurt = structuredClone(fight(MABI));
+  const rock = hurt.units[U('P1-Rock')]!;
+  rock.hp = 1;
+  const s = apply(giveControl(hurt, U('P1-King')), 'P1', { t: 'useItem', target: U('P1-Rock') });
+  assert.equal(s.state.units[U('P1-Rock')]!.hp, 1 + Math.floor(rock.maxHp * 0.5));
+});
+
+test('★ 손자병법서 — 받는 피해 반감이 **다른 반감과 겹친다** (1/4), 지속 290', () => {
+  const s = structuredClone(use(SON).state);
   const me = s.units[U('P1-King')]!;
-  assert.ok(hasStatus(me, 'incomingDamageZero'));
-
+  assert.equal(findStatus(me, 'itemIncomingHalf')?.expiresAt, 290, '3일 = 290 눈금');
+  s.units[U('P2-King')]!.at = 8;
+  assert.equal(forecastAttack(s, U('P2-King'), U('P1-King'))!.normal, 4, '한 겹');
+  me.statuses.push({ status: 'incomingDamageHalf' });      // 조운 「간뇌도지」 같은 반감
+  assert.equal(forecastAttack(s, U('P2-King'), U('P1-King'))!.normal, 2, '두 겹 — 1/4');
   const events: BattleEvent[] = [];
   const hp = me.hp;
   resolveAttack(s, s.units[U('P2-King')]!, me, events);
-  assert.equal(s.units[U('P1-King')]!.hp, hp, 'HP가 안 준다');
-  assert.equal((events.find((e) => e.e === 'attacked') as { damage: number }).damage, 0);
-
-  const fc = forecastAttack(s, U('P2-King'), U('P1-King'))!;
-  assert.equal(fc.normal, 0, '화면이 미리 보여 주는 숫자도 엔진이 낸다');
-  assert.equal(fc.critical, 0);
-  assert.equal(fc.lethal, 'never');
+  const hit = events.find((e) => e.e === 'attacked') as { damage: number; critical: boolean };
+  assert.equal(me.hp, hp - hit.damage);
+  assert.ok(hit.damage <= 4, '결정타여도 8 × 2 / 4 = 4');
 });
 
-test('★ 마비산은 즉사·지속 피해를 막지 못한다 — 데미지 경로가 아니다', () => {
-  const s = structuredClone(use(MABI).state);
-  const victim = s.units[U('P1-Rock')]!;      // King은 즉사가 안 통한다
-  victim.statuses.push({ status: 'incomingDamageZero' });
-  const attacker = s.units[U('P2-King')]!;
-  attacker.statuses.push({ status: 'instantKillNext' });
+test('대완마 · 적토마 — 앞으로 내 차례 세 번 동안 WT −10 · −30', () => {
+  for (const [held, delta] of [['dae-wan-ma', -10], ['jeok-to-ma', -30]] as const) {
+    const me = use(held).state.units[U('P1-King')]!;
+    assert.deepEqual(me.wtModifiers, [{ delta, turnsLeft: 3 }], held);
+  }
+});
+
+test('태평요술 — 3일간 책략 MP 소모 0', () => {
+  const s = use('tae-pyeong-yo-sul').state;
+  const me = s.units[U('P1-King')]!;
+  assert.equal(findStatus(me, 'itemZeroMp')?.expiresAt, 290);
+  assert.equal(tacticMpCost(me, T('회복')), 0);
+});
+
+test('육도삼략 — 2일간 맞으면 반드시 반격한다(굴리지 않는다)', () => {
+  const s = structuredClone(use('yuk-do-sam-ryak').state);
+  const me = s.units[U('P1-King')]!, foe = s.units[U('P2-King')]!;
+  assert.equal(findStatus(me, 'itemCounter')?.expiresAt, 190);
+  me.hp = 99; foe.hp = 99;
   const events: BattleEvent[] = [];
-  resolveAttack(s, attacker, victim, events);
-  assert.equal(s.units[U('P1-Rock')]!.alive, false, '즉사는 그대로 통한다');
+  resolveAttack(s, foe, me, events);
+  assert.equal(events.filter((e) => e.e === 'attacked').length, 2, '맞고 → 반격');
 });
 
-test('마비산의 지속은 90 — 한 사이클 뒤에 풀린다', () => {
-  const s = use(MABI).state;
-  const st = s.units[U('P1-King')]!.statuses.find((x) => x.status === 'incomingDamageZero')!;
-  // 시각 0에 걸었으므로 만료는 90이다 (`WT 90/190/290/490` 눈금의 한 사이클)
-  assert.equal(st.expiresAt, 90);
+test('의천검 — 1일간 아군 전원 결정타 100%', () => {
+  const s = use('ui-cheon-geom').state;
+  for (const u of Object.values(s.units).filter((x) => x.side === 'P1')) {
+    assert.equal(findStatus(u, 'itemCritAll')?.expiresAt, 90, u.id);
+    assert.equal(forecastAttack(s, u.id, U('P2-King'))!.criticalRate, 100, u.id);
+  }
 });
 
-// ── 턴 — 책략과 같은 행동 칸 ───────────────────────────────────
+// ── 다음 공격 한 번 (수극 · 유성추) ─────────────────────────────
 
-test('아이템은 행동 칸을 쓰고 그 턴을 끝낸다', () => {
+test('★ 수극 — 쓰고 **같은 차례에** 친다. 그 한 대가 결정타이고 횟수가 깎인다', () => {
+  const used = use('su-geuk').state;
+  assert.equal(used.activeUnit, U('P1-King'), '차례가 그대로다');
+  assert.equal(forecastAttack(used, U('P1-King'), U('P2-King'))!.criticalRate, 100);
+  const r = apply(used, 'P1', { t: 'attack', targets: [U('P2-King')] });
+  assert.equal((r.events.find((e) => e.e === 'attacked') as { critical: boolean }).critical, true);
+  assert.equal(hasStatus(r.state.units[U('P1-King')]!, 'itemCritNext'), false, '한 번 쓰면 없어진다');
+});
+
+test('유성추 — 다음 공격 한 번 8방향 두 칸까지 닿고, 치면 없어진다', () => {
+  const far = structuredClone(fight('yu-seong-chu'));
+  far.units[U('P2-King')]!.pos = { x: 15, y: 15 };
+  far.units[U('P2-Bishop')]!.pos = { x: 10, y: 8 };     // 위로 두 칸
+  const before = giveControl(far, U('P1-King'));
+  assert.equal(legalTargetsFor(before, U('P1-King')).includes(U('P2-Bishop')), false, '쓰기 전에는 안 닿는다');
+  const used = apply(before, 'P1', { t: 'useItem' }).state;
+  assert.ok(legalTargetsFor(used, U('P1-King')).includes(U('P2-Bishop')), '쓰면 닿는다');
+  const hit = apply(used, 'P1', { t: 'attack', targets: [U('P2-Bishop')] }).state;
+  assert.equal(hasStatus(hit.units[U('P1-King')]!, 'itemRangeTwo'), false);
+});
+
+// ── 아이템으로 치는 한 대 (개산대부 · 청룡언월도 · 장팔사모) ──────
+
+test('★ 개산대부 — 결정타로 치고 한 칸 밀어낸다. 그 뒤에 **또 공격**할 수 있다', () => {
+  const r = use('gae-san-dae-bu', U('P2-King'));
+  const hit = r.events.find((e) => e.e === 'attacked') as { critical: boolean };
+  assert.equal(hit.critical, true);
+  assert.deepEqual(r.state.units[U('P2-King')]!.pos, { x: 10, y: 8 }, '(10,9) → 반대쪽으로 한 칸');
+  assert.ok(r.events.some((e) => e.e === 'moved' && e.pushed === true));
+  assert.equal(r.state.activeUnit, U('P1-King'), '차례가 그대로다 — 평타를 또 칠 수 있다');
+});
+
+test('개산대부 — 밀 자리가 막혔으면 데미지 +3 (반감 없이)', () => {
+  const blocked = structuredClone(fight('gae-san-dae-bu'));
+  blocked.units[U('P2-Bishop')]!.pos = { x: 10, y: 8 };   // 밀려날 칸에 다른 유닛
+  blocked.units[U('P2-King')]!.hp = 99;
+  const crit = forecastAttack(giveControl(blocked, U('P1-King')), U('P1-King'), U('P2-King'))!.critical;
+  const r = apply(giveControl(blocked, U('P1-King')), 'P1', { t: 'useItem', target: U('P2-King') });
+  assert.deepEqual(r.state.units[U('P2-King')]!.pos, { x: 10, y: 9 }, '안 밀렸다');
+  assert.equal(r.state.units[U('P2-King')]!.hp, 99 - crit - 3);
+});
+
+test('청룡언월도 — 8방향 내 적 전원을 결정타로 · 닿는 적이 없으면 못 쓴다', () => {
+  const ring = structuredClone(fight('cheong-ryong-eon-wol-do'));
+  ring.units[U('P2-Bishop')]!.pos = { x: 11, y: 11 };
+  for (const u of Object.values(ring.units)) u.hp = 99;
+  const r = apply(giveControl(ring, U('P1-King')), 'P1', { t: 'useItem' });
+  const hits = r.events.filter((e) => e.e === 'attacked' && e.unit === U('P1-King')) as { target: UnitId; critical: boolean }[];
+  assert.deepEqual(new Set(hits.map((h) => h.target)), new Set([U('P2-King'), U('P2-Bishop')]));
+  assert.ok(hits.every((h) => h.critical));
+
+  const alone = structuredClone(fight('cheong-ryong-eon-wol-do'));
+  alone.units[U('P2-King')]!.pos = { x: 15, y: 15 };
+  assert.equal(reason(giveControl(alone, U('P1-King')), 'P1'), '닿는 적이 없다');
+});
+
+test('장팔사모 — 4방향 두 칸 줄 위의 적 전원, 앞의 아군을 지나 닿는다 · 대각선은 안 닿는다', () => {
+  const line = structuredClone(fight('jang-pal-sa-mo'));
+  line.units[U('P2-Bishop')]!.pos = { x: 12, y: 10 };    // 오른쪽 두 칸 — 그 앞(11,10)에 관우
+  line.units[U('P2-Queen')]!.pos = { x: 11, y: 11 };     // 대각선
+  for (const u of Object.values(line.units)) u.hp = 99;
+  const r = apply(giveControl(line, U('P1-King')), 'P1', { t: 'useItem' });
+  const hit = new Set(r.events.filter((e) => e.e === 'attacked' && e.unit === U('P1-King')).map((e) => (e as { target: UnitId }).target));
+  assert.deepEqual(hit, new Set([U('P2-King'), U('P2-Bishop')]));
+});
+
+// ── 턴 — 차례를 끝내지 않는다 (2026-11-28) ─────────────────────
+
+test('★ 아이템은 차례를 끝내지 않는다 — 쓰고 나서 공격한다', () => {
   const r = use(YEONG);
-  assert.equal(r.state.activeUnit, null, '턴이 끝났다');
-  assert.ok(r.events.some((e) => e.e === 'turnEnded'));
+  assert.equal(r.state.activeUnit, U('P1-King'), '차례가 그대로다');
+  assert.ok(!r.events.some((e) => e.e === 'turnEnded'));
+  assert.equal(r.state.activeTurn?.acted, false, '행동 칸을 안 쓴다');
+  assert.ok(validate(r.state, 'P1', { t: 'attack', targets: [U('P2-King')] }).ok, '그 뒤에 공격할 수 있다');
 });
 
-test('이미 행동했으면 못 쓴다 — 공격·책략과 같은 칸이다', () => {
+test('이미 행동했으면 못 쓴다 — 행동하면 차례가 끝나므로 아이템은 행동 전에 쓴다', () => {
   const s = giveControl(fight(YEONG), U('P1-King'));
   const acted = structuredClone(s);
   acted.activeTurn!.acted = true;
   assert.equal(reason(acted, 'P1'), '이미 행동했다');
 });
 
-test('이동한 뒤에는 쓸 수 있다 — 「이동 + 행동 하나」', () => {
+test('이동한 뒤에도 쓸 수 있다', () => {
   const s = giveControl(fight(YEONG), U('P1-King'));
   const moved = structuredClone(s);
   moved.activeTurn!.moved = true;
@@ -261,9 +353,9 @@ test('조종당하는 중에는 못 쓴다 — 지휘권을 가져간 쪽도 못
 // ── 결정성 — 리플레이가 갈리지 않는다 ──────────────────────────
 
 test('★ 아이템은 난수를 쓰지 않는다 — `rngCursor`가 안 밀린다', () => {
-  for (const held of [TANG, POK, MABI, YEONG]) {
+  for (const held of [TANG, POK, MABI, YEONG, SON, 'gae-san-dae-bu', 'cheong-ryong-eon-wol-do']) {
     const s = giveControl(fight(held), U('P1-King'));
-    const target = held === POK ? U('P2-King') : held === TANG ? U('P1-Rock') : undefined;
+    const target = held === POK || held === 'gae-san-dae-bu' ? U('P2-King') : held === TANG || held === MABI ? U('P1-Rock') : undefined;
     const r = apply(s, 'P1', { t: 'useItem', ...(target ? { target } : {}) });
     assert.equal(r.state.rngCursor, s.rngCursor, `${held} — 굴리면 리플레이가 깨진다`);
   }
@@ -278,18 +370,18 @@ test('같은 의도는 같은 결과를 낸다', () => {
 
 // ── 데이터가 사양이다 ──────────────────────────────────────────
 
-test('액티브 여섯은 전부 `effects`를 갖고, 패시브 열은 안 갖는다', () => {
-  const actives = [...marketItemById.values()].filter((i) => i.kind === 'active');
-  assert.equal(actives.length, 6);
+test('Active는 전부 `effects`를 갖고, Passive는 안 갖는다', () => {
+  const actives = ITEMS.filter((i) => i.kind === 'active');
+  assert.equal(actives.length, 17, '장터 11 + 병기 6');
   for (const item of actives) assert.ok((item.effects ?? []).length > 0, item.id);
-  for (const item of [...marketItemById.values()].filter((i) => i.kind === 'passive')) {
+  for (const item of ITEMS.filter((i) => i.kind === 'passive')) {
     // 패시브는 키째로 없다 — 있으면 `usableItemOf`가 아니라 여기서 먼저 걸린다
     assert.equal(item.effects, undefined, `${item.id} — 패시브는 쓸 것이 없다`);
   }
 });
 
-test('액티브 여섯은 **전부 쓸 수 있다** — 조준까지 엔진이 받아 준다', () => {
-  for (const item of [...marketItemById.values()].filter((i) => i.kind === 'active')) {
+test('Active는 **전부 쓸 수 있다** — 조준까지 엔진이 받아 준다', () => {
+  for (const item of ITEMS.filter((i) => i.kind === 'active')) {
     const s = giveControl(fight(item.id), U('P1-King'));
     const targets: (UnitId | undefined)[] = [undefined, U('P1-Rock'), U('P2-King')];
     assert.ok(targets.some((t) => validate(s, 'P1', { t: 'useItem', ...(t ? { target: t } : {}) }).ok),
@@ -299,11 +391,13 @@ test('액티브 여섯은 **전부 쓸 수 있다** — 조준까지 엔진이 �
 
 // ── 시간이 흘러도 상태가 산다 ──────────────────────────────────
 
-test('마비산을 쓰고 시간이 흐르면 만료 이벤트가 온다', () => {
-  let s = use(MABI).state;
-  for (let i = 0; i < 6 && hasStatus(s.units[U('P1-King')]!, 'incomingDamageZero'); i++) {
-    s = advanceTime(s).state;
+test('손자병법서를 쓰고 시간이 흐르면 만료 이벤트가 온다', () => {
+  let s = use(SON).state;
+  for (let i = 0; i < 200 && s.time <= 290 && s.phase !== 'finished'; i++) {
     if (s.phase === 'control') s = apply(s, s.units[s.activeUnit!]!.side, { t: 'endTurn' }).state;
+    else s = advanceTime(s).state;
   }
-  assert.equal(hasStatus(s.units[U('P1-King')]!, 'incomingDamageZero'), false, '90이 지나면 풀린다');
+  assert.ok(s.time > 290, `시간이 290을 넘겨야 한다 — 지금 ${s.time}`);
+  assert.equal(hasStatus(s.units[U('P1-King')]!, 'itemIncomingHalf'), false, '290이 지나면 풀린다');
+  assert.ok(itemById.get(SON));
 });

@@ -21,7 +21,7 @@ import {
   type Vec2,
 } from './types.ts';
 import { applyFinalDamage, heldEffectOf, heldOf } from './held.ts';
-import { attackCells, legalMoves, threatRange } from './pieces.ts';
+import { attackCells, inBounds, legalMoves, threatRange } from './pieces.ts';
 import { roll } from './rng.ts';
 import { raidZone } from './raid.ts';
 import { SIEGE_DEFENDER } from './siege.ts';
@@ -193,7 +193,7 @@ export function legalTargetsFor(state: BattleState, unitId: UnitId): UnitId[] {
   const commander = controllingSide(state, unit);
   // 황충 「백보천양」 — 사거리를 무시하고 맵 위 아무 적이나 겨눈다
   const anywhere = hasStatus(unit, 'attackAnywhere');
-  const cells = anywhere ? [] : attackCells(unit.piece, unit.pos, state.boardSize);
+  const cells = anywhere ? [] : attackCellsOf(state, unit);
   // 주유 「고육지책」 — 짝(아군 · 「지정 불가」라도 · 어디에 있든)도 칠 수 있다. 차례마다 짝을 칠지 적을 칠지는 사람이 고른다(화면의 물음,
   // 2026-11-10 기획자). 엔진은 둘 다 후보로 내고, 짝을 친 한 대만 평타 · 버프로 판정한다(`resolveAttack`)
   const bond = findStatus(unit, 'bitterBond');
@@ -709,7 +709,8 @@ export function duelRulesOn(state: Pick<BattleState, 'scenario' | 'duels'>): boo
  * 공격(`resolveAttack`)과 확인창(`forecastAttack`)이 이것 하나를 본다. 횟수를 깎는 것은 `critical100`만이다(일기토 효과는 시간으로 끝난다).
  */
 export function critSure(unit: UnitState): boolean {
-  return findStatus(unit, 'critical100') !== undefined || hasStatus(unit, 'duelBoon');
+  return findStatus(unit, 'critical100') !== undefined || hasStatus(unit, 'duelBoon')
+    || hasStatus(unit, 'itemCritNext') || hasStatus(unit, 'itemCritAll');
 }
 
 /** **받는 공격 피해가 절반인가** — 「반감」 · 「용맹전진」(`incomingDamageHalf`) · 허저 오라 · 일기토 효과(`duelBoon`). 맞는 쪽(대신받기 뒤)을 넣는다 */
@@ -717,6 +718,38 @@ export function halvesIncoming(state: BattleState, victim: UnitState): boolean {
   return findStatus(victim, 'incomingDamageHalf') !== undefined || hasStatus(victim, 'duelBoon')
     || auraApplies(state, victim, 'auraIncomingHalf', 'ally');
 }
+
+/**
+ * **받는 공격 피해를 몇 번 반으로 나누나** (2026-11-28 기획자). 위의 반감들은 서로 겹치지 않고 한 겹이고(예전 그대로),
+ * 손자병법서(`itemIncomingHalf`)는 그 위에 **한 겹 더** 얹는다 — 조운 「간뇌도지」와 함께면 1/4.
+ * `FORMULA.damage`가 이 수를 받는다. 공격(`resolveAttack`)과 확인창(`forecastAttack`)이 이것 하나를 본다.
+ */
+export function halvingsOf(state: BattleState, victim: UnitState): number {
+  return (halvesIncoming(state, victim) ? 1 : 0) + (hasStatus(victim, 'itemIncomingHalf') ? 1 : 0);
+}
+
+/**
+ * 이 유닛의 공격이 닿는 칸 — 기물 마스크 + 유성추(`itemRangeTwo`)의 8방향 두 칸 (2026-11-28).
+ * 유성추는 기물의 사거리를 **바꾸지 않고 더한다** — 원래 닿던 칸을 잃지 않는다. 판정(`legalTargetsFor`)과
+ * 화면의 공격 범위가 이것 하나를 본다.
+ */
+export function attackCellsOf(state: BattleState, unit: UnitState): Vec2[] {
+  const cells = attackCells(unit.piece, unit.pos, state.boardSize);
+  if (!hasStatus(unit, 'itemRangeTwo')) return cells;
+  for (const d of DIRS_8) {
+    for (let k = 1; k <= 2; k++) {
+      const p = { x: unit.pos.x + d.x * k, y: unit.pos.y + d.y * k };
+      if (inBounds(p, state.boardSize) && !cells.some((c) => samePos(c, p))) cells.push(p);
+    }
+  }
+  return cells;
+}
+
+/** 8방향 — 앞 넷이 4방향(상하좌우)이다 */
+export const DIRS_8: readonly Vec2[] = [
+  { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 },
+  { x: 1, y: -1 }, { x: 1, y: 1 }, { x: -1, y: 1 }, { x: -1, y: -1 },
+];
 
 /**
  * 이 유닛의 고유기술 SP 비용 — **비용을 읽는 자리는 여기 하나다** (2026-10-14).
@@ -764,15 +797,11 @@ export function uniqueSkillCost(unit: UnitState): number | null {
  */
 export function attackDamage(
   attacker: UnitState, victim: UnitState,
-  critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean,
+  critical: boolean, halveIncoming: boolean | number, fearOnAttacker: boolean,
 ): number {
   if (hasStatus(victim, 'incomingDamageZero')) return 0;
-  const gear = heldOf(attacker);
-  const base = FORMULA.damage(
-    effectiveAt(attacker) + (gear.attack ?? 0), critical, halveIncoming, fearOnAttacker,
-  );
-  const withCrit = base + (critical ? gear.criticalDamage ?? 0 : 0);
-  return applyFinalDamage(withCrit, attacker, victim);
+  const base = FORMULA.damage(effectiveAt(attacker), critical, halveIncoming, fearOnAttacker);
+  return applyFinalDamage(base, attacker, victim);
 }
 
 /** 결정타 확률 — 병기가 %p를 얹고 clamp(0,100) */
@@ -801,12 +830,13 @@ export function forecastAttack(state: BattleState, attackerId: UnitId, targetId:
   }
 
   const victim = redirectTarget(state, target);
-  const halved = halvesIncoming(state, victim);
+  const halvings = halvingsOf(state, victim);
+  const halved = halvings > 0;
   const feared = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const normal = attackDamage(attacker, victim, false, halved, feared);
-  const critical = attackDamage(attacker, victim, true, halved, feared);
+  const normal = attackDamage(attacker, victim, false, halvings, feared);
+  const critical = attackDamage(attacker, victim, true, halvings, feared);
   const criticalRate = critSure(attacker)
     ? 100
     : criticalRateOf(attacker, target);
@@ -905,6 +935,8 @@ export function resolveAttack(
   target: UnitState,
   events: BattleEvent[],
   isCounter = false,
+  /** 아이템으로 치는 한 대(`strike`, 2026-11-28) — 결정타 확정이고 「다음 공격」에 걸린 횟수(증폭 · 수극)는 **안 깎는다** */
+  forceCritical = false,
 ): void {
   // 주유 「고육지책」 — 짝을 치는 것은 **평타 한 대**다(크리 · 반격 · 대신 맞기 없음, 2026-11-10 기획자). 맞은 짝은 1일 동안
   // 크리 100% · 적의 공격 대상 안 됨 — 다시 맞으면 1일이 새로 시작한다. 난수를 안 쓴다
@@ -926,9 +958,12 @@ export function resolveAttack(
   const defOfficer = officerStats(target);
 
   const amplify = findStatus(attacker, 'critical100');
-  const critical = critSure(attacker) ? true : roll(state, criticalRateOf(attacker, target));
+  const critical = forceCritical || critSure(attacker) ? true : roll(state, criticalRateOf(attacker, target));
   // 일기토 효과가 이미 크리를 확정하면 「증폭」의 횟수는 아낀다 — 반감도 같다
-  if (amplify && !hasStatus(attacker, 'duelBoon')) consumeCharge(attacker, amplify, events);
+  if (!forceCritical && amplify && !hasStatus(attacker, 'duelBoon')) consumeCharge(attacker, amplify, events);
+  // 수극(「다음 공격 한 번」) — 내 공격이면 깎는다(반격 · 아이템 한 대는 「다음 공격」이 아니다)
+  const nextCrit = findStatus(attacker, 'itemCritNext');
+  if (nextCrit && !isCounter && !forceCritical) consumeCharge(attacker, nextCrit, events);
 
   // 관우 「온주참화웅」 — 첫 대상은 반드시 사망. King이면 그대로 승리다 (GDD §12 A5, 2026-10-16 개정)
   const execute = findStatus(attacker, 'instantKillNext');
@@ -941,11 +976,11 @@ export function resolveAttack(
 
   const victim = redirectTarget(state, target);
   const halve = findStatus(victim, 'incomingDamageHalf');
-  const halveIncoming = halvesIncoming(state, victim);
+  const halvings = halvingsOf(state, victim);
   const fear = hasStatus(attacker, 'outgoingDamageHalf')
     || auraApplies(state, attacker, 'auraOutgoingHalf', 'enemy');
 
-  const damage = attackDamage(attacker, victim, critical, halveIncoming, fear);
+  const damage = attackDamage(attacker, victim, critical, halvings, fear);
   if (halve && !hasStatus(victim, 'duelBoon')) consumeCharge(victim, halve, events);
 
   events.push({ e: 'attacked', unit: attacker.id, target: victim.id, damage, critical });
@@ -966,7 +1001,7 @@ export function resolveAttack(
   // `rngCursor`가 밀려 리플레이가 깨진다.
   if (!isCounter && target.alive && attacker.alive && !isOver(state)) {
     const chance = heldOf(target).counterChance ?? 0;
-    const counters = hasStatus(target, 'counterattack')
+    const counters = hasStatus(target, 'counterattack') || hasStatus(target, 'itemCounter')
       || (chance > 0 && roll(state, chance));
     if (counters) resolveAttack(state, target, attacker, events, true);
   }

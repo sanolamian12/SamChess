@@ -163,7 +163,11 @@ export type TargetSpec =
    * 성지 · 성채(`holy`) · 수계 칸은 빠진다(불이 덮지 못한다). 화계 칸은 덮고, 군량고에도 붙는다.
    * 유닛을 뽑으면 그 칸들에 선 장수 전원이다 — **아군 · 적군을 가리지 않는다**(화계와 같다).
    */
-  | { kind: 'enemyKingRows'; radius: number };
+  | { kind: 'enemyKingRows'; radius: number }
+  /** 청룡언월도 — 시전자 주변 `radius`칸(체비셰프) 안의 적 전원. 조준이 없고, 닿는 적이 없으면 못 쓴다 */
+  | { kind: 'enemiesInRadius'; radius: number }
+  /** 장팔사모 — 시전자에서 4방향(또는 8방향) `length`칸 안 줄 위의 적 전원. 앞을 막는 유닛이 있어도 지나 닿는다 */
+  | { kind: 'enemiesInLines'; dirs: 4 | 8; length: number };
 
 export type StatusId =
   // 버프
@@ -218,6 +222,23 @@ export type StatusId =
    * (지형 · 지원 · 환술 전부 — 「결계」를 두른 상대에게 거는 환술만은 막힌다). 읽는 자리는 `tacticMpCost()` · `tacticSure()`(`effects.ts`)이다.
    */
   | 'debateBoon'
+  /*
+   * ── 전투 아이템이 거는 상태 (2026-11-28 기획자, 대장간 연구 개편) ──
+   * 고유기술 · 책략과 **이름을 나눈다** — 같은 상태를 다시 걸면 덮어쓰는 규칙(`applyStatus`)이라, 같은 이름이면
+   * 손자병법서가 「간뇌도지」의 반감을 덮어 1/4이 안 되고 수극이 「일당백」의 지속형 결정타를 1회형으로 바꾼다.
+   */
+  /** 수극 — 다음 공격 한 번 결정타 확정(`charges: 1`). 읽는 자리는 `critSure()`, 깎는 자리는 `resolveAttack` */
+  | 'itemCritNext'
+  /** 의천검 — 아군 전원 결정타 확정(1일). 읽는 자리는 `critSure()` */
+  | 'itemCritAll'
+  /** 유성추 — 다음 공격 한 번 사거리가 8방향 두 칸(기물의 사거리에 **더한다**). 읽는 자리는 `attackCellsOf()` */
+  | 'itemRangeTwo'
+  /** 손자병법서 — 받는 공격 피해 반감. **다른 반감과 겹친다**(1/4) — 읽는 자리는 `halvingsOf()` */
+  | 'itemIncomingHalf'
+  /** 태평요술 — 책략 MP 소모 0. 읽는 자리는 `tacticMpCost()` */
+  | 'itemZeroMp'
+  /** 육도삼략 — 피격 시 반격(확률 없이). 읽는 자리는 `resolveAttack`의 반격 */
+  | 'itemCounter'
   | 'bitterPartner'        // 고육지책(짝 쪽) — 주유에게 맞으면 1일 동안 크리 100% · 적의 공격 대상 안 됨. sourceUnit = 주유
   /**
    * 영웅론(조조) — **게임이 끝날 때까지** 고유기술을 쓸 수 없다 (2026-09-25).
@@ -274,6 +295,12 @@ export const STATUS_META: Readonly<Record<StatusId, {
   duelBoon: { kind: 'buff', label: '일기토 효과', desc: '일기토에서 이긴 기세 — 공격이 반드시 크리티컬로 들어가고(데미지 ×2), 공격으로 받는 데미지가 절반이 된다.' },
   debateBoon: { kind: 'buff', label: '설전 효과', desc: '설전에서 이긴 기세 — 책략을 MP 소모 없이 시전하고, 책략이 반드시 걸린다. 「결계」를 두른 상대에게 거는 환술은 막힌다.' },
   skillSealed: { kind: 'debuff', label: '고유기술 봉인', desc: '게임이 끝날 때까지 고유기술을 쓸 수 없다. 시전 중이던 고유기술은 무산됐다. 풀리지 않는다.' },
+  itemCritNext: { kind: 'buff', label: '다음 공격 결정타', desc: '다음 공격 한 번이 반드시 결정타로 들어간다 (데미지 ×2).' },
+  itemCritAll: { kind: 'buff', label: '결정타 100%', desc: '공격이 반드시 결정타로 들어간다 (데미지 ×2).' },
+  itemRangeTwo: { kind: 'buff', label: '사거리 두 칸', desc: '다음 공격 한 번은 8방향 두 칸 안의 적도 겨눌 수 있다.' },
+  itemIncomingHalf: { kind: 'buff', label: '받는 피해 반감', desc: '받는 데미지가 절반이 된다. 다른 반감과 겹친다.' },
+  itemZeroMp: { kind: 'buff', label: '책략 MP 0', desc: '책략을 MP 소모 없이 시전한다.' },
+  itemCounter: { kind: 'buff', label: '반격', desc: '공격을 받으면 반드시 반격한다.' },
 };
 
 export type Effect =
@@ -301,6 +328,14 @@ export type Effect =
   | { t: 'controlEnemy'; target: TargetSpec; mode: ControlMode; uses: number }
   /** 장료지제 — 즉시 전 적군 1회 공격 */
   | { t: 'attackAllEnemiesOnce' }
+  /**
+   * **아이템으로 치는 공격** (2026-11-28 — 개산대부 · 청룡언월도 · 장팔사모). 캐릭터의 공격과 **별개**라 차례를
+   * 쓰지 않는다 — 아이템이 차례를 끝내지 않으므로 그 뒤에 평소대로 또 칠 수 있다. 한 대는 평타와 같은 판정
+   * (`resolveAttack` — 반감 · 대신받기 · 반격 그대로)이고, `critical`이면 결정타로 확정한다(굴리지 않는다).
+   * `knockback`이면 맞은 적을 시전자 반대쪽으로 한 칸 민다 — 판 밖 · 다른 유닛 · 막힌 지형 · 군량고면 못 밀고
+   * 대신 `blockedDamage`를 더 준다(반감을 안 탄다).
+   */
+  | { t: 'strike'; target: TargetSpec; critical?: boolean; knockback?: { blockedDamage: number } }
   /** 방덕 — 최대 HP 2배 (현재 HP 유지) */
   /** 최대 HP를 곱한다 — `fill`이면 HP를 그 새 최대치까지 채운다(방덕 「세한지송백」, 2026-10-30) */
   | { t: 'multiplyMaxHp'; target: TargetSpec; factor: number; fill?: boolean }
@@ -959,7 +994,8 @@ export type BattleEvent =
    * 화면이 「(2/3)」를 이 값에서 읽는다 — 세는 곳이 둘이면 언젠가 어긋난다.
    */
   | { e: 'turnSkipped'; by: Side; count: number }
-  | { e: 'moved'; unit: UnitId; from: Vec2; to: Vec2 }
+  /** `pushed` — 개산대부에 밀려났다(제 걸음이 아니다) */
+  | { e: 'moved'; unit: UnitId; from: Vec2; to: Vec2; pushed?: true }
   /**
    * 병기의 베리어가 데미지를 받아냈다. `to`가 남은 베리어다 —
    * 화면이 회색 막대를 이 값으로 그린다. **`hpChanged`와 따로 온다**:
@@ -1166,9 +1202,12 @@ export const FORMULA = {
   terrainRate: (casterInt: number): number =>
     Math.max(0, Math.min(100, casterInt - 10)),
 
-  /** 최종 데미지 — 감쇠는 곱연산 중첩, 결과는 내림 */
-  damage: (at: number, critical: boolean, halveIncoming: boolean, fearOnAttacker: boolean): number =>
-    Math.floor(at * (critical ? 2 : 1) * (halveIncoming ? 0.5 : 1) * (fearOnAttacker ? 0.5 : 1)),
+  /**
+   * 최종 데미지 — 감쇠는 곱연산 중첩, 결과는 내림.
+   * `halveIncoming`은 받는 쪽 반감의 **겹 수**다(2026-11-28 — 손자병법서는 다른 반감과 겹쳐 1/4). `true`는 한 겹.
+   */
+  damage: (at: number, critical: boolean, halveIncoming: boolean | number, fearOnAttacker: boolean): number =>
+    Math.floor(at * (critical ? 2 : 1) * 0.5 ** Number(halveIncoming) * (fearOnAttacker ? 0.5 : 1)),
 
   /** WT 기준값 (GDD §3.3, 확정). 통솔 100 → 90, 통솔 1 → 189 */
   wtBase: (leadership: number): number => 190 - leadership,
